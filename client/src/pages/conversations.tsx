@@ -111,7 +111,6 @@ export default function Conversations() {
   );
 
   const handleViewConversation = (id: number) => {
-    console.log(`View conversation ${id}`);
     // Navigate to conversation details page
   };
 

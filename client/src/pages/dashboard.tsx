@@ -79,7 +79,6 @@ export default function Dashboard() {
   ];
 
   const handleViewConversation = (id: number) => {
-    console.log(`View conversation ${id}`);
     // Navigate to conversation details page
   };
 

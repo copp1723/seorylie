@@ -1,0 +1,96 @@
+{
+  "timestamp": "2025-05-27T21:18:52.431Z",
+  "summary": {
+    "total": 16,
+    "passed": 2,
+    "failed": 14,
+    "successRate": 12.5
+  },
+  "results": [
+    {
+      "name": "Service Status",
+      "success": false,
+      "message": "Email service not initialized",
+      "details": {
+        "isInitialized": false,
+        "isConnected": false,
+        "error": "Email service not initialized"
+      }
+    },
+    {
+      "name": "Basic Email - HTML Email",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Basic Email - Text Only Email",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Basic Email - Multiple Recipients",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Template - Welcome Email",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Template - Password Reset Email",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Template - Notification Email",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Template - Report Email",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Template - Handover Email",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Template - Templated Email with Variables",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Notification - Info",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Notification - Warning",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Notification - Error",
+      "success": false,
+      "message": "connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Bounce Handling - Invalid Email Format",
+      "success": true,
+      "message": "Correctly handled invalid email: connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Bounce Handling - Non-existent Domain",
+      "success": true,
+      "message": "Correctly handled invalid email: connect ECONNREFUSED 0.0.0.0:1025"
+    },
+    {
+      "name": "Inventory Import",
+      "success": false,
+      "message": "No dealerships found in database"
+    }
+  ]
+}

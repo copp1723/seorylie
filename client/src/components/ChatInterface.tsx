@@ -104,7 +104,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
       setIsConnected(true);
       setIsConnecting(false);
       reconnectAttempts.current = 0;
@@ -121,7 +120,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
 
     ws.onclose = (event) => {
-      console.log('WebSocket disconnected', event.code, event.reason);
       setIsConnected(false);
       wsRef.current = null;
 
@@ -198,7 +196,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         break;
 
       default:
-        console.log('Unhandled WebSocket message type:', data.type);
+        break;
     }
   }, [conversationId]);
 

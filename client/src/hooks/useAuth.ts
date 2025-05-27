@@ -26,7 +26,6 @@ export interface RegisterData {
 // API functions
 async function fetchCurrentUser(): Promise<User | null> {
   try {
-    console.log('Fetching current user...');
     const response = await fetch('/api/user', {
       credentials: 'include',
       headers: {
@@ -34,20 +33,15 @@ async function fetchCurrentUser(): Promise<User | null> {
       },
     });
 
-    console.log('User response status:', response.status);
-
     if (response.status === 401) {
-      console.log('Not authenticated (401)');
       return null; // Not authenticated
     }
 
     if (!response.ok) {
-      console.log('Response not OK:', response.status);
       return null;
     }
 
     const userData = await response.json();
-    console.log('User data received:', userData);
     return userData;
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -57,7 +51,6 @@ async function fetchCurrentUser(): Promise<User | null> {
 
 async function loginUser(credentials: LoginData): Promise<User> {
   const identifier = credentials.username || credentials.email;
-  console.log('Attempting login with identifier:', identifier);
 
   try {
     const response = await fetch('/api/login', {
@@ -69,8 +62,6 @@ async function loginUser(credentials: LoginData): Promise<User> {
       body: JSON.stringify(credentials),
     });
 
-    console.log('Login response status:', response.status);
-
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Login failed:', errorData);
@@ -78,7 +69,6 @@ async function loginUser(credentials: LoginData): Promise<User> {
     }
 
     const userData = await response.json();
-    console.log('Login successful, user data:', userData);
     return userData;
   } catch (error) {
     console.error('Login error:', error);

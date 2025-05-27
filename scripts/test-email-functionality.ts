@@ -3,7 +3,7 @@
  * This script sends a test email to validate email configuration before deployment
  */
 
-import { sendEmail } from '../server/services/email';
+import { sendEmail, emailService, initializeEmailService } from '../server/services/email-service';
 import * as dotenv from 'dotenv';
 
 // Load environment variables
@@ -56,16 +56,25 @@ async function testEmailFunctionality() {
   };
   
   try {
-    console.log(`📧 Sending test email to: ${testParams.to}`);
-    const success = await sendEmail(process.env.SENDGRID_API_KEY, testParams);
+    console.log('🔧 Initializing email service...');
+    await initializeEmailService();
     
-    if (success) {
+    console.log(`📧 Sending test email to: ${testParams.to}`);
+    const result = await sendEmail({
+      to: testParams.to,
+      subject: testParams.subject,
+      html: testParams.html,
+      text: testParams.text,
+      from: testParams.from
+    });
+    
+    if (result.success) {
       console.log('✅ Test email sent successfully!');
+      console.log(`📧 Message ID: ${result.messageId}`);
       return true;
     } else {
-      console.log('⚠️ Email service returned fallback mode - checking logs for EMAIL_FALLBACK_LOG entries');
-      // This will help us verify the fallback system is working
-      return process.env.NODE_ENV === 'production'; // Consider test successful in production with fallback
+      console.error('❌ Failed to send test email:', result.error);
+      return false;
     }
   } catch (error) {
     console.error('❌ Error sending test email:', error);

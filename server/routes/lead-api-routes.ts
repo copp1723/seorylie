@@ -52,33 +52,16 @@ const extractDealership = (req: Request, res: Response, next: Function) => {
 };
 
 /**
- * @swagger
- * /api/v1/inbound:
- *   post:
- *     summary: Create a new inbound lead
- *     description: Accept parsed lead data from various sources with strict schema validation
- *     tags: [Leads]
- *     security:
- *       - ApiKeyAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/InboundLead'
- *     responses:
- *       201:
- *         description: Lead created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/LeadCreationResponse'
- *       400:
- *         description: Invalid request payload
- *       409:
- *         description: Duplicate lead detected
- *       500:
- *         description: Internal server error
+ * POST /api/v1/inbound
+ * Create a new inbound lead
+ * @description Accept parsed lead data from various sources with strict schema validation
+ * @tags Leads
+ * @security ApiKeyAuth
+ * @requestBody {InboundLead} required - Lead information
+ * @returns {LeadCreationResponse} 201 - Lead created successfully
+ * @throws {400} Invalid request payload - Validation errors
+ * @throws {409} Duplicate lead detected - Lead already exists
+ * @throws {500} Internal server error - Server processing error
  */
 router.post('/inbound', 
   authenticateApiKey,
@@ -145,33 +128,16 @@ router.post('/inbound',
 );
 
 /**
- * @swagger
- * /api/v1/reply:
- *   post:
- *     summary: Send a reply message in a conversation
- *     description: Send agent or AI responses referencing conversation by unique ID
- *     tags: [Conversations]
- *     security:
- *       - ApiKeyAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ReplyMessage'
- *     responses:
- *       201:
- *         description: Reply sent successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/MessageResponse'
- *       400:
- *         description: Invalid request payload
- *       404:
- *         description: Conversation not found
- *       500:
- *         description: Internal server error
+ * POST /api/v1/reply
+ * Send a reply message in a conversation
+ * @description Send agent or AI responses referencing conversation by unique ID
+ * @tags Conversations
+ * @security ApiKeyAuth
+ * @requestBody {ReplyMessage} required - Message content and metadata
+ * @returns {MessageResponse} 201 - Reply sent successfully
+ * @throws {400} Invalid request payload - Validation errors
+ * @throws {404} Conversation not found - The specified conversation does not exist
+ * @throws {500} Internal server error - Server processing error
  */
 router.post('/reply',
   authenticateApiKey,
@@ -227,33 +193,16 @@ router.post('/reply',
 );
 
 /**
- * @swagger
- * /api/v1/handover:
- *   post:
- *     summary: Request a handover from AI to human agent
- *     description: Create an escalation request with required status and context
- *     tags: [Handovers]
- *     security:
- *       - ApiKeyAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/HandoverRequest'
- *     responses:
- *       201:
- *         description: Handover created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/HandoverResponse'
- *       400:
- *         description: Invalid request payload
- *       404:
- *         description: Conversation not found
- *       500:
- *         description: Internal server error
+ * POST /api/v1/handover
+ * Request a handover from AI to human agent
+ * @description Create an escalation request with required status and context
+ * @tags Handovers
+ * @security ApiKeyAuth
+ * @requestBody {HandoverRequest} required - Handover details and reason
+ * @returns {HandoverResponse} 201 - Handover created successfully
+ * @throws {400} Invalid request payload - Validation errors
+ * @throws {404} Conversation not found - The specified conversation does not exist
+ * @throws {500} Internal server error - Server processing error
  */
 router.post('/handover',
   authenticateApiKey,
@@ -310,50 +259,17 @@ router.post('/handover',
 );
 
 /**
- * @swagger
- * /api/v1/handover/{handoverId}:
- *   patch:
- *     summary: Update handover status
- *     description: Update the status of an existing handover (accept, reject, complete)
- *     tags: [Handovers]
- *     security:
- *       - ApiKeyAuth: []
- *     parameters:
- *       - in: path
- *         name: handoverId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               status:
- *                 type: string
- *                 enum: [accepted, rejected, in_progress, resolved]
- *               userId:
- *                 type: integer
- *               notes:
- *                 type: string
- *               customerSatisfaction:
- *                 type: integer
- *                 minimum: 1
- *                 maximum: 5
- *             required:
- *               - status
- *     responses:
- *       200:
- *         description: Handover updated successfully
- *       400:
- *         description: Invalid request
- *       404:
- *         description: Handover not found
- *       500:
- *         description: Internal server error
+ * PATCH /api/v1/handover/{handoverId}
+ * Update handover status
+ * @description Update the status of an existing handover (accept, reject, complete)
+ * @tags Handovers
+ * @security ApiKeyAuth
+ * @param {string} handoverId.path.required - Handover UUID
+ * @requestBody {HandoverUpdateRequest} required - Status update information
+ * @returns {object} 200 - Handover updated successfully
+ * @throws {400} Invalid request - Validation errors
+ * @throws {404} Handover not found - The specified handover does not exist
+ * @throws {500} Internal server error - Server processing error
  */
 router.patch('/handover/:handoverId',
   authenticateApiKey,
@@ -412,42 +328,17 @@ router.patch('/handover/:handoverId',
 // GET endpoints for retrieving data
 
 /**
- * @swagger
- * /api/v1/leads:
- *   get:
- *     summary: Get leads for the dealership
- *     description: Retrieve leads with optional filtering and pagination
- *     tags: [Leads]
- *     security:
- *       - ApiKeyAuth: []
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 50
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           minimum: 0
- *           default: 0
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [new, contacted, qualified, proposal, negotiation, sold, lost, follow_up, archived]
- *       - in: query
- *         name: source
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Leads retrieved successfully
- *       500:
- *         description: Internal server error
+ * GET /api/v1/leads
+ * Get leads for the dealership
+ * @description Retrieve leads with optional filtering and pagination
+ * @tags Leads
+ * @security ApiKeyAuth
+ * @param {integer} limit.query - Maximum number of leads to return (1-100) - default: 50
+ * @param {integer} offset.query - Number of leads to skip - default: 0
+ * @param {string} status.query - Filter by lead status - enum: new, contacted, qualified, proposal, negotiation, sold, lost, follow_up, archived
+ * @param {string} source.query - Filter by lead source
+ * @returns {LeadListResponse} 200 - Leads retrieved successfully
+ * @throws {500} Internal server error - Server processing error
  */
 router.get('/leads',
   authenticateApiKey,
@@ -492,28 +383,15 @@ router.get('/leads',
 );
 
 /**
- * @swagger
- * /api/v1/leads/{leadId}:
- *   get:
- *     summary: Get lead by ID
- *     description: Retrieve detailed information for a specific lead
- *     tags: [Leads]
- *     security:
- *       - ApiKeyAuth: []
- *     parameters:
- *       - in: path
- *         name: leadId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *     responses:
- *       200:
- *         description: Lead retrieved successfully
- *       404:
- *         description: Lead not found
- *       500:
- *         description: Internal server error
+ * GET /api/v1/leads/{leadId}
+ * Get lead by ID
+ * @description Retrieve detailed information for a specific lead
+ * @tags Leads
+ * @security ApiKeyAuth
+ * @param {string} leadId.path.required - Lead UUID
+ * @returns {LeadDetailResponse} 200 - Lead retrieved successfully
+ * @throws {404} Lead not found - The specified lead does not exist
+ * @throws {500} Internal server error - Server processing error
  */
 router.get('/leads/:leadId',
   authenticateApiKey,

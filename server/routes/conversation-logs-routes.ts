@@ -4,7 +4,28 @@ import logger from '../utils/logger';
 
 const router = Router();
 
-// Get conversation logs with filtering and pagination
+/**
+ * GET /api/conversation-logs
+ * Get conversation logs with filtering and pagination
+ * @description Retrieve conversation logs with optional filtering and pagination
+ * @tags Conversations
+ * @security Session
+ * @param {integer} dealershipId.query.required - Dealership ID
+ * @param {string} status.query - Filter by conversation status (comma-separated)
+ * @param {integer} assignedUserId.query - Filter by assigned user ID
+ * @param {boolean} escalatedOnly.query - Filter to only show escalated conversations
+ * @param {string} dateFrom.query - Filter by start date (ISO format)
+ * @param {string} dateTo.query - Filter by end date (ISO format)
+ * @param {string} searchTerm.query - Search term for filtering conversations
+ * @param {integer} limit.query - Maximum number of logs to return - default: 50
+ * @param {integer} offset.query - Number of logs to skip - default: 0
+ * @param {string} sortBy.query - Field to sort by - default: last_message_at
+ * @param {string} sortOrder.query - Sort order (asc or desc) - default: desc
+ * @returns {object} 200 - Conversation logs retrieved successfully
+ * @throws {401} Authentication required - User is not authenticated
+ * @throws {400} Invalid request - Missing required parameters
+ * @throws {500} Internal server error - Server processing error
+ */
 router.get('/', async (req, res) => {
   try {
     if (!req.session.userId) {
@@ -72,7 +93,20 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get detailed conversation with full message history
+/**
+ * GET /api/conversation-logs/{conversationId}
+ * Get detailed conversation with full message history
+ * @description Retrieve detailed conversation information including all messages
+ * @tags Conversations
+ * @security Session
+ * @param {string} conversationId.path.required - Conversation UUID
+ * @param {integer} dealershipId.query.required - Dealership ID
+ * @returns {object} 200 - Detailed conversation retrieved successfully
+ * @throws {401} Authentication required - User is not authenticated
+ * @throws {400} Invalid request - Missing required parameters
+ * @throws {404} Conversation not found - The specified conversation does not exist
+ * @throws {500} Internal server error - Server processing error
+ */
 router.get('/:conversationId', async (req, res) => {
   try {
     if (!req.session.userId) {
@@ -117,7 +151,20 @@ router.get('/:conversationId', async (req, res) => {
   }
 });
 
-// Get conversation analytics
+/**
+ * GET /api/conversation-logs/analytics/summary
+ * Get conversation analytics
+ * @description Retrieve analytics and summary data for conversations
+ * @tags Analytics
+ * @security Session
+ * @param {integer} dealershipId.query.required - Dealership ID
+ * @param {string} dateFrom.query - Filter by start date (ISO format)
+ * @param {string} dateTo.query - Filter by end date (ISO format)
+ * @returns {object} 200 - Conversation analytics retrieved successfully
+ * @throws {401} Authentication required - User is not authenticated
+ * @throws {400} Invalid request - Missing required parameters
+ * @throws {500} Internal server error - Server processing error
+ */
 router.get('/analytics/summary', async (req, res) => {
   try {
     if (!req.session.userId) {
@@ -159,7 +206,18 @@ router.get('/analytics/summary', async (req, res) => {
   }
 });
 
-// Export conversation data
+/**
+ * POST /api/conversation-logs/export
+ * Export conversation data
+ * @description Export conversation logs data in specified format
+ * @tags Conversations
+ * @security Session
+ * @requestBody {object} required - Export filters and format
+ * @returns {object} 200 - Conversation logs exported successfully
+ * @throws {401} Authentication required - User is not authenticated
+ * @throws {400} Invalid request - Missing required parameters
+ * @throws {500} Internal server error - Server processing error
+ */
 router.post('/export', async (req, res) => {
   try {
     if (!req.session.userId) {

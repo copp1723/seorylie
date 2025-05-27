@@ -1,27 +1,103 @@
 {
-  "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  // =============================================================================
+  // RYLIE AI PLATFORM - TYPESCRIPT CONFIGURATION
+  // =============================================================================
+  // TypeScript configuration for the full-stack application
+  // Includes client (React), server (Node.js), and shared code
+  // =============================================================================
+
+  // Files to include in compilation
+  "include": [
+    "client/src/**/*",
+    "shared/**/*",
+    "server/**/*",
+    "scripts/**/*"
+  ],
+
+  // Files to exclude from compilation
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "test/**/*",
+    "coverage/**/*"
+  ],
   "compilerOptions": {
+    // =============================================================================
+    // COMPILATION OPTIONS
+    // =============================================================================
+
+    // Enable incremental compilation for faster builds
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
+
+    // Don't emit JavaScript files (handled by build tools)
     "noEmit": true,
+
+    // Target modern JavaScript for better performance
     "target": "ES2020",
     "module": "ESNext",
+
+    // =============================================================================
+    // TYPE CHECKING OPTIONS
+    // =============================================================================
+
+    // Enable all strict type checking options
     "strict": true,
-    "lib": ["ES2020", "dom", "dom.iterable"],
-    "jsx": "preserve",
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+
+    // =============================================================================
+    // MODULE RESOLUTION
+    // =============================================================================
+
+    // Use bundler module resolution for modern build tools
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "moduleResolution": "bundler",
-    "downlevelIteration": true,
-    "baseUrl": ".",
+    "forceConsistentCasingInFileNames": true,
+
+    // =============================================================================
+    // LIBRARY AND RUNTIME
+    // =============================================================================
+
+    // Include necessary library definitions
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "types": ["node"],
+
+    // Support for JSX (React)
+    "jsx": "preserve",
+
+    // =============================================================================
+    // PATH MAPPING
+    // =============================================================================
+
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./client/src/*"],
       "@shared/*": ["./shared/*"],
-      "@server/*": ["./server/*"]
-    }
+      "@server/*": ["./server/*"],
+      "@test/*": ["./test/*"]
+    },
+
+    // =============================================================================
+    // PERFORMANCE & COMPATIBILITY
+    // =============================================================================
+
+    // Skip type checking of declaration files for faster builds
+    "skipLibCheck": true,
+
+    // Enable downlevel iteration for better compatibility
+    "downlevelIteration": true,
+
+    // Resolve JSON modules
+    "resolveJsonModule": true
   }
 }

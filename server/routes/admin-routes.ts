@@ -91,8 +91,10 @@ const checkDealershipAccess = async (req: Request, res: Response, next: NextFunc
 };
 
 /**
- * Get all dealerships
  * GET /api/admin/dealerships
+ * Retrieves all dealerships in the system
+ * @returns {Object} Object containing array of dealership objects
+ * @throws {500} Internal Server Error - If database query fails
  */
 router.get('/dealerships', async (req: Request, res: Response) => {
   try {
@@ -106,8 +108,13 @@ router.get('/dealerships', async (req: Request, res: Response) => {
 });
 
 /**
- * Get a specific dealership by ID
  * GET /api/admin/dealerships/:id
+ * Retrieves a specific dealership by ID
+ * @param {string} id - Dealership ID
+ * @returns {Object} Object containing dealership data
+ * @throws {400} Bad Request - If dealership ID is invalid
+ * @throws {404} Not Found - If dealership doesn't exist
+ * @throws {500} Internal Server Error - If database query fails
  */
 router.get('/dealerships/:id', async (req: Request, res: Response) => {
   try {
@@ -131,8 +138,11 @@ router.get('/dealerships/:id', async (req: Request, res: Response) => {
 });
 
 /**
- * Create a new dealership
  * POST /api/admin/dealerships
+ * Creates a new dealership
+ * @returns {Object} Object containing created dealership data
+ * @throws {400} Bad Request - If request body validation fails or subdomain is taken
+ * @throws {500} Internal Server Error - If database operation fails
  */
 router.post('/dealerships', async (req: Request, res: Response) => {
   try {

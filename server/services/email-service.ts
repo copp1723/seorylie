@@ -452,6 +452,32 @@ export async function sendWelcomeEmail(email: string, name: string) {
   });
 }
 
+export async function sendInventoryUpdateEmail(email: string, subject: string, result: any) {
+  return emailService.sendEmail({
+    to: email,
+    subject: subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Inventory Update Processed</h2>
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 4px; margin: 20px 0;">
+          <h3 style="color: #333; margin-top: 0;">Processing Results</h3>
+          <p><strong>Status:</strong> ${result.success ? 'Success' : 'Failed'}</p>
+          ${result.stats ? `
+            <p><strong>Added:</strong> ${result.stats.added} vehicles</p>
+            <p><strong>Updated:</strong> ${result.stats.updated} vehicles</p>
+            <p><strong>Deactivated:</strong> ${result.stats.deactivated} vehicles</p>
+            <p><strong>Errors:</strong> ${result.stats.errors} errors</p>
+          ` : ''}
+          ${result.error ? `<p><strong>Error:</strong> ${result.error}</p>` : ''}
+        </div>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #999; font-size: 12px;">This update was processed by Rylie AI inventory system.</p>
+      </div>
+    `,
+    text: `Inventory Update Processed\n\nStatus: ${result.success ? 'Success' : 'Failed'}\n${result.stats ? `Added: ${result.stats.added} vehicles\nUpdated: ${result.stats.updated} vehicles\nDeactivated: ${result.stats.deactivated} vehicles\nErrors: ${result.stats.errors} errors\n` : ''}${result.error ? `Error: ${result.error}` : ''}`
+  });
+}
+
 export async function sendReportEmail(email: string, reportId: string, reportType: string) {
   const reportUrl = `${process.env.FRONTEND_URL || 'http://localhost:5001'}/reports/${reportId}`;
 
