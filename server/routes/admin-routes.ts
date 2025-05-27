@@ -190,8 +190,17 @@ router.post('/dealerships', async (req: Request, res: Response) => {
 });
 
 /**
- * Update a dealership
  * PUT /api/admin/dealerships/:id
+ * Update a dealership
+ * @description Update an existing dealership's information
+ * @tags Admin
+ * @security AdminOnly
+ * @param {string} id.path.required - Dealership ID
+ * @requestBody {object} required - Updated dealership data
+ * @returns {object} 200 - Updated dealership data
+ * @throws {400} Bad Request - If request body validation fails or subdomain is taken
+ * @throws {404} Not Found - If dealership doesn't exist
+ * @throws {500} Internal Server Error - If database operation fails
  */
 router.put('/dealerships/:id', async (req: Request, res: Response) => {
   try {
@@ -257,8 +266,17 @@ router.put('/dealerships/:id', async (req: Request, res: Response) => {
 });
 
 /**
- * Update dealership status (active/inactive)
  * PATCH /api/admin/dealerships/:id/status
+ * Update dealership status (active/inactive)
+ * @description Toggle a dealership's active status
+ * @tags Admin
+ * @security AdminOnly
+ * @param {string} id.path.required - Dealership ID
+ * @requestBody {object} required - Status update with active property
+ * @returns {object} 200 - Updated dealership data
+ * @throws {400} Bad Request - If request body validation fails
+ * @throws {404} Not Found - If dealership doesn't exist
+ * @throws {500} Internal Server Error - If database operation fails
  */
 router.patch('/dealerships/:id/status', async (req: Request, res: Response) => {
   try {
@@ -315,8 +333,17 @@ router.patch('/dealerships/:id/status', async (req: Request, res: Response) => {
 });
 
 /**
- * Update dealership branding
  * PUT /api/admin/dealerships/:id/branding
+ * Update dealership branding
+ * @description Update a dealership's branding elements (colors, logo, persona)
+ * @tags Admin
+ * @security AdminOnly
+ * @param {string} id.path.required - Dealership ID
+ * @requestBody {object} required - Branding data
+ * @returns {object} 200 - Updated dealership data
+ * @throws {400} Bad Request - If request body validation fails
+ * @throws {404} Not Found - If dealership doesn't exist
+ * @throws {500} Internal Server Error - If database operation fails
  */
 router.put('/dealerships/:id/branding', checkDealershipAccess, async (req: Request, res: Response) => {
   try {
@@ -383,8 +410,18 @@ router.put('/dealerships/:id/branding', checkDealershipAccess, async (req: Reque
 });
 
 /**
- * Test chat with dealership's AI persona
  * POST /api/admin/dealerships/:id/test-chat
+ * Test chat with dealership's AI persona
+ * @description Test the dealership's AI persona by sending a message and receiving a response
+ * @tags Admin
+ * @security AdminOnly
+ * @param {string} id.path.required - Dealership ID
+ * @requestBody {object} required - Message to send to the AI
+ * @returns {object} 200 - AI response
+ * @throws {400} Bad Request - If request body validation fails
+ * @throws {404} Not Found - If dealership doesn't exist
+ * @throws {503} Service Unavailable - If OpenAI API key is not configured
+ * @throws {500} Internal Server Error - If AI processing fails
  */
 router.post('/dealerships/:id/test-chat', checkDealershipAccess, async (req: Request, res: Response) => {
   try {
@@ -486,8 +523,16 @@ router.post('/dealerships/:id/test-chat', checkDealershipAccess, async (req: Req
 });
 
 /**
- * Delete a dealership
  * DELETE /api/admin/dealerships/:id
+ * Delete a dealership
+ * @description Permanently delete a dealership and all associated data
+ * @tags Admin
+ * @security AdminOnly
+ * @param {string} id.path.required - Dealership ID
+ * @returns {object} 200 - Success message
+ * @throws {400} Bad Request - If dealership ID is invalid
+ * @throws {404} Not Found - If dealership doesn't exist
+ * @throws {500} Internal Server Error - If database operation fails
  */
 router.delete('/dealerships/:id', async (req: Request, res: Response) => {
   try {
@@ -533,8 +578,16 @@ router.delete('/dealerships/:id', async (req: Request, res: Response) => {
 });
 
 /**
- * Get users for a specific dealership
  * GET /api/admin/dealerships/:id/users
+ * Get users for a specific dealership
+ * @description Retrieve all users associated with a specific dealership
+ * @tags Admin
+ * @security AdminOnly
+ * @param {string} id.path.required - Dealership ID
+ * @returns {object} 200 - List of users
+ * @throws {400} Bad Request - If dealership ID is invalid
+ * @throws {404} Not Found - If dealership doesn't exist
+ * @throws {500} Internal Server Error - If database query fails
  */
 router.get('/dealerships/:id/users', async (req: Request, res: Response) => {
   try {
