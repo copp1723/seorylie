@@ -1,50 +1,106 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
-import { 
-  Building2, 
-  Users, 
-  Car, 
-  Settings, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Building2,
+  Users,
+  Car,
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
   RefreshCw,
   Check,
   X,
-  Globe
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 // Define the dealership schema for form validation
 const dealershipFormSchema = z.object({
-  name: z.string().min(2, { message: "Dealership name must be at least 2 characters." }),
-  subdomain: z.string().min(2, { message: "Subdomain must be at least 2 characters." })
-    .regex(/^[a-z0-9-]+$/, { message: "Subdomain can only contain lowercase letters, numbers, and hyphens." }),
-  contact_email: z.string().email({ message: "Please enter a valid email address." }),
+  name: z
+    .string()
+    .min(2, { message: "Dealership name must be at least 2 characters." }),
+  subdomain: z
+    .string()
+    .min(2, { message: "Subdomain must be at least 2 characters." })
+    .regex(/^[a-z0-9-]+$/, {
+      message:
+        "Subdomain can only contain lowercase letters, numbers, and hyphens.",
+    }),
+  contact_email: z
+    .string()
+    .email({ message: "Please enter a valid email address." }),
   contact_phone: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
   zip: z.string().optional(),
-  website: z.string().url({ message: "Please enter a valid website URL." }).optional().or(z.literal("")),
+  website: z
+    .string()
+    .url({ message: "Please enter a valid website URL." })
+    .optional()
+    .or(z.literal("")),
   description: z.string().optional(),
-  logo_url: z.string().url({ message: "Please enter a valid logo URL." }).optional().or(z.literal("")),
-  primary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, { message: "Please enter a valid hex color code (e.g., #000000)." }).optional(),
-  secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, { message: "Please enter a valid hex color code (e.g., #FFFFFF)." }).optional(),
+  logo_url: z
+    .string()
+    .url({ message: "Please enter a valid logo URL." })
+    .optional()
+    .or(z.literal("")),
+  primary_color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, {
+      message: "Please enter a valid hex color code (e.g., #000000).",
+    })
+    .optional(),
+  secondary_color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, {
+      message: "Please enter a valid hex color code (e.g., #FFFFFF).",
+    })
+    .optional(),
 });
 
 // Define interfaces
@@ -73,13 +129,14 @@ interface DealershipFormValues extends z.infer<typeof dealershipFormSchema> {}
 const AdminDealershipsPage: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedDealership, setSelectedDealership] = useState<Dealership | null>(null);
+  const [selectedDealership, setSelectedDealership] =
+    useState<Dealership | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Check if user is super admin
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === "super_admin";
 
   if (!isSuperAdmin) {
     return (
@@ -88,7 +145,8 @@ const AdminDealershipsPage: React.FC = () => {
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
-              You do not have permission to access this page. Please contact your administrator.
+              You do not have permission to access this page. Please contact
+              your administrator.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -98,15 +156,16 @@ const AdminDealershipsPage: React.FC = () => {
 
   // Fetch dealerships
   const { data: dealershipsData, isLoading: isLoadingDealerships } = useQuery({
-    queryKey: ['/api/admin/dealerships'],
-    queryFn: () => apiRequest<{ dealerships: Dealership[] }>('/api/admin/dealerships'),
+    queryKey: ["/api/admin/dealerships"],
+    queryFn: () =>
+      apiRequest<{ dealerships: Dealership[] }>("/api/admin/dealerships"),
   });
 
   // Create dealership mutation
   const createDealership = useMutation({
     mutationFn: (data: DealershipFormValues) =>
-      apiRequest('/api/admin/dealerships', {
-        method: 'POST',
+      apiRequest("/api/admin/dealerships", {
+        method: "POST",
         body: data,
       }),
     onSuccess: () => {
@@ -115,7 +174,7 @@ const AdminDealershipsPage: React.FC = () => {
         description: "Dealership created successfully",
       });
       setIsCreateDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/dealerships'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dealerships"] });
     },
     onError: (error) => {
       toast({
@@ -128,9 +187,9 @@ const AdminDealershipsPage: React.FC = () => {
 
   // Update dealership mutation
   const updateDealership = useMutation({
-    mutationFn: (data: DealershipFormValues & { id: number }) => 
+    mutationFn: (data: DealershipFormValues & { id: number }) =>
       apiRequest(`/api/admin/dealerships/${data.id}`, {
-        method: 'PUT',
+        method: "PUT",
         body: data,
       }),
     onSuccess: () => {
@@ -139,7 +198,7 @@ const AdminDealershipsPage: React.FC = () => {
         description: "Dealership updated successfully",
       });
       setIsEditDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/dealerships'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dealerships"] });
     },
     onError: (error) => {
       toast({
@@ -154,7 +213,7 @@ const AdminDealershipsPage: React.FC = () => {
   const deleteDealership = useMutation({
     mutationFn: (id: number) =>
       apiRequest(`/api/admin/dealerships/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       }),
     onSuccess: () => {
       toast({
@@ -163,7 +222,7 @@ const AdminDealershipsPage: React.FC = () => {
       });
       setIsDeleteDialogOpen(false);
       setSelectedDealership(null);
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/dealerships'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dealerships"] });
     },
     onError: (error) => {
       toast({
@@ -178,7 +237,7 @@ const AdminDealershipsPage: React.FC = () => {
   const toggleDealershipStatus = useMutation({
     mutationFn: ({ id, active }: { id: number; active: boolean }) =>
       apiRequest(`/api/admin/dealerships/${id}/status`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: { active },
       }),
     onSuccess: () => {
@@ -186,7 +245,7 @@ const AdminDealershipsPage: React.FC = () => {
         title: "Success",
         description: "Dealership status updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/dealerships'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dealerships"] });
     },
     onError: (error) => {
       toast({
@@ -261,10 +320,10 @@ const AdminDealershipsPage: React.FC = () => {
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     }).format(date);
   };
 
@@ -307,11 +366,15 @@ const AdminDealershipsPage: React.FC = () => {
             <DialogHeader>
               <DialogTitle>Create New Dealership</DialogTitle>
               <DialogDescription>
-                Add a new dealership to the system. All fields with * are required.
+                Add a new dealership to the system. All fields with * are
+                required.
               </DialogDescription>
             </DialogHeader>
             <Form {...createForm}>
-              <form onSubmit={createForm.handleSubmit(onCreateSubmit)} className="space-y-4">
+              <form
+                onSubmit={createForm.handleSubmit(onCreateSubmit)}
+                className="space-y-4"
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={createForm.control}
@@ -336,7 +399,8 @@ const AdminDealershipsPage: React.FC = () => {
                           <Input placeholder="luxurymotors" {...field} />
                         </FormControl>
                         <FormDescription>
-                          Will be used as: {field.value || "subdomain"}.rylieai.com
+                          Will be used as: {field.value || "subdomain"}
+                          .rylieai.com
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -349,7 +413,11 @@ const AdminDealershipsPage: React.FC = () => {
                       <FormItem>
                         <FormLabel>Contact Email*</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="info@example.com" {...field} />
+                          <Input
+                            type="email"
+                            placeholder="info@example.com"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -377,10 +445,10 @@ const AdminDealershipsPage: React.FC = () => {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Textarea 
+                        <Textarea
                           placeholder="Brief description of the dealership"
                           className="min-h-[100px]"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -396,7 +464,10 @@ const AdminDealershipsPage: React.FC = () => {
                       <FormItem>
                         <FormLabel>Logo URL</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://example.com/logo.png" {...field} />
+                          <Input
+                            placeholder="https://example.com/logo.png"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -409,7 +480,7 @@ const AdminDealershipsPage: React.FC = () => {
                       <FormItem>
                         <FormLabel>Primary Color</FormLabel>
                         <div className="flex gap-2">
-                          <div 
+                          <div
                             className="w-10 h-10 rounded border"
                             style={{ backgroundColor: field.value }}
                           />
@@ -428,7 +499,7 @@ const AdminDealershipsPage: React.FC = () => {
                       <FormItem>
                         <FormLabel>Secondary Color</FormLabel>
                         <div className="flex gap-2">
-                          <div 
+                          <div
                             className="w-10 h-10 rounded border"
                             style={{ backgroundColor: field.value }}
                           />
@@ -479,7 +550,8 @@ const AdminDealershipsPage: React.FC = () => {
             <div className="flex justify-center items-center h-40">
               <RefreshCw className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : dealershipsData?.dealerships && dealershipsData.dealerships.length > 0 ? (
+          ) : dealershipsData?.dealerships &&
+            dealershipsData.dealerships.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -494,7 +566,9 @@ const AdminDealershipsPage: React.FC = () => {
               <TableBody>
                 {dealershipsData.dealerships.map((dealership) => (
                   <TableRow key={dealership.id}>
-                    <TableCell className="font-medium">{dealership.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {dealership.name}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Globe className="h-4 w-4 text-muted-foreground" />
@@ -505,7 +579,9 @@ const AdminDealershipsPage: React.FC = () => {
                       <div className="text-sm">
                         <div>{dealership.contact_email}</div>
                         {dealership.contact_phone && (
-                          <div className="text-muted-foreground">{dealership.contact_phone}</div>
+                          <div className="text-muted-foreground">
+                            {dealership.contact_phone}
+                          </div>
                         )}
                       </div>
                     </TableCell>
@@ -514,10 +590,12 @@ const AdminDealershipsPage: React.FC = () => {
                       <Badge
                         variant={dealership.active ? "default" : "secondary"}
                         className="cursor-pointer"
-                        onClick={() => toggleDealershipStatus.mutate({ 
-                          id: dealership.id, 
-                          active: !dealership.active 
-                        })}
+                        onClick={() =>
+                          toggleDealershipStatus.mutate({
+                            id: dealership.id,
+                            active: !dealership.active,
+                          })
+                        }
                       >
                         {dealership.active ? (
                           <Check className="mr-1 h-3 w-3" />
@@ -558,7 +636,9 @@ const AdminDealershipsPage: React.FC = () => {
           ) : (
             <div className="text-center py-10">
               <Building2 className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-              <h3 className="mt-4 text-lg font-semibold">No Dealerships Found</h3>
+              <h3 className="mt-4 text-lg font-semibold">
+                No Dealerships Found
+              </h3>
               <p className="mt-2 text-sm text-muted-foreground">
                 Get started by adding your first dealership.
               </p>
@@ -584,7 +664,10 @@ const AdminDealershipsPage: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+            <form
+              onSubmit={editForm.handleSubmit(onEditSubmit)}
+              className="space-y-4"
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
@@ -609,7 +692,8 @@ const AdminDealershipsPage: React.FC = () => {
                         <Input placeholder="luxurymotors" {...field} />
                       </FormControl>
                       <FormDescription>
-                        Will be used as: {field.value || "subdomain"}.rylieai.com
+                        Will be used as: {field.value || "subdomain"}
+                        .rylieai.com
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -622,7 +706,11 @@ const AdminDealershipsPage: React.FC = () => {
                     <FormItem>
                       <FormLabel>Contact Email*</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="info@example.com" {...field} />
+                        <Input
+                          type="email"
+                          placeholder="info@example.com"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -650,10 +738,10 @@ const AdminDealershipsPage: React.FC = () => {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="Brief description of the dealership"
                         className="min-h-[100px]"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -669,7 +757,10 @@ const AdminDealershipsPage: React.FC = () => {
                     <FormItem>
                       <FormLabel>Logo URL</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://example.com/logo.png" {...field} />
+                        <Input
+                          placeholder="https://example.com/logo.png"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -682,7 +773,7 @@ const AdminDealershipsPage: React.FC = () => {
                     <FormItem>
                       <FormLabel>Primary Color</FormLabel>
                       <div className="flex gap-2">
-                        <div 
+                        <div
                           className="w-10 h-10 rounded border"
                           style={{ backgroundColor: field.value }}
                         />
@@ -701,7 +792,7 @@ const AdminDealershipsPage: React.FC = () => {
                     <FormItem>
                       <FormLabel>Secondary Color</FormLabel>
                       <div className="flex gap-2">
-                        <div 
+                        <div
                           className="w-10 h-10 rounded border"
                           style={{ backgroundColor: field.value }}
                         />
@@ -745,13 +836,16 @@ const AdminDealershipsPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the dealership "{selectedDealership?.name}"? This action cannot be undone.
+              Are you sure you want to delete the dealership "
+              {selectedDealership?.name}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="bg-muted/50 p-4 rounded-md mt-2">
             <p className="text-sm font-medium">Warning:</p>
             <ul className="text-sm mt-2 space-y-1 list-disc list-inside text-muted-foreground">
-              <li>All users associated with this dealership will lose access</li>
+              <li>
+                All users associated with this dealership will lose access
+              </li>
               <li>All prompts, variables, and inventory will be deleted</li>
               <li>All conversation history will be permanently lost</li>
             </ul>
@@ -764,8 +858,8 @@ const AdminDealershipsPage: React.FC = () => {
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={onDeleteConfirm}
               disabled={deleteDealership.isPending}
             >

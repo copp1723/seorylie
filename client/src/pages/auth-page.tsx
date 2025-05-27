@@ -9,13 +9,13 @@ export default function AuthPage() {
   const { user, isAuthenticated, loginMutation, registerMutation } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-  
+
   // Login form state
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
   });
-  
+
   // Register form state
   const [registerData, setRegisterData] = useState({
     username: "",
@@ -33,7 +33,7 @@ export default function AuthPage() {
       localStorage.removeItem("redirectAfterLogin");
     }
   }, [isAuthenticated, navigate]);
-  
+
   // Early return if already authenticated
   if (isAuthenticated) {
     return null;
@@ -53,8 +53,8 @@ export default function AuthPage() {
     e.preventDefault();
     loginMutation.mutate(loginData, {
       onSuccess: () => {
-        navigate('/');
-      }
+        navigate("/");
+      },
     });
   };
 
@@ -62,8 +62,8 @@ export default function AuthPage() {
     e.preventDefault();
     registerMutation.mutate(registerData, {
       onSuccess: () => {
-        navigate('/');
-      }
+        navigate("/");
+      },
     });
   };
 
@@ -77,8 +77,8 @@ export default function AuthPage() {
               Welcome to Automotive Sales AI
             </h2>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              {activeTab === "login" 
-                ? "Sign in to access your account" 
+              {activeTab === "login"
+                ? "Sign in to access your account"
                 : "Create an account to get started"}
             </p>
           </div>
@@ -111,7 +111,10 @@ export default function AuthPage() {
           {activeTab === "login" ? (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="username"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Username
                 </label>
                 <Input
@@ -125,7 +128,10 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Password
                 </label>
                 <Input
@@ -140,8 +146,8 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full"
                   disabled={loginMutation.isPending}
                 >
@@ -152,7 +158,10 @@ export default function AuthPage() {
           ) : (
             <form onSubmit={handleRegisterSubmit} className="space-y-4">
               <div>
-                <label htmlFor="reg-username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="reg-username"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Username
                 </label>
                 <Input
@@ -166,7 +175,10 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <label htmlFor="reg-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="reg-password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Password
                 </label>
                 <Input
@@ -181,7 +193,10 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Email (optional)
                 </label>
                 <Input
@@ -197,12 +212,14 @@ export default function AuthPage() {
               {/* Name fields removed for simplicity */}
 
               <div>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full"
                   disabled={registerMutation.isPending}
                 >
-                  {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                  {registerMutation.isPending
+                    ? "Creating account..."
+                    : "Create Account"}
                 </Button>
               </div>
             </form>
@@ -218,25 +235,59 @@ export default function AuthPage() {
               Automotive Sales AI Platform
             </h2>
             <p className="text-white text-lg mb-8">
-              Our advanced AI platform helps automotive dealerships streamline sales processes,
-              capture leads, and improve customer engagement through intelligent conversation management.
+              Our advanced AI platform helps automotive dealerships streamline
+              sales processes, capture leads, and improve customer engagement
+              through intelligent conversation management.
             </p>
             <ul className="space-y-4">
               <li className="flex items-center text-white">
-                <svg className="h-6 w-6 mr-2 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 mr-2 text-indigo-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Advanced prompt testing and optimization
               </li>
               <li className="flex items-center text-white">
-                <svg className="h-6 w-6 mr-2 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 mr-2 text-indigo-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Customer intent analysis and lead qualification
               </li>
               <li className="flex items-center text-white">
-                <svg className="h-6 w-6 mr-2 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="h-6 w-6 mr-2 text-indigo-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Seamless integration with your existing workflows
               </li>

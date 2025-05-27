@@ -2,10 +2,10 @@
 
 /**
  * Comprehensive Environment Validation Script
- * 
+ *
  * This script validates all environment variables and configuration
  * required for the Rylie AI platform to run properly.
- * 
+ *
  * Usage:
  *   npx tsx scripts/validate-environment.ts
  *   npm run env:validate
@@ -102,9 +102,32 @@ class EnvironmentValidator {
       'REPLIT_DOMAINS',
       'TWILIO_ACCOUNT_SID',
       'TWILIO_AUTH_TOKEN',
+      'TWILIO_FROM_NUMBER',
+      'TWILIO_WEBHOOK_URL',
       'REDIS_HOST',
+      'REDIS_PORT',
+      'REDIS_PASSWORD',
       'EMAIL_SERVICE',
-      'CREDENTIALS_ENCRYPTION_KEY'
+      'EMAIL_FROM',
+      'EMAIL_MAX_RETRIES',
+      'EMAIL_RETRY_DELAY',
+      'EMAIL_MAX_DELAY',
+      'FRONTEND_URL',
+      'GMAIL_USER',
+      'GMAIL_APP_PASSWORD',
+      'SMTP_HOST',
+      'SMTP_PORT',
+      'SMTP_USER',
+      'SMTP_PASSWORD',
+      'SMTP_SECURE',
+      'EMAIL_HOST',
+      'EMAIL_PORT',
+      'EMAIL_USER',
+      'EMAIL_PASS',
+      'CREDENTIALS_ENCRYPTION_KEY',
+      'PORT',
+      'LOG_LEVEL',
+      'RENDER'
     ];
 
     const configured: string[] = [];
@@ -216,7 +239,7 @@ class EnvironmentValidator {
     // Email service configuration
     const emailService = process.env.EMAIL_SERVICE || 'sendgrid';
     const validEmailServices = ['sendgrid', 'gmail', 'smtp'];
-    
+
     if (validEmailServices.includes(emailService)) {
       this.addResult('Email Service', 'pass', `Email service set to "${emailService}"`);
     } else {
@@ -232,11 +255,11 @@ class EnvironmentValidator {
 
     try {
       const isConnected = await checkDatabaseConnection();
-      
+
       if (isConnected) {
         // Test basic query
         const result = await db.execute(sql`SELECT 1 as test`);
-        
+
         this.addResult(
           'Database Connection',
           'pass',
@@ -245,8 +268,8 @@ class EnvironmentValidator {
 
         // Check for required tables
         const tables = await db.execute(sql`
-          SELECT table_name 
-          FROM information_schema.tables 
+          SELECT table_name
+          FROM information_schema.tables
           WHERE table_schema = 'public'
         `);
 
@@ -299,10 +322,10 @@ class EnvironmentValidator {
     for (const result of this.results) {
       const icon = result.status === 'pass' ? '✅' : result.status === 'warning' ? '⚠️' : '❌';
       const color = result.status === 'pass' ? chalk.green : result.status === 'warning' ? chalk.yellow : chalk.red;
-      
+
       console.log(`\n${icon} ${chalk.bold(result.category)}`);
       console.log(`   ${color(result.message)}`);
-      
+
       if (result.details && result.details.length > 0) {
         result.details.forEach(detail => {
           console.log(`   • ${detail}`);
@@ -355,7 +378,7 @@ class EnvironmentValidator {
 // Run validation if this script is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const validator = new EnvironmentValidator();
-  
+
   validator.runAll()
     .then(() => {
       process.exit(0);

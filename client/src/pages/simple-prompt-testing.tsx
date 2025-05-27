@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Copy, Plus, Minus, AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -159,7 +172,7 @@ interface CustomerInfo {
 export default function AdvancedPromptTesting() {
   // Main tabs
   const [activeTab, setActiveTab] = useState("testing");
-  
+
   // Basic testing configuration
   const [customerMessage, setCustomerMessage] = useState("");
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
@@ -169,18 +182,18 @@ export default function AdvancedPromptTesting() {
   const [error, setError] = useState("");
   const [isHandoverLoading, setIsHandoverLoading] = useState(false);
   const [handoverDossier, setHandoverDossier] = useState<any>(null);
-  
+
   // Communication channel
   const [channel, setChannel] = useState<string>("sms");
-  
+
   // Customer info
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: "John Smith",
     conversationId: 1,
     phone: "+15555555555",
-    email: "john.smith@example.com"
+    email: "john.smith@example.com",
   });
-  
+
   // Dealership context
   const [dealershipContext, setDealershipContext] = useState({
     dealershipId: 1,
@@ -189,11 +202,13 @@ export default function AdvancedPromptTesting() {
     dealershipLocation: "123 Auto Drive, Springfield, IL",
     businessHours: "Monday-Friday 9am-8pm, Saturday 9am-6pm, Sunday Closed",
   });
-  
+
   // Conversation history
-  const [conversationHistory, setConversationHistory] = useState<{role: string, content: string}[]>([]);
+  const [conversationHistory, setConversationHistory] = useState<
+    { role: string; content: string }[]
+  >([]);
   const [includeHistory, setIncludeHistory] = useState(false);
-  
+
   // Vehicle inventory
   const [vehicles, setVehicles] = useState<Vehicle[]>([
     {
@@ -209,37 +224,44 @@ export default function AdvancedPromptTesting() {
       price: 28995,
       condition: "Used",
       description: "Well-maintained Honda Accord Sport with low mileage",
-      features: ["Bluetooth", "Backup Camera", "Lane Departure Warning", "Heated Seats"]
-    }
+      features: [
+        "Bluetooth",
+        "Backup Camera",
+        "Lane Departure Warning",
+        "Heated Seats",
+      ],
+    },
   ]);
   const [includeVehicles, setIncludeVehicles] = useState(false);
-  
+
   // Output format & options
   const [formatOptions, setFormatOptions] = useState({
     enableJsonResponse: false,
     includeVehicleRecommendations: true,
     considerHandover: true,
-    generateHandoverDossier: false
+    generateHandoverDossier: false,
   });
 
   const addHistoryItem = () => {
     setConversationHistory([
-      ...conversationHistory, 
-      {role: "customer", content: ""}
+      ...conversationHistory,
+      { role: "customer", content: "" },
     ]);
   };
 
   const removeHistoryItem = (index: number) => {
-    setConversationHistory(
-      conversationHistory.filter((_, i) => i !== index)
-    );
+    setConversationHistory(conversationHistory.filter((_, i) => i !== index));
   };
 
-  const updateHistoryItem = (index: number, value: string, fieldName: 'role' | 'content') => {
+  const updateHistoryItem = (
+    index: number,
+    value: string,
+    fieldName: "role" | "content",
+  ) => {
     const updatedHistory = [...conversationHistory];
     updatedHistory[index] = {
       ...updatedHistory[index],
-      [fieldName]: value
+      [fieldName]: value,
     };
     setConversationHistory(updatedHistory);
   };
@@ -260,24 +282,23 @@ export default function AdvancedPromptTesting() {
         price: 0,
         condition: "New",
         description: "",
-        features: []
-      }
+        features: [],
+      },
     ]);
   };
 
   const removeVehicle = (index: number) => {
-    setVehicles(
-      vehicles.filter((_, i) => i !== index)
-    );
+    setVehicles(vehicles.filter((_, i) => i !== index));
   };
 
   const updateVehicle = (index: number, field: keyof Vehicle, value: any) => {
     const updatedVehicles = [...vehicles];
     updatedVehicles[index] = {
       ...updatedVehicles[index],
-      [field]: field === 'features' && typeof value === 'string' 
-        ? value.split(',').map(f => f.trim()) 
-        : value
+      [field]:
+        field === "features" && typeof value === "string"
+          ? value.split(",").map((f) => f.trim())
+          : value,
     };
     setVehicles(updatedVehicles);
   };
@@ -286,7 +307,7 @@ export default function AdvancedPromptTesting() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+
     // Prepare the request payload
     const payload = {
       customerMessage,
@@ -296,48 +317,54 @@ export default function AdvancedPromptTesting() {
       dealershipContext,
       conversationHistory: includeHistory ? conversationHistory : [],
       relevantVehicles: includeVehicles ? vehicles : [],
-      formatOptions
+      formatOptions,
     };
-    
+
     try {
-      const result = await fetch('/api/prompt-test/test', {
-        method: 'POST',
+      const result = await fetch("/api/prompt-test/test", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
-      
+
       if (!result.ok) {
         throw new Error(`Error: ${result.status}`);
       }
-      
+
       const data = await result.json();
-      
+
       // Update conversation history with this exchange
       const newCustomerMessage = {
-        role: 'customer',
+        role: "customer",
         content: customerMessage,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      
+
       const newAssistantMessage = {
-        role: 'assistant',
+        role: "assistant",
         content: data.response,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      
+
       // Add both messages to the conversation history - keeping the existing history
-      setConversationHistory([...conversationHistory, newCustomerMessage, newAssistantMessage]);
-      
+      setConversationHistory([
+        ...conversationHistory,
+        newCustomerMessage,
+        newAssistantMessage,
+      ]);
+
       // Update the response display
       setResponse(showJson ? JSON.stringify(data, null, 2) : data.response);
-      
+
       // Clear the customer message input for the next message
-      setCustomerMessage('');
+      setCustomerMessage("");
     } catch (err) {
-      console.error('Error testing prompt:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error("Error testing prompt:", err);
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -346,106 +373,156 @@ export default function AdvancedPromptTesting() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
-  
+
   const handleHandover = async () => {
     if (conversationHistory.length === 0) {
-      setError("You need to have a conversation before generating a handover dossier.");
+      setError(
+        "You need to have a conversation before generating a handover dossier.",
+      );
       return;
     }
-    
+
     setIsHandoverLoading(true);
     setError("");
-    
+
     // Create an enhanced handover dossier with more customer information
     try {
       // Extract insights from conversation history
       const messageText = conversationHistory
-        .filter(msg => msg.role === 'customer')
-        .map(msg => msg.content)
-        .join(' ');
-      
+        .filter((msg) => msg.role === "customer")
+        .map((msg) => msg.content)
+        .join(" ");
+
       // Create potential insights based on conversation content
       const insights = [];
-      
+
       // Default budget insight
-      insights.push({ key: 'Budget', value: 'Around $30,000', confidence: 0.85 });
-      
+      insights.push({
+        key: "Budget",
+        value: "Around $30,000",
+        confidence: 0.85,
+      });
+
       // Timeline insight
-      insights.push({ key: 'Timeline', value: 'Looking to purchase within 2 weeks', confidence: 0.9 });
-      
+      insights.push({
+        key: "Timeline",
+        value: "Looking to purchase within 2 weeks",
+        confidence: 0.9,
+      });
+
       // Check for financing keywords
-      if (messageText.toLowerCase().includes('financ') || 
-          messageText.toLowerCase().includes('loan') || 
-          messageText.toLowerCase().includes('credit')) {
-        insights.push({ key: 'Financing', value: 'Interested in financing options', confidence: 0.95 });
+      if (
+        messageText.toLowerCase().includes("financ") ||
+        messageText.toLowerCase().includes("loan") ||
+        messageText.toLowerCase().includes("credit")
+      ) {
+        insights.push({
+          key: "Financing",
+          value: "Interested in financing options",
+          confidence: 0.95,
+        });
       }
-      
+
       // Check for trade-in keywords
-      if (messageText.toLowerCase().includes('trade') || 
-          messageText.toLowerCase().includes('sell my') || 
-          messageText.toLowerCase().includes('my car')) {
-        insights.push({ key: 'Trade-in', value: 'Has a vehicle to trade in', confidence: 0.9 });
+      if (
+        messageText.toLowerCase().includes("trade") ||
+        messageText.toLowerCase().includes("sell my") ||
+        messageText.toLowerCase().includes("my car")
+      ) {
+        insights.push({
+          key: "Trade-in",
+          value: "Has a vehicle to trade in",
+          confidence: 0.9,
+        });
       }
-      
+
       // Check for family keywords
-      if (messageText.toLowerCase().includes('famil') || 
-          messageText.toLowerCase().includes('kid') || 
-          messageText.toLowerCase().includes('child')) {
-        insights.push({ key: 'Family', value: 'Shopping for family vehicle', confidence: 0.8 });
+      if (
+        messageText.toLowerCase().includes("famil") ||
+        messageText.toLowerCase().includes("kid") ||
+        messageText.toLowerCase().includes("child")
+      ) {
+        insights.push({
+          key: "Family",
+          value: "Shopping for family vehicle",
+          confidence: 0.8,
+        });
       }
-      
+
       // Enhanced handover dossier
       const enhancedDossier = {
         id: Math.floor(Math.random() * 10000),
         customerName: customerInfo.name,
-        customerContact: customerInfo.email || customerInfo.phone || 'Not provided',
-        conversationSummary: "Customer has requested assistance from a human representative",
+        customerContact:
+          customerInfo.email || customerInfo.phone || "Not provided",
+        conversationSummary:
+          "Customer has requested assistance from a human representative",
         conversationStarted: new Date().toISOString(),
         conversationLength: conversationHistory.length,
         urgency: "medium",
         customerInsights: insights,
-        vehicleInterests: includeVehicles && vehicles.length > 0 ? 
-          vehicles.map(v => ({
-            make: v.make,
-            model: v.model,
-            year: v.year,
-            trim: v.trim,
-            confidence: 0.8
-          })) : 
-          [{ make: 'Honda', model: 'Accord', year: 2023, trim: 'Sport', confidence: 0.8 }],
-        escalationReason: "Customer requested human assistance via prompt testing interface",
-        suggestedApproach: "Review conversation history and focus on addressing customer's specific needs about financing options and vehicle preferences.",
+        vehicleInterests:
+          includeVehicles && vehicles.length > 0
+            ? vehicles.map((v) => ({
+                make: v.make,
+                model: v.model,
+                year: v.year,
+                trim: v.trim,
+                confidence: 0.8,
+              }))
+            : [
+                {
+                  make: "Honda",
+                  model: "Accord",
+                  year: 2023,
+                  trim: "Sport",
+                  confidence: 0.8,
+                },
+              ],
+        escalationReason:
+          "Customer requested human assistance via prompt testing interface",
+        suggestedApproach:
+          "Review conversation history and focus on addressing customer's specific needs about financing options and vehicle preferences.",
         nextSteps: [
           "Contact customer within 24 hours",
           "Prepare financing pre-approval options",
-          "Schedule test drive appointment"
+          "Schedule test drive appointment",
         ],
         handoverAgent: "System",
-        handoverTime: new Date().toISOString()
+        handoverTime: new Date().toISOString(),
       };
-      
+
       // Set the handover dossier state
       setHandoverDossier(enhancedDossier);
-      
+
       // Add a handover message to the conversation history
       setConversationHistory([
         ...conversationHistory,
-        { 
-          role: 'assistant', 
-          content: "Conversation has been escalated to a human representative. They will review your information and reach out to you shortly." 
-        }
+        {
+          role: "assistant",
+          content:
+            "Conversation has been escalated to a human representative. They will review your information and reach out to you shortly.",
+        },
       ]);
-      
+
       // Show the handover dossier details
-      setResponse(JSON.stringify({
-        success: true,
-        dossier: enhancedDossier,
-        message: 'Handover dossier created successfully'
-      }, null, 2));
+      setResponse(
+        JSON.stringify(
+          {
+            success: true,
+            dossier: enhancedDossier,
+            message: "Handover dossier created successfully",
+          },
+          null,
+          2,
+        ),
+      );
       setShowJson(true);
     } catch (err) {
-      console.error('Error generating handover:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      console.error("Error generating handover:", err);
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred",
+      );
     } finally {
       setIsHandoverLoading(false);
     }
@@ -453,12 +530,19 @@ export default function AdvancedPromptTesting() {
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Comprehensive Rylie Prompt Testing Interface</h1>
+      <h1 className="text-3xl font-bold mb-6">
+        Comprehensive Rylie Prompt Testing Interface
+      </h1>
       <p className="text-muted-foreground mb-6">
-        Test your Rylie AI prompts with full control over system context, customer details, and response options
+        Test your Rylie AI prompts with full control over system context,
+        customer details, and response options
       </p>
 
-      <Tabs defaultValue="testing" className="mb-6" onValueChange={setActiveTab}>
+      <Tabs
+        defaultValue="testing"
+        className="mb-6"
+        onValueChange={setActiveTab}
+      >
         <TabsList className="mb-4">
           <TabsTrigger value="testing">Testing</TabsTrigger>
           <TabsTrigger value="system-prompt">System Prompt</TabsTrigger>
@@ -467,7 +551,7 @@ export default function AdvancedPromptTesting() {
           <TabsTrigger value="vehicles">Vehicle Inventory</TabsTrigger>
           <TabsTrigger value="output">Output Options</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="testing" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
@@ -483,10 +567,7 @@ export default function AdvancedPromptTesting() {
                     <label className="block text-sm font-medium mb-1">
                       Communication Channel
                     </label>
-                    <Select
-                      value={channel}
-                      onValueChange={setChannel}
-                    >
+                    <Select value={channel} onValueChange={setChannel}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select channel" />
                       </SelectTrigger>
@@ -509,33 +590,45 @@ export default function AdvancedPromptTesting() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       className="flex-1"
                       onClick={handleSubmit}
                       disabled={isLoading || !customerMessage}
                     >
                       {isLoading ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Processing...
                         </>
                       ) : (
                         "Test Prompt"
                       )}
                     </Button>
-                    
-                    <Button 
+
+                    <Button
                       type="button"
                       variant="secondary"
                       className="flex items-center gap-1"
                       onClick={handleHandover}
-                      disabled={isHandoverLoading || conversationHistory.length === 0}
+                      disabled={
+                        isHandoverLoading || conversationHistory.length === 0
+                      }
                     >
                       {isHandoverLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                         </svg>
                       )}
@@ -558,7 +651,7 @@ export default function AdvancedPromptTesting() {
                   </CardDescription>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch 
+                  <Switch
                     id="json-format"
                     checked={showJson}
                     onCheckedChange={setShowJson}
@@ -590,12 +683,17 @@ export default function AdvancedPromptTesting() {
                   // Show only the customer-facing message
                   <div className="space-y-6">
                     <div className="bg-primary/10 rounded-md p-4 border-l-4 border-primary">
-                      <h3 className="font-medium mb-2">Customer-Facing Message:</h3>
+                      <h3 className="font-medium mb-2">
+                        Customer-Facing Message:
+                      </h3>
                       <div className="whitespace-pre-line">
                         {(() => {
                           try {
                             const parsedResponse = JSON.parse(response);
-                            return parsedResponse.answer || "No customer message found in response";
+                            return (
+                              parsedResponse.answer ||
+                              "No customer message found in response"
+                            );
                           } catch (e) {
                             // If not valid JSON, show the raw response
                             return response;
@@ -618,182 +716,284 @@ export default function AdvancedPromptTesting() {
                         <Copy className="h-3 w-3 mr-1" /> Copy Message
                       </Button>
                     </div>
-                    
+
                     {handoverDossier && (
                       <div className="bg-amber-50 dark:bg-amber-950/30 rounded-md p-4 border-l-4 border-amber-400 dark:border-amber-600 mb-4">
-                        <h3 className="font-medium mb-2 text-amber-800 dark:text-amber-200">Lead Handover Dossier:</h3>
+                        <h3 className="font-medium mb-2 text-amber-800 dark:text-amber-200">
+                          Lead Handover Dossier:
+                        </h3>
                         <div className="space-y-2 text-sm">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                               <p className="font-semibold">Customer Name:</p>
-                              <p>{handoverDossier.customerName || 'Unknown'}</p>
+                              <p>{handoverDossier.customerName || "Unknown"}</p>
                             </div>
                             <div>
                               <p className="font-semibold">Contact:</p>
-                              <p>{handoverDossier.customerContact || 'Not provided'}</p>
-                            </div>
-                            <div>
-                              <p className="font-semibold">Urgency:</p>
-                              <p className={`capitalize ${
-                                handoverDossier.urgency === 'high' ? 'text-red-600 dark:text-red-400 font-medium' : 
-                                handoverDossier.urgency === 'medium' ? 'text-amber-600 dark:text-amber-400' : 
-                                'text-green-600 dark:text-green-400'
-                              }`}>
-                                {handoverDossier.urgency || 'Low'}
+                              <p>
+                                {handoverDossier.customerContact ||
+                                  "Not provided"}
                               </p>
                             </div>
                             <div>
-                              <p className="font-semibold">Escalation Reason:</p>
-                              <p>{handoverDossier.escalationReason || 'Not specified'}</p>
+                              <p className="font-semibold">Urgency:</p>
+                              <p
+                                className={`capitalize ${
+                                  handoverDossier.urgency === "high"
+                                    ? "text-red-600 dark:text-red-400 font-medium"
+                                    : handoverDossier.urgency === "medium"
+                                      ? "text-amber-600 dark:text-amber-400"
+                                      : "text-green-600 dark:text-green-400"
+                                }`}
+                              >
+                                {handoverDossier.urgency || "Low"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="font-semibold">
+                                Escalation Reason:
+                              </p>
+                              <p>
+                                {handoverDossier.escalationReason ||
+                                  "Not specified"}
+                              </p>
                             </div>
                           </div>
-                          
+
                           <div className="mt-4 bg-amber-50 dark:bg-amber-950 border-l-4 border-amber-500 p-3 rounded-md">
-                            <p className="font-semibold text-amber-800 dark:text-amber-300">Conversation Summary:</p>
-                            <p className="text-muted-foreground mt-1">{handoverDossier.conversationSummary}</p>
-                            
+                            <p className="font-semibold text-amber-800 dark:text-amber-300">
+                              Conversation Summary:
+                            </p>
+                            <p className="text-muted-foreground mt-1">
+                              {handoverDossier.conversationSummary}
+                            </p>
+
                             {handoverDossier.conversationStarted && (
                               <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
-                                <span>Started: {new Date(handoverDossier.conversationStarted).toLocaleString()}</span>
+                                <span>
+                                  Started:{" "}
+                                  {new Date(
+                                    handoverDossier.conversationStarted,
+                                  ).toLocaleString()}
+                                </span>
                                 <span>•</span>
-                                <span>Messages: {handoverDossier.conversationLength || conversationHistory.length}</span>
+                                <span>
+                                  Messages:{" "}
+                                  {handoverDossier.conversationLength ||
+                                    conversationHistory.length}
+                                </span>
                               </div>
                             )}
                           </div>
-                          
-                          {handoverDossier.customerInsights && handoverDossier.customerInsights.length > 0 && (
-                            <div className="mt-4">
-                              <p className="font-semibold text-lg mb-2">Customer Insights:</p>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
-                                {handoverDossier.customerInsights.map((insight, idx) => (
-                                  <div key={idx} className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-100 dark:border-gray-700">
-                                    <div className="flex justify-between items-center">
-                                      <span className="font-medium text-gray-700 dark:text-gray-300">{insight.key}</span>
-                                      <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                                        {Math.round(insight.confidence * 100)}% confidence
-                                      </span>
-                                    </div>
-                                    <p className="mt-1 text-gray-900 dark:text-gray-100">{insight.value}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {handoverDossier.vehicleInterests && handoverDossier.vehicleInterests.length > 0 && (
-                            <div className="mt-4">
-                              <p className="font-semibold text-lg mb-2">Vehicle Interests:</p>
-                              <div className="space-y-3 mt-2">
-                                {handoverDossier.vehicleInterests.map((vehicle, idx) => (
-                                  <div key={idx} className="bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-100 dark:border-gray-700 p-3">
-                                    {vehicle.year && vehicle.make && vehicle.model ? (
-                                      <div className="flex justify-between items-center">
-                                        <h4 className="font-medium text-gray-900 dark:text-gray-100 text-lg">
-                                          {vehicle.year} {vehicle.make} {vehicle.model} {vehicle.trim || ''}
-                                        </h4>
-                                        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
-                                          {Math.round(vehicle.confidence * 100)}% match
-                                        </span>
+
+                          {handoverDossier.customerInsights &&
+                            handoverDossier.customerInsights.length > 0 && (
+                              <div className="mt-4">
+                                <p className="font-semibold text-lg mb-2">
+                                  Customer Insights:
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+                                  {handoverDossier.customerInsights.map(
+                                    (insight, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-100 dark:border-gray-700"
+                                      >
+                                        <div className="flex justify-between items-center">
+                                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                                            {insight.key}
+                                          </span>
+                                          <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                                            {Math.round(
+                                              insight.confidence * 100,
+                                            )}
+                                            % confidence
+                                          </span>
+                                        </div>
+                                        <p className="mt-1 text-gray-900 dark:text-gray-100">
+                                          {insight.value}
+                                        </p>
                                       </div>
-                                    ) : (
-                                      <p className="font-medium text-red-600 dark:text-red-400">Vehicle details incomplete</p>
-                                    )}
-                                    
-                                    {vehicle.vin && (
-                                      <div className="mt-2 border border-dashed border-gray-200 dark:border-gray-700 rounded px-3 py-2 bg-gray-50 dark:bg-gray-900">
-                                        <p className="font-mono text-sm">VIN: {vehicle.vin}</p>
-                                      </div>
-                                    )}
-                                    
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                      {vehicle.exteriorColor && (
-                                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded-full">
-                                          Exterior: {vehicle.exteriorColor}
-                                        </span>
-                                      )}
-                                      {vehicle.interiorColor && (
-                                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded-full">
-                                          Interior: {vehicle.interiorColor}
-                                        </span>
-                                      )}
-                                      {vehicle.mileage && (
-                                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded-full">
-                                          {vehicle.mileage.toLocaleString()} miles
-                                        </span>
-                                      )}
-                                      {vehicle.price && (
-                                        <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
-                                          ${vehicle.price.toLocaleString()}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
+                                    ),
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                          
+                            )}
+
+                          {handoverDossier.vehicleInterests &&
+                            handoverDossier.vehicleInterests.length > 0 && (
+                              <div className="mt-4">
+                                <p className="font-semibold text-lg mb-2">
+                                  Vehicle Interests:
+                                </p>
+                                <div className="space-y-3 mt-2">
+                                  {handoverDossier.vehicleInterests.map(
+                                    (vehicle, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-100 dark:border-gray-700 p-3"
+                                      >
+                                        {vehicle.year &&
+                                        vehicle.make &&
+                                        vehicle.model ? (
+                                          <div className="flex justify-between items-center">
+                                            <h4 className="font-medium text-gray-900 dark:text-gray-100 text-lg">
+                                              {vehicle.year} {vehicle.make}{" "}
+                                              {vehicle.model}{" "}
+                                              {vehicle.trim || ""}
+                                            </h4>
+                                            <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
+                                              {Math.round(
+                                                vehicle.confidence * 100,
+                                              )}
+                                              % match
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <p className="font-medium text-red-600 dark:text-red-400">
+                                            Vehicle details incomplete
+                                          </p>
+                                        )}
+
+                                        {vehicle.vin && (
+                                          <div className="mt-2 border border-dashed border-gray-200 dark:border-gray-700 rounded px-3 py-2 bg-gray-50 dark:bg-gray-900">
+                                            <p className="font-mono text-sm">
+                                              VIN: {vehicle.vin}
+                                            </p>
+                                          </div>
+                                        )}
+
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                          {vehicle.exteriorColor && (
+                                            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded-full">
+                                              Exterior: {vehicle.exteriorColor}
+                                            </span>
+                                          )}
+                                          {vehicle.interiorColor && (
+                                            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded-full">
+                                              Interior: {vehicle.interiorColor}
+                                            </span>
+                                          )}
+                                          {vehicle.mileage && (
+                                            <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded-full">
+                                              {vehicle.mileage.toLocaleString()}{" "}
+                                              miles
+                                            </span>
+                                          )}
+                                          {vehicle.price && (
+                                            <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
+                                              ${vehicle.price.toLocaleString()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
                           {/* Next Steps Section */}
                           <div className="mt-4">
                             <div className="flex items-center gap-2 mb-2">
-                              <p className="font-semibold text-lg">Next Steps:</p>
+                              <p className="font-semibold text-lg">
+                                Next Steps:
+                              </p>
                               {handoverDossier.urgency && (
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                  handoverDossier.urgency === 'high' 
-                                    ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' 
-                                    : handoverDossier.urgency === 'medium'
-                                    ? 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200'
-                                    : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                                }`}>
-                                  {handoverDossier.urgency.charAt(0).toUpperCase() + handoverDossier.urgency.slice(1)} Urgency
+                                <span
+                                  className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                    handoverDossier.urgency === "high"
+                                      ? "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
+                                      : handoverDossier.urgency === "medium"
+                                        ? "bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200"
+                                        : "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                                  }`}
+                                >
+                                  {handoverDossier.urgency
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                    handoverDossier.urgency.slice(1)}{" "}
+                                  Urgency
                                 </span>
                               )}
                             </div>
-                            
+
                             {/* Display Suggested Approach */}
                             {handoverDossier.suggestedApproach && (
                               <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-100 dark:border-gray-700 mb-3">
-                                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Suggested Approach:</h4>
-                                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{handoverDossier.suggestedApproach}</p>
+                                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                                  Suggested Approach:
+                                </h4>
+                                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                                  {handoverDossier.suggestedApproach}
+                                </p>
                               </div>
                             )}
-                            
+
                             {/* Display Next Steps as a checklist */}
-                            {handoverDossier.nextSteps && handoverDossier.nextSteps.length > 0 && (
-                              <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-100 dark:border-gray-700">
-                                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Action Items:</h4>
-                                <ul className="space-y-2">
-                                  {handoverDossier.nextSteps.map((item, idx) => (
-                                    <li key={`next-${idx}`} className="flex items-start gap-2">
-                                      <div className="mt-1 h-5 w-5 flex-shrink-0 rounded border border-gray-300 dark:border-gray-600"></div>
-                                      <span className="text-gray-700 dark:text-gray-300">{item}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            
+                            {handoverDossier.nextSteps &&
+                              handoverDossier.nextSteps.length > 0 && (
+                                <div className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-100 dark:border-gray-700">
+                                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                                    Action Items:
+                                  </h4>
+                                  <ul className="space-y-2">
+                                    {handoverDossier.nextSteps.map(
+                                      (item, idx) => (
+                                        <li
+                                          key={`next-${idx}`}
+                                          className="flex items-start gap-2"
+                                        >
+                                          <div className="mt-1 h-5 w-5 flex-shrink-0 rounded border border-gray-300 dark:border-gray-600"></div>
+                                          <span className="text-gray-700 dark:text-gray-300">
+                                            {item}
+                                          </span>
+                                        </li>
+                                      ),
+                                    )}
+                                  </ul>
+                                </div>
+                              )}
+
                             {/* Display other action items if available */}
-                            {handoverDossier.actionItems && handoverDossier.actionItems.length > 0 && (
-                              <div className="mt-3 bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-100 dark:border-gray-700">
-                                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Additional Action Items:</h4>
-                                <ul className="space-y-2">
-                                  {handoverDossier.actionItems.map((item, idx) => (
-                                    <li key={`action-${idx}`} className="flex items-start gap-2">
-                                      <div className="mt-1 h-5 w-5 flex-shrink-0 rounded border border-gray-300 dark:border-gray-600"></div>
-                                      <span className="text-gray-700 dark:text-gray-300">{item}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            
+                            {handoverDossier.actionItems &&
+                              handoverDossier.actionItems.length > 0 && (
+                                <div className="mt-3 bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-100 dark:border-gray-700">
+                                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                                    Additional Action Items:
+                                  </h4>
+                                  <ul className="space-y-2">
+                                    {handoverDossier.actionItems.map(
+                                      (item, idx) => (
+                                        <li
+                                          key={`action-${idx}`}
+                                          className="flex items-start gap-2"
+                                        >
+                                          <div className="mt-1 h-5 w-5 flex-shrink-0 rounded border border-gray-300 dark:border-gray-600"></div>
+                                          <span className="text-gray-700 dark:text-gray-300">
+                                            {item}
+                                          </span>
+                                        </li>
+                                      ),
+                                    )}
+                                  </ul>
+                                </div>
+                              )}
+
                             {/* Handover Agent Information */}
                             {handoverDossier.handoverAgent && (
                               <div className="mt-3 text-xs text-right text-muted-foreground">
-                                <p>Handover created by: {handoverDossier.handoverAgent}</p>
+                                <p>
+                                  Handover created by:{" "}
+                                  {handoverDossier.handoverAgent}
+                                </p>
                                 {handoverDossier.handoverTime && (
-                                  <p>Time: {new Date(handoverDossier.handoverTime).toLocaleString()}</p>
+                                  <p>
+                                    Time:{" "}
+                                    {new Date(
+                                      handoverDossier.handoverTime,
+                                    ).toLocaleString()}
+                                  </p>
                                 )}
                               </div>
                             )}
@@ -801,7 +1001,7 @@ export default function AdvancedPromptTesting() {
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="rounded-md p-4 border border-muted">
                       <h3 className="font-medium mb-2">Response Analysis:</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -810,28 +1010,56 @@ export default function AdvancedPromptTesting() {
                             const parsedResponse = JSON.parse(response);
                             // Create a concise summary of the response analysis
                             const analysisFields = [
-                              { label: "Customer Name", value: parsedResponse.name },
-                              { label: "Query", value: parsedResponse.user_query },
-                              { label: "Analysis", value: parsedResponse.analysis },
+                              {
+                                label: "Customer Name",
+                                value: parsedResponse.name,
+                              },
+                              {
+                                label: "Query",
+                                value: parsedResponse.user_query,
+                              },
+                              {
+                                label: "Analysis",
+                                value: parsedResponse.analysis,
+                              },
                               { label: "Channel", value: parsedResponse.type },
-                              { label: "Insights", value: parsedResponse.quick_insights },
-                              { label: "Sales Readiness", value: parsedResponse.sales_readiness },
-                              { label: "Handover Needed", value: parsedResponse.reply_required ? "Yes" : "No" }
+                              {
+                                label: "Insights",
+                                value: parsedResponse.quick_insights,
+                              },
+                              {
+                                label: "Sales Readiness",
+                                value: parsedResponse.sales_readiness,
+                              },
+                              {
+                                label: "Handover Needed",
+                                value: parsedResponse.reply_required
+                                  ? "Yes"
+                                  : "No",
+                              },
                             ];
-                            
+
                             return analysisFields.map((field, index) => (
                               <div key={index} className="text-sm">
-                                <span className="font-medium">{field.label}:</span>{" "}
-                                <span className="text-muted-foreground">{field.value || "N/A"}</span>
+                                <span className="font-medium">
+                                  {field.label}:
+                                </span>{" "}
+                                <span className="text-muted-foreground">
+                                  {field.value || "N/A"}
+                                </span>
                               </div>
                             ));
                           } catch (e) {
-                            return <div className="text-muted-foreground">Could not parse response analysis</div>;
+                            return (
+                              <div className="text-muted-foreground">
+                                Could not parse response analysis
+                              </div>
+                            );
                           }
                         })()}
                       </div>
                     </div>
-                    
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -846,14 +1074,15 @@ export default function AdvancedPromptTesting() {
               {response && (
                 <CardFooter>
                   <div className="text-xs text-muted-foreground">
-                    To refine your response, adjust the configuration in the different tabs.
+                    To refine your response, adjust the configuration in the
+                    different tabs.
                   </div>
                 </CardFooter>
               )}
             </Card>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="system-prompt">
           <Card>
             <CardHeader>
@@ -871,8 +1100,8 @@ export default function AdvancedPromptTesting() {
               />
             </CardContent>
             <CardFooter>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setSystemPrompt(DEFAULT_SYSTEM_PROMPT)}
               >
                 Reset to Default
@@ -880,7 +1109,7 @@ export default function AdvancedPromptTesting() {
             </CardFooter>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="context">
           <Card>
             <CardHeader>
@@ -892,113 +1121,137 @@ export default function AdvancedPromptTesting() {
             <CardContent>
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-medium mb-4">Dealership Information</h3>
+                  <h3 className="text-lg font-medium mb-4">
+                    Dealership Information
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="dealershipId">Dealership ID</Label>
-                      <Input 
+                      <Input
                         id="dealershipId"
                         type="number"
                         value={dealershipContext.dealershipId}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          dealershipId: parseInt(e.target.value)
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            dealershipId: parseInt(e.target.value),
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="dealershipName">Dealership Name</Label>
-                      <Input 
+                      <Input
                         id="dealershipName"
                         value={dealershipContext.dealershipName}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          dealershipName: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            dealershipName: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="brandTypes">Brand Types</Label>
-                      <Input 
+                      <Input
                         id="brandTypes"
                         value={dealershipContext.brandTypes}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          brandTypes: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            brandTypes: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="dealershipLocation">Location</Label>
-                      <Input 
+                      <Input
                         id="dealershipLocation"
                         value={dealershipContext.dealershipLocation}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          dealershipLocation: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            dealershipLocation: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="businessHours">Business Hours</Label>
-                      <Input 
+                      <Input
                         id="businessHours"
                         value={dealershipContext.businessHours}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          businessHours: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            businessHours: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
-                  <h3 className="text-lg font-medium mb-4">Customer Information</h3>
+                  <h3 className="text-lg font-medium mb-4">
+                    Customer Information
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="customerName">Customer Name</Label>
-                      <Input 
+                      <Input
                         id="customerName"
                         value={customerInfo.name}
-                        onChange={(e) => setCustomerInfo({
-                          ...customerInfo,
-                          name: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setCustomerInfo({
+                            ...customerInfo,
+                            name: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="conversationId">Conversation ID</Label>
-                      <Input 
+                      <Input
                         id="conversationId"
                         type="number"
                         value={customerInfo.conversationId}
-                        onChange={(e) => setCustomerInfo({
-                          ...customerInfo,
-                          conversationId: e.target.value ? parseInt(e.target.value) : undefined
-                        })}
+                        onChange={(e) =>
+                          setCustomerInfo({
+                            ...customerInfo,
+                            conversationId: e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="customerPhone">Phone Number</Label>
-                      <Input 
+                      <Input
                         id="customerPhone"
                         value={customerInfo.phone}
-                        onChange={(e) => setCustomerInfo({
-                          ...customerInfo,
-                          phone: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setCustomerInfo({
+                            ...customerInfo,
+                            phone: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="customerEmail">Email</Label>
-                      <Input 
+                      <Input
                         id="customerEmail"
                         value={customerInfo.email}
-                        onChange={(e) => setCustomerInfo({
-                          ...customerInfo,
-                          email: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setCustomerInfo({
+                            ...customerInfo,
+                            email: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -1007,14 +1260,14 @@ export default function AdvancedPromptTesting() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="conversation">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Conversation History</span>
                 <div className="flex items-center space-x-2">
-                  <Switch 
+                  <Switch
                     id="include-history"
                     checked={includeHistory}
                     onCheckedChange={setIncludeHistory}
@@ -1029,12 +1282,17 @@ export default function AdvancedPromptTesting() {
             <CardContent>
               <div className="space-y-4">
                 {conversationHistory.map((item, index) => (
-                  <div key={index} className="flex gap-4 items-start border p-4 rounded-md">
+                  <div
+                    key={index}
+                    className="flex gap-4 items-start border p-4 rounded-md"
+                  >
                     <div className="flex-1 space-y-2">
                       <div className="flex gap-2">
                         <Select
                           value={item.role}
-                          onValueChange={(value) => updateHistoryItem(index, value, 'role')}
+                          onValueChange={(value) =>
+                            updateHistoryItem(index, value, "role")
+                          }
                         >
                           <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Select role" />
@@ -1047,13 +1305,15 @@ export default function AdvancedPromptTesting() {
                       </div>
                       <Textarea
                         value={item.content}
-                        onChange={(e) => updateHistoryItem(index, e.target.value, 'content')}
+                        onChange={(e) =>
+                          updateHistoryItem(index, e.target.value, "content")
+                        }
                         placeholder={`Enter ${item.role} message...`}
                         className="min-h-[100px]"
                       />
                     </div>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="icon"
                       onClick={() => removeHistoryItem(index)}
                     >
@@ -1061,9 +1321,9 @@ export default function AdvancedPromptTesting() {
                     </Button>
                   </div>
                 ))}
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   onClick={addHistoryItem}
                   className="w-full"
                 >
@@ -1074,14 +1334,14 @@ export default function AdvancedPromptTesting() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="vehicles">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Vehicle Inventory</span>
                 <div className="flex items-center space-x-2">
-                  <Switch 
+                  <Switch
                     id="include-vehicles"
                     checked={includeVehicles}
                     onCheckedChange={setIncludeVehicles}
@@ -1098,63 +1358,81 @@ export default function AdvancedPromptTesting() {
                 {vehicles.map((vehicle, index) => (
                   <div key={index} className="border p-4 rounded-md space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-medium">Vehicle #{index + 1}</h3>
-                      <Button 
-                        variant="ghost" 
+                      <h3 className="text-lg font-medium">
+                        Vehicle #{index + 1}
+                      </h3>
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => removeVehicle(index)}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor={`vin-${index}`}>VIN</Label>
-                        <Input 
+                        <Input
                           id={`vin-${index}`}
                           value={vehicle.vin}
-                          onChange={(e) => updateVehicle(index, 'vin', e.target.value)}
+                          onChange={(e) =>
+                            updateVehicle(index, "vin", e.target.value)
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`make-${index}`}>Make</Label>
-                        <Input 
+                        <Input
                           id={`make-${index}`}
                           value={vehicle.make}
-                          onChange={(e) => updateVehicle(index, 'make', e.target.value)}
+                          onChange={(e) =>
+                            updateVehicle(index, "make", e.target.value)
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`model-${index}`}>Model</Label>
-                        <Input 
+                        <Input
                           id={`model-${index}`}
                           value={vehicle.model}
-                          onChange={(e) => updateVehicle(index, 'model', e.target.value)}
+                          onChange={(e) =>
+                            updateVehicle(index, "model", e.target.value)
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`year-${index}`}>Year</Label>
-                        <Input 
+                        <Input
                           id={`year-${index}`}
                           type="number"
                           value={vehicle.year}
-                          onChange={(e) => updateVehicle(index, 'year', parseInt(e.target.value))}
+                          onChange={(e) =>
+                            updateVehicle(
+                              index,
+                              "year",
+                              parseInt(e.target.value),
+                            )
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`trim-${index}`}>Trim</Label>
-                        <Input 
+                        <Input
                           id={`trim-${index}`}
                           value={vehicle.trim}
-                          onChange={(e) => updateVehicle(index, 'trim', e.target.value)}
+                          onChange={(e) =>
+                            updateVehicle(index, "trim", e.target.value)
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`condition-${index}`}>Condition</Label>
                         <Select
                           value={vehicle.condition}
-                          onValueChange={(value) => updateVehicle(index, 'condition', value)}
+                          onValueChange={(value) =>
+                            updateVehicle(index, "condition", value)
+                          }
                         >
                           <SelectTrigger id={`condition-${index}`}>
                             <SelectValue placeholder="Select condition" />
@@ -1162,66 +1440,104 @@ export default function AdvancedPromptTesting() {
                           <SelectContent>
                             <SelectItem value="New">New</SelectItem>
                             <SelectItem value="Used">Used</SelectItem>
-                            <SelectItem value="Certified Pre-Owned">Certified Pre-Owned</SelectItem>
+                            <SelectItem value="Certified Pre-Owned">
+                              Certified Pre-Owned
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`exteriorColor-${index}`}>Exterior Color</Label>
-                        <Input 
+                        <Label htmlFor={`exteriorColor-${index}`}>
+                          Exterior Color
+                        </Label>
+                        <Input
                           id={`exteriorColor-${index}`}
                           value={vehicle.exteriorColor}
-                          onChange={(e) => updateVehicle(index, 'exteriorColor', e.target.value)}
+                          onChange={(e) =>
+                            updateVehicle(
+                              index,
+                              "exteriorColor",
+                              e.target.value,
+                            )
+                          }
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`interiorColor-${index}`}>Interior Color</Label>
-                        <Input 
+                        <Label htmlFor={`interiorColor-${index}`}>
+                          Interior Color
+                        </Label>
+                        <Input
                           id={`interiorColor-${index}`}
                           value={vehicle.interiorColor}
-                          onChange={(e) => updateVehicle(index, 'interiorColor', e.target.value)}
+                          onChange={(e) =>
+                            updateVehicle(
+                              index,
+                              "interiorColor",
+                              e.target.value,
+                            )
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`mileage-${index}`}>Mileage</Label>
-                        <Input 
+                        <Input
                           id={`mileage-${index}`}
                           type="number"
                           value={vehicle.mileage}
-                          onChange={(e) => updateVehicle(index, 'mileage', parseInt(e.target.value))}
+                          onChange={(e) =>
+                            updateVehicle(
+                              index,
+                              "mileage",
+                              parseInt(e.target.value),
+                            )
+                          }
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor={`price-${index}`}>Price</Label>
-                        <Input 
+                        <Input
                           id={`price-${index}`}
                           type="number"
                           value={vehicle.price}
-                          onChange={(e) => updateVehicle(index, 'price', parseInt(e.target.value))}
+                          onChange={(e) =>
+                            updateVehicle(
+                              index,
+                              "price",
+                              parseInt(e.target.value),
+                            )
+                          }
                         />
                       </div>
                       <div className="space-y-2 md:col-span-3">
-                        <Label htmlFor={`description-${index}`}>Description</Label>
-                        <Textarea 
+                        <Label htmlFor={`description-${index}`}>
+                          Description
+                        </Label>
+                        <Textarea
                           id={`description-${index}`}
                           value={vehicle.description}
-                          onChange={(e) => updateVehicle(index, 'description', e.target.value)}
+                          onChange={(e) =>
+                            updateVehicle(index, "description", e.target.value)
+                          }
                         />
                       </div>
                       <div className="space-y-2 md:col-span-3">
-                        <Label htmlFor={`features-${index}`}>Features (comma-separated)</Label>
-                        <Textarea 
+                        <Label htmlFor={`features-${index}`}>
+                          Features (comma-separated)
+                        </Label>
+                        <Textarea
                           id={`features-${index}`}
-                          value={vehicle.features.join(', ')}
-                          onChange={(e) => updateVehicle(index, 'features', e.target.value)}
+                          value={vehicle.features.join(", ")}
+                          onChange={(e) =>
+                            updateVehicle(index, "features", e.target.value)
+                          }
                         />
                       </div>
                     </div>
                   </div>
                 ))}
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   onClick={addVehicle}
                   className="w-full"
                 >
@@ -1232,82 +1548,101 @@ export default function AdvancedPromptTesting() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="output">
           <Card>
             <CardHeader>
               <CardTitle>Output Options</CardTitle>
               <CardDescription>
-                Configure how responses are formatted and what content to include
+                Configure how responses are formatted and what content to
+                include
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="enableJsonResponse">Enable JSON Response Format</Label>
+                    <Label htmlFor="enableJsonResponse">
+                      Enable JSON Response Format
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Return responses in structured JSON format
                     </p>
                   </div>
-                  <Switch 
+                  <Switch
                     id="enableJsonResponse"
                     checked={formatOptions.enableJsonResponse}
-                    onCheckedChange={(value) => setFormatOptions({
-                      ...formatOptions,
-                      enableJsonResponse: value
-                    })}
+                    onCheckedChange={(value) =>
+                      setFormatOptions({
+                        ...formatOptions,
+                        enableJsonResponse: value,
+                      })
+                    }
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="includeVehicleRecommendations">Include Vehicle Recommendations</Label>
+                    <Label htmlFor="includeVehicleRecommendations">
+                      Include Vehicle Recommendations
+                    </Label>
                     <p className="text-sm text-muted-foreground">
-                      Include vehicle recommendations in response when appropriate
+                      Include vehicle recommendations in response when
+                      appropriate
                     </p>
                   </div>
-                  <Switch 
+                  <Switch
                     id="includeVehicleRecommendations"
                     checked={formatOptions.includeVehicleRecommendations}
-                    onCheckedChange={(value) => setFormatOptions({
-                      ...formatOptions,
-                      includeVehicleRecommendations: value
-                    })}
+                    onCheckedChange={(value) =>
+                      setFormatOptions({
+                        ...formatOptions,
+                        includeVehicleRecommendations: value,
+                      })
+                    }
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="considerHandover">Consider Handover Detection</Label>
+                    <Label htmlFor="considerHandover">
+                      Consider Handover Detection
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Enable detection of scenarios requiring human handover
                     </p>
                   </div>
-                  <Switch 
+                  <Switch
                     id="considerHandover"
                     checked={formatOptions.considerHandover}
-                    onCheckedChange={(value) => setFormatOptions({
-                      ...formatOptions,
-                      considerHandover: value
-                    })}
+                    onCheckedChange={(value) =>
+                      setFormatOptions({
+                        ...formatOptions,
+                        considerHandover: value,
+                      })
+                    }
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="generateHandoverDossier">Generate Handover Dossier</Label>
+                    <Label htmlFor="generateHandoverDossier">
+                      Generate Handover Dossier
+                    </Label>
                     <p className="text-sm text-muted-foreground">
-                      Generate detailed handover dossier for human representatives
+                      Generate detailed handover dossier for human
+                      representatives
                     </p>
                   </div>
-                  <Switch 
+                  <Switch
                     id="generateHandoverDossier"
                     checked={formatOptions.generateHandoverDossier}
-                    onCheckedChange={(value) => setFormatOptions({
-                      ...formatOptions,
-                      generateHandoverDossier: value
-                    })}
+                    onCheckedChange={(value) =>
+                      setFormatOptions({
+                        ...formatOptions,
+                        generateHandoverDossier: value,
+                      })
+                    }
                   />
                 </div>
               </div>

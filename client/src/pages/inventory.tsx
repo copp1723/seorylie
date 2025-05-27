@@ -97,9 +97,9 @@ export default function Inventory() {
       vehicle.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
       vehicle.vin.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = showActive ? vehicle.isActive : true;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -153,7 +153,9 @@ export default function Inventory() {
               <div className="relative w-11 h-6 bg-neutral-200 rounded-full peer peer-checked:bg-primary">
                 <div className="absolute w-4 h-4 bg-white rounded-full left-1 top-1 peer-checked:left-6 transition-all"></div>
               </div>
-              <span className="ml-3 text-sm font-medium">Show active vehicles only</span>
+              <span className="ml-3 text-sm font-medium">
+                Show active vehicles only
+              </span>
             </label>
           </div>
         </div>
@@ -161,7 +163,10 @@ export default function Inventory() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredVehicles.map((vehicle) => (
-          <Card key={vehicle.id} className="overflow-hidden shadow hover:shadow-md transition-shadow">
+          <Card
+            key={vehicle.id}
+            className="overflow-hidden shadow hover:shadow-md transition-shadow"
+          >
             <div className="h-40 bg-neutral-200 relative">
               <div className="absolute top-2 right-2">
                 {!vehicle.isActive && (

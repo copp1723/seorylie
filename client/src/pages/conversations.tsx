@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import ConversationTable, { Conversation } from "@/components/conversation-table";
+import ConversationTable, {
+  Conversation,
+} from "@/components/conversation-table";
 
 export default function Conversations() {
   const [conversationFilter, setConversationFilter] = useState("all");
@@ -92,23 +94,26 @@ export default function Conversations() {
   ];
 
   // Filter conversations based on status and dealership
-  const filteredConversations = sampleConversations.filter(
-    (conversation) => {
-      const matchesStatus =
-        conversationFilter === "all" || conversation.status === conversationFilter;
-      const matchesDealership =
-        dealershipFilter === "all" ||
-        conversation.dealershipName
-          .toLowerCase()
-          .includes(dealershipFilter.toLowerCase());
-      const matchesSearch =
-        searchQuery === "" ||
-        conversation.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        conversation.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredConversations = sampleConversations.filter((conversation) => {
+    const matchesStatus =
+      conversationFilter === "all" ||
+      conversation.status === conversationFilter;
+    const matchesDealership =
+      dealershipFilter === "all" ||
+      conversation.dealershipName
+        .toLowerCase()
+        .includes(dealershipFilter.toLowerCase());
+    const matchesSearch =
+      searchQuery === "" ||
+      conversation.customerName
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      conversation.lastMessage
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
 
-      return matchesStatus && matchesDealership && matchesSearch;
-    }
-  );
+    return matchesStatus && matchesDealership && matchesSearch;
+  });
 
   const handleViewConversation = (id: number) => {
     // Navigate to conversation details page

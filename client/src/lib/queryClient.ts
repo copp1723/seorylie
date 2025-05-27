@@ -1,58 +1,63 @@
 // API request interfaces and functions
 export interface ApiRequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: any;
   headers?: Record<string, string>;
 }
 
 export const apiRequest = async <T>(
-  endpoint: string, 
-  options: ApiRequestOptions = {}
+  endpoint: string,
+  options: ApiRequestOptions = {},
 ): Promise<T> => {
-  const { method = 'GET', body, headers = {} } = options;
-  
+  const { method = "GET", body, headers = {} } = options;
+
   // Ensure endpoint starts with /
-  const url = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  
+  const url = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
   const requestOptions: RequestInit = {
     method,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...headers,
     },
-    credentials: 'include', // Important for session cookies
+    credentials: "include", // Important for session cookies
   };
 
   // Only add body for methods that support it
-  if (body && (method === 'POST' || method === 'PUT')) {
+  if (body && (method === "POST" || method === "PUT")) {
     requestOptions.body = JSON.stringify(body);
   }
 
   try {
     const response = await fetch(url, requestOptions);
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+      );
     }
 
     return await response.json();
   } catch (error) {
-    console.error('API Request failed:', { endpoint, options, error });
+    console.error("API Request failed:", { endpoint, options, error });
     throw error;
   }
 };
 
 // Specific API functions for prompt testing
 export const promptLibraryApi = {
-  testPrompt: async (data: { prompt: string; variables?: Record<string, string> }) => {
+  testPrompt: async (data: {
+    prompt: string;
+    variables?: Record<string, string>;
+  }) => {
     return apiRequest<{
       success: boolean;
       processedPrompt: string;
       aiResponse: string;
       timestamp: string;
-    }>('/api/prompt-library/test', {
-      method: 'POST',
+    }>("/api/prompt-library/test", {
+      method: "POST",
       body: data,
     });
   },
@@ -67,9 +72,9 @@ export const promptLibraryApi = {
         variables: Record<string, any>;
         created_at: string;
       }>;
-    }>('/api/prompt-library/history');
+    }>("/api/prompt-library/history");
   },
-  
+
   getSystemPrompts: async () => {
     return apiRequest<{
       prompts: Array<{
@@ -81,38 +86,44 @@ export const promptLibraryApi = {
         category: string;
         is_active: boolean;
       }>;
-    }>('/api/prompt-library/system-prompts');
-  }
+    }>("/api/prompt-library/system-prompts");
+  },
 };
 
 // Auth-related API functions
 export const authApi = {
   login: async (username: string, password: string) => {
-    return apiRequest<{ message: string; user: { id: number; username: string } }>('/api/login', {
-      method: 'POST',
+    return apiRequest<{
+      message: string;
+      user: { id: number; username: string };
+    }>("/api/login", {
+      method: "POST",
       body: { username, password },
     });
   },
 
   register: async (username: string, password: string) => {
-    return apiRequest<{ message: string; user: { id: number; username: string } }>('/api/register', {
-      method: 'POST',
+    return apiRequest<{
+      message: string;
+      user: { id: number; username: string };
+    }>("/api/register", {
+      method: "POST",
       body: { username, password },
     });
   },
 
   logout: async () => {
-    return apiRequest<{ message: string }>('/api/logout', {
-      method: 'POST',
+    return apiRequest<{ message: string }>("/api/logout", {
+      method: "POST",
     });
   },
 
   getUser: async () => {
-    return apiRequest<any>('/api/user');
+    return apiRequest<any>("/api/user");
   },
 };
 
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from "@tanstack/react-query";
 
 // Create a QueryClient instance with default configuration
 export const queryClient = new QueryClient({

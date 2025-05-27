@@ -112,16 +112,16 @@ export default function Settings() {
   const toggleApiKeyStatus = (id: number) => {
     setApiKeys(
       apiKeys.map((key) =>
-        key.id === id ? { ...key, isActive: !key.isActive } : key
-      )
+        key.id === id ? { ...key, isActive: !key.isActive } : key,
+      ),
     );
   };
 
   const toggleUserStatus = (id: number) => {
     setUsers(
       users.map((user) =>
-        user.id === id ? { ...user, isActive: !user.isActive } : user
-      )
+        user.id === id ? { ...user, isActive: !user.isActive } : user,
+      ),
     );
   };
 
@@ -131,7 +131,11 @@ export default function Settings() {
         <h1 className="text-2xl font-medium">Settings</h1>
       </div>
 
-      <Tabs defaultValue="general" onValueChange={setActiveTab} className="w-full">
+      <Tabs
+        defaultValue="general"
+        onValueChange={setActiveTab}
+        className="w-full"
+      >
         <TabsList className="bg-white shadow mb-6 p-1 rounded-lg">
           <TabsTrigger value="general" className="rounded-md px-4 py-2">
             <span className="material-icons mr-2 text-sm">settings</span>
@@ -168,7 +172,8 @@ export default function Settings() {
                       Automatic Escalation
                     </Label>
                     <p className="text-sm text-neutral-500">
-                      Automatically escalate conversations based on keywords and confidence scores
+                      Automatically escalate conversations based on keywords and
+                      confidence scores
                     </p>
                   </div>
                   <Switch
@@ -182,7 +187,10 @@ export default function Settings() {
 
                 {settings.enableAutoEscalation && (
                   <div className="ml-6 pt-2">
-                    <Label htmlFor="escalation-threshold" className="mb-2 block">
+                    <Label
+                      htmlFor="escalation-threshold"
+                      className="mb-2 block"
+                    >
                       Escalation Threshold (Lower is more sensitive)
                     </Label>
                     <div className="flex items-center gap-4">
@@ -195,7 +203,7 @@ export default function Settings() {
                         onChange={(e) =>
                           handleSettingChange(
                             "autoEscalationThreshold",
-                            parseInt(e.target.value)
+                            parseInt(e.target.value),
                           )
                         }
                         className="w-24"
@@ -214,8 +222,8 @@ export default function Settings() {
                         {settings.autoEscalationThreshold <= 3
                           ? "Sensitive"
                           : settings.autoEscalationThreshold <= 7
-                          ? "Balanced"
-                          : "Tolerant"}
+                            ? "Balanced"
+                            : "Tolerant"}
                       </span>
                     </div>
                   </div>
@@ -239,7 +247,7 @@ export default function Settings() {
                     onChange={(e) =>
                       handleSettingChange(
                         "defaultResponseTime",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value),
                       )
                     }
                     className="w-48"
@@ -334,7 +342,9 @@ export default function Settings() {
                             onClick={() => toggleApiKeyStatus(apiKey.id)}
                             className="p-1 text-neutral-500 rounded hover:bg-neutral-100"
                             title={
-                              apiKey.isActive ? "Deactivate Key" : "Activate Key"
+                              apiKey.isActive
+                                ? "Deactivate Key"
+                                : "Activate Key"
                             }
                           >
                             <span className="material-icons text-sm">
@@ -370,8 +380,8 @@ export default function Settings() {
                 <span className="material-icons text-sm mr-1 text-warning">
                   warning
                 </span>
-                API keys provide full access to your account. Keep them secure and
-                never share them in public repositories or client-side code.
+                API keys provide full access to your account. Keep them secure
+                and never share them in public repositories or client-side code.
               </p>
             </div>
           </Card>
@@ -430,8 +440,8 @@ export default function Settings() {
                             user.role === "Administrator"
                               ? "bg-primary/10 text-primary"
                               : user.role === "Manager"
-                              ? "bg-success/10 text-success"
-                              : "bg-neutral-100 text-neutral-800"
+                                ? "bg-success/10 text-success"
+                                : "bg-neutral-100 text-neutral-800"
                           }`}
                         >
                           {user.role}
@@ -450,9 +460,7 @@ export default function Settings() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex space-x-2">
-                          <button
-                            className="p-1 text-neutral-500 rounded hover:bg-neutral-100"
-                          >
+                          <button className="p-1 text-neutral-500 rounded hover:bg-neutral-100">
                             <span className="material-icons text-sm">edit</span>
                           </button>
                           <button
@@ -489,11 +497,15 @@ export default function Settings() {
                 <h3 className="text-md font-medium">Email Notifications</h3>
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label htmlFor="email-notifications" className="font-medium">
+                    <Label
+                      htmlFor="email-notifications"
+                      className="font-medium"
+                    >
                       Enable Email Notifications
                     </Label>
                     <p className="text-sm text-neutral-500">
-                      Receive email notifications for escalations and system alerts
+                      Receive email notifications for escalations and system
+                      alerts
                     </p>
                   </div>
                   <Switch
@@ -576,8 +588,8 @@ export default function Settings() {
                       Enable SMS Notifications
                     </Label>
                     <p className="text-sm text-neutral-500">
-                      Receive SMS alerts for urgent escalations and critical system
-                      issues
+                      Receive SMS alerts for urgent escalations and critical
+                      system issues
                     </p>
                   </div>
                   <Switch
@@ -600,8 +612,8 @@ export default function Settings() {
                       className="w-64"
                     />
                     <p className="mt-2 text-xs text-neutral-500">
-                      Standard SMS rates may apply. SMS notifications will only be
-                      sent for critical alerts.
+                      Standard SMS rates may apply. SMS notifications will only
+                      be sent for critical alerts.
                     </p>
                   </div>
                 )}
@@ -637,7 +649,7 @@ export default function Settings() {
                     onChange={(e) =>
                       handleSettingChange(
                         "logRetentionDays",
-                        parseInt(e.target.value)
+                        parseInt(e.target.value),
                       )
                     }
                     className="w-48"
@@ -672,18 +684,50 @@ export default function Settings() {
               <div className="space-y-4">
                 <h3 className="text-md font-medium">System Logs</h3>
                 <div className="bg-neutral-900 text-neutral-100 rounded-md p-4 h-64 overflow-y-auto font-mono text-xs">
-                  <div className="text-neutral-400">[2023-06-15 10:30:45] [INFO] Server started on port 8000</div>
-                  <div className="text-neutral-400">[2023-06-15 10:31:12] [INFO] Connected to database</div>
-                  <div className="text-success-400">[2023-06-15 10:32:05] [SUCCESS] API Key ryk_f8a72e1b... authenticated</div>
-                  <div className="text-neutral-400">[2023-06-15 10:32:08] [INFO] Received inbound message from customer Sarah Miller</div>
-                  <div className="text-neutral-400">[2023-06-15 10:32:09] [INFO] Generated response in 0.89s</div>
-                  <div className="text-neutral-400">[2023-06-15 10:35:22] [INFO] Received inbound message from customer Michael Chang</div>
-                  <div className="text-warning-400">[2023-06-15 10:35:24] [WARN] Response time exceeded target: 1.45s</div>
-                  <div className="text-error-400">[2023-06-15 10:40:15] [ERROR] Failed to process message: OpenAI API timeout</div>
-                  <div className="text-neutral-400">[2023-06-15 10:40:18] [INFO] Conversation escalated to human support</div>
-                  <div className="text-neutral-400">[2023-06-15 10:45:30] [INFO] Received inbound message from customer Jessica Williams</div>
-                  <div className="text-neutral-400">[2023-06-15 10:45:31] [INFO] Generated response in 0.76s</div>
-                  <div className="text-success-400">[2023-06-15 11:00:00] [SUCCESS] Scheduled maintenance tasks completed</div>
+                  <div className="text-neutral-400">
+                    [2023-06-15 10:30:45] [INFO] Server started on port 8000
+                  </div>
+                  <div className="text-neutral-400">
+                    [2023-06-15 10:31:12] [INFO] Connected to database
+                  </div>
+                  <div className="text-success-400">
+                    [2023-06-15 10:32:05] [SUCCESS] API Key ryk_f8a72e1b...
+                    authenticated
+                  </div>
+                  <div className="text-neutral-400">
+                    [2023-06-15 10:32:08] [INFO] Received inbound message from
+                    customer Sarah Miller
+                  </div>
+                  <div className="text-neutral-400">
+                    [2023-06-15 10:32:09] [INFO] Generated response in 0.89s
+                  </div>
+                  <div className="text-neutral-400">
+                    [2023-06-15 10:35:22] [INFO] Received inbound message from
+                    customer Michael Chang
+                  </div>
+                  <div className="text-warning-400">
+                    [2023-06-15 10:35:24] [WARN] Response time exceeded target:
+                    1.45s
+                  </div>
+                  <div className="text-error-400">
+                    [2023-06-15 10:40:15] [ERROR] Failed to process message:
+                    OpenAI API timeout
+                  </div>
+                  <div className="text-neutral-400">
+                    [2023-06-15 10:40:18] [INFO] Conversation escalated to human
+                    support
+                  </div>
+                  <div className="text-neutral-400">
+                    [2023-06-15 10:45:30] [INFO] Received inbound message from
+                    customer Jessica Williams
+                  </div>
+                  <div className="text-neutral-400">
+                    [2023-06-15 10:45:31] [INFO] Generated response in 0.76s
+                  </div>
+                  <div className="text-success-400">
+                    [2023-06-15 11:00:00] [SUCCESS] Scheduled maintenance tasks
+                    completed
+                  </div>
                 </div>
                 <div className="flex justify-end space-x-3">
                   <Button variant="outline" size="sm" className="text-xs">
@@ -691,7 +735,9 @@ export default function Settings() {
                     Refresh
                   </Button>
                   <Button variant="outline" size="sm" className="text-xs">
-                    <span className="material-icons text-xs mr-1">download</span>
+                    <span className="material-icons text-xs mr-1">
+                      download
+                    </span>
                     Download Logs
                   </Button>
                 </div>

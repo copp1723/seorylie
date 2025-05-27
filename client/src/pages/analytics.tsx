@@ -1,7 +1,19 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   LineChart,
   Line,
@@ -15,7 +27,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend
+  Legend,
 } from "recharts";
 
 // Sample data - in a real application, this would come from an API
@@ -26,7 +38,7 @@ const conversationData = [
   { name: "Thu", count: 22, handovers: 7 },
   { name: "Fri", count: 25, handovers: 8 },
   { name: "Sat", count: 18, handovers: 6 },
-  { name: "Sun", count: 10, handovers: 2 }
+  { name: "Sun", count: 10, handovers: 2 },
 ];
 
 const responseTimeData = [
@@ -35,7 +47,7 @@ const responseTimeData = [
   { name: "08-12", avgTime: 3.5 },
   { name: "12-16", avgTime: 3.2 },
   { name: "16-20", avgTime: 2.9 },
-  { name: "20-24", avgTime: 2.3 }
+  { name: "20-24", avgTime: 2.3 },
 ];
 
 const intentData = [
@@ -44,17 +56,24 @@ const intentData = [
   { name: "Trade-In", value: 15 },
   { name: "Financing", value: 12 },
   { name: "Test Drive", value: 8 },
-  { name: "Other", value: 5 }
+  { name: "Other", value: 5 },
 ];
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'];
+const COLORS = [
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#8884D8",
+  "#82ca9d",
+];
 
 const handoverReasonsData = [
   { name: "Complex pricing", value: 32 },
   { name: "Specific vehicle details", value: 28 },
   { name: "Financing options", value: 21 },
   { name: "Trade-in valuation", value: 15 },
-  { name: "Test drive scheduling", value: 4 }
+  { name: "Test drive scheduling", value: 4 },
 ];
 
 const customerSatisfactionData = [
@@ -62,7 +81,7 @@ const customerSatisfactionData = [
   { name: "Satisfied", value: 30 },
   { name: "Neutral", value: 15 },
   { name: "Unsatisfied", value: 7 },
-  { name: "Very Unsatisfied", value: 3 }
+  { name: "Very Unsatisfied", value: 3 },
 ];
 
 export default function AnalyticsPage() {
@@ -72,8 +91,12 @@ export default function AnalyticsPage() {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-semibold text-gray-900 mb-2">Analytics Dashboard</h1>
-          <p className="text-gray-600">View insights and performance metrics for your dealership</p>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+            Analytics Dashboard
+          </h1>
+          <p className="text-gray-600">
+            View insights and performance metrics for your dealership
+          </p>
         </div>
         <div className="flex items-center space-x-3">
           <span className="text-sm text-gray-600">Time Range:</span>
@@ -95,7 +118,9 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Total Conversations</CardTitle>
+            <CardTitle className="text-lg font-medium">
+              Total Conversations
+            </CardTitle>
             <CardDescription>Last 7 days</CardDescription>
           </CardHeader>
           <CardContent>
@@ -121,7 +146,9 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Avg. Response Time</CardTitle>
+            <CardTitle className="text-lg font-medium">
+              Avg. Response Time
+            </CardTitle>
             <CardDescription>Time to generate AI response</CardDescription>
           </CardHeader>
           <CardContent>
@@ -168,7 +195,11 @@ export default function AnalyticsPage() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="count" name="Total Conversations" fill="#8884d8" />
+                  <Bar
+                    dataKey="count"
+                    name="Total Conversations"
+                    fill="#8884d8"
+                  />
                   <Bar dataKey="handovers" name="Handovers" fill="#82ca9d" />
                 </BarChart>
               </ResponsiveContainer>
@@ -226,13 +257,20 @@ export default function AnalyticsPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) =>
+                        `${name} ${(percent * 100).toFixed(0)}%`
+                      }
                     >
                       {intentData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                    <Tooltip
+                      formatter={(value) => [`${value}%`, "Percentage"]}
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -242,9 +280,7 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Top Customer Questions</CardTitle>
-                <CardDescription>
-                  Most common customer queries
-                </CardDescription>
+                <CardDescription>Most common customer queries</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -252,7 +288,10 @@ export default function AnalyticsPage() {
                     <span>Pricing information</span>
                     <div className="flex items-center">
                       <div className="w-32 h-2 bg-gray-200 rounded-full mr-2">
-                        <div className="h-2 bg-blue-500 rounded-full" style={{ width: '68%' }} />
+                        <div
+                          className="h-2 bg-blue-500 rounded-full"
+                          style={{ width: "68%" }}
+                        />
                       </div>
                       <span className="text-sm">68%</span>
                     </div>
@@ -261,7 +300,10 @@ export default function AnalyticsPage() {
                     <span>Vehicle availability</span>
                     <div className="flex items-center">
                       <div className="w-32 h-2 bg-gray-200 rounded-full mr-2">
-                        <div className="h-2 bg-blue-500 rounded-full" style={{ width: '55%' }} />
+                        <div
+                          className="h-2 bg-blue-500 rounded-full"
+                          style={{ width: "55%" }}
+                        />
                       </div>
                       <span className="text-sm">55%</span>
                     </div>
@@ -270,7 +312,10 @@ export default function AnalyticsPage() {
                     <span>Trade-in value</span>
                     <div className="flex items-center">
                       <div className="w-32 h-2 bg-gray-200 rounded-full mr-2">
-                        <div className="h-2 bg-blue-500 rounded-full" style={{ width: '42%' }} />
+                        <div
+                          className="h-2 bg-blue-500 rounded-full"
+                          style={{ width: "42%" }}
+                        />
                       </div>
                       <span className="text-sm">42%</span>
                     </div>
@@ -279,7 +324,10 @@ export default function AnalyticsPage() {
                     <span>Vehicle features</span>
                     <div className="flex items-center">
                       <div className="w-32 h-2 bg-gray-200 rounded-full mr-2">
-                        <div className="h-2 bg-blue-500 rounded-full" style={{ width: '38%' }} />
+                        <div
+                          className="h-2 bg-blue-500 rounded-full"
+                          style={{ width: "38%" }}
+                        />
                       </div>
                       <span className="text-sm">38%</span>
                     </div>
@@ -288,7 +336,10 @@ export default function AnalyticsPage() {
                     <span>Financing options</span>
                     <div className="flex items-center">
                       <div className="w-32 h-2 bg-gray-200 rounded-full mr-2">
-                        <div className="h-2 bg-blue-500 rounded-full" style={{ width: '29%' }} />
+                        <div
+                          className="h-2 bg-blue-500 rounded-full"
+                          style={{ width: "29%" }}
+                        />
                       </div>
                       <span className="text-sm">29%</span>
                     </div>
@@ -319,13 +370,20 @@ export default function AnalyticsPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) =>
+                        `${name} ${(percent * 100).toFixed(0)}%`
+                      }
                     >
                       {handoverReasonsData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                    <Tooltip
+                      formatter={(value) => [`${value}%`, "Percentage"]}
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -347,13 +405,26 @@ export default function AnalyticsPage() {
                       { message: "3-4", count: 25 },
                       { message: "5-6", count: 35 },
                       { message: "7-8", count: 18 },
-                      { message: "9+", count: 12 }
+                      { message: "9+", count: 12 },
                     ]}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="message" label={{ value: 'Message Number', position: 'insideBottom', offset: -5 }} />
-                    <YAxis label={{ value: 'Handovers', angle: -90, position: 'insideLeft' }} />
+                    <XAxis
+                      dataKey="message"
+                      label={{
+                        value: "Message Number",
+                        position: "insideBottom",
+                        offset: -5,
+                      }}
+                    />
+                    <YAxis
+                      label={{
+                        value: "Handovers",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
                     <Tooltip />
                     <Bar dataKey="count" name="Handovers" fill="#8884d8" />
                   </BarChart>
@@ -383,13 +454,20 @@ export default function AnalyticsPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) =>
+                        `${name} ${(percent * 100).toFixed(0)}%`
+                      }
                     >
                       {customerSatisfactionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+                    <Tooltip
+                      formatter={(value) => [`${value}%`, "Percentage"]}
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -407,13 +485,28 @@ export default function AnalyticsPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={[
-                      { name: "Day 1", positive: 65, negative: 12, neutral: 23 },
-                      { name: "Day 2", positive: 68, negative: 10, neutral: 22 },
-                      { name: "Day 3", positive: 60, negative: 15, neutral: 25 },
+                      {
+                        name: "Day 1",
+                        positive: 65,
+                        negative: 12,
+                        neutral: 23,
+                      },
+                      {
+                        name: "Day 2",
+                        positive: 68,
+                        negative: 10,
+                        neutral: 22,
+                      },
+                      {
+                        name: "Day 3",
+                        positive: 60,
+                        negative: 15,
+                        neutral: 25,
+                      },
                       { name: "Day 4", positive: 72, negative: 8, neutral: 20 },
                       { name: "Day 5", positive: 70, negative: 9, neutral: 21 },
                       { name: "Day 6", positive: 75, negative: 7, neutral: 18 },
-                      { name: "Day 7", positive: 78, negative: 6, neutral: 16 }
+                      { name: "Day 7", positive: 78, negative: 6, neutral: 16 },
                     ]}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
@@ -429,8 +522,18 @@ export default function AnalyticsPage() {
                       stroke="#4caf50"
                       activeDot={{ r: 8 }}
                     />
-                    <Line type="monotone" dataKey="neutral" name="Neutral" stroke="#ff9800" />
-                    <Line type="monotone" dataKey="negative" name="Negative" stroke="#f44336" />
+                    <Line
+                      type="monotone"
+                      dataKey="neutral"
+                      name="Neutral"
+                      stroke="#ff9800"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="negative"
+                      name="Negative"
+                      stroke="#f44336"
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>

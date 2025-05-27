@@ -41,8 +41,12 @@ export default function PersonaChart({ data }: PersonaChartProps) {
           {data.map((item: PersonaData) => (
             <div key={item.name} className="mb-1">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm font-medium text-neutral-700">{item.name}</span>
-                <span className="text-xs font-medium text-neutral-500">{item.percentage}</span>
+                <span className="text-sm font-medium text-neutral-700">
+                  {item.name}
+                </span>
+                <span className="text-xs font-medium text-neutral-500">
+                  {item.percentage}
+                </span>
               </div>
               <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                 <div

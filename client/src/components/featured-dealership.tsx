@@ -20,12 +20,13 @@ export default function FeaturedDealership({
     <Card className="bg-white shadow card">
       <div className="relative h-32 rounded-t-lg">
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-t-lg"></div>
-        <div 
+        <div
           className="absolute inset-0 rounded-t-lg bg-primary/30"
           style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1606016891133-ec5f2ddcaca4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=150')",
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1606016891133-ec5f2ddcaca4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=150')",
             backgroundSize: "cover",
-            backgroundPosition: "center"
+            backgroundPosition: "center",
           }}
         ></div>
         <div className="absolute bottom-0 left-0 p-4">

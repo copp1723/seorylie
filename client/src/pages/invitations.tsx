@@ -1,16 +1,30 @@
-import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, RefreshCw, Search, Plus, Mail } from 'lucide-react';
-import { queryClient } from '@/lib/queryClient';
-import PageHeading from '@/components/page-heading';
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, RefreshCw, Search, Plus, Mail } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
+import PageHeading from "@/components/page-heading";
 
 interface Invitation {
   id: number;
@@ -30,56 +44,52 @@ interface Dealership {
 }
 
 export default function InvitationsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   // Fetch invitations
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['/api/magic-link/invitations'],
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["/api/magic-link/invitations"],
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 
   // Mutation for resending an invitation
   const resendMutation = useMutation({
     mutationFn: async (invitationId: number) => {
-      const response = await fetch('/api/magic-link/resend', {
-        method: 'POST',
+      const response = await fetch("/api/magic-link/resend", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ invitationId }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to resend invitation');
+        throw new Error(errorData.message || "Failed to resend invitation");
       }
 
       return await response.json();
     },
     onSuccess: () => {
       toast({
-        title: 'Invitation Resent',
-        description: 'The magic link invitation has been resent successfully.',
-        variant: 'default',
+        title: "Invitation Resent",
+        description: "The magic link invitation has been resent successfully.",
+        variant: "default",
       });
-      
+
       // Invalidate the query to refresh the data
-      queryClient.invalidateQueries({ queryKey: ['/api/magic-link/invitations'] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/magic-link/invitations"],
+      });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Failed to Resend Invitation',
-        description: error.message || 'Please try again later.',
-        variant: 'destructive',
+        title: "Failed to Resend Invitation",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
       });
     },
   });
@@ -88,7 +98,7 @@ export default function InvitationsPage() {
     try {
       await resendMutation.mutateAsync(invitationId);
     } catch (error) {
-      console.error('Failed to resend invitation:', error);
+      console.error("Failed to resend invitation:", error);
     }
   };
 
@@ -99,15 +109,17 @@ export default function InvitationsPage() {
   };
 
   // Filter invitations based on search query
-  const filteredInvitations = data?.invitations?.filter((invitation: Invitation) => {
-    if (!searchQuery) return true;
-    
-    const query = searchQuery.toLowerCase();
-    return (
-      invitation.email.toLowerCase().includes(query) ||
-      invitation.role.toLowerCase().includes(query)
-    );
-  });
+  const filteredInvitations = data?.invitations?.filter(
+    (invitation: Invitation) => {
+      if (!searchQuery) return true;
+
+      const query = searchQuery.toLowerCase();
+      return (
+        invitation.email.toLowerCase().includes(query) ||
+        invitation.role.toLowerCase().includes(query)
+      );
+    },
+  );
 
   // Check if invitation is expired
   const isExpired = (expiresAt: string) => {
@@ -116,12 +128,12 @@ export default function InvitationsPage() {
 
   // Get dealership name by ID
   const getDealershipName = (dealershipId?: number) => {
-    if (!dealershipId) return 'N/A';
-    
+    if (!dealershipId) return "N/A";
+
     const dealership = data?.dealerships?.find(
-      (d: Dealership) => d.id === dealershipId
+      (d: Dealership) => d.id === dealershipId,
     );
-    
+
     return dealership ? dealership.name : `Dealership #${dealershipId}`;
   };
 
@@ -129,8 +141,8 @@ export default function InvitationsPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
-        <PageHeading 
-          title="Magic Link Invitations" 
+        <PageHeading
+          title="Magic Link Invitations"
           description="Manage email invitations for platform access"
         />
         <div className="flex justify-center items-center mt-20">
@@ -145,20 +157,24 @@ export default function InvitationsPage() {
   if (isError) {
     return (
       <div className="container mx-auto py-8">
-        <PageHeading 
-          title="Magic Link Invitations" 
+        <PageHeading
+          title="Magic Link Invitations"
           description="Manage email invitations for platform access"
         />
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle className="text-destructive">Error Loading Invitations</CardTitle>
+            <CardTitle className="text-destructive">
+              Error Loading Invitations
+            </CardTitle>
             <CardDescription>
               An error occurred while loading the invitations.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {error instanceof Error ? error.message : 'Unknown error occurred'}
+              {error instanceof Error
+                ? error.message
+                : "Unknown error occurred"}
             </p>
             <Button onClick={() => refetch()} className="mt-4">
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -173,8 +189,8 @@ export default function InvitationsPage() {
   // Render main content
   return (
     <div className="container mx-auto py-8">
-      <PageHeading 
-        title="Magic Link Invitations" 
+      <PageHeading
+        title="Magic Link Invitations"
         description="Manage email invitations for platform access"
       />
 
@@ -190,17 +206,15 @@ export default function InvitationsPage() {
           />
         </div>
         <div className="flex space-x-2 w-full sm:w-auto">
-          <Button 
-            onClick={() => refetch()} 
+          <Button
+            onClick={() => refetch()}
             variant="outline"
             disabled={isLoading}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-          <Button 
-            onClick={() => setLocation('/magic-link')}
-          >
+          <Button onClick={() => setLocation("/magic-link")}>
             <Plus className="mr-2 h-4 w-4" />
             New Invitation
           </Button>
@@ -213,9 +227,8 @@ export default function InvitationsPage() {
           <Table>
             <TableCaption>
               {filteredInvitations?.length
-                ? `Showing ${filteredInvitations.length} invitation${filteredInvitations.length === 1 ? '' : 's'}`
-                : 'No invitations found'
-              }
+                ? `Showing ${filteredInvitations.length} invitation${filteredInvitations.length === 1 ? "" : "s"}`
+                : "No invitations found"}
             </TableCaption>
             <TableHeader>
               <TableRow>
@@ -234,7 +247,11 @@ export default function InvitationsPage() {
                   <TableRow key={inv.id}>
                     <TableCell className="font-medium">{inv.email}</TableCell>
                     <TableCell>
-                      <Badge variant={inv.role === 'admin' ? 'destructive' : 'outline'}>
+                      <Badge
+                        variant={
+                          inv.role === "admin" ? "destructive" : "outline"
+                        }
+                      >
                         {inv.role}
                       </Badge>
                     </TableCell>
@@ -256,7 +273,11 @@ export default function InvitationsPage() {
                         size="sm"
                         onClick={() => handleResend(inv.id)}
                         disabled={inv.used || resendMutation.isPending}
-                        title={inv.used ? 'Invitation already used' : 'Resend invitation'}
+                        title={
+                          inv.used
+                            ? "Invitation already used"
+                            : "Resend invitation"
+                        }
                       >
                         {resendMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -270,11 +291,13 @@ export default function InvitationsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center h-24 text-muted-foreground"
+                  >
                     {searchQuery
-                      ? 'No invitations match your search'
-                      : 'No invitations found. Create your first invitation!'
-                    }
+                      ? "No invitations match your search"
+                      : "No invitations found. Create your first invitation!"}
                   </TableCell>
                 </TableRow>
               )}

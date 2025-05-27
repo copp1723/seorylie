@@ -1,16 +1,22 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { 
-  Bot, 
-  User, 
-  Settings, 
-  TestTube, 
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Bot,
+  User,
+  Settings,
+  TestTube,
   Send,
   Phone,
   Mail,
@@ -18,16 +24,16 @@ import {
   Circle,
   AlertCircle,
   CheckCircle,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 
 interface ChatMessage {
   id: string;
   conversationId: number;
   senderId: number;
-  senderType: 'agent' | 'customer';
+  senderType: "agent" | "customer";
   content: string;
-  messageType: 'text' | 'image' | 'file';
+  messageType: "text" | "image" | "file";
   timestamp: Date;
   metadata?: any;
 }
@@ -39,8 +45,8 @@ interface WebSocketMessage {
 
 const ChatTestPage: React.FC = () => {
   // Test configuration state
-  const [mode, setMode] = useState<'rylie_ai' | 'direct_agent'>('direct_agent');
-  const [userType, setUserType] = useState<'agent' | 'customer'>('customer');
+  const [mode, setMode] = useState<"rylie_ai" | "direct_agent">("direct_agent");
+  const [userType, setUserType] = useState<"agent" | "customer">("customer");
   const [dealershipId] = useState(1);
   const [conversationId] = useState(1);
 
@@ -49,13 +55,13 @@ const ChatTestPage: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionId, setConnectionId] = useState<string | null>(null);
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
-  
+
   // Chat state
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
-  
+
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const reconnectAttempts = useRef(0);
@@ -63,9 +69,9 @@ const ChatTestPage: React.FC = () => {
   const reconnectInterval = 3000;
 
   const customerInfo = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567'
+    name: "John Doe",
+    email: "john.doe@example.com",
+    phone: "+1 (555) 123-4567",
   };
 
   // WebSocket connection management
@@ -75,14 +81,14 @@ const ChatTestPage: React.FC = () => {
     }
 
     setIsConnecting(true);
-    
+
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/ws`;
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
+        console.log("WebSocket connected");
         setIsConnected(true);
         setIsConnecting(false);
         reconnectAttempts.current = 0;
@@ -90,24 +96,32 @@ const ChatTestPage: React.FC = () => {
       };
 
       wsRef.current.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
+        console.log("WebSocket disconnected:", event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
         setConnectionId(null);
 
         // Attempt to reconnect if not a clean close
-        if (event.code !== 1000 && reconnectAttempts.current < maxReconnectAttempts) {
+        if (
+          event.code !== 1000 &&
+          reconnectAttempts.current < maxReconnectAttempts
+        ) {
           reconnectAttempts.current++;
-          console.log(`Attempting to reconnect... (${reconnectAttempts.current}/${maxReconnectAttempts})`);
-          
-          setTimeout(() => {
-            connect();
-          }, reconnectInterval * Math.pow(2, reconnectAttempts.current - 1));
+          console.log(
+            `Attempting to reconnect... (${reconnectAttempts.current}/${maxReconnectAttempts})`,
+          );
+
+          setTimeout(
+            () => {
+              connect();
+            },
+            reconnectInterval * Math.pow(2, reconnectAttempts.current - 1),
+          );
         }
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error("WebSocket error:", error);
         setIsConnecting(false);
       };
 
@@ -117,12 +131,11 @@ const ChatTestPage: React.FC = () => {
           setLastActivity(new Date());
           handleIncomingMessage(data);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error("Error parsing WebSocket message:", error);
         }
       };
-
     } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
+      console.error("Error creating WebSocket connection:", error);
       setIsConnecting(false);
     }
   }, []);
@@ -132,45 +145,53 @@ const ChatTestPage: React.FC = () => {
       wsRef.current.send(JSON.stringify(message));
       setLastActivity(new Date());
     } else {
-      console.warn('WebSocket is not connected. Message not sent:', message);
+      console.warn("WebSocket is not connected. Message not sent:", message);
     }
   }, []);
 
   const handleIncomingMessage = (data: WebSocketMessage) => {
     switch (data.type) {
-      case 'connection_established':
+      case "connection_established":
         setConnectionId(data.connectionId);
-        console.log('Connection established with ID:', data.connectionId);
+        console.log("Connection established with ID:", data.connectionId);
         break;
 
-      case 'authenticated':
-        console.log('User authenticated:', data.userType);
+      case "authenticated":
+        console.log("User authenticated:", data.userType);
         break;
 
-      case 'joined_conversation':
-        console.log('Joined conversation:', data.conversationId);
+      case "joined_conversation":
+        console.log("Joined conversation:", data.conversationId);
         if (data.recentMessages && Array.isArray(data.recentMessages)) {
-          setMessages(data.recentMessages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          })));
+          setMessages(
+            data.recentMessages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            })),
+          );
         }
         break;
 
-      case 'new_message':
+      case "new_message":
         if (data.message) {
-          setMessages(prev => [...prev, {
-            ...data.message,
-            timestamp: new Date(data.message.timestamp)
-          }]);
+          setMessages((prev) => [
+            ...prev,
+            {
+              ...data.message,
+              timestamp: new Date(data.message.timestamp),
+            },
+          ]);
         }
         break;
 
-      case 'typing_indicator':
-        if (data.isTyping && data.userId !== (userType === 'customer' ? 999 : 1)) {
-          setTypingUsers(prev => new Set([...prev, data.userId]));
+      case "typing_indicator":
+        if (
+          data.isTyping &&
+          data.userId !== (userType === "customer" ? 999 : 1)
+        ) {
+          setTypingUsers((prev) => new Set([...prev, data.userId]));
         } else {
-          setTypingUsers(prev => {
+          setTypingUsers((prev) => {
             const newSet = new Set(prev);
             newSet.delete(data.userId);
             return newSet;
@@ -178,30 +199,30 @@ const ChatTestPage: React.FC = () => {
         }
         break;
 
-      case 'user_joined':
-        console.log('User joined:', data.userId, data.userType);
+      case "user_joined":
+        console.log("User joined:", data.userId, data.userType);
         break;
 
-      case 'user_left':
-        console.log('User left:', data.userId, data.userType);
+      case "user_left":
+        console.log("User left:", data.userId, data.userType);
         break;
 
-      case 'error':
-        console.error('WebSocket error:', data.error);
+      case "error":
+        console.error("WebSocket error:", data.error);
         break;
 
-      case 'pong':
+      case "pong":
         // Handle ping/pong for connection health
         break;
 
       default:
-        console.log('Unknown message type:', data.type, data);
+        console.log("Unknown message type:", data.type, data);
     }
   };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Connect on mount
@@ -210,7 +231,7 @@ const ChatTestPage: React.FC = () => {
 
     return () => {
       if (wsRef.current) {
-        wsRef.current.close(1000, 'Component unmounted');
+        wsRef.current.close(1000, "Component unmounted");
       }
     };
   }, [connect]);
@@ -220,29 +241,36 @@ const ChatTestPage: React.FC = () => {
     if (isConnected && connectionId) {
       // Authenticate
       sendMessage({
-        type: 'authenticate',
-        token: 'demo-token',
-        userId: userType === 'customer' ? 999 : 1,
+        type: "authenticate",
+        token: "demo-token",
+        userId: userType === "customer" ? 999 : 1,
         dealershipId,
-        userType
+        userType,
       });
 
       // Join conversation
       setTimeout(() => {
         sendMessage({
-          type: 'join_conversation',
-          conversationId
+          type: "join_conversation",
+          conversationId,
         });
       }, 100);
     }
-  }, [isConnected, connectionId, dealershipId, conversationId, userType, sendMessage]);
+  }, [
+    isConnected,
+    connectionId,
+    dealershipId,
+    conversationId,
+    userType,
+    sendMessage,
+  ]);
 
   // Send periodic pings to keep connection alive
   useEffect(() => {
     if (!isConnected) return;
 
     const pingInterval = setInterval(() => {
-      sendMessage({ type: 'ping' });
+      sendMessage({ type: "ping" });
     }, 30000);
 
     return () => clearInterval(pingInterval);
@@ -252,30 +280,30 @@ const ChatTestPage: React.FC = () => {
     if (!message.trim() || !isConnected) return;
 
     const messageData = {
-      type: 'send_message',
+      type: "send_message",
       content: message.trim(),
-      messageType: 'text',
+      messageType: "text",
       metadata: {
         customerInfo,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     };
 
     sendMessage(messageData);
-    setMessage('');
+    setMessage("");
 
     // Stop typing indicator
     if (isTyping) {
       sendMessage({
-        type: 'typing',
-        isTyping: false
+        type: "typing",
+        isTyping: false,
       });
       setIsTyping(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -288,26 +316,28 @@ const ChatTestPage: React.FC = () => {
     if (value.trim() && !isTyping) {
       setIsTyping(true);
       sendMessage({
-        type: 'typing',
-        isTyping: true
+        type: "typing",
+        isTyping: true,
       });
     } else if (!value.trim() && isTyping) {
       setIsTyping(false);
       sendMessage({
-        type: 'typing',
-        isTyping: false
+        type: "typing",
+        isTyping: false,
       });
     }
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   const getConnectionStatus = () => {
-    if (isConnecting) return { icon: Loader2, text: 'Connecting...', color: 'yellow' };
-    if (isConnected) return { icon: CheckCircle, text: 'Connected', color: 'green' };
-    return { icon: AlertCircle, text: 'Disconnected', color: 'red' };
+    if (isConnecting)
+      return { icon: Loader2, text: "Connecting...", color: "yellow" };
+    if (isConnected)
+      return { icon: CheckCircle, text: "Connected", color: "green" };
+    return { icon: AlertCircle, text: "Disconnected", color: "red" };
   };
 
   const status = getConnectionStatus();
@@ -338,7 +368,12 @@ const ChatTestPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Operation Mode</label>
-              <Select value={mode} onValueChange={(value: 'rylie_ai' | 'direct_agent') => setMode(value)}>
+              <Select
+                value={mode}
+                onValueChange={(value: "rylie_ai" | "direct_agent") =>
+                  setMode(value)
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -361,7 +396,12 @@ const ChatTestPage: React.FC = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">User Type</label>
-              <Select value={userType} onValueChange={(value: 'agent' | 'customer') => setUserType(value)}>
+              <Select
+                value={userType}
+                onValueChange={(value: "agent" | "customer") =>
+                  setUserType(value)
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -376,10 +416,12 @@ const ChatTestPage: React.FC = () => {
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">Dealership ID: {dealershipId}</Badge>
             <Badge variant="outline">Conversation ID: {conversationId}</Badge>
-            <Badge variant={mode === 'rylie_ai' ? 'default' : 'secondary'}>
-              {mode === 'rylie_ai' ? 'AI Mode' : 'Agent Mode'}
+            <Badge variant={mode === "rylie_ai" ? "default" : "secondary"}>
+              {mode === "rylie_ai" ? "AI Mode" : "Agent Mode"}
             </Badge>
-            <Badge variant="outline">{userType === 'agent' ? 'Agent' : 'Customer'}</Badge>
+            <Badge variant="outline">
+              {userType === "agent" ? "Agent" : "Customer"}
+            </Badge>
           </div>
         </CardContent>
       </Card>
@@ -390,7 +432,7 @@ const ChatTestPage: React.FC = () => {
         <CardHeader className="flex-shrink-0 border-b">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              {mode === 'rylie_ai' ? (
+              {mode === "rylie_ai" ? (
                 <>
                   <Bot className="w-5 h-5 text-blue-500" />
                   <span>Rylie AI Assistant</span>
@@ -402,19 +444,23 @@ const ChatTestPage: React.FC = () => {
                 </>
               )}
             </CardTitle>
-            
+
             <div className="flex items-center gap-2">
-              <StatusIcon className={`w-4 h-4 ${
-                status.color === 'green' ? 'text-green-500' : 
-                status.color === 'yellow' ? 'text-yellow-500 animate-spin' : 
-                'text-red-500'
-              }`} />
+              <StatusIcon
+                className={`w-4 h-4 ${
+                  status.color === "green"
+                    ? "text-green-500"
+                    : status.color === "yellow"
+                      ? "text-yellow-500 animate-spin"
+                      : "text-red-500"
+                }`}
+              />
               <span className="text-sm text-gray-600">{status.text}</span>
             </div>
           </div>
 
           {/* Customer info (shown when agent view) */}
-          {userType === 'agent' && (
+          {userType === "agent" && (
             <div className="mt-2 pt-2 border-t text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <span className="font-medium">Customer:</span>
@@ -441,46 +487,68 @@ const ChatTestPage: React.FC = () => {
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                   <Bot className="w-12 h-12 mb-2" />
-                  <p className="text-center">No messages yet. Send a message to start the conversation.</p>
+                  <p className="text-center">
+                    No messages yet. Send a message to start the conversation.
+                  </p>
                 </div>
               ) : (
                 messages.map((msg, index) => (
-                  <div 
-                    key={msg.id || index} 
-                    className={`flex ${msg.senderType === userType ? 'justify-end' : 'justify-start'}`}
+                  <div
+                    key={msg.id || index}
+                    className={`flex ${msg.senderType === userType ? "justify-end" : "justify-start"}`}
                   >
-                    <div className={`flex ${msg.senderType === userType ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[80%]`}>
-                      <Avatar className={`w-8 h-8 ${msg.senderType === userType ? 'ml-2' : 'mr-2'}`}>
-                        <AvatarFallback className={`${
-                          msg.senderType === 'agent' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
-                        }`}>
-                          {msg.senderType === 'agent' ? 'A' : 'C'}
+                    <div
+                      className={`flex ${msg.senderType === userType ? "flex-row-reverse" : "flex-row"} items-end gap-2 max-w-[80%]`}
+                    >
+                      <Avatar
+                        className={`w-8 h-8 ${msg.senderType === userType ? "ml-2" : "mr-2"}`}
+                      >
+                        <AvatarFallback
+                          className={`${
+                            msg.senderType === "agent"
+                              ? "bg-green-100 text-green-600"
+                              : "bg-blue-100 text-blue-600"
+                          }`}
+                        >
+                          {msg.senderType === "agent" ? "A" : "C"}
                         </AvatarFallback>
                       </Avatar>
-                      
+
                       <div>
-                        <div className={`rounded-lg p-3 ${
-                          msg.senderType === userType 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-                        }`}>
+                        <div
+                          className={`rounded-lg p-3 ${
+                            msg.senderType === userType
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                          }`}
+                        >
                           <p className="break-words">{msg.content}</p>
                         </div>
-                        <div className={`text-xs mt-1 text-gray-500 flex gap-1 ${
-                          msg.senderType === userType ? 'justify-end' : 'justify-start'
-                        }`}>
+                        <div
+                          className={`text-xs mt-1 text-gray-500 flex gap-1 ${
+                            msg.senderType === userType
+                              ? "justify-end"
+                              : "justify-start"
+                          }`}
+                        >
                           <Clock className="w-3 h-3" />
                           <span>{formatTime(msg.timestamp)}</span>
-                          {msg.senderType === 'agent' && mode === 'rylie_ai' && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 ml-1">AI</Badge>
-                          )}
+                          {msg.senderType === "agent" &&
+                            mode === "rylie_ai" && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-1 py-0 h-4 ml-1"
+                              >
+                                AI
+                              </Badge>
+                            )}
                         </div>
                       </div>
                     </div>
                   </div>
                 ))
               )}
-              
+
               {/* Typing indicator */}
               {typingUsers.size > 0 && (
                 <div className="flex items-center gap-2 text-gray-500 text-sm">
@@ -490,7 +558,8 @@ const ChatTestPage: React.FC = () => {
                     <Circle className="w-1.5 h-1.5 animate-pulse [animation-delay:0.4s]" />
                   </div>
                   <span>
-                    {userType === 'customer' ? 'Agent' : 'Customer'} is typing...
+                    {userType === "customer" ? "Agent" : "Customer"} is
+                    typing...
                   </span>
                 </div>
               )}
@@ -511,8 +580,8 @@ const ChatTestPage: React.FC = () => {
             disabled={!isConnected}
             className="flex-grow"
           />
-          <Button 
-            onClick={handleSendMessage} 
+          <Button
+            onClick={handleSendMessage}
             disabled={!isConnected || !message.trim()}
             className="gap-1"
           >
@@ -532,38 +601,64 @@ const ChatTestPage: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <ol className="list-decimal list-inside space-y-2">
-            <li>Select <strong>Operation Mode</strong> to test different chat modes:
+            <li>
+              Select <strong>Operation Mode</strong> to test different chat
+              modes:
               <ul className="list-disc list-inside ml-5 mt-1">
-                <li><strong>Rylie AI Mode:</strong> Automated AI-powered responses</li>
-                <li><strong>Direct Agent Mode:</strong> Human agent handling conversations</li>
+                <li>
+                  <strong>Rylie AI Mode:</strong> Automated AI-powered responses
+                </li>
+                <li>
+                  <strong>Direct Agent Mode:</strong> Human agent handling
+                  conversations
+                </li>
               </ul>
             </li>
-            <li>Select <strong>User Type</strong> to switch between views:
+            <li>
+              Select <strong>User Type</strong> to switch between views:
               <ul className="list-disc list-inside ml-5 mt-1">
-                <li><strong>Customer:</strong> Simulates the customer-facing interface</li>
-                <li><strong>Agent:</strong> Simulates the agent dashboard interface</li>
+                <li>
+                  <strong>Customer:</strong> Simulates the customer-facing
+                  interface
+                </li>
+                <li>
+                  <strong>Agent:</strong> Simulates the agent dashboard
+                  interface
+                </li>
               </ul>
             </li>
             <li>Type messages and observe real-time message delivery</li>
             <li>Look for typing indicators when the other party is typing</li>
-            <li>Test WebSocket reconnection by temporarily disabling your network</li>
+            <li>
+              Test WebSocket reconnection by temporarily disabling your network
+            </li>
           </ol>
           <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-            <p className="text-blue-800 dark:text-blue-300 font-medium">WebSocket Connection Status:</p>
+            <p className="text-blue-800 dark:text-blue-300 font-medium">
+              WebSocket Connection Status:
+            </p>
             <p className="mt-1">
               {isConnected ? (
-                <span className="text-green-600 dark:text-green-400">✓ Connected to WebSocket server</span>
+                <span className="text-green-600 dark:text-green-400">
+                  ✓ Connected to WebSocket server
+                </span>
               ) : isConnecting ? (
-                <span className="text-yellow-600 dark:text-yellow-400">⟳ Connecting to WebSocket server...</span>
+                <span className="text-yellow-600 dark:text-yellow-400">
+                  ⟳ Connecting to WebSocket server...
+                </span>
               ) : (
-                <span className="text-red-600 dark:text-red-400">✗ Disconnected from WebSocket server</span>
+                <span className="text-red-600 dark:text-red-400">
+                  ✗ Disconnected from WebSocket server
+                </span>
               )}
             </p>
             {connectionId && (
               <p className="mt-1 text-xs">Connection ID: {connectionId}</p>
             )}
             {lastActivity && (
-              <p className="mt-1 text-xs">Last activity: {lastActivity.toLocaleTimeString()}</p>
+              <p className="mt-1 text-xs">
+                Last activity: {lastActivity.toLocaleTimeString()}
+              </p>
             )}
           </div>
         </CardContent>

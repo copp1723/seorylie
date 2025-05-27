@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
+import { useCallback, useEffect, useState } from "react";
+import { useLocation } from "wouter";
 
 /**
  * Custom hook to handle URL search parameters
@@ -8,7 +8,7 @@ import { useLocation } from 'wouter';
 export function useSearchParams() {
   const [location] = useLocation();
   const [searchParams, setParams] = useState<URLSearchParams>(
-    new URLSearchParams(window.location.search)
+    new URLSearchParams(window.location.search),
   );
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export function useSearchParams() {
     (key: string): string | null => {
       return searchParams.get(key);
     },
-    [searchParams]
+    [searchParams],
   );
 
   /**
@@ -44,7 +44,7 @@ export function useSearchParams() {
     (key: string): boolean => {
       return searchParams.has(key);
     },
-    [searchParams]
+    [searchParams],
   );
 
   return {

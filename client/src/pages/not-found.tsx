@@ -13,9 +13,7 @@ export default function NotFound() {
         </p>
         <div className="pt-6">
           <Button asChild>
-            <Link href="/">
-              Return to Home
-            </Link>
+            <Link href="/">Return to Home</Link>
           </Button>
         </div>
       </div>

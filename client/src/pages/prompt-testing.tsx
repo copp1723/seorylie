@@ -1,29 +1,38 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger
+  AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ChatMessage } from "../components/chat-message";
+import { ChatMessage } from "@/components/chat-message";
 
 // Helper function to safely cast unknown to TestResult
 function safelyParseTestResult(data: unknown): TestResult | null {
-  if (data && 
-      typeof data === 'object' && 
-      'success' in data && 
-      'processedPrompt' in data && 
-      'aiResponse' in data &&
-      'timestamp' in data) {
+  if (
+    data &&
+    typeof data === "object" &&
+    "success" in data &&
+    "processedPrompt" in data &&
+    "aiResponse" in data &&
+    "timestamp" in data
+  ) {
     return data as TestResult;
   }
   return null;
@@ -46,13 +55,15 @@ interface PromptTest {
 }
 
 const PromptTestingPage: React.FC = () => {
-  const [prompt, setPrompt] = useState('You are an automotive sales agent named {{Agent_Name}}, working for {{Dealership}}. Rewrite if off: Trim wordiness, boost empathy, fix compliance, or adjust tone to sound like a real salesperson (e.g., replace "We strive to assist" with "We\'ve got you covered!").');
+  const [prompt, setPrompt] = useState(
+    'You are an automotive sales agent named {{Agent_Name}}, working for {{Dealership}}. Rewrite if off: Trim wordiness, boost empathy, fix compliance, or adjust tone to sound like a real salesperson (e.g., replace "We strive to assist" with "We\'ve got you covered!").',
+  );
   const [variables, setVariables] = useState<Record<string, string>>({
-    Agent_Name: 'Sarah',
-    Dealership: 'Premium Auto Sales'
+    Agent_Name: "Sarah",
+    Dealership: "Premium Auto Sales",
   });
-  const [newVariableKey, setNewVariableKey] = useState('');
-  const [newVariableValue, setNewVariableValue] = useState('');
+  const [newVariableKey, setNewVariableKey] = useState("");
+  const [newVariableValue, setNewVariableValue] = useState("");
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [testHistory, setTestHistory] = useState<PromptTest[]>([]);
@@ -62,8 +73,8 @@ const PromptTestingPage: React.FC = () => {
   const extractVariables = (text: string): string[] => {
     const matches = text.match(/\{\{[^}]+\}\}/g) || [];
     const uniqueVars = new Set<string>();
-    matches.forEach(match => {
-      uniqueVars.add(match.replace(/[{}]/g, '').trim());
+    matches.forEach((match) => {
+      uniqueVars.add(match.replace(/[{}]/g, "").trim());
     });
     return Array.from(uniqueVars);
   };
@@ -77,22 +88,22 @@ const PromptTestingPage: React.FC = () => {
     setError(null);
 
     try {
-      const response = await apiRequest('/api/prompt-test/test', {
-        method: 'POST',
+      const response = await apiRequest("/api/prompt-test/test", {
+        method: "POST",
         body: {
           prompt: prompt.trim(),
-          variables: variables
-        }
+          variables: variables,
+        },
       });
 
       const result = safelyParseTestResult(response);
       if (result) {
         setTestResult(result);
       } else {
-        setError('Invalid response format from server');
+        setError("Invalid response format from server");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to test prompt');
+      setError(err instanceof Error ? err.message : "Failed to test prompt");
     } finally {
       setIsLoading(false);
     }
@@ -101,17 +112,17 @@ const PromptTestingPage: React.FC = () => {
   const addVariable = () => {
     if (!newVariableKey.trim()) return;
 
-    setVariables(prev => ({
+    setVariables((prev) => ({
       ...prev,
-      [newVariableKey]: newVariableValue
+      [newVariableKey]: newVariableValue,
     }));
 
-    setNewVariableKey('');
-    setNewVariableValue('');
+    setNewVariableKey("");
+    setNewVariableValue("");
   };
 
   const removeVariable = (key: string) => {
-    setVariables(prev => {
+    setVariables((prev) => {
       const newVars = { ...prev };
       delete newVars[key];
       return newVars;
@@ -128,12 +139,14 @@ const PromptTestingPage: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>Prompt Template</CardTitle>
-            <CardDescription>Enter your prompt template with variables in {`{{variable_name}}`}</CardDescription>
+            <CardDescription>
+              Enter your prompt template with variables in {`{{variable_name}}`}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label>Template</Label>
-              <Textarea 
+              <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 className="min-h-[200px]"
@@ -155,8 +168,8 @@ const PromptTestingPage: React.FC = () => {
                   placeholder="Value"
                 />
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={addVariable}
                 className="w-full"
               >
@@ -166,7 +179,10 @@ const PromptTestingPage: React.FC = () => {
 
             <div className="space-y-2">
               {Object.entries(variables).map(([key, value]) => (
-                <div key={key} className="flex justify-between items-center p-2 bg-muted rounded-md">
+                <div
+                  key={key}
+                  className="flex justify-between items-center p-2 bg-muted rounded-md"
+                >
                   <div>
                     <span className="font-medium">{key}:</span> {value}
                   </div>
@@ -181,12 +197,12 @@ const PromptTestingPage: React.FC = () => {
               ))}
             </div>
 
-            <Button 
+            <Button
               onClick={handleTest}
               disabled={isLoading}
               className="w-full"
             >
-              {isLoading ? 'Testing...' : 'Test Prompt'}
+              {isLoading ? "Testing..." : "Test Prompt"}
             </Button>
           </CardContent>
         </Card>
@@ -194,7 +210,9 @@ const PromptTestingPage: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>Test Results</CardTitle>
-            <CardDescription>View the processed prompt and AI response</CardDescription>
+            <CardDescription>
+              View the processed prompt and AI response
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
@@ -222,7 +240,7 @@ const PromptTestingPage: React.FC = () => {
                 <div className="flex justify-between items-center text-sm text-muted-foreground">
                   <span>Test ID: {testResult.timestamp}</span>
                   <Badge variant="outline">
-                    {testResult.success ? 'Success' : 'Failed'}
+                    {testResult.success ? "Success" : "Failed"}
                   </Badge>
                 </div>
               </div>

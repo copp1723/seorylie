@@ -1,10 +1,7 @@
 // This file is based on shadcn's toast implementation
 import * as React from "react";
 
-import type {
-  ToastActionElement,
-  ToastProps,
-} from "@/components/ui/toast";
+import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 5000;
@@ -68,7 +65,7 @@ const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         toasts: state.toasts.map((t: ToasterToast) =>
-          t.id === action.toast.id ? { ...t, ...action.toast } : t
+          t.id === action.toast.id ? { ...t, ...action.toast } : t,
         ),
       };
 
@@ -85,7 +82,7 @@ const reducer = (state: State, action: Action): State => {
         return {
           ...state,
           toasts: state.toasts.map((t: ToasterToast) =>
-            t.id === toastId ? { ...t, open: false } : t
+            t.id === toastId ? { ...t, open: false } : t,
           ),
         };
       }
@@ -130,7 +127,8 @@ function toast({ ...props }: Toast) {
       type: actionTypes.UPDATE_TOAST,
       toast: { ...props, id },
     });
-  const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
+  const dismiss = () =>
+    dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
 
   dispatch({
     type: actionTypes.ADD_TOAST,
@@ -167,8 +165,9 @@ function useToast() {
   return {
     ...state,
     toast,
-    dismiss: (toastId?: string) => dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
-    toasts: state.toasts
+    dismiss: (toastId?: string) =>
+      dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
+    toasts: state.toasts,
   };
 }
 

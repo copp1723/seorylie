@@ -39,7 +39,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <button className="p-1 text-neutral-500 rounded-full hover:bg-neutral-100">
           <span className="material-icons">help_outline</span>
         </button>
-        
+
         {/* Authentication buttons */}
         <div className="ml-2">
           <AuthButtons />

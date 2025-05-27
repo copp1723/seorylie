@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2 } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 
 interface TestResult {
   success: boolean;
@@ -14,7 +21,8 @@ interface TestResult {
 }
 
 export default function SimplePromptTest() {
-  const [prompt, setPrompt] = useState<string>(`You are an automotive sales agent named Rylie working for OneKeel Motors. 
+  const [prompt, setPrompt] =
+    useState<string>(`You are an automotive sales agent named Rylie working for OneKeel Motors. 
 You are known for being knowledgeable, friendly, and professional.
 Your goal is to assist customers with their vehicle purchasing needs.
   
@@ -25,7 +33,9 @@ Guidelines:
 - Guide customers towards making a decision
 - Offer to schedule test drives or follow-up appointments`);
 
-  const [customerMessage, setCustomerMessage] = useState<string>('Hi, I\'m interested in buying a new SUV. What do you have available?');
+  const [customerMessage, setCustomerMessage] = useState<string>(
+    "Hi, I'm interested in buying a new SUV. What do you have available?",
+  );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [result, setResult] = useState<TestResult | null>(null);
   const handleSubmit = async () => {
@@ -33,31 +43,31 @@ Guidelines:
       setIsLoading(true);
       setResult(null);
 
-      const response = await fetch('/api/simple-prompt-test/test', {
-        method: 'POST',
+      const response = await fetch("/api/simple-prompt-test/test", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           prompt,
-          customerMessage
-        })
+          customerMessage,
+        }),
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'Failed to test prompt');
+        throw new Error(data.message || data.error || "Failed to test prompt");
       }
 
       setResult(data);
-      console.log('Prompt test completed successfully');
-
+      console.log("Prompt test completed successfully");
     } catch (error) {
-      console.error('Prompt test error:', error);
+      console.error("Prompt test error:", error);
       setResult({
         success: false,
-        error: error instanceof Error ? error.message : 'An unknown error occurred'
+        error:
+          error instanceof Error ? error.message : "An unknown error occurred",
       });
     } finally {
       setIsLoading(false);
@@ -70,7 +80,8 @@ Guidelines:
         <CardHeader>
           <CardTitle>Simple Prompt Testing Tool</CardTitle>
           <CardDescription>
-            Test your automotive sales agent prompts without authentication requirements
+            Test your automotive sales agent prompts without authentication
+            requirements
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -95,7 +106,10 @@ Guidelines:
             </TabsContent>
             <TabsContent value="message" className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="customerMessage" className="text-sm font-medium">
+                <label
+                  htmlFor="customerMessage"
+                  className="text-sm font-medium"
+                >
                   Customer Message
                 </label>
                 <Textarea
@@ -110,12 +124,12 @@ Guidelines:
           </Tabs>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => {
               setResult(null);
               // Display a confirmation message
-              console.log('Results cleared');
+              console.log("Results cleared");
             }}
           >
             Clear Results
@@ -127,7 +141,7 @@ Guidelines:
                 Testing...
               </>
             ) : (
-              'Test Prompt'
+              "Test Prompt"
             )}
           </Button>
         </CardFooter>
@@ -136,9 +150,7 @@ Guidelines:
       {result && (
         <Card className="w-full max-w-4xl mx-auto mt-6">
           <CardHeader>
-            <CardTitle>
-              {result.success ? 'Test Results' : 'Error'}
-            </CardTitle>
+            <CardTitle>{result.success ? "Test Results" : "Error"}</CardTitle>
             {result.timestamp && (
               <CardDescription>
                 Processed at {new Date(result.timestamp).toLocaleString()}

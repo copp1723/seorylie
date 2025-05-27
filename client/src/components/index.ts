@@ -1,0 +1,27 @@
+// Re-export components from their organized directories
+
+// Auth components
+export { default as MagicLinkForm } from "./auth/magic-link-form";
+
+// Chat components
+export { ChatInterface } from "./chat/ChatInterface";
+export { ChatMessage } from "./chat/ChatMessage";
+export { ChatModeSettings } from "./chat/ChatModeSettings";
+
+// Dashboard components
+export { AIAnalyticsDashboard } from "./dashboard/AIAnalyticsDashboard";
+export { ConversationLogs } from "./dashboard/ConversationLogs";
+
+// Inventory components
+export { VehicleCard } from "./inventory/VehicleCard";
+export { VehicleList } from "./inventory/VehicleList";
+
+// Form components
+export { ContactForm } from "./forms/ContactForm";
+export { SearchForm } from "./forms/SearchForm";
+
+// Layout components
+export { default as Layout } from "./layout/layout";
+export { default as Sidebar } from "./layout/sidebar";
+
+// Common UI components are exported directly from ui/

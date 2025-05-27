@@ -1,33 +1,59 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Switch } from './ui/switch';
-import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Alert, AlertDescription } from './ui/alert';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { 
-  Save, 
-  Edit, 
-  Eye, 
-  Copy, 
-  Plus, 
-  Trash2, 
-  Settings, 
-  MessageSquare, 
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Switch } from "./ui/switch";
+import { Badge } from "./ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Alert, AlertDescription } from "./ui/alert";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
+import {
+  Save,
+  Edit,
+  Eye,
+  Copy,
+  Plus,
+  Trash2,
+  Settings,
+  MessageSquare,
   RefreshCw,
   CheckCircle,
   AlertCircle,
   History,
   Download,
-  Upload
-} from 'lucide-react';
-import { format } from 'date-fns';
+  Upload,
+} from "lucide-react";
+import { format } from "date-fns";
 
 interface Persona {
   id: number;
@@ -54,22 +80,23 @@ export function EnhancedPersonaManagement() {
   const [loading, setLoading] = useState(true);
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
-  const [previewResult, setPreviewResult] = useState<PersonaPreviewResult | null>(null);
+  const [previewResult, setPreviewResult] =
+    useState<PersonaPreviewResult | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
-  
+
   // Form states
   const [personaForm, setPersonaForm] = useState({
-    name: '',
-    promptTemplate: '',
+    name: "",
+    promptTemplate: "",
     arguments: {} as Record<string, any>,
-    isDefault: false
+    isDefault: false,
   });
-  
+
   // Preview form states
   const [previewForm, setPreviewForm] = useState({
     testMessage: "Hello, I'm interested in learning more about your vehicles.",
-    includeInventory: true
+    includeInventory: true,
   });
 
   // Mock dealership ID - in real app this would come from user context
@@ -78,18 +105,21 @@ export function EnhancedPersonaManagement() {
   const fetchPersonas = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/prompt-testing/personas?dealershipId=${dealershipId}`, {
-        credentials: 'include'
-      });
+      const response = await fetch(
+        `/api/prompt-testing/personas?dealershipId=${dealershipId}`,
+        {
+          credentials: "include",
+        },
+      );
 
       if (response.ok) {
         const data = await response.json();
         setPersonas(data.personas);
       } else {
-        console.error('Failed to fetch personas');
+        console.error("Failed to fetch personas");
       }
     } catch (error) {
-      console.error('Error fetching personas:', error);
+      console.error("Error fetching personas:", error);
     } finally {
       setLoading(false);
     }
@@ -98,34 +128,34 @@ export function EnhancedPersonaManagement() {
   const savePersona = async () => {
     setSaveLoading(true);
     try {
-      const url = editingPersona 
+      const url = editingPersona
         ? `/api/personas/${editingPersona.id}`
-        : '/api/personas';
-      
-      const method = editingPersona ? 'PUT' : 'POST';
-      
+        : "/api/personas";
+
+      const method = editingPersona ? "PUT" : "POST";
+
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           ...personaForm,
-          dealershipId
-        })
+          dealershipId,
+        }),
       });
 
       if (response.ok) {
         await fetchPersonas();
         setEditingPersona(null);
         setPersonaForm({
-          name: '',
-          promptTemplate: '',
+          name: "",
+          promptTemplate: "",
           arguments: {},
-          isDefault: false
+          isDefault: false,
         });
       }
     } catch (error) {
-      console.error('Error saving persona:', error);
+      console.error("Error saving persona:", error);
     } finally {
       setSaveLoading(false);
     }
@@ -134,16 +164,16 @@ export function EnhancedPersonaManagement() {
   const previewPersona = async (persona: Persona) => {
     setPreviewLoading(true);
     try {
-      const response = await fetch('/api/prompt-testing/preview-persona', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/prompt-testing/preview-persona", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           personaId: persona.id,
           testMessage: previewForm.testMessage,
           dealershipId: previewForm.includeInventory ? dealershipId : undefined,
-          includeInventory: previewForm.includeInventory
-        })
+          includeInventory: previewForm.includeInventory,
+        }),
       });
 
       if (response.ok) {
@@ -151,7 +181,7 @@ export function EnhancedPersonaManagement() {
         setPreviewResult(data);
       }
     } catch (error) {
-      console.error('Error previewing persona:', error);
+      console.error("Error previewing persona:", error);
     } finally {
       setPreviewLoading(false);
     }
@@ -162,7 +192,7 @@ export function EnhancedPersonaManagement() {
       name: `${persona.name} (Copy)`,
       promptTemplate: persona.promptTemplate,
       arguments: { ...persona.arguments },
-      isDefault: false
+      isDefault: false,
     });
     setEditingPersona(null);
   };
@@ -172,41 +202,41 @@ export function EnhancedPersonaManagement() {
       name: persona.name,
       promptTemplate: persona.promptTemplate,
       arguments: { ...persona.arguments },
-      isDefault: persona.isDefault
+      isDefault: persona.isDefault,
     });
     setEditingPersona(persona);
   };
 
   const addPersonaArgument = () => {
-    const key = prompt('Enter argument key:');
+    const key = prompt("Enter argument key:");
     if (key && key.trim()) {
-      setPersonaForm(prev => ({
+      setPersonaForm((prev) => ({
         ...prev,
         arguments: {
           ...prev.arguments,
-          [key.trim()]: ''
-        }
+          [key.trim()]: "",
+        },
       }));
     }
   };
 
   const updatePersonaArgument = (key: string, value: any) => {
-    setPersonaForm(prev => ({
+    setPersonaForm((prev) => ({
       ...prev,
       arguments: {
         ...prev.arguments,
-        [key]: value
-      }
+        [key]: value,
+      },
     }));
   };
 
   const removePersonaArgument = (key: string) => {
-    setPersonaForm(prev => {
+    setPersonaForm((prev) => {
       const newArgs = { ...prev.arguments };
       delete newArgs[key];
       return {
         ...prev,
-        arguments: newArgs
+        arguments: newArgs,
       };
     });
   };
@@ -230,10 +260,10 @@ export function EnhancedPersonaManagement() {
             onClick={() => {
               setEditingPersona(null);
               setPersonaForm({
-                name: '',
-                promptTemplate: '',
+                name: "",
+                promptTemplate: "",
                 arguments: {},
-                isDefault: false
+                isDefault: false,
               });
             }}
           >
@@ -275,13 +305,28 @@ export function EnhancedPersonaManagement() {
                             {persona.promptTemplate.substring(0, 150)}...
                           </p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>Created: {format(new Date(persona.createdAt), 'MMM d, yyyy')}</span>
+                            <span>
+                              Created:{" "}
+                              {format(
+                                new Date(persona.createdAt),
+                                "MMM d, yyyy",
+                              )}
+                            </span>
                             <span>•</span>
-                            <span>Updated: {format(new Date(persona.updatedAt), 'MMM d, yyyy')}</span>
+                            <span>
+                              Updated:{" "}
+                              {format(
+                                new Date(persona.updatedAt),
+                                "MMM d, yyyy",
+                              )}
+                            </span>
                             {Object.keys(persona.arguments).length > 0 && (
                               <>
                                 <span>•</span>
-                                <span>{Object.keys(persona.arguments).length} arguments</span>
+                                <span>
+                                  {Object.keys(persona.arguments).length}{" "}
+                                  arguments
+                                </span>
                               </>
                             )}
                           </div>
@@ -299,30 +344,45 @@ export function EnhancedPersonaManagement() {
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
-                                <DialogTitle>Preview: {persona.name}</DialogTitle>
+                                <DialogTitle>
+                                  Preview: {persona.name}
+                                </DialogTitle>
                                 <DialogDescription>
                                   Test this persona with different scenarios
                                 </DialogDescription>
                               </DialogHeader>
-                              
+
                               <Tabs defaultValue="preview" className="w-full">
                                 <TabsList>
-                                  <TabsTrigger value="preview">Preview</TabsTrigger>
-                                  <TabsTrigger value="template">Template</TabsTrigger>
-                                  <TabsTrigger value="arguments">Arguments</TabsTrigger>
+                                  <TabsTrigger value="preview">
+                                    Preview
+                                  </TabsTrigger>
+                                  <TabsTrigger value="template">
+                                    Template
+                                  </TabsTrigger>
+                                  <TabsTrigger value="arguments">
+                                    Arguments
+                                  </TabsTrigger>
                                 </TabsList>
-                                
-                                <TabsContent value="preview" className="space-y-4">
+
+                                <TabsContent
+                                  value="preview"
+                                  className="space-y-4"
+                                >
                                   <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                      <Label htmlFor="testMessage">Test Message</Label>
+                                      <Label htmlFor="testMessage">
+                                        Test Message
+                                      </Label>
                                       <Textarea
                                         id="testMessage"
                                         value={previewForm.testMessage}
-                                        onChange={(e) => setPreviewForm(prev => ({
-                                          ...prev,
-                                          testMessage: e.target.value
-                                        }))}
+                                        onChange={(e) =>
+                                          setPreviewForm((prev) => ({
+                                            ...prev,
+                                            testMessage: e.target.value,
+                                          }))
+                                        }
                                         rows={3}
                                       />
                                     </div>
@@ -331,12 +391,16 @@ export function EnhancedPersonaManagement() {
                                         <Switch
                                           id="includeInventory"
                                           checked={previewForm.includeInventory}
-                                          onCheckedChange={(checked) => setPreviewForm(prev => ({
-                                            ...prev,
-                                            includeInventory: checked
-                                          }))}
+                                          onCheckedChange={(checked) =>
+                                            setPreviewForm((prev) => ({
+                                              ...prev,
+                                              includeInventory: checked,
+                                            }))
+                                          }
                                         />
-                                        <Label htmlFor="includeInventory">Include Inventory Context</Label>
+                                        <Label htmlFor="includeInventory">
+                                          Include Inventory Context
+                                        </Label>
                                       </div>
                                       <Button
                                         onClick={() => previewPersona(persona)}
@@ -352,33 +416,43 @@ export function EnhancedPersonaManagement() {
                                       </Button>
                                     </div>
                                   </div>
-                                  
+
                                   {previewResult && (
                                     <div className="space-y-4 mt-6">
                                       <Alert>
                                         <CheckCircle className="h-4 w-4" />
                                         <AlertDescription>
-                                          Preview generated successfully at {format(new Date(previewResult.timestamp), 'HH:mm:ss')}
+                                          Preview generated successfully at{" "}
+                                          {format(
+                                            new Date(previewResult.timestamp),
+                                            "HH:mm:ss",
+                                          )}
                                         </AlertDescription>
                                       </Alert>
-                                      
+
                                       <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                          <Label className="text-sm font-medium">Customer Message</Label>
+                                          <Label className="text-sm font-medium">
+                                            Customer Message
+                                          </Label>
                                           <div className="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
                                             {previewResult.testMessage}
                                           </div>
                                         </div>
                                         <div>
-                                          <Label className="text-sm font-medium">AI Response</Label>
+                                          <Label className="text-sm font-medium">
+                                            AI Response
+                                          </Label>
                                           <div className="p-3 bg-gray-50 border-l-4 border-gray-500 rounded">
                                             {previewResult.aiResponse}
                                           </div>
                                         </div>
                                       </div>
-                                      
+
                                       <details className="border rounded p-4">
-                                        <summary className="font-medium cursor-pointer">Processed Prompt</summary>
+                                        <summary className="font-medium cursor-pointer">
+                                          Processed Prompt
+                                        </summary>
                                         <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">
                                           {previewResult.processedPrompt}
                                         </pre>
@@ -386,7 +460,7 @@ export function EnhancedPersonaManagement() {
                                     </div>
                                   )}
                                 </TabsContent>
-                                
+
                                 <TabsContent value="template">
                                   <div className="space-y-2">
                                     <Label>Prompt Template</Label>
@@ -398,7 +472,7 @@ export function EnhancedPersonaManagement() {
                                     />
                                   </div>
                                 </TabsContent>
-                                
+
                                 <TabsContent value="arguments">
                                   {Object.keys(persona.arguments).length > 0 ? (
                                     <Table>
@@ -410,15 +484,23 @@ export function EnhancedPersonaManagement() {
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
-                                        {Object.entries(persona.arguments).map(([key, value]) => (
-                                          <TableRow key={key}>
-                                            <TableCell className="font-mono">{key}</TableCell>
-                                            <TableCell className="max-w-[200px] truncate">
-                                              {typeof value === 'string' ? value : JSON.stringify(value)}
-                                            </TableCell>
-                                            <TableCell>{typeof value}</TableCell>
-                                          </TableRow>
-                                        ))}
+                                        {Object.entries(persona.arguments).map(
+                                          ([key, value]) => (
+                                            <TableRow key={key}>
+                                              <TableCell className="font-mono">
+                                                {key}
+                                              </TableCell>
+                                              <TableCell className="max-w-[200px] truncate">
+                                                {typeof value === "string"
+                                                  ? value
+                                                  : JSON.stringify(value)}
+                                              </TableCell>
+                                              <TableCell>
+                                                {typeof value}
+                                              </TableCell>
+                                            </TableRow>
+                                          ),
+                                        )}
                                       </TableBody>
                                     </Table>
                                   ) : (
@@ -430,7 +512,7 @@ export function EnhancedPersonaManagement() {
                               </Tabs>
                             </DialogContent>
                           </Dialog>
-                          
+
                           <Button
                             variant="outline"
                             size="sm"
@@ -438,7 +520,7 @@ export function EnhancedPersonaManagement() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          
+
                           <Button
                             variant="outline"
                             size="sm"
@@ -450,10 +532,11 @@ export function EnhancedPersonaManagement() {
                       </div>
                     </div>
                   ))}
-                  
+
                   {personas.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      No personas found. Create your first persona to get started.
+                      No personas found. Create your first persona to get
+                      started.
                     </div>
                   )}
                 </div>
@@ -467,7 +550,7 @@ export function EnhancedPersonaManagement() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {editingPersona ? 'Edit Persona' : 'Create Persona'}
+                {editingPersona ? "Edit Persona" : "Create Persona"}
               </CardTitle>
               <CardDescription>
                 Configure persona details and behavior
@@ -479,10 +562,12 @@ export function EnhancedPersonaManagement() {
                 <Input
                   id="personaName"
                   value={personaForm.name}
-                  onChange={(e) => setPersonaForm(prev => ({
-                    ...prev,
-                    name: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setPersonaForm((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
                   placeholder="Enter persona name"
                 />
               </div>
@@ -491,10 +576,12 @@ export function EnhancedPersonaManagement() {
                 <Switch
                   id="isDefault"
                   checked={personaForm.isDefault}
-                  onCheckedChange={(checked) => setPersonaForm(prev => ({
-                    ...prev,
-                    isDefault: checked
-                  }))}
+                  onCheckedChange={(checked) =>
+                    setPersonaForm((prev) => ({
+                      ...prev,
+                      isDefault: checked,
+                    }))
+                  }
                 />
                 <Label htmlFor="isDefault">Set as default persona</Label>
               </div>
@@ -504,10 +591,12 @@ export function EnhancedPersonaManagement() {
                 <Textarea
                   id="promptTemplate"
                   value={personaForm.promptTemplate}
-                  onChange={(e) => setPersonaForm(prev => ({
-                    ...prev,
-                    promptTemplate: e.target.value
-                  }))}
+                  onChange={(e) =>
+                    setPersonaForm((prev) => ({
+                      ...prev,
+                      promptTemplate: e.target.value,
+                    }))
+                  }
                   placeholder="Enter system prompt template..."
                   rows={8}
                   className="font-mono text-sm"
@@ -529,7 +618,7 @@ export function EnhancedPersonaManagement() {
                     Add
                   </Button>
                 </div>
-                
+
                 <div className="space-y-2">
                   {Object.entries(personaForm.arguments).map(([key, value]) => (
                     <div key={key} className="flex gap-2">
@@ -539,8 +628,14 @@ export function EnhancedPersonaManagement() {
                         className="w-32 font-mono text-sm"
                       />
                       <Input
-                        value={typeof value === 'string' ? value : JSON.stringify(value)}
-                        onChange={(e) => updatePersonaArgument(key, e.target.value)}
+                        value={
+                          typeof value === "string"
+                            ? value
+                            : JSON.stringify(value)
+                        }
+                        onChange={(e) =>
+                          updatePersonaArgument(key, e.target.value)
+                        }
                         placeholder="Value"
                         className="flex-1"
                       />
@@ -553,7 +648,7 @@ export function EnhancedPersonaManagement() {
                       </Button>
                     </div>
                   ))}
-                  
+
                   {Object.keys(personaForm.arguments).length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       No arguments defined
@@ -565,7 +660,11 @@ export function EnhancedPersonaManagement() {
               <div className="flex gap-2 pt-4">
                 <Button
                   onClick={savePersona}
-                  disabled={saveLoading || !personaForm.name.trim() || !personaForm.promptTemplate.trim()}
+                  disabled={
+                    saveLoading ||
+                    !personaForm.name.trim() ||
+                    !personaForm.promptTemplate.trim()
+                  }
                   className="flex-1"
                 >
                   {saveLoading ? (
@@ -573,19 +672,19 @@ export function EnhancedPersonaManagement() {
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
                   )}
-                  {editingPersona ? 'Update' : 'Create'}
+                  {editingPersona ? "Update" : "Create"}
                 </Button>
-                
+
                 {editingPersona && (
                   <Button
                     variant="outline"
                     onClick={() => {
                       setEditingPersona(null);
                       setPersonaForm({
-                        name: '',
-                        promptTemplate: '',
+                        name: "",
+                        promptTemplate: "",
                         arguments: {},
-                        isDefault: false
+                        isDefault: false,
                       });
                     }}
                   >

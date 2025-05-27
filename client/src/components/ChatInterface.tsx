@@ -1,10 +1,9 @@
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Send,
   Phone,
@@ -15,28 +14,28 @@ import {
   Circle,
   AlertCircle,
   CheckCircle,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 
 interface ChatMessage {
   id: string;
   conversationId: number;
   senderId: number;
-  senderType: 'agent' | 'customer';
+  senderType: "agent" | "customer";
   content: string;
-  messageType: 'text' | 'image' | 'file';
+  messageType: "text" | "image" | "file";
   timestamp: Date;
   metadata?: Record<string, unknown>;
 }
 
 // Define specific message types for better type safety
 type WebSocketMessageType =
-  | 'connection_established'
-  | 'new_message'
-  | 'typing_indicator'
-  | 'conversation_created'
-  | 'send_message'
-  | 'join_conversation';
+  | "connection_established"
+  | "new_message"
+  | "typing_indicator"
+  | "conversation_created"
+  | "send_message"
+  | "join_conversation";
 
 interface WebSocketMessage {
   type: WebSocketMessageType;
@@ -52,7 +51,7 @@ interface WebSocketMessage {
 interface ChatInterfaceProps {
   dealershipId: number;
   conversationId?: number;
-  userType: 'agent' | 'customer';
+  userType: "agent" | "customer";
   userId?: number;
   customerInfo?: {
     name?: string;
@@ -60,7 +59,7 @@ interface ChatInterfaceProps {
     phone?: string;
   };
   onMessageSent?: (message: string) => void;
-  mode?: 'rylie_ai' | 'direct_agent';
+  mode?: "rylie_ai" | "direct_agent";
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -70,7 +69,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   userId,
   customerInfo,
   onMessageSent,
-  mode = 'direct_agent'
+  mode = "direct_agent",
 }) => {
   // WebSocket state
   const [isConnected, setIsConnected] = useState(false);
@@ -79,7 +78,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [lastActivity, setLastActivity] = useState<Date | null>(null);
 
   // Chat state
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
@@ -98,8 +97,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     setIsConnecting(true);
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/chat?dealershipId=${dealershipId}&userType=${userType}${userId ? `&userId=${userId}` : ''}${conversationId ? `&conversationId=${conversationId}` : ''}`;
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws/chat?dealershipId=${dealershipId}&userType=${userType}${userId ? `&userId=${userId}` : ""}${conversationId ? `&conversationId=${conversationId}` : ""}`;
 
     const ws = new WebSocket(wsUrl);
 
@@ -110,12 +109,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       // Send join message if we have a conversation ID
       if (conversationId) {
-        ws.send(JSON.stringify({
-          type: 'join_conversation',
-          conversationId,
-          userType,
-          userId
-        }));
+        ws.send(
+          JSON.stringify({
+            type: "join_conversation",
+            conversationId,
+            userType,
+            userId,
+          }),
+        );
       }
     };
 
@@ -124,7 +125,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       wsRef.current = null;
 
       // Try to reconnect unless it was a deliberate close
-      if (reconnectAttempts.current < maxReconnectAttempts && event.code !== 1000) {
+      if (
+        reconnectAttempts.current < maxReconnectAttempts &&
+        event.code !== 1000
+      ) {
         reconnectAttempts.current += 1;
         setTimeout(() => {
           connect();
@@ -133,7 +137,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
     };
 
     ws.onmessage = (event) => {
@@ -141,7 +145,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const data = JSON.parse(event.data) as WebSocketMessage;
         handleWebSocketMessage(data);
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error("Error parsing WebSocket message:", error);
       }
     };
 
@@ -149,56 +153,62 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [dealershipId, conversationId, userType, userId]);
 
   // Handle incoming WebSocket messages
-  const handleWebSocketMessage = useCallback((data: WebSocketMessage) => {
-    setLastActivity(new Date());
+  const handleWebSocketMessage = useCallback(
+    (data: WebSocketMessage) => {
+      setLastActivity(new Date());
 
-    switch (data.type) {
-      case 'connection_established':
-        setConnectionId(data.connectionId || null);
+      switch (data.type) {
+        case "connection_established":
+          setConnectionId(data.connectionId || null);
 
-        // If we have history, load it
-        if (data.messageHistory && Array.isArray(data.messageHistory)) {
-          setMessages(data.messageHistory);
-          scrollToBottom();
-        }
-        break;
+          // If we have history, load it
+          if (data.messageHistory && Array.isArray(data.messageHistory)) {
+            setMessages(data.messageHistory);
+            scrollToBottom();
+          }
+          break;
 
-      case 'new_message':
-        if (data.message) {
-          setMessages(prev => [...prev, data.message as ChatMessage]);
-          scrollToBottom();
-        }
-        break;
+        case "new_message":
+          if (data.message) {
+            setMessages((prev) => [...prev, data.message as ChatMessage]);
+            scrollToBottom();
+          }
+          break;
 
-      case 'typing_indicator':
-        if (data.isTyping && data.userId !== undefined) {
-          setTypingUsers(prev => {
-            const newSet = new Set(prev);
-            newSet.add(data.userId!);
-            return newSet;
-          });
-        } else if (!data.isTyping && data.userId !== undefined) {
-          setTypingUsers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(data.userId!);
-            return newSet;
-          });
-        }
-        break;
+        case "typing_indicator":
+          if (data.isTyping && data.userId !== undefined) {
+            setTypingUsers((prev) => {
+              const newSet = new Set(prev);
+              newSet.add(data.userId!);
+              return newSet;
+            });
+          } else if (!data.isTyping && data.userId !== undefined) {
+            setTypingUsers((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(data.userId!);
+              return newSet;
+            });
+          }
+          break;
 
-      case 'conversation_created':
-        if (data.conversationId && !conversationId) {
-          // Update URL if conversation was just created
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set('conversationId', data.conversationId.toString());
-          window.history.pushState({}, '', newUrl.toString());
-        }
-        break;
+        case "conversation_created":
+          if (data.conversationId && !conversationId) {
+            // Update URL if conversation was just created
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set(
+              "conversationId",
+              data.conversationId.toString(),
+            );
+            window.history.pushState({}, "", newUrl.toString());
+          }
+          break;
 
-      default:
-        break;
-    }
-  }, [conversationId]);
+        default:
+          break;
+      }
+    },
+    [conversationId],
+  );
 
   // Auto-connect WebSocket on component mount
   useEffect(() => {
@@ -215,7 +225,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -224,18 +234,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (!message.trim() || !isConnected) return;
 
     const messageData = {
-      type: 'send_message',
+      type: "send_message",
       content: message,
       userType,
       dealershipId,
       conversationId,
       customerInfo,
-      mode
+      mode,
     };
 
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(messageData));
-      setMessage('');
+      setMessage("");
 
       // Call the optional callback
       if (onMessageSent) {
@@ -247,12 +257,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Send typing indicator
   const sendTypingIndicator = (isTyping: boolean) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'typing_indicator',
-        isTyping,
-        userType,
-        conversationId
-      }));
+      wsRef.current.send(
+        JSON.stringify({
+          type: "typing_indicator",
+          isTyping,
+          userType,
+          conversationId,
+        }),
+      );
     }
   };
 
@@ -264,7 +276,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Handle keyboard submission
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -275,7 +287,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <CardHeader className="px-4 py-2 border-b bg-muted/30">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg flex items-center gap-2">
-            {mode === 'rylie_ai' ? (
+            {mode === "rylie_ai" ? (
               <>
                 <Bot className="h-5 w-5" />
                 <span>AI Assistant Mode</span>
@@ -296,7 +308,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             ) : (
               <AlertCircle className="h-4 w-4 text-red-500" />
             )}
-            <span>{isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}</span>
+            <span>
+              {isConnected
+                ? "Connected"
+                : isConnecting
+                  ? "Connecting..."
+                  : "Disconnected"}
+            </span>
           </div>
         </div>
       </CardHeader>
@@ -313,21 +331,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               messages.map((msg: ChatMessage) => (
                 <div
                   key={msg.id}
-                  className={`flex ${msg.senderType === 'customer' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${msg.senderType === "customer" ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`flex gap-2 max-w-[80%] ${msg.senderType === 'customer' ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <Avatar className={`h-8 w-8 ${msg.senderType === 'customer' ? 'bg-primary' : 'bg-secondary'}`}>
+                  <div
+                    className={`flex gap-2 max-w-[80%] ${msg.senderType === "customer" ? "flex-row-reverse" : "flex-row"}`}
+                  >
+                    <Avatar
+                      className={`h-8 w-8 ${msg.senderType === "customer" ? "bg-primary" : "bg-secondary"}`}
+                    >
                       <AvatarFallback>
-                        {msg.senderType === 'customer' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                        {msg.senderType === "customer" ? (
+                          <User className="h-4 w-4" />
+                        ) : (
+                          <Bot className="h-4 w-4" />
+                        )}
                       </AvatarFallback>
                     </Avatar>
 
                     <div>
                       <div
                         className={`p-3 rounded-lg ${
-                          msg.senderType === 'customer'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                          msg.senderType === "customer"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
                         }`}
                       >
                         {msg.content}
@@ -337,8 +363,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         <Clock className="h-3 w-3" />
                         <span>
                           {new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit'
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </span>
                       </div>

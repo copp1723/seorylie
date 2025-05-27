@@ -1,13 +1,26 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle2, AlertCircle, Zap, Brain, Database, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  CheckCircle2,
+  AlertCircle,
+  Zap,
+  Brain,
+  Database,
+  TrendingUp,
+} from "lucide-react";
 
 interface AgentSquadStatus {
   ready: boolean;
@@ -33,7 +46,7 @@ interface TestResult {
 export default function AgentSquadAdmin() {
   const [status, setStatus] = useState<AgentSquadStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [testMessage, setTestMessage] = useState('');
+  const [testMessage, setTestMessage] = useState("");
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [testLoading, setTestLoading] = useState(false);
 
@@ -43,14 +56,14 @@ export default function AgentSquadAdmin() {
 
   const fetchStatus = async () => {
     try {
-      const response = await fetch('/api/agent-squad/status');
+      const response = await fetch("/api/agent-squad/status");
       const data = await response.json();
-      
+
       if (data.success) {
         setStatus(data.status);
       }
     } catch (error) {
-      console.error('Failed to fetch Agent Squad status:', error);
+      console.error("Failed to fetch Agent Squad status:", error);
     } finally {
       setLoading(false);
     }
@@ -59,51 +72,55 @@ export default function AgentSquadAdmin() {
   const initializeAgentSquad = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/agent-squad/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const response = await fetch("/api/agent-squad/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           dealershipId: 1, // Get from context in real app
-          enabled: true 
-        })
+          enabled: true,
+        }),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         await fetchStatus();
       } else {
-        alert('Failed to initialize Agent Squad: ' + data.error);
+        alert("Failed to initialize Agent Squad: " + data.error);
       }
     } catch (error) {
-      console.error('Failed to initialize Agent Squad:', error);
-      alert('Failed to initialize Agent Squad');
+      console.error("Failed to initialize Agent Squad:", error);
+      alert("Failed to initialize Agent Squad");
     } finally {
       setLoading(false);
     }
   };
 
-  const updateConfig = async (updates: Partial<AgentSquadStatus['config']>) => {
+  const updateConfig = async (updates: Partial<AgentSquadStatus["config"]>) => {
     try {
-      const response = await fetch('/api/agent-squad/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
+      const response = await fetch("/api/agent-squad/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
-        setStatus(prev => prev ? {
-          ...prev,
-          config: { ...prev.config, ...updates }
-        } : null);
+        setStatus((prev) =>
+          prev
+            ? {
+                ...prev,
+                config: { ...prev.config, ...updates },
+              }
+            : null,
+        );
       } else {
-        alert('Failed to update configuration: ' + data.error);
+        alert("Failed to update configuration: " + data.error);
       }
     } catch (error) {
-      console.error('Failed to update config:', error);
-      alert('Failed to update configuration');
+      console.error("Failed to update config:", error);
+      alert("Failed to update configuration");
     }
   };
 
@@ -112,25 +129,25 @@ export default function AgentSquadAdmin() {
 
     try {
       setTestLoading(true);
-      const response = await fetch('/api/agent-squad/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/agent-squad/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: testMessage,
-          dealershipId: 1 // Get from context in real app
-        })
+          dealershipId: 1, // Get from context in real app
+        }),
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setTestResult(data.result);
       } else {
-        alert('Test failed: ' + data.error);
+        alert("Test failed: " + data.error);
       }
     } catch (error) {
-      console.error('Test failed:', error);
-      alert('Test failed');
+      console.error("Test failed:", error);
+      alert("Test failed");
     } finally {
       setTestLoading(false);
     }
@@ -156,10 +173,10 @@ export default function AgentSquadAdmin() {
             Manage enhanced AI routing and specialized automotive agents
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-2">
-          <Badge variant={status?.ready ? 'default' : 'destructive'}>
-            {status?.ready ? 'Ready' : 'Not Ready'}
+          <Badge variant={status?.ready ? "default" : "destructive"}>
+            {status?.ready ? "Ready" : "Not Ready"}
           </Badge>
         </div>
       </div>
@@ -189,30 +206,46 @@ export default function AgentSquadAdmin() {
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <p className="font-medium">Original AI</p>
-                    <p className="text-sm text-muted-foreground">Rylie base system</p>
+                    <p className="text-sm text-muted-foreground">
+                      Rylie base system
+                    </p>
                   </div>
-                  <Badge variant={status?.health.originalAI ? 'default' : 'destructive'}>
-                    {status?.health.originalAI ? 'Online' : 'Offline'}
+                  <Badge
+                    variant={
+                      status?.health.originalAI ? "default" : "destructive"
+                    }
+                  >
+                    {status?.health.originalAI ? "Online" : "Offline"}
                   </Badge>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <p className="font-medium">Agent Squad</p>
-                    <p className="text-sm text-muted-foreground">Enhanced routing</p>
+                    <p className="text-sm text-muted-foreground">
+                      Enhanced routing
+                    </p>
                   </div>
-                  <Badge variant={status?.health.agentSquad ? 'default' : 'destructive'}>
-                    {status?.health.agentSquad ? 'Online' : 'Offline'}
+                  <Badge
+                    variant={
+                      status?.health.agentSquad ? "default" : "destructive"
+                    }
+                  >
+                    {status?.health.agentSquad ? "Online" : "Offline"}
                   </Badge>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <p className="font-medium">Hybrid System</p>
-                    <p className="text-sm text-muted-foreground">Combined routing</p>
+                    <p className="text-sm text-muted-foreground">
+                      Combined routing
+                    </p>
                   </div>
-                  <Badge variant={status?.health.hybrid ? 'default' : 'destructive'}>
-                    {status?.health.hybrid ? 'Online' : 'Offline'}
+                  <Badge
+                    variant={status?.health.hybrid ? "default" : "destructive"}
+                  >
+                    {status?.health.hybrid ? "Online" : "Offline"}
                   </Badge>
                 </div>
               </div>
@@ -283,7 +316,8 @@ export default function AgentSquadAdmin() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Agent Squad is not initialized. Click the button below to activate enhanced AI capabilities.
+                Agent Squad is not initialized. Click the button below to
+                activate enhanced AI capabilities.
                 <div className="mt-2">
                   <Button onClick={initializeAgentSquad} disabled={loading}>
                     Initialize Agent Squad
@@ -315,7 +349,9 @@ export default function AgentSquadAdmin() {
                 <Switch
                   id="use-agent-squad"
                   checked={status?.config.useAgentSquad || false}
-                  onCheckedChange={(checked) => updateConfig({ useAgentSquad: checked })}
+                  onCheckedChange={(checked) =>
+                    updateConfig({ useAgentSquad: checked })
+                  }
                 />
               </div>
 
@@ -331,7 +367,9 @@ export default function AgentSquadAdmin() {
                 <Switch
                   id="fallback-enabled"
                   checked={status?.config.fallbackToOriginal || false}
-                  onCheckedChange={(checked) => updateConfig({ fallbackToOriginal: checked })}
+                  onCheckedChange={(checked) =>
+                    updateConfig({ fallbackToOriginal: checked })
+                  }
                 />
               </div>
             </CardContent>
@@ -363,7 +401,7 @@ export default function AgentSquadAdmin() {
                 disabled={testLoading || !testMessage.trim() || !status?.ready}
                 className="w-full"
               >
-                {testLoading ? 'Testing...' : 'Test Agent Squad'}
+                {testLoading ? "Testing..." : "Test Agent Squad"}
               </Button>
 
               {testResult && (
@@ -371,11 +409,19 @@ export default function AgentSquadAdmin() {
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium">Test Result</h4>
                     <div className="flex space-x-2">
-                      <Badge variant={testResult.usedAgentSquad ? 'default' : 'secondary'}>
-                        {testResult.usedAgentSquad ? 'Agent Squad' : 'Original AI'}
+                      <Badge
+                        variant={
+                          testResult.usedAgentSquad ? "default" : "secondary"
+                        }
+                      >
+                        {testResult.usedAgentSquad
+                          ? "Agent Squad"
+                          : "Original AI"}
                       </Badge>
                       {testResult.selectedAgent && (
-                        <Badge variant="outline">{testResult.selectedAgent}</Badge>
+                        <Badge variant="outline">
+                          {testResult.selectedAgent}
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -417,7 +463,9 @@ export default function AgentSquadAdmin() {
               <div className="text-center py-8 text-muted-foreground">
                 <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Analytics dashboard coming soon...</p>
-                <p className="text-sm">Agent performance metrics and customer satisfaction tracking</p>
+                <p className="text-sm">
+                  Agent performance metrics and customer satisfaction tracking
+                </p>
               </div>
             </CardContent>
           </Card>

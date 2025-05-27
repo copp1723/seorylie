@@ -1,16 +1,45 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Copy, ChevronRight, Settings, MessageSquare, Code, Save, RefreshCw, BookmarkIcon } from "lucide-react";
+import {
+  Loader2,
+  Copy,
+  ChevronRight,
+  Settings,
+  MessageSquare,
+  Code,
+  Save,
+  RefreshCw,
+  BookmarkIcon,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -37,7 +66,9 @@ Always be friendly, helpful, and knowledgeable about vehicles. When customers as
 
 export default function SystemPromptTester() {
   const { toast } = useToast();
-  const [customerMessage, setCustomerMessage] = useState("Hi there, I'm looking for a new SUV for my family. Can you help me?");
+  const [customerMessage, setCustomerMessage] = useState(
+    "Hi there, I'm looking for a new SUV for my family. Can you help me?",
+  );
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
   const [isLoading, setIsLoading] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -47,24 +78,38 @@ export default function SystemPromptTester() {
   const [splitScreen, setSplitScreen] = useState(true);
   const [showVariables, setShowVariables] = useState(true);
   const [activeTab, setActiveTab] = useState("editor");
-  const [conversation, setConversation] = useState<{ role: "customer" | "assistant"; content: string }[]>([]);
+  const [conversation, setConversation] = useState<
+    { role: "customer" | "assistant"; content: string }[]
+  >([]);
   const responseRef = useRef<HTMLDivElement>(null);
-  
+
   // State for the saved prompt form
   const [promptName, setPromptName] = useState("");
   const [promptDescription, setPromptDescription] = useState("");
   const [promptTags, setPromptTags] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  
+
   // Default values for the replacements
   const [agentName, setAgentName] = useState("Rylie");
   const [dealershipName, setDealershipName] = useState("Example Motors");
-  const [financingUrl, setFinancingUrl] = useState("https://www.exampledealership.com/financing");
-  const [tradeInUrl, setTradeInUrl] = useState("https://www.exampledealership.com/trade-in-value");
-  const [appointmentUrl, setAppointmentUrl] = useState("https://www.exampledealership.com/schedule-appointment");
-  const [inventoryUrl, setInventoryUrl] = useState("https://www.exampledealership.com/inventory");
-  const [specificInstructions, setSpecificInstructions] = useState("Always start with a casual, personal greeting. Use contractions and everyday words.");
-  const [specificConstraints, setSpecificConstraints] = useState("No Pricing or Promises: Avoid discussing costs, financing details, or delivery guarantees.");
+  const [financingUrl, setFinancingUrl] = useState(
+    "https://www.exampledealership.com/financing",
+  );
+  const [tradeInUrl, setTradeInUrl] = useState(
+    "https://www.exampledealership.com/trade-in-value",
+  );
+  const [appointmentUrl, setAppointmentUrl] = useState(
+    "https://www.exampledealership.com/schedule-appointment",
+  );
+  const [inventoryUrl, setInventoryUrl] = useState(
+    "https://www.exampledealership.com/inventory",
+  );
+  const [specificInstructions, setSpecificInstructions] = useState(
+    "Always start with a casual, personal greeting. Use contractions and everyday words.",
+  );
+  const [specificConstraints, setSpecificConstraints] = useState(
+    "No Pricing or Promises: Avoid discussing costs, financing details, or delivery guarantees.",
+  );
 
   // Auto-scroll to latest response
   useEffect(() => {
@@ -85,77 +130,81 @@ export default function SystemPromptTester() {
       .replace(/{{specificInstructions}}/g, specificInstructions)
       .replace(/{{specificConstraints}}/g, specificConstraints);
   };
-  
+
   const handleTestPrompt = async () => {
     if (!customerMessage.trim()) return;
-    
+
     setIsLoading(true);
     setError("");
-    
+
     // Add customer message to conversation
     const updatedConversation = [
       ...conversation,
-      { role: "customer", content: customerMessage }
+      { role: "customer", content: customerMessage },
     ];
     setConversation(updatedConversation);
-    
+
     try {
       // We'll use fetch directly to a simple API endpoint
       const customizedPrompt = generateCustomizedPrompt();
-      
-      const response = await fetch('/api/test-system-prompt', {
-        method: 'POST',
+
+      const response = await fetch("/api/test-system-prompt", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           systemPrompt: customizedPrompt,
           customerMessage,
-          conversation: updatedConversation
+          conversation: updatedConversation,
         }),
       });
-      
+
       // Check if response is valid before trying to parse JSON
       const responseText = await response.text();
-      
+
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${responseText}`);
       }
-      
+
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error("JSON Parse Error:", parseError);
-        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+        throw new Error(
+          `Invalid JSON response: ${responseText.substring(0, 100)}...`,
+        );
       }
-      
+
       if (!data || !data.response) {
         throw new Error("Received invalid response format");
       }
-      
+
       setResponse(data.response);
-      
+
       // Add assistant response to conversation
       setConversation([
         ...updatedConversation,
-        { role: "assistant", content: data.response }
+        { role: "assistant", content: data.response },
       ]);
-      
+
       // Clear customer message input for next message
       setCustomerMessage("");
     } catch (err) {
       console.error("Error testing prompt:", err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred",
+      );
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(generateCustomizedPrompt());
   };
-  
+
   const handleSavePrompt = async () => {
     if (!promptName.trim()) {
       toast({
@@ -165,9 +214,9 @@ export default function SystemPromptTester() {
       });
       return;
     }
-    
+
     setIsSaving(true);
-    
+
     try {
       // Create the arguments object with all the variable values
       const args = {
@@ -178,18 +227,18 @@ export default function SystemPromptTester() {
         appointmentUrl,
         inventoryUrl,
         specificInstructions,
-        specificConstraints
+        specificConstraints,
       };
-      
+
       // Parse tags
       const tags = promptTags
-        ? promptTags.split(",").map(tag => tag.trim())
+        ? promptTags.split(",").map((tag) => tag.trim())
         : [];
-      
-      const response = await fetch('/api/prompt-library', {
-        method: 'POST',
+
+      const response = await fetch("/api/prompt-library", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           name: promptName,
@@ -200,57 +249,68 @@ export default function SystemPromptTester() {
           tags: tags.length > 0 ? tags : null,
         }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to save prompt");
       }
-      
+
       toast({
         title: "Success",
         description: "Prompt saved to library!",
         variant: "default",
       });
-      
+
       // Reset the form and close the dialog
       setPromptName("");
       setPromptDescription("");
       setPromptTags("");
       setIsPublic(false);
       setSaveDialogOpen(false);
-      
+
       // Refresh the prompt library data
       queryClient.invalidateQueries({ queryKey: ["/api/prompt-library"] });
     } catch (error) {
       console.error("Error saving prompt:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save prompt",
+        description:
+          error instanceof Error ? error.message : "Failed to save prompt",
         variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleTestPrompt();
     }
   };
-  
+
   const resetConversation = () => {
     setConversation([]);
     setResponse("");
     setError("");
   };
-  
-  const ChatBubble = ({ content, isUser }: { content: string; isUser: boolean }) => (
-    <div className={cn(
-      "max-w-3/4 mb-4 p-3 rounded-lg",
-      isUser ? "ml-auto bg-primary text-white" : "mr-auto bg-gray-100 dark:bg-gray-800"
-    )}>
+
+  const ChatBubble = ({
+    content,
+    isUser,
+  }: {
+    content: string;
+    isUser: boolean;
+  }) => (
+    <div
+      className={cn(
+        "max-w-3/4 mb-4 p-3 rounded-lg",
+        isUser
+          ? "ml-auto bg-primary text-white"
+          : "mr-auto bg-gray-100 dark:bg-gray-800",
+      )}
+    >
       <p className="whitespace-pre-wrap">{content}</p>
     </div>
   );
@@ -258,7 +318,9 @@ export default function SystemPromptTester() {
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">System Prompt Builder</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          System Prompt Builder
+        </h1>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Switch
@@ -278,11 +340,13 @@ export default function SystemPromptTester() {
           </div>
         </div>
       </div>
-      
-      <div className={cn(
-        "grid gap-6 transition-all duration-300",
-        splitScreen ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
-      )}>
+
+      <div
+        className={cn(
+          "grid gap-6 transition-all duration-300",
+          splitScreen ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1",
+        )}
+      >
         {/* Left panel - Editor */}
         <div className="space-y-6">
           <Card className="overflow-hidden shadow-md border-gray-200 dark:border-gray-700">
@@ -295,29 +359,43 @@ export default function SystemPromptTester() {
                 <Button variant="ghost" size="sm" onClick={handleCopyPrompt}>
                   <Copy className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setSaveDialogOpen(true)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSaveDialogOpen(true)}
+                >
                   <BookmarkIcon className="h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>
-            
+
             <CardContent className="px-0 pt-0 pb-0">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="w-full"
+              >
                 <TabsList className="w-full rounded-none justify-start bg-gray-100 dark:bg-gray-700 px-4">
-                  <TabsTrigger value="editor" className="text-xs">Template</TabsTrigger>
-                  <TabsTrigger value="preview" className="text-xs">Preview</TabsTrigger>
-                  <TabsTrigger value="variables" className="text-xs">Variables</TabsTrigger>
+                  <TabsTrigger value="editor" className="text-xs">
+                    Template
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" className="text-xs">
+                    Preview
+                  </TabsTrigger>
+                  <TabsTrigger value="variables" className="text-xs">
+                    Variables
+                  </TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="editor" className="mt-0 p-4">
-                  <Textarea 
-                    value={systemPrompt} 
+                  <Textarea
+                    value={systemPrompt}
                     onChange={(e) => setSystemPrompt(e.target.value)}
                     rows={splitScreen ? 20 : 15}
                     className="font-mono text-sm border-0 resize-none focus-visible:ring-0 p-0"
                   />
                 </TabsContent>
-                
+
                 <TabsContent value="preview" className="mt-0">
                   <div className="p-4 bg-gray-50 dark:bg-gray-900 font-mono text-sm overflow-y-auto max-h-[500px]">
                     <pre className="whitespace-pre-wrap">
@@ -325,85 +403,103 @@ export default function SystemPromptTester() {
                     </pre>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="variables" className="mt-0 p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="agentName" className="text-xs">Agent Name</Label>
-                      <Input 
-                        id="agentName" 
-                        value={agentName} 
+                      <Label htmlFor="agentName" className="text-xs">
+                        Agent Name
+                      </Label>
+                      <Input
+                        id="agentName"
+                        value={agentName}
                         onChange={(e) => setAgentName(e.target.value)}
                         className="h-8 text-sm"
                       />
                     </div>
-                    
+
                     <div>
-                      <Label htmlFor="dealershipName" className="text-xs">Dealership Name</Label>
-                      <Input 
-                        id="dealershipName" 
-                        value={dealershipName} 
+                      <Label htmlFor="dealershipName" className="text-xs">
+                        Dealership Name
+                      </Label>
+                      <Input
+                        id="dealershipName"
+                        value={dealershipName}
                         onChange={(e) => setDealershipName(e.target.value)}
                         className="h-8 text-sm"
                       />
                     </div>
-                    
+
                     <div>
-                      <Label htmlFor="financingUrl" className="text-xs">Financing URL</Label>
-                      <Input 
-                        id="financingUrl" 
-                        value={financingUrl} 
+                      <Label htmlFor="financingUrl" className="text-xs">
+                        Financing URL
+                      </Label>
+                      <Input
+                        id="financingUrl"
+                        value={financingUrl}
                         onChange={(e) => setFinancingUrl(e.target.value)}
                         className="h-8 text-sm"
                       />
                     </div>
-                    
+
                     <div>
-                      <Label htmlFor="tradeInUrl" className="text-xs">Trade-In URL</Label>
-                      <Input 
-                        id="tradeInUrl" 
-                        value={tradeInUrl} 
+                      <Label htmlFor="tradeInUrl" className="text-xs">
+                        Trade-In URL
+                      </Label>
+                      <Input
+                        id="tradeInUrl"
+                        value={tradeInUrl}
                         onChange={(e) => setTradeInUrl(e.target.value)}
                         className="h-8 text-sm"
                       />
                     </div>
-                    
+
                     <div>
-                      <Label htmlFor="appointmentUrl" className="text-xs">Appointment URL</Label>
-                      <Input 
-                        id="appointmentUrl" 
-                        value={appointmentUrl} 
+                      <Label htmlFor="appointmentUrl" className="text-xs">
+                        Appointment URL
+                      </Label>
+                      <Input
+                        id="appointmentUrl"
+                        value={appointmentUrl}
                         onChange={(e) => setAppointmentUrl(e.target.value)}
                         className="h-8 text-sm"
                       />
                     </div>
-                    
+
                     <div>
-                      <Label htmlFor="inventoryUrl" className="text-xs">Inventory URL</Label>
-                      <Input 
-                        id="inventoryUrl" 
-                        value={inventoryUrl} 
+                      <Label htmlFor="inventoryUrl" className="text-xs">
+                        Inventory URL
+                      </Label>
+                      <Input
+                        id="inventoryUrl"
+                        value={inventoryUrl}
                         onChange={(e) => setInventoryUrl(e.target.value)}
                         className="h-8 text-sm"
                       />
                     </div>
-                    
+
                     <div className="col-span-1 md:col-span-2">
-                      <Label htmlFor="specificInstructions" className="text-xs">Specific Instructions</Label>
-                      <Textarea 
-                        id="specificInstructions" 
-                        value={specificInstructions} 
-                        onChange={(e) => setSpecificInstructions(e.target.value)}
+                      <Label htmlFor="specificInstructions" className="text-xs">
+                        Specific Instructions
+                      </Label>
+                      <Textarea
+                        id="specificInstructions"
+                        value={specificInstructions}
+                        onChange={(e) =>
+                          setSpecificInstructions(e.target.value)
+                        }
                         rows={2}
                         className="text-sm resize-none"
                       />
                     </div>
-                    
+
                     <div className="col-span-1 md:col-span-2">
-                      <Label htmlFor="specificConstraints" className="text-xs">Specific Constraints</Label>
-                      <Textarea 
-                        id="specificConstraints" 
-                        value={specificConstraints} 
+                      <Label htmlFor="specificConstraints" className="text-xs">
+                        Specific Constraints
+                      </Label>
+                      <Textarea
+                        id="specificConstraints"
+                        value={specificConstraints}
                         onChange={(e) => setSpecificConstraints(e.target.value)}
                         rows={2}
                         className="text-sm resize-none"
@@ -414,7 +510,7 @@ export default function SystemPromptTester() {
               </Tabs>
             </CardContent>
           </Card>
-          
+
           {!splitScreen && (
             <Card className="shadow-md border-gray-200 dark:border-gray-700">
               <CardHeader className="bg-gray-50 dark:bg-gray-800 px-4 py-3">
@@ -438,7 +534,7 @@ export default function SystemPromptTester() {
             </Card>
           )}
         </div>
-        
+
         {/* Save Prompt Dialog */}
         <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
           <DialogContent className="sm:max-w-2xl">
@@ -495,18 +591,24 @@ export default function SystemPromptTester() {
                     checked={isPublic}
                     onCheckedChange={setIsPublic}
                   />
-                  <Label htmlFor="isPublic" className="text-sm text-muted-foreground">
+                  <Label
+                    htmlFor="isPublic"
+                    className="text-sm text-muted-foreground"
+                  >
                     Make this prompt visible to all users
                   </Label>
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setSaveDialogOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={handleSavePrompt} 
+              <Button
+                onClick={handleSavePrompt}
                 disabled={isSaving || !promptName.trim()}
               >
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -515,7 +617,7 @@ export default function SystemPromptTester() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
+
         {/* Right panel - Conversation */}
         {splitScreen && (
           <Card className="shadow-md border-gray-200 dark:border-gray-700">
@@ -548,11 +650,20 @@ export default function SystemPromptTester() {
           </Card>
         )}
       </div>
-      
+
       {/* Floating Action Button for Mobile View */}
       <div className="lg:hidden">
-        <button className="floating-action-btn" onClick={() => setActiveTab(activeTab === "editor" ? "variables" : "editor")}>
-          {activeTab === "editor" ? <Settings className="h-6 w-6" /> : <Code className="h-6 w-6" />}
+        <button
+          className="floating-action-btn"
+          onClick={() =>
+            setActiveTab(activeTab === "editor" ? "variables" : "editor")
+          }
+        >
+          {activeTab === "editor" ? (
+            <Settings className="h-6 w-6" />
+          ) : (
+            <Code className="h-6 w-6" />
+          )}
         </button>
       </div>
     </div>
@@ -578,24 +689,27 @@ function TestConversation({
   error,
   handleKeyDown,
   handleTestPrompt,
-  resetConversation
+  resetConversation,
 }: TestConversationProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Auto-scroll to latest message
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, [conversation]);
-  
+
   return (
     <>
-      <div 
+      <div
         ref={chatContainerRef}
         className={cn(
           "flex flex-col overflow-y-auto p-4 rounded-md bg-gray-50 dark:bg-gray-900",
-          conversation.length > 0 ? "min-h-[300px] max-h-[300px]" : "min-h-[200px]"
+          conversation.length > 0
+            ? "min-h-[300px] max-h-[300px]"
+            : "min-h-[200px]",
         )}
       >
         {conversation.length === 0 ? (
@@ -612,14 +726,14 @@ function TestConversation({
                 "max-w-[80%] mb-3 rounded-lg p-3",
                 message.role === "customer"
                   ? "self-end bg-primary text-white"
-                  : "self-start bg-white dark:bg-gray-800 shadow-sm"
+                  : "self-start bg-white dark:bg-gray-800 shadow-sm",
               )}
             >
               <p className="text-sm whitespace-pre-wrap">{message.content}</p>
             </div>
           ))
         )}
-        
+
         {isLoading && (
           <div className="self-start bg-white dark:bg-gray-800 shadow-sm max-w-[80%] mb-3 rounded-lg p-3 flex items-center space-x-2">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -627,15 +741,13 @@ function TestConversation({
           </div>
         )}
       </div>
-      
+
       {error && (
         <Alert variant="destructive" className="py-2">
-          <AlertDescription className="text-xs">
-            {error}
-          </AlertDescription>
+          <AlertDescription className="text-xs">{error}</AlertDescription>
         </Alert>
       )}
-      
+
       <div className="flex space-x-2">
         <Textarea
           value={customerMessage}

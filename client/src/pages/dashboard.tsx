@@ -1,5 +1,7 @@
 import StatusCard from "@/components/status-card";
-import ConversationTable, { Conversation } from "@/components/conversation-table";
+import ConversationTable, {
+  Conversation,
+} from "@/components/conversation-table";
 import ApiStatus from "@/components/api-status";
 import FeaturedDealership from "@/components/featured-dealership";
 import ConversationChart from "@/components/conversation-chart";
@@ -9,7 +11,7 @@ import { useState } from "react";
 
 export default function Dashboard() {
   const [dealershipFilter, setDealershipFilter] = useState("all");
-  
+
   // Sample data for the dashboard
   const sampleConversations: Conversation[] = [
     {
@@ -57,7 +59,11 @@ export default function Dashboard() {
   const apiEndpoints = [
     { path: "/inbound", status: "operational" as const, uptime: "100% uptime" },
     { path: "/reply", status: "operational" as const, uptime: "99.8% uptime" },
-    { path: "/handover", status: "operational" as const, uptime: "99.9% uptime" },
+    {
+      path: "/handover",
+      status: "operational" as const,
+      uptime: "99.9% uptime",
+    },
   ];
 
   const conversationChartData = [
@@ -123,7 +129,7 @@ export default function Dashboard() {
           progressColor="bg-success"
           progressLabel="API & Services"
         />
-        
+
         {/* Prompt Testing */}
         <StatusCard
           title="Prompt Testing"
@@ -134,10 +140,10 @@ export default function Dashboard() {
           trend={{
             value: "5",
             direction: "up",
-            label: "templates available"
+            label: "templates available",
           }}
         />
-        
+
         {/* Setup Tools */}
         <StatusCard
           title="Dealership Setup"
@@ -148,11 +154,11 @@ export default function Dashboard() {
           trend={{
             value: "3",
             direction: "up",
-            label: "steps to complete"
+            label: "steps to complete",
           }}
         />
       </div>
-      
+
       {/* API Status and Dealership Configuration */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* API Status */}
@@ -172,8 +178,6 @@ export default function Dashboard() {
           />
         </div>
       </div>
-
-
     </>
   );
 }

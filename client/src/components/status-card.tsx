@@ -38,23 +38,27 @@ export default function StatusCard({
           <p className="text-2xl font-semibold mt-0.5">{value}</p>
         </div>
       </div>
-      
+
       <div className="mt-5">
         {progressValue !== undefined && (
           <>
             <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-              <div 
-                className={`h-1.5 ${progressColor} rounded-full`} 
+              <div
+                className={`h-1.5 ${progressColor} rounded-full`}
                 style={{ width: `${progressValue}%` }}
               ></div>
             </div>
-            {progressLabel && <p className="mt-1.5 text-xs text-neutral-500">{progressLabel}</p>}
+            {progressLabel && (
+              <p className="mt-1.5 text-xs text-neutral-500">{progressLabel}</p>
+            )}
           </>
         )}
-        
+
         {trend && (
           <div className="flex items-center mt-1">
-            <span className={`text-xs ${trend.direction === 'up' ? 'text-success' : 'text-error'} font-medium`}>
+            <span
+              className={`text-xs ${trend.direction === "up" ? "text-success" : "text-error"} font-medium`}
+            >
               {trend.value}
             </span>
             <span className="mx-1.5 text-xs text-neutral-400">•</span>

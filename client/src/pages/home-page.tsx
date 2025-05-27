@@ -1,9 +1,23 @@
 import React from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useLocation } from "wouter";
-import { BarChart3, TestTube, Users, LogOut, Settings, UserPlus, Zap } from "lucide-react";
+import {
+  BarChart3,
+  TestTube,
+  Users,
+  LogOut,
+  Settings,
+  UserPlus,
+  Zap,
+} from "lucide-react";
 
 export default function HomePage() {
   const { user, logout } = useAuth();
@@ -13,20 +27,22 @@ export default function HomePage() {
     {
       id: "quick-test",
       title: "Quick Test",
-      description: "Quickly test AI responses with single prompts and custom scenarios.",
+      description:
+        "Quickly test AI responses with single prompts and custom scenarios.",
       icon: <Zap className="h-5 w-5" />,
       onClick: () => {
         setLocation("/prompt-testing");
-      }
+      },
     },
     {
       id: "prompt-library",
       title: "Prompt Library",
-      description: "Manage your library of tested and approved AI prompts for various scenarios.",
+      description:
+        "Manage your library of tested and approved AI prompts for various scenarios.",
       icon: <TestTube className="h-5 w-5" />,
       onClick: () => {
         setLocation("/prompt-library");
-      }
+      },
     },
     {
       id: "analytics-dashboard",
@@ -35,35 +51,38 @@ export default function HomePage() {
       icon: <BarChart3 className="h-5 w-5" />,
       onClick: () => {
         setLocation("/analytics");
-      }
+      },
     },
     {
       id: "security",
       title: "Security Settings",
-      description: "Manage security settings, API keys, and access controls for your account.",
+      description:
+        "Manage security settings, API keys, and access controls for your account.",
       icon: <Settings className="h-5 w-5" />,
       onClick: () => {
         setLocation("/security");
-      }
+      },
     },
     {
       id: "invitations",
       title: "Invitations",
-      description: "Manage user invitations and control access to your organization's platform.",
+      description:
+        "Manage user invitations and control access to your organization's platform.",
       icon: <UserPlus className="h-5 w-5" />,
       onClick: () => {
         setLocation("/invitations");
-      }
+      },
     },
     {
       id: "setup",
       title: "System Setup",
-      description: "Configure system settings, integrations, and customize your experience.",
+      description:
+        "Configure system settings, integrations, and customize your experience.",
       icon: <Users className="h-5 w-5" />,
       onClick: () => {
         setLocation("/setup");
-      }
-    }
+      },
+    },
   ];
 
   const handleLogout = () => {
@@ -83,10 +102,10 @@ export default function HomePage() {
             </h1>
             <div className="flex items-center space-x-6">
               <span className="text-sm text-gray-600">
-                Welcome, {user?.username || 'User'}
+                Welcome, {user?.username || "User"}
               </span>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={handleLogout}
                 className="text-gray-600 hover:text-gray-900"
@@ -102,23 +121,23 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="mb-12">
-          <h2 className="text-3xl font-semibold text-gray-900 mb-3">Dashboard</h2>
+          <h2 className="text-3xl font-semibold text-gray-900 mb-3">
+            Dashboard
+          </h2>
           <p className="text-gray-600">Choose a feature to get started</p>
         </div>
 
         {/* Dashboard Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {dashboardItems.map((item) => (
-            <Card 
+            <Card
               key={item.id}
               className="cursor-pointer transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white"
               onClick={item.onClick}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="text-gray-700">
-                    {item.icon}
-                  </div>
+                  <div className="text-gray-700">{item.icon}</div>
                   <CardTitle className="text-lg font-medium text-gray-900">
                     {item.title}
                   </CardTitle>
@@ -136,7 +155,8 @@ export default function HomePage() {
         {/* Footer */}
         <div className="mt-16 text-center">
           <p className="text-gray-500 text-sm">
-            More features will be added to your dashboard as they become available.
+            More features will be added to your dashboard as they become
+            available.
           </p>
         </div>
       </main>

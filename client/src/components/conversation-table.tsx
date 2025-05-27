@@ -16,7 +16,7 @@ interface ConversationTableProps {
 
 // Define status classes type for better type safety
 type StatusClassMap = {
-  [K in Conversation['status']]: string;
+  [K in Conversation["status"]]: string;
 };
 
 export default function ConversationTable({
@@ -25,7 +25,7 @@ export default function ConversationTable({
 }: ConversationTableProps) {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 5;
-  
+
   const statusClasses: StatusClassMap = {
     active: "text-success-800 bg-success-100",
     waiting: "text-warning-800 bg-warning-100",
@@ -36,9 +36,9 @@ export default function ConversationTable({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedConversations = conversations.slice(
     startIndex,
-    startIndex + itemsPerPage
+    startIndex + itemsPerPage,
   );
-  
+
   const totalPages = Math.ceil(conversations.length / itemsPerPage);
 
   return (
@@ -72,29 +72,38 @@ export default function ConversationTable({
           </thead>
           <tbody className="divide-y">
             {paginatedConversations.map((conversation: Conversation) => (
-              <tr 
-                key={conversation.id} 
+              <tr
+                key={conversation.id}
                 className="hover:bg-neutral-50 cursor-pointer transition-colors"
                 onClick={() => onViewConversation(conversation.id)}
               >
                 <td className="px-4 py-3.5">
                   <div className="flex items-center">
-                    <span className="font-medium">{conversation.customerName}</span>
+                    <span className="font-medium">
+                      {conversation.customerName}
+                    </span>
                   </div>
                 </td>
-                <td className="px-4 py-3.5 text-sm text-neutral-600">{conversation.dealershipName}</td>
-                <td className="px-4 py-3.5 text-sm text-neutral-600 max-w-xs truncate">{conversation.lastMessage}</td>
+                <td className="px-4 py-3.5 text-sm text-neutral-600">
+                  {conversation.dealershipName}
+                </td>
+                <td className="px-4 py-3.5 text-sm text-neutral-600 max-w-xs truncate">
+                  {conversation.lastMessage}
+                </td>
                 <td className="px-4 py-3.5">
                   <span
                     className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
                       statusClasses[conversation.status]
                     }`}
                   >
-                    {conversation.status.charAt(0).toUpperCase() + conversation.status.slice(1)}
+                    {conversation.status.charAt(0).toUpperCase() +
+                      conversation.status.slice(1)}
                   </span>
                 </td>
                 <td className="px-4 py-3.5 text-right">
-                  <span className="text-primary text-sm hover:underline">View</span>
+                  <span className="text-primary text-sm hover:underline">
+                    View
+                  </span>
                 </td>
               </tr>
             ))}
@@ -104,7 +113,9 @@ export default function ConversationTable({
       <div className="px-4 py-3 text-right border-t">
         <div className="inline-flex items-center text-sm">
           <button
-            onClick={() => setCurrentPage((prev: number) => Math.max(prev - 1, 1))}
+            onClick={() =>
+              setCurrentPage((prev: number) => Math.max(prev - 1, 1))
+            }
             className="p-1 text-neutral-500 rounded hover:bg-neutral-100 disabled:opacity-50"
             disabled={currentPage === 1}
           >
@@ -114,7 +125,9 @@ export default function ConversationTable({
             Page {currentPage} of {totalPages || 1}
           </span>
           <button
-            onClick={() => setCurrentPage((prev: number) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev: number) => Math.min(prev + 1, totalPages))
+            }
             className="p-1 text-neutral-500 rounded hover:bg-neutral-100 disabled:opacity-50"
             disabled={currentPage === totalPages || totalPages === 0}
           >

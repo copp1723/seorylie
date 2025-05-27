@@ -34,12 +34,16 @@ export default function ApiStatus({ endpoints }: ApiStatusProps) {
           <div key={endpoint.path} className="p-3 rounded-md bg-neutral-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <span className={`material-icons ${getStatusColor(endpoint.status)} mr-2`}>
+                <span
+                  className={`material-icons ${getStatusColor(endpoint.status)} mr-2`}
+                >
                   circle
                 </span>
                 <code className="text-sm font-mono">{endpoint.path}</code>
               </div>
-              <span className="text-xs text-neutral-500">{endpoint.uptime}</span>
+              <span className="text-xs text-neutral-500">
+                {endpoint.uptime}
+              </span>
             </div>
           </div>
         ))}

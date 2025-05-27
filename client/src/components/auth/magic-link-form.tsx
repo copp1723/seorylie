@@ -3,7 +3,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -56,7 +63,8 @@ export function MagicLinkForm() {
       console.error("Magic link request error:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send magic link",
+        description:
+          error instanceof Error ? error.message : "Failed to send magic link",
         variant: "destructive",
       });
     } finally {
@@ -71,7 +79,8 @@ export function MagicLinkForm() {
           <Mail className="mx-auto h-12 w-12 text-primary" />
           <h3 className="text-xl font-medium">Check your inbox</h3>
           <p className="text-muted-foreground">
-            We've sent a magic link to your email address. Click the link in the email to sign in.
+            We've sent a magic link to your email address. Click the link in the
+            email to sign in.
           </p>
           <Button
             variant="outline"
@@ -97,11 +106,7 @@ export function MagicLinkForm() {
                 </FormItem>
               )}
             />
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               <Mail className="mr-2 h-4 w-4" />
               {isLoading ? "Sending..." : "Send Magic Link"}
             </Button>

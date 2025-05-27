@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,7 +26,7 @@ export default function LoginPage() {
     password: "",
   });
 
-  const [loginType, setLoginType] = useState<'username' | 'email'>('username');
+  const [loginType, setLoginType] = useState<"username" | "email">("username");
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,7 +43,7 @@ export default function LoginPage() {
       password: loginData.password,
     };
 
-    if (loginType === 'email') {
+    if (loginType === "email") {
       submitData.email = loginData.username; // Use username field for email input
     } else {
       submitData.username = loginData.username;
@@ -66,7 +73,9 @@ export default function LoginPage() {
     <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Welcome to Rylie AI</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Welcome to Rylie AI
+          </CardTitle>
           <CardDescription>
             Please log in to access the platform
           </CardDescription>
@@ -87,29 +96,33 @@ export default function LoginPage() {
               <div className="flex space-x-2 mb-2">
                 <Button
                   type="button"
-                  variant={loginType === 'username' ? 'default' : 'outline'}
+                  variant={loginType === "username" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setLoginType('username')}
+                  onClick={() => setLoginType("username")}
                 >
                   Username
                 </Button>
                 <Button
                   type="button"
-                  variant={loginType === 'email' ? 'default' : 'outline'}
+                  variant={loginType === "email" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setLoginType('email')}
+                  onClick={() => setLoginType("email")}
                 >
                   Email
                 </Button>
               </div>
               <Label htmlFor="username">
-                {loginType === 'email' ? 'Email' : 'Username'}
+                {loginType === "email" ? "Email" : "Username"}
               </Label>
               <Input
                 id="username"
                 name="username"
-                type={loginType === 'email' ? 'email' : 'text'}
-                placeholder={loginType === 'email' ? 'Enter your email' : 'Enter your username'}
+                type={loginType === "email" ? "email" : "text"}
+                placeholder={
+                  loginType === "email"
+                    ? "Enter your email"
+                    : "Enter your username"
+                }
                 value={loginData.username}
                 onChange={handleInputChange}
                 required

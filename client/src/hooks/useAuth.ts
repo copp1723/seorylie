@@ -26,10 +26,10 @@ export interface RegisterData {
 // API functions
 async function fetchCurrentUser(): Promise<User | null> {
   try {
-    const response = await fetch('/api/user', {
-      credentials: 'include',
+    const response = await fetch("/api/user", {
+      credentials: "include",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -44,7 +44,7 @@ async function fetchCurrentUser(): Promise<User | null> {
     const userData = await response.json();
     return userData;
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error("Error fetching user:", error);
     return null;
   }
 }
@@ -53,77 +53,77 @@ async function loginUser(credentials: LoginData): Promise<User> {
   const identifier = credentials.username || credentials.email;
 
   try {
-    const response = await fetch('/api/login', {
-      method: 'POST',
+    const response = await fetch("/api/login", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      credentials: 'include',
+      credentials: "include",
       body: JSON.stringify(credentials),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Login failed:', errorData);
-      throw new Error(errorData.error || 'Login failed');
+      console.error("Login failed:", errorData);
+      throw new Error(errorData.error || "Login failed");
     }
 
     const userData = await response.json();
     return userData;
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     throw error;
   }
 }
 
 async function registerUser(credentials: RegisterData): Promise<User> {
-  const response = await fetch('/api/register', {
-    method: 'POST',
+  const response = await fetch("/api/register", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    credentials: 'include',
+    credentials: "include",
     body: JSON.stringify(credentials),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(error || 'Registration failed');
+    throw new Error(error || "Registration failed");
   }
 
   return response.json();
 }
 
 async function logoutUser(): Promise<void> {
-  const response = await fetch('/api/logout', {
-    method: 'POST',
-    credentials: 'include',
+  const response = await fetch("/api/logout", {
+    method: "POST",
+    credentials: "include",
   });
 
   if (!response.ok) {
-    throw new Error('Logout failed');
+    throw new Error("Logout failed");
   }
 }
 
 async function loginWithMagicLink(email: string): Promise<boolean> {
   try {
-    const response = await fetch('/api/auth/magic-link', {
-      method: 'POST',
+    const response = await fetch("/api/auth/magic-link", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      credentials: 'include',
+      credentials: "include",
       body: JSON.stringify({ email }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to send magic link');
+      throw new Error(errorData.error || "Failed to send magic link");
     }
 
     return true;
   } catch (error) {
-    console.error('Magic link error:', error);
+    console.error("Magic link error:", error);
     throw error;
   }
 }
@@ -136,7 +136,7 @@ export function useAuth() {
     data: user,
     error,
     isLoading,
-    refetch
+    refetch,
   } = useQuery({
     queryKey: ["/api/user"],
     queryFn: fetchCurrentUser,
@@ -150,7 +150,7 @@ export function useAuth() {
     onSuccess: (userData) => {
       // Update cache with user data
       queryClient.setQueryData(["/api/user"], userData);
-    }
+    },
   });
 
   // Register mutation
@@ -159,7 +159,7 @@ export function useAuth() {
     onSuccess: (userData) => {
       // Update cache with user data
       queryClient.setQueryData(["/api/user"], userData);
-    }
+    },
   });
 
   // Logout mutation
@@ -168,7 +168,7 @@ export function useAuth() {
     onSuccess: () => {
       // Clear user from cache
       queryClient.setQueryData(["/api/user"], null);
-    }
+    },
   });
 
   // Magic link mutation
@@ -192,6 +192,6 @@ export function useAuth() {
     magicLinkMutation,
     refetchUser: refetch,
     logout, // Add the simple logout function
-    loginWithMagicLink: (email: string) => magicLinkMutation.mutateAsync(email)
+    loginWithMagicLink: (email: string) => magicLinkMutation.mutateAsync(email),
   };
 }

@@ -1,9 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -14,14 +21,14 @@ import { apiRequest } from "@/lib/queryClient";
 
 // Define types for our component
 interface Message {
-  role: 'customer' | 'assistant';
+  role: "customer" | "assistant";
   content: string;
   timestamp: string;
 }
 
 interface TestResult {
   success: boolean;
-  testType: 'chat' | 'handover';
+  testType: "chat" | "handover";
   processedPrompt: string;
   aiResponse?: string;
   handoverDossier?: any;
@@ -38,9 +45,10 @@ interface CustomerScenario {
 
 // Main component for enhanced prompt testing
 const EnhancedPromptTestingPage: React.FC = () => {
-  const [customerScenario, setCustomerScenario] = useState('');
+  const [customerScenario, setCustomerScenario] = useState("");
   // State for system prompt and variables
-  const [systemPrompt, setSystemPrompt] = useState(`System Prompt for Automotive Sales Agent AI
+  const [systemPrompt, setSystemPrompt] =
+    useState(`System Prompt for Automotive Sales Agent AI
 You are an automotive sales agent named [ARG-Agent Name], working for [ARG-Employer Name], a dealership committed to exceptional customer service and top-quality vehicles ([ARG-Information About Employer]). Your job is to connect with customers, understand their needs, and guide them toward purchasing a vehicle from our inventory ([ARG-Products]) that perfectly fits their lifestyle. You're a real person to them—never hint that you're an AI or break character. Your focus is on creating meaningful connections while driving sales.
 
 Dealership Contact
@@ -168,24 +176,28 @@ Clear, conversational next step? Check.
 Proper spacing with line breaks? Check.
 Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to sound like a real salesperson (e.g., replace "We strive to assist" with "We've got you covered!")`);
   const [variables, setVariables] = useState<Record<string, string>>({
-    Agent_Name: 'Sarah',
-    Dealership: 'Premium Auto Sales'
+    Agent_Name: "Sarah",
+    Dealership: "Premium Auto Sales",
   });
 
   // State for prompt library
-  const [promptLibrary, setPromptLibrary] = useState<Array<{id: number, name: string, prompt: string, createdAt: string}>>([
+  const [promptLibrary, setPromptLibrary] = useState<
+    Array<{ id: number; name: string; prompt: string; createdAt: string }>
+  >([
     {
       id: 1,
       name: "Default Sales Agent",
-      prompt: "You are an automotive sales agent named {{Agent_Name}}, working for {{Dealership}}...",
-      createdAt: new Date().toISOString()
+      prompt:
+        "You are an automotive sales agent named {{Agent_Name}}, working for {{Dealership}}...",
+      createdAt: new Date().toISOString(),
     },
     {
       id: 2,
       name: "Service Department Agent",
-      prompt: "You are a service advisor named {{Agent_Name}} at {{Dealership}}...",
-      createdAt: new Date().toISOString()
-    }
+      prompt:
+        "You are a service advisor named {{Agent_Name}} at {{Dealership}}...",
+      createdAt: new Date().toISOString(),
+    },
   ]);
   const [promptName, setPromptName] = useState("");
 
@@ -198,17 +210,20 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
     businessHours: "Mon-Fri: 9am-8pm, Sat: 9am-6pm, Sun: Closed",
     financingUrl: "https://www.premiumauto.com/financing",
     tradeInUrl: "https://www.premiumauto.com/trade-in",
-    specificInstructions: "Always start with a casual, personal greeting. Use contractions and everyday words.",
-    specificConstraints: "No pricing or promises. Redirect restricted topics to our finance team."
+    specificInstructions:
+      "Always start with a casual, personal greeting. Use contractions and everyday words.",
+    specificConstraints:
+      "No pricing or promises. Redirect restricted topics to our finance team.",
   });
 
   // State for customer message input
-  const [customerMessage, setCustomerMessage] = useState('');
-  const [selectedScenario, setSelectedScenario] = useState<CustomerScenario | null>(null);
+  const [customerMessage, setCustomerMessage] = useState("");
+  const [selectedScenario, setSelectedScenario] =
+    useState<CustomerScenario | null>(null);
 
   // State for variable management
-  const [newVariableKey, setNewVariableKey] = useState('');
-  const [newVariableValue, setNewVariableValue] = useState('');
+  const [newVariableKey, setNewVariableKey] = useState("");
+  const [newVariableValue, setNewVariableValue] = useState("");
 
   // State for conversation and test results
   const [conversations, setConversations] = useState<Message[]>([]);
@@ -229,28 +244,33 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
     {
       name: "Trade-in Inquiry",
       description: "Customer asking about trade-in value",
-      scenario: "I have been thinking about trading in but not sure if now is the right time. Can you give me a rough idea of what my truck is worth without me coming in? It has got about 120k miles but I have kept up with all the maintenance."
+      scenario:
+        "I have been thinking about trading in but not sure if now is the right time. Can you give me a rough idea of what my truck is worth without me coming in? It has got about 120k miles but I have kept up with all the maintenance.",
     },
     {
       name: "Budget Conscious Buyer",
-      description: "Customer with specific budget constraints", 
-      scenario: "I am looking for something reliable under $25,000. I have a family of four and need something safe but do not want to break the bank. What do you have available?"
+      description: "Customer with specific budget constraints",
+      scenario:
+        "I am looking for something reliable under $25,000. I have a family of four and need something safe but do not want to break the bank. What do you have available?",
     },
     {
       name: "First-time Buyer",
       description: "Young customer buying their first car",
-      scenario: "Hi! I just graduated college and got my first job. I need a car but I have never bought one before. I am kind of overwhelmed by all the options. Can you help me figure out where to start?"
+      scenario:
+        "Hi! I just graduated college and got my first job. I need a car but I have never bought one before. I am kind of overwhelmed by all the options. Can you help me figure out where to start?",
     },
     {
-      name: "Urgent Replacement", 
+      name: "Urgent Replacement",
       description: "Customer needs immediate replacement",
-      scenario: "My car broke down yesterday and I need something ASAP. I have to get to work next week. What can you get me into quickly? I have decent credit and can put some money down."
+      scenario:
+        "My car broke down yesterday and I need something ASAP. I have to get to work next week. What can you get me into quickly? I have decent credit and can put some money down.",
     },
     {
       name: "Luxury Shopper",
       description: "Customer interested in premium vehicles",
-      scenario: "I am looking to upgrade to something more luxurious. I want the latest tech features, premium materials, and excellent performance. Budget is not really a concern. What is your best recommendation?"
-    }
+      scenario:
+        "I am looking to upgrade to something more luxurious. I want the latest tech features, premium materials, and excellent performance. Budget is not really a concern. What is your best recommendation?",
+    },
   ];
 
   // Auto-scroll to bottom of messages
@@ -266,7 +286,7 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
   const processPromptTemplate = (): string => {
     let processed = systemPrompt;
     Object.entries(variables).forEach(([key, value]) => {
-      const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
+      const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g");
       processed = processed.replace(regex, value);
     });
     return processed;
@@ -285,18 +305,18 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
   const addVariable = () => {
     if (!newVariableKey.trim()) return;
 
-    setVariables(prev => ({
+    setVariables((prev) => ({
       ...prev,
-      [newVariableKey]: newVariableValue
+      [newVariableKey]: newVariableValue,
     }));
 
-    setNewVariableKey('');
-    setNewVariableValue('');
+    setNewVariableKey("");
+    setNewVariableValue("");
   };
 
   // Remove a variable
   const removeVariable = (key: string) => {
-    setVariables(prev => {
+    setVariables((prev) => {
       const newVars = { ...prev };
       delete newVars[key];
       return newVars;
@@ -309,25 +329,25 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
 
     // Add the customer message to the conversation
     const newCustomerMsg: Message = {
-      role: 'customer',
+      role: "customer",
       content: customerMessage,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
-    setConversations(prev => [...prev, newCustomerMsg]);
+    setConversations((prev) => [...prev, newCustomerMsg]);
     setIsLoading(true);
     setError(null);
     setCopiedMessage(false);
 
     try {
-      const response = await apiRequest('/api/prompt-test/test', {
-        method: 'POST',
+      const response = await apiRequest("/api/prompt-test/test", {
+        method: "POST",
         body: {
           prompt: processPromptTemplate(),
           variables: variables,
           customerScenario: customerMessage.trim(),
-          testType: 'chat'
-        }
+          testType: "chat",
+        },
       });
 
       const result = response as TestResult;
@@ -336,19 +356,18 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
       // Add the assistant response to the conversation
       if (result.success && result.aiResponse) {
         const assistantMsg: Message = {
-          role: 'assistant',
+          role: "assistant",
           content: result.aiResponse,
-          timestamp: result.timestamp
+          timestamp: result.timestamp,
         };
 
-        setConversations(prev => [...prev, assistantMsg]);
+        setConversations((prev) => [...prev, assistantMsg]);
       }
 
       // Clear the input field
-      setCustomerMessage('');
-
+      setCustomerMessage("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to test prompt');
+      setError(err instanceof Error ? err.message : "Failed to test prompt");
     } finally {
       setIsLoading(false);
     }
@@ -356,7 +375,7 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
 
   // Handle key press in message input
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -370,21 +389,29 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
     setError(null);
 
     try {
-      const response = await apiRequest('/api/prompt-test/test', {
-        method: 'POST',
+      const response = await apiRequest("/api/prompt-test/test", {
+        method: "POST",
         body: {
           prompt: processPromptTemplate(),
           variables: variables,
-          customerScenario: conversations.map(msg => `${msg.role === 'customer' ? 'Customer' : 'Agent'}: ${msg.content}`).join('\n\n'),
-          testType: 'handover'
-        }
+          customerScenario: conversations
+            .map(
+              (msg) =>
+                `${msg.role === "customer" ? "Customer" : "Agent"}: ${msg.content}`,
+            )
+            .join("\n\n"),
+          testType: "handover",
+        },
       });
 
       const result = response as TestResult;
       setLatestResult(result);
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate handover dossier');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to generate handover dossier",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -401,7 +428,7 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
   const clearConversation = () => {
     setConversations([]);
     setLatestResult(null);
-    setCustomerMessage('');
+    setCustomerMessage("");
     setSelectedScenario(null);
   };
 
@@ -410,7 +437,9 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Prompt Testing</h1>
-          <p className="text-gray-500 text-sm">Test AI prompts with realistic customer scenarios</p>
+          <p className="text-gray-500 text-sm">
+            Test AI prompts with realistic customer scenarios
+          </p>
         </div>
       </div>
 
@@ -430,27 +459,32 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
             <CardHeader className="pb-2 flex flex-row justify-between">
               <div>
                 <CardTitle>System Prompt Template</CardTitle>
-                <CardDescription>Edit the prompt template. Use {`{{variable_name}}`} for personalization.</CardDescription>
+                <CardDescription>
+                  Edit the prompt template. Use {`{{variable_name}}`} for
+                  personalization.
+                </CardDescription>
               </div>
               <div className="flex items-center space-x-2">
-                <Input 
-                  placeholder="Prompt name" 
+                <Input
+                  placeholder="Prompt name"
                   className="w-48 text-sm"
                   value={promptName}
                   onChange={(e) => setPromptName(e.target.value)}
                 />
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   onClick={() => {
                     if (promptName.trim()) {
-                      setPromptLibrary(prev => [
-                        ...prev, 
+                      setPromptLibrary((prev) => [
+                        ...prev,
                         {
-                          id: prev.length ? Math.max(...prev.map(p => p.id)) + 1 : 1,
+                          id: prev.length
+                            ? Math.max(...prev.map((p) => p.id)) + 1
+                            : 1,
                           name: promptName,
                           prompt: systemPrompt,
-                          createdAt: new Date().toISOString()
-                        }
+                          createdAt: new Date().toISOString(),
+                        },
                       ]);
                       setPromptName("");
                     }
@@ -462,7 +496,7 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Textarea 
+              <Textarea
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
                 className="min-h-[500px] font-mono text-sm"
@@ -479,7 +513,9 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
             <Card className="flex flex-col h-[600px]">
               <CardHeader className="pb-2">
                 <CardTitle>Conversation</CardTitle>
-                <CardDescription>Test the system prompt with a conversation</CardDescription>
+                <CardDescription>
+                  Test the system prompt with a conversation
+                </CardDescription>
               </CardHeader>
 
               <CardContent className="flex-grow overflow-y-auto space-y-4 p-4">
@@ -490,18 +526,20 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                 ) : (
                   <div className="space-y-4">
                     {conversations.map((message, index) => (
-                      <div 
-                        key={index} 
-                        className={`flex ${message.role === 'customer' ? 'justify-end' : 'justify-start'}`}
+                      <div
+                        key={index}
+                        className={`flex ${message.role === "customer" ? "justify-end" : "justify-start"}`}
                       >
-                        <div 
+                        <div
                           className={`max-w-[90%] rounded-lg p-3 ${
-                            message.role === 'customer' 
-                              ? 'bg-blue-100 text-blue-900' 
-                              : 'bg-gray-100 text-gray-900'
+                            message.role === "customer"
+                              ? "bg-blue-100 text-blue-900"
+                              : "bg-gray-100 text-gray-900"
                           }`}
                         >
-                          <p className="whitespace-pre-wrap">{message.content}</p>
+                          <p className="whitespace-pre-wrap">
+                            {message.content}
+                          </p>
                           <div className="text-xs opacity-70 mt-1">
                             {new Date(message.timestamp).toLocaleTimeString()}
                           </div>
@@ -524,16 +562,20 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                     onKeyDown={handleKeyPress}
                   />
                   <div className="flex flex-col justify-between">
-                    <Button 
-                      onClick={handleSendMessage} 
-                      disabled={isLoading || !customerMessage.trim()} 
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={isLoading || !customerMessage.trim()}
                       className="h-10"
                     >
-                      {isLoading ? <ReloadIcon className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      {isLoading ? (
+                        <ReloadIcon className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={clearConversation} 
+                    <Button
+                      variant="outline"
+                      onClick={clearConversation}
                       className="h-10"
                       disabled={conversations.length === 0}
                     >
@@ -549,10 +591,14 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
               <CardHeader className="flex flex-row justify-between items-start pb-2">
                 <div>
                   <CardTitle>Response</CardTitle>
-                  <CardDescription>View the AI generated response</CardDescription>
+                  <CardDescription>
+                    View the AI generated response
+                  </CardDescription>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Label htmlFor="show-json" className="text-xs">Show JSON</Label>
+                  <Label htmlFor="show-json" className="text-xs">
+                    Show JSON
+                  </Label>
                   <Switch
                     id="show-json"
                     checked={showJson}
@@ -577,16 +623,29 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                       </div>
                       <div className="relative">
                         <div className="p-4 bg-blue-50 rounded-md border border-blue-200">
-                          <p className="whitespace-pre-wrap">{conversations[conversations.length-1].role === 'assistant' ? conversations[conversations.length-1].content : latestResult.aiResponse}</p>
+                          <p className="whitespace-pre-wrap">
+                            {conversations[conversations.length - 1].role ===
+                            "assistant"
+                              ? conversations[conversations.length - 1].content
+                              : latestResult.aiResponse}
+                          </p>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="absolute top-2 right-2"
-                          onClick={() => copyToClipboard(latestResult.aiResponse || '')}
+                          onClick={() =>
+                            copyToClipboard(latestResult.aiResponse || "")
+                          }
                         >
-                          {copiedMessage ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
-                          <span className="ml-1 text-xs">{copiedMessage ? 'Copied!' : 'Copy'}</span>
+                          {copiedMessage ? (
+                            <CheckIcon className="h-4 w-4" />
+                          ) : (
+                            <CopyIcon className="h-4 w-4" />
+                          )}
+                          <span className="ml-1 text-xs">
+                            {copiedMessage ? "Copied!" : "Copy"}
+                          </span>
                         </Button>
                       </div>
                     </div>
@@ -601,40 +660,77 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
                               <div>
-                                <span className="font-semibold block">Customer:</span>
-                                <span>{latestResult.analysis.customerName}</span>
+                                <span className="font-semibold block">
+                                  Customer:
+                                </span>
+                                <span>
+                                  {latestResult.analysis.customerName}
+                                </span>
                               </div>
                               <div>
-                                <span className="font-semibold block">Analysis:</span>
-                                <span className="text-xs">{latestResult.analysis.analysis}</span>
+                                <span className="font-semibold block">
+                                  Analysis:
+                                </span>
+                                <span className="text-xs">
+                                  {latestResult.analysis.analysis}
+                                </span>
                               </div>
                               <div>
-                                <span className="font-semibold block">Insights:</span>
-                                <span className="text-xs">{latestResult.analysis.insights}</span>
+                                <span className="font-semibold block">
+                                  Insights:
+                                </span>
+                                <span className="text-xs">
+                                  {latestResult.analysis.insights}
+                                </span>
                               </div>
                             </div>
                             <div className="space-y-2">
                               <div>
-                                <span className="font-semibold block">Query:</span>
-                                <span className="text-xs">{latestResult.analysis.query}</span>
+                                <span className="font-semibold block">
+                                  Query:
+                                </span>
+                                <span className="text-xs">
+                                  {latestResult.analysis.query}
+                                </span>
                               </div>
                               <div>
-                                <span className="font-semibold block">Channel:</span>
+                                <span className="font-semibold block">
+                                  Channel:
+                                </span>
                                 <span>{latestResult.analysis.channel}</span>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <span className="font-semibold">Sales Readiness:</span>
-                                <Badge variant={
-                                  latestResult.analysis.salesReadiness === "high" ? "default" :
-                                  latestResult.analysis.salesReadiness === "medium" ? "secondary" : "outline"
-                                } className="text-xs">
+                                <span className="font-semibold">
+                                  Sales Readiness:
+                                </span>
+                                <Badge
+                                  variant={
+                                    latestResult.analysis.salesReadiness ===
+                                    "high"
+                                      ? "default"
+                                      : latestResult.analysis.salesReadiness ===
+                                          "medium"
+                                        ? "secondary"
+                                        : "outline"
+                                  }
+                                  className="text-xs"
+                                >
                                   {latestResult.analysis.salesReadiness}
                                 </Badge>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <span className="font-semibold">Handover:</span>
-                                <Badge variant={latestResult.analysis.handoverNeeded ? "destructive" : "outline"} className="text-xs">
-                                  {latestResult.analysis.handoverNeeded ? "Yes" : "No"}
+                                <Badge
+                                  variant={
+                                    latestResult.analysis.handoverNeeded
+                                      ? "destructive"
+                                      : "outline"
+                                  }
+                                  className="text-xs"
+                                >
+                                  {latestResult.analysis.handoverNeeded
+                                    ? "Yes"
+                                    : "No"}
                                 </Badge>
                               </div>
                             </div>
@@ -644,7 +740,7 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                     )}
 
                     {/* Handover Section */}
-                    {latestResult.testType === 'chat' && (
+                    {latestResult.testType === "chat" && (
                       <div className="pt-2">
                         <Button
                           onClick={handleGenerateHandover}
@@ -665,75 +761,132 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                     )}
 
                     {/* Handover Dossier */}
-                    {latestResult.testType === 'handover' && latestResult.handoverDossier && !showJson && (
-                      <div className="space-y-2">
-                        <h3 className="font-bold">Handover Dossier:</h3>
-                        <div className="bg-amber-50 p-3 rounded-md border border-amber-200 text-sm">
-                          <div className="space-y-3">
-                            <div>
-                              <h4 className="font-semibold text-amber-900">Customer Information</h4>
-                              <p><span className="font-medium">Name:</span> {latestResult.handoverDossier.customerName}</p>
-                              <p><span className="font-medium">Contact:</span> {latestResult.handoverDossier.customerContact}</p>
-                            </div>
-
-                            <div>
-                              <h4 className="font-semibold text-amber-900">Conversation Summary</h4>
-                              <p className="text-xs">{latestResult.handoverDossier.conversationSummary}</p>
-                            </div>
-
-                            <div>
-                              <h4 className="font-semibold text-amber-900">Customer Insights</h4>
-                              <ul className="list-disc pl-5 text-xs">
-                                {latestResult.handoverDossier.customerInsights?.map((insight: any, i: number) => (
-                                  <li key={i}>
-                                    <span className="font-medium">{insight.key}:</span> {insight.value} 
-                                    <span className="text-xs text-gray-500 ml-1">
-                                      ({Math.round(insight.confidence * 100)}%)
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            <div>
-                              <h4 className="font-semibold text-amber-900">Vehicle Interests</h4>
-                              <ul className="list-disc pl-5 text-xs">
-                                {latestResult.handoverDossier.vehicleInterests?.map((vehicle: any, i: number) => (
-                                  <li key={i}>
-                                    {vehicle.year} {vehicle.make} {vehicle.model} 
-                                    <span className="text-xs text-gray-500 ml-1">
-                                      ({Math.round(vehicle.confidence * 100)}%)
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            <div>
-                              <h4 className="font-semibold text-amber-900">Suggested Approach</h4>
-                              <p className="text-xs">{latestResult.handoverDossier.suggestedApproach}</p>
-                            </div>
-
-                            <div className="flex justify-between">
+                    {latestResult.testType === "handover" &&
+                      latestResult.handoverDossier &&
+                      !showJson && (
+                        <div className="space-y-2">
+                          <h3 className="font-bold">Handover Dossier:</h3>
+                          <div className="bg-amber-50 p-3 rounded-md border border-amber-200 text-sm">
+                            <div className="space-y-3">
                               <div>
-                                <h4 className="font-semibold text-amber-900">Urgency</h4>
-                                <Badge variant={
-                                  latestResult.handoverDossier.urgency === "high" ? "destructive" :
-                                  latestResult.handoverDossier.urgency === "medium" ? "default" : "outline"
-                                } className="text-xs">
-                                  {latestResult.handoverDossier.urgency}
-                                </Badge>
+                                <h4 className="font-semibold text-amber-900">
+                                  Customer Information
+                                </h4>
+                                <p>
+                                  <span className="font-medium">Name:</span>{" "}
+                                  {latestResult.handoverDossier.customerName}
+                                </p>
+                                <p>
+                                  <span className="font-medium">Contact:</span>{" "}
+                                  {latestResult.handoverDossier.customerContact}
+                                </p>
                               </div>
 
                               <div>
-                                <h4 className="font-semibold text-amber-900">Escalation Reason</h4>
-                                <p className="text-xs">{latestResult.handoverDossier.escalationReason}</p>
+                                <h4 className="font-semibold text-amber-900">
+                                  Conversation Summary
+                                </h4>
+                                <p className="text-xs">
+                                  {
+                                    latestResult.handoverDossier
+                                      .conversationSummary
+                                  }
+                                </p>
+                              </div>
+
+                              <div>
+                                <h4 className="font-semibold text-amber-900">
+                                  Customer Insights
+                                </h4>
+                                <ul className="list-disc pl-5 text-xs">
+                                  {latestResult.handoverDossier.customerInsights?.map(
+                                    (insight: any, i: number) => (
+                                      <li key={i}>
+                                        <span className="font-medium">
+                                          {insight.key}:
+                                        </span>{" "}
+                                        {insight.value}
+                                        <span className="text-xs text-gray-500 ml-1">
+                                          (
+                                          {Math.round(insight.confidence * 100)}
+                                          %)
+                                        </span>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
+
+                              <div>
+                                <h4 className="font-semibold text-amber-900">
+                                  Vehicle Interests
+                                </h4>
+                                <ul className="list-disc pl-5 text-xs">
+                                  {latestResult.handoverDossier.vehicleInterests?.map(
+                                    (vehicle: any, i: number) => (
+                                      <li key={i}>
+                                        {vehicle.year} {vehicle.make}{" "}
+                                        {vehicle.model}
+                                        <span className="text-xs text-gray-500 ml-1">
+                                          (
+                                          {Math.round(vehicle.confidence * 100)}
+                                          %)
+                                        </span>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
+
+                              <div>
+                                <h4 className="font-semibold text-amber-900">
+                                  Suggested Approach
+                                </h4>
+                                <p className="text-xs">
+                                  {
+                                    latestResult.handoverDossier
+                                      .suggestedApproach
+                                  }
+                                </p>
+                              </div>
+
+                              <div className="flex justify-between">
+                                <div>
+                                  <h4 className="font-semibold text-amber-900">
+                                    Urgency
+                                  </h4>
+                                  <Badge
+                                    variant={
+                                      latestResult.handoverDossier.urgency ===
+                                      "high"
+                                        ? "destructive"
+                                        : latestResult.handoverDossier
+                                              .urgency === "medium"
+                                          ? "default"
+                                          : "outline"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {latestResult.handoverDossier.urgency}
+                                  </Badge>
+                                </div>
+
+                                <div>
+                                  <h4 className="font-semibold text-amber-900">
+                                    Escalation Reason
+                                  </h4>
+                                  <p className="text-xs">
+                                    {
+                                      latestResult.handoverDossier
+                                        .escalationReason
+                                    }
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* JSON View */}
                     {showJson && (
@@ -762,21 +915,29 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
           <Card>
             <CardHeader>
               <CardTitle>Customer Scenarios</CardTitle>
-              <CardDescription>Select a predefined scenario to test</CardDescription>
+              <CardDescription>
+                Select a predefined scenario to test
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {customerScenarios.map((scenario, index) => (
-                  <div 
+                  <div
                     key={index}
                     className={`p-3 border rounded-md cursor-pointer hover:bg-muted transition-colors ${
-                      selectedScenario?.name === scenario.name ? 'border-primary bg-primary/5' : 'border-border'
+                      selectedScenario?.name === scenario.name
+                        ? "border-primary bg-primary/5"
+                        : "border-border"
                     }`}
                     onClick={() => handleSelectScenario(scenario)}
                   >
                     <div className="font-medium">{scenario.name}</div>
-                    <div className="text-sm text-muted-foreground">{scenario.description}</div>
-                    <div className="mt-2 text-xs text-gray-500 line-clamp-2">{scenario.scenario}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {scenario.description}
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500 line-clamp-2">
+                      {scenario.scenario}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -789,18 +950,21 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
           <Card>
             <CardHeader>
               <CardTitle>Prompt Library</CardTitle>
-              <CardDescription>Saved prompts that can be loaded and used</CardDescription>
+              <CardDescription>
+                Saved prompts that can be loaded and used
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {promptLibrary.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    No prompts saved yet. Create and save a prompt from the System Prompt tab.
+                    No prompts saved yet. Create and save a prompt from the
+                    System Prompt tab.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-3">
                     {promptLibrary.map((promptItem) => (
-                      <div 
+                      <div
                         key={promptItem.id}
                         className="p-4 border rounded-md hover:bg-muted transition-colors"
                       >
@@ -808,28 +972,35 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                           <div>
                             <h3 className="font-medium">{promptItem.name}</h3>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Created: {new Date(promptItem.createdAt).toLocaleString()}
+                              Created:{" "}
+                              {new Date(promptItem.createdAt).toLocaleString()}
                             </p>
                           </div>
                           <div className="flex space-x-2">
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="outline"
                               onClick={() => setSystemPrompt(promptItem.prompt)}
                             >
                               Load
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="destructive"
-                              onClick={() => setPromptLibrary(prev => prev.filter(p => p.id !== promptItem.id))}
+                              onClick={() =>
+                                setPromptLibrary((prev) =>
+                                  prev.filter((p) => p.id !== promptItem.id),
+                                )
+                              }
                             >
                               Delete
                             </Button>
                           </div>
                         </div>
                         <div className="mt-2">
-                          <p className="text-xs text-gray-500 line-clamp-2">{promptItem.prompt}</p>
+                          <p className="text-xs text-gray-500 line-clamp-2">
+                            {promptItem.prompt}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -845,61 +1016,73 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
           <Card>
             <CardHeader>
               <CardTitle>Dealership Variables</CardTitle>
-              <CardDescription>Configure dealership information for AI interactions</CardDescription>
+              <CardDescription>
+                Configure dealership information for AI interactions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Basic Information</h3>
+                  <h3 className="text-sm font-medium mb-3">
+                    Basic Information
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="dealershipName">Dealership Name</Label>
-                      <Input 
+                      <Input
                         id="dealershipName"
                         value={dealershipContext.dealershipName}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          dealershipName: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            dealershipName: e.target.value,
+                          })
+                        }
                         placeholder="e.g. Premium Auto Sales"
                         className="text-sm"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="brandTypes">Brand Types</Label>
-                      <Input 
+                      <Input
                         id="brandTypes"
                         value={dealershipContext.brandTypes}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          brandTypes: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            brandTypes: e.target.value,
+                          })
+                        }
                         placeholder="e.g. Toyota, Honda, Ford"
                         className="text-sm"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="dealershipLocation">Location</Label>
-                      <Input 
+                      <Input
                         id="dealershipLocation"
                         value={dealershipContext.dealershipLocation}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          dealershipLocation: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            dealershipLocation: e.target.value,
+                          })
+                        }
                         placeholder="e.g. 123 Main St, Anytown, USA"
                         className="text-sm"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="businessHours">Business Hours</Label>
-                      <Input 
+                      <Input
                         id="businessHours"
                         value={dealershipContext.businessHours}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          businessHours: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            businessHours: e.target.value,
+                          })
+                        }
                         placeholder="e.g. Mon-Fri: 9am-8pm, Sat: 9am-6pm, Sun: Closed"
                         className="text-sm"
                       />
@@ -912,26 +1095,30 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="financingUrl">Financing URL</Label>
-                      <Input 
+                      <Input
                         id="financingUrl"
                         value={dealershipContext.financingUrl}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          financingUrl: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            financingUrl: e.target.value,
+                          })
+                        }
                         placeholder="e.g. https://www.example.com/financing"
                         className="text-sm"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="tradeInUrl">Trade-In URL</Label>
-                      <Input 
+                      <Input
                         id="tradeInUrl"
                         value={dealershipContext.tradeInUrl}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          tradeInUrl: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            tradeInUrl: e.target.value,
+                          })
+                        }
                         placeholder="e.g. https://www.example.com/trade-in"
                         className="text-sm"
                       />
@@ -943,27 +1130,35 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                   <h3 className="text-sm font-medium mb-3">AI Instructions</h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="specificInstructions">Specific Instructions</Label>
-                      <Textarea 
+                      <Label htmlFor="specificInstructions">
+                        Specific Instructions
+                      </Label>
+                      <Textarea
                         id="specificInstructions"
                         value={dealershipContext.specificInstructions}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          specificInstructions: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            specificInstructions: e.target.value,
+                          })
+                        }
                         placeholder="Enter specific instructions for the AI..."
                         className="min-h-[100px] text-sm"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="specificConstraints">Specific Constraints</Label>
-                      <Textarea 
+                      <Label htmlFor="specificConstraints">
+                        Specific Constraints
+                      </Label>
+                      <Textarea
                         id="specificConstraints"
                         value={dealershipContext.specificConstraints}
-                        onChange={(e) => setDealershipContext({
-                          ...dealershipContext,
-                          specificConstraints: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setDealershipContext({
+                            ...dealershipContext,
+                            specificConstraints: e.target.value,
+                          })
+                        }
                         placeholder="Enter specific constraints for the AI..."
                         className="min-h-[100px] text-sm"
                       />
@@ -975,9 +1170,9 @@ Rewrite If Off: Trim wordiness, boost empathy, fix compliance, or adjust tone to
                   <Button
                     onClick={() => {
                       // Update the prompt variables with dealership name
-                      setVariables(prev => ({
+                      setVariables((prev) => ({
                         ...prev,
-                        Dealership: dealershipContext.dealershipName
+                        Dealership: dealershipContext.dealershipName,
                       }));
                     }}
                   >

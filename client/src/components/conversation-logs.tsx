@@ -1,19 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Badge } from './ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Calendar, MessageCircle, User, Filter, Download, Eye, AlertTriangle, TrendingUp, BarChart3 } from 'lucide-react';
-import { format } from 'date-fns';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Badge } from "./ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import {
+  Calendar,
+  MessageCircle,
+  User,
+  Filter,
+  Download,
+  Eye,
+  AlertTriangle,
+  TrendingUp,
+  BarChart3,
+} from "lucide-react";
+import { format } from "date-fns";
 
 // Define more specific types for string literals
-type ConversationStatus = 'active' | 'waiting_response' | 'escalated' | 'resolved' | 'archived';
-type ConversationChannel = 'chat' | 'email' | 'phone' | 'sms' | string;
-type SortOrder = 'asc' | 'desc';
+type ConversationStatus =
+  | "active"
+  | "waiting_response"
+  | "escalated"
+  | "resolved"
+  | "archived";
+type ConversationChannel = "chat" | "email" | "phone" | "sms" | string;
+type SortOrder = "asc" | "desc";
 
 interface ConversationLog {
   conversation: {
@@ -66,7 +107,9 @@ interface ConversationLogsFilters {
 
 export function ConversationLogs() {
   const [logs, setLogs] = useState<ConversationLog[]>([]);
-  const [analytics, setAnalytics] = useState<ConversationAnalytics | null>(null);
+  const [analytics, setAnalytics] = useState<ConversationAnalytics | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -74,11 +117,11 @@ export function ConversationLogs() {
   // Define a type for conversation details
   interface ConversationDetails {
     conversation: {
-      conversation: ConversationLog['conversation'];
+      conversation: ConversationLog["conversation"];
     };
     messages: Array<{
       id: string;
-      sender: 'customer' | 'agent' | 'system';
+      sender: "customer" | "agent" | "system";
       content: string;
       createdAt: string;
     }>;
@@ -89,14 +132,15 @@ export function ConversationLogs() {
       description: string;
     }>;
   }
-  
-  const [selectedConversation, setSelectedConversation] = useState<ConversationDetails | null>(null);
+
+  const [selectedConversation, setSelectedConversation] =
+    useState<ConversationDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  
+
   // Filter states
   const [filters, setFilters] = useState<ConversationLogsFilters>({
-    sortBy: 'last_message_at',
-    sortOrder: 'desc'
+    sortBy: "last_message_at",
+    sortOrder: "desc",
   });
   const [filtersVisible, setFiltersVisible] = useState(false);
 
@@ -111,16 +155,18 @@ export function ConversationLogs() {
         limit: pageSize.toString(),
         offset: (page * pageSize).toString(),
         ...Object.fromEntries(
-          Object.entries(filters).filter(([_, value]) => value != null && value !== '')
-        )
+          Object.entries(filters).filter(
+            ([_, value]) => value != null && value !== "",
+          ),
+        ),
       });
 
       if (filters.status && filters.status.length > 0) {
-        queryParams.set('status', filters.status.join(','));
+        queryParams.set("status", filters.status.join(","));
       }
 
       const response = await fetch(`/api/conversation-logs?${queryParams}`, {
-        credentials: 'include'
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -129,10 +175,10 @@ export function ConversationLogs() {
         setTotal(data.total);
         setAnalytics(data.analytics);
       } else {
-        console.error('Failed to fetch conversation logs');
+        console.error("Failed to fetch conversation logs");
       }
     } catch (error) {
-      console.error('Error fetching conversation logs:', error);
+      console.error("Error fetching conversation logs:", error);
     } finally {
       setLoading(false);
     }
@@ -143,7 +189,7 @@ export function ConversationLogs() {
     try {
       const response = await fetch(
         `/api/conversation-logs/${conversationId}?dealershipId=${dealershipId}`,
-        { credentials: 'include' }
+        { credentials: "include" },
       );
 
       if (response.ok) {
@@ -151,7 +197,7 @@ export function ConversationLogs() {
         setSelectedConversation(data);
       }
     } catch (error) {
-      console.error('Error fetching conversation details:', error);
+      console.error("Error fetching conversation details:", error);
     } finally {
       setDetailsLoading(false);
     }
@@ -163,54 +209,60 @@ export function ConversationLogs() {
 
   // Define a more specific type for filter values
   type FilterValue = string | string[] | number | boolean | undefined;
-  
+
   const handleFilterChange = (key: string, value: FilterValue) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(0); // Reset to first page when filters change
   };
 
   // Define badge variant type for better type safety
-  type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
-  
+  type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
   const getStatusBadgeVariant = (status: ConversationStatus): BadgeVariant => {
     switch (status) {
-      case 'active': return 'default';
-      case 'waiting_response': return 'secondary';
-      case 'escalated': return 'destructive';
-      case 'resolved': return 'outline';
-      case 'archived': return 'outline';
-      default: return 'secondary';
+      case "active":
+        return "default";
+      case "waiting_response":
+        return "secondary";
+      case "escalated":
+        return "destructive";
+      case "resolved":
+        return "outline";
+      case "archived":
+        return "outline";
+      default:
+        return "secondary";
     }
   };
 
   const exportLogs = async () => {
     try {
-      const response = await fetch('/api/conversation-logs/export', {
-        method: 'POST',
+      const response = await fetch("/api/conversation-logs/export", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({
           filters: { dealershipId, ...filters },
-          format: 'json'
-        })
+          format: "json",
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
         const blob = new Blob([JSON.stringify(data.data, null, 2)], {
-          type: 'application/json'
+          type: "application/json",
         });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        a.download = `conversation-logs-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `conversation-logs-${new Date().toISOString().split("T")[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
       }
     } catch (error) {
-      console.error('Error exporting logs:', error);
+      console.error("Error exporting logs:", error);
     }
   };
 
@@ -221,41 +273,51 @@ export function ConversationLogs() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Conversations</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Conversations
+              </CardTitle>
               <MessageCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{analytics.totalConversations}</div>
+              <div className="text-2xl font-bold">
+                {analytics.totalConversations}
+              </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{analytics.activeConversations}</div>
+              <div className="text-2xl font-bold">
+                {analytics.activeConversations}
+              </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Escalated</CardTitle>
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{analytics.escalatedConversations}</div>
+              <div className="text-2xl font-bold">
+                {analytics.escalatedConversations}
+              </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Avg. Length</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{analytics.avgConversationLength.toFixed(1)}</div>
+              <div className="text-2xl font-bold">
+                {analytics.avgConversationLength.toFixed(1)}
+              </div>
               <p className="text-xs text-muted-foreground">messages</p>
             </CardContent>
           </Card>
@@ -269,7 +331,8 @@ export function ConversationLogs() {
             <div>
               <CardTitle>Conversation Logs</CardTitle>
               <CardDescription>
-                View and filter conversation history with filtering and analytics
+                View and filter conversation history with filtering and
+                analytics
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -294,13 +357,17 @@ export function ConversationLogs() {
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4 py-4">
               <Input
                 placeholder="Search..."
-                value={filters.searchTerm || ''}
-                onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+                value={filters.searchTerm || ""}
+                onChange={(e) =>
+                  handleFilterChange("searchTerm", e.target.value)
+                }
               />
-              
+
               <Select
-                value={filters.status?.join(',') || ''}
-                onValueChange={(value) => handleFilterChange('status', value ? [value] : undefined)}
+                value={filters.status?.join(",") || ""}
+                onValueChange={(value) =>
+                  handleFilterChange("status", value ? [value] : undefined)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
@@ -308,7 +375,9 @@ export function ConversationLogs() {
                 <SelectContent>
                   <SelectItem value="">All Statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="waiting_response">Waiting Response</SelectItem>
+                  <SelectItem value="waiting_response">
+                    Waiting Response
+                  </SelectItem>
                   <SelectItem value="escalated">Escalated</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
@@ -318,27 +387,33 @@ export function ConversationLogs() {
               <Input
                 type="date"
                 placeholder="From Date"
-                value={filters.dateFrom || ''}
-                onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                value={filters.dateFrom || ""}
+                onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
               />
-              
+
               <Input
                 type="date"
                 placeholder="To Date"
-                value={filters.dateTo || ''}
-                onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                value={filters.dateTo || ""}
+                onChange={(e) => handleFilterChange("dateTo", e.target.value)}
               />
 
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={filters.escalatedOnly || false}
-                  onChange={(e) => handleFilterChange('escalatedOnly', e.target.checked)}
+                  onChange={(e) =>
+                    handleFilterChange("escalatedOnly", e.target.checked)
+                  }
                 />
                 <span className="text-sm">Escalated Only</span>
               </label>
 
-              <Button onClick={() => setFilters({ sortBy: 'last_message_at', sortOrder: 'desc' })}>
+              <Button
+                onClick={() =>
+                  setFilters({ sortBy: "last_message_at", sortOrder: "desc" })
+                }
+              >
                 Clear Filters
               </Button>
             </div>
@@ -380,7 +455,9 @@ export function ConversationLogs() {
                   <TableRow key={log.conversation.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{log.conversation.customer?.fullName}</div>
+                        <div className="font-medium">
+                          {log.conversation.customer?.fullName}
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           {log.conversation.customer?.email}
                         </div>
@@ -388,30 +465,40 @@ export function ConversationLogs() {
                     </TableCell>
                     <TableCell>
                       <div className="max-w-[200px] truncate">
-                        {log.conversation.subject || 'No subject'}
+                        {log.conversation.subject || "No subject"}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Badge variant={getStatusBadgeVariant(log.conversation.status)}>
+                        <Badge
+                          variant={getStatusBadgeVariant(
+                            log.conversation.status,
+                          )}
+                        >
                           {log.conversation.status}
                         </Badge>
                         {log.hasEscalations && (
                           <Badge variant="destructive" className="text-xs">
-                            {log.escalationCount} escalation{log.escalationCount !== 1 ? 's' : ''}
+                            {log.escalationCount} escalation
+                            {log.escalationCount !== 1 ? "s" : ""}
                           </Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="capitalize">{log.conversation.channel}</TableCell>
+                    <TableCell className="capitalize">
+                      {log.conversation.channel}
+                    </TableCell>
                     <TableCell>{log.messageCount}</TableCell>
                     <TableCell>
                       {log.conversation.lastMessageAt
-                        ? format(new Date(log.conversation.lastMessageAt), 'MMM d, HH:mm')
-                        : 'No messages'}
+                        ? format(
+                            new Date(log.conversation.lastMessageAt),
+                            "MMM d, HH:mm",
+                          )
+                        : "No messages"}
                     </TableCell>
                     <TableCell>
-                      {log.conversation.assignedUser?.name || 'Unassigned'}
+                      {log.conversation.assignedUser?.name || "Unassigned"}
                     </TableCell>
                     <TableCell>
                       <Dialog>
@@ -419,7 +506,9 @@ export function ConversationLogs() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => fetchConversationDetails(log.conversation.id)}
+                            onClick={() =>
+                              fetchConversationDetails(log.conversation.id)
+                            }
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -431,83 +520,133 @@ export function ConversationLogs() {
                               Full conversation history and details
                             </DialogDescription>
                           </DialogHeader>
-                          
+
                           {detailsLoading ? (
-                            <div className="text-center py-8">Loading conversation details...</div>
+                            <div className="text-center py-8">
+                              Loading conversation details...
+                            </div>
                           ) : selectedConversation ? (
                             <Tabs defaultValue="messages" className="w-full">
                               <TabsList>
-                                <TabsTrigger value="messages">Messages</TabsTrigger>
-                                <TabsTrigger value="details">Details</TabsTrigger>
-                                <TabsTrigger value="escalations">Escalations</TabsTrigger>
+                                <TabsTrigger value="messages">
+                                  Messages
+                                </TabsTrigger>
+                                <TabsTrigger value="details">
+                                  Details
+                                </TabsTrigger>
+                                <TabsTrigger value="escalations">
+                                  Escalations
+                                </TabsTrigger>
                               </TabsList>
-                              
-                              <TabsContent value="messages" className="space-y-4">
+
+                              <TabsContent
+                                value="messages"
+                                className="space-y-4"
+                              >
                                 <div className="max-h-96 overflow-y-auto space-y-3">
-                                  {selectedConversation.messages?.map((message: {
+                                  {selectedConversation.messages?.map(
+                                    (message: {
                                       id: string;
-                                      sender: 'customer' | 'agent' | 'system';
+                                      sender: "customer" | "agent" | "system";
                                       content: string;
                                       createdAt: string;
                                     }) => (
-                                    <div
-                                      key={message.id}
-                                      className={`p-3 rounded-lg ${
-                                        message.sender === 'customer'
-                                          ? 'bg-blue-50 border-l-4 border-blue-500'
-                                          : 'bg-gray-50 border-l-4 border-gray-500'
-                                      }`}
-                                    >
-                                      <div className="flex justify-between items-start mb-2">
-                                        <span className="font-medium capitalize">
-                                          {message.sender}
-                                        </span>
-                                        <span className="text-sm text-muted-foreground">
-                                          {format(new Date(message.createdAt), 'MMM d, HH:mm')}
-                                        </span>
+                                      <div
+                                        key={message.id}
+                                        className={`p-3 rounded-lg ${
+                                          message.sender === "customer"
+                                            ? "bg-blue-50 border-l-4 border-blue-500"
+                                            : "bg-gray-50 border-l-4 border-gray-500"
+                                        }`}
+                                      >
+                                        <div className="flex justify-between items-start mb-2">
+                                          <span className="font-medium capitalize">
+                                            {message.sender}
+                                          </span>
+                                          <span className="text-sm text-muted-foreground">
+                                            {format(
+                                              new Date(message.createdAt),
+                                              "MMM d, HH:mm",
+                                            )}
+                                          </span>
+                                        </div>
+                                        <div className="text-sm">
+                                          {message.content}
+                                        </div>
                                       </div>
-                                      <div className="text-sm">{message.content}</div>
-                                    </div>
-                                  ))}
+                                    ),
+                                  )}
                                 </div>
                               </TabsContent>
-                              
+
                               <TabsContent value="details">
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
-                                    <h4 className="font-medium mb-2">Customer</h4>
-                                    <p>{selectedConversation.conversation?.conversation?.customer?.fullName}</p>
+                                    <h4 className="font-medium mb-2">
+                                      Customer
+                                    </h4>
+                                    <p>
+                                      {
+                                        selectedConversation.conversation
+                                          ?.conversation?.customer?.fullName
+                                      }
+                                    </p>
                                     <p className="text-sm text-muted-foreground">
-                                      {selectedConversation.conversation?.conversation?.customer?.email}
+                                      {
+                                        selectedConversation.conversation
+                                          ?.conversation?.customer?.email
+                                      }
                                     </p>
                                   </div>
                                   <div>
                                     <h4 className="font-medium mb-2">Lead</h4>
-                                    <p>{selectedConversation.conversation?.conversation?.lead?.leadNumber}</p>
+                                    <p>
+                                      {
+                                        selectedConversation.conversation
+                                          ?.conversation?.lead?.leadNumber
+                                      }
+                                    </p>
                                     <p className="text-sm text-muted-foreground">
-                                      Status: {selectedConversation.conversation?.conversation?.lead?.status}
+                                      Status:{" "}
+                                      {
+                                        selectedConversation.conversation
+                                          ?.conversation?.lead?.status
+                                      }
                                     </p>
                                   </div>
                                 </div>
                               </TabsContent>
-                              
+
                               <TabsContent value="escalations">
-                                {selectedConversation.escalations?.length > 0 ? (
+                                {selectedConversation.escalations?.length >
+                                0 ? (
                                   <div className="space-y-3">
-                                    {selectedConversation.escalations.map((escalation: {
-                                      id: string;
-                                      reason: string;
-                                      requestedAt: string;
-                                      description: string;
-                                    }) => (
-                                      <div key={escalation.id} className="p-3 border rounded-lg">
-                                        <div className="font-medium">{escalation.reason}</div>
-                                        <div className="text-sm text-muted-foreground mb-2">
-                                          {format(new Date(escalation.requestedAt), 'MMM d, HH:mm')}
+                                    {selectedConversation.escalations.map(
+                                      (escalation: {
+                                        id: string;
+                                        reason: string;
+                                        requestedAt: string;
+                                        description: string;
+                                      }) => (
+                                        <div
+                                          key={escalation.id}
+                                          className="p-3 border rounded-lg"
+                                        >
+                                          <div className="font-medium">
+                                            {escalation.reason}
+                                          </div>
+                                          <div className="text-sm text-muted-foreground mb-2">
+                                            {format(
+                                              new Date(escalation.requestedAt),
+                                              "MMM d, HH:mm",
+                                            )}
+                                          </div>
+                                          <div className="text-sm">
+                                            {escalation.description}
+                                          </div>
                                         </div>
-                                        <div className="text-sm">{escalation.description}</div>
-                                      </div>
-                                    ))}
+                                      ),
+                                    )}
                                   </div>
                                 ) : (
                                   <div className="text-center py-8 text-muted-foreground">
@@ -525,11 +664,12 @@ export function ConversationLogs() {
               )}
             </TableBody>
           </Table>
-          
+
           {/* Pagination */}
           <div className="flex items-center justify-between px-2 py-4">
             <div className="text-sm text-muted-foreground">
-              Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, total)} of {total} conversations
+              Showing {page * pageSize + 1} to{" "}
+              {Math.min((page + 1) * pageSize, total)} of {total} conversations
             </div>
             <div className="flex gap-2">
               <Button
