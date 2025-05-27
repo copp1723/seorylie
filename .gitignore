@@ -1,0 +1,28 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Log files
+logs/
+*.log
+
+# Nested repositories (should not be tracked)
+1rylie/
+1rylie-1/
+
+# Agent Squad test files (temporary)
+simple-agent-squad-test.js
+test-agent-squad.js
+test-enhanced-agent-squad.js
+verify-agent-squad.js
+verify-enhanced-features.js
