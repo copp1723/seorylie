@@ -5,7 +5,10 @@ import {
   searchInventory, 
   getVehicleDetails, 
   getInventorySummary, 
-  inventoryFunctionDefinitions 
+  inventoryFunctionDefinitions,
+  createEnhancedInventoryHandlers,
+  searchInventoryWithRecommendations,
+  checkVehicleAvailability
 } from './inventory-functions';
 import { createRylieRetriever, type RylieRetrieverOptions } from './rylie-retriever';
 import { advancedRoutingEngine, type RoutingDecision, type SentimentAnalysis } from './advanced-routing';
@@ -111,17 +114,37 @@ export class RylieAgentSquad {
       let agentFunctionHandlers: Record<string, any> = {};
       
       if (agentName === 'inventory-agent') {
-        // Inventory agent gets full function calling capabilities
+        // Inventory agent gets full function calling capabilities including enhanced features
         agentFunctions = inventoryFunctionDefinitions;
         agentFunctionHandlers = functionHandlers;
       } else if (agentName === 'general-agent') {
-        // General agent gets inventory summary for overview
-        agentFunctions = [inventoryFunctionDefinitions[2]];
+        // General agent gets inventory summary and basic search for overview
+        agentFunctions = [
+          inventoryFunctionDefinitions[0], // searchInventory
+          inventoryFunctionDefinitions[2], // getInventorySummary
+          inventoryFunctionDefinitions[3]  // searchInventoryWithRecommendations
+        ];
         agentFunctionHandlers = {
-          getInventorySummary: functionHandlers.getInventorySummary
+          searchInventory: functionHandlers.searchInventory,
+          getInventorySummary: functionHandlers.getInventorySummary,
+          searchInventoryWithRecommendations: functionHandlers.searchInventoryWithRecommendations
+        };
+      } else if (agentName === 'sales-agent') {
+        // Sales agent gets search and availability checking capabilities
+        agentFunctions = [
+          inventoryFunctionDefinitions[0], // searchInventory
+          inventoryFunctionDefinitions[1], // getVehicleDetails
+          inventoryFunctionDefinitions[3], // searchInventoryWithRecommendations
+          inventoryFunctionDefinitions[4]  // checkVehicleAvailability
+        ];
+        agentFunctionHandlers = {
+          searchInventory: functionHandlers.searchInventory,
+          getVehicleDetails: functionHandlers.getVehicleDetails,
+          searchInventoryWithRecommendations: functionHandlers.searchInventoryWithRecommendations,
+          checkVehicleAvailability: functionHandlers.checkVehicleAvailability
         };
       }
-      // Other agents can be extended with specific functions later
+      // Other agents can be extended with specific functions as needed
 
       const agent = new OpenAIAgent({
         name: agentConfig.name,
@@ -234,74 +257,10 @@ ${template.examples}`;
   }
 
   /**
-   * Create function handlers that will be called by OpenAI agents
+   * Create enhanced function handlers with improved error handling and real-time capabilities
    */
   private createFunctionHandlers() {
-    return {
-      searchInventory: async (params: any, context?: any) => {
-        try {
-          const dealershipId = context?.dealershipId || this.config.defaultDealershipId;
-          if (!dealershipId) {
-            throw new Error('Dealership ID required for inventory search');
-          }
-
-          logger.info('Function call: searchInventory', { params, dealershipId });
-          
-          const result = await searchInventory({
-            dealershipId,
-            ...params
-          });
-
-          return JSON.stringify(result);
-        } catch (error) {
-          logger.error('searchInventory function failed', { error, params });
-          return JSON.stringify({ 
-            success: false, 
-            error: 'Unable to search inventory at this time' 
-          });
-        }
-      },
-
-      getVehicleDetails: async (params: any, context?: any) => {
-        try {
-          const dealershipId = context?.dealershipId || this.config.defaultDealershipId;
-          if (!dealershipId) {
-            throw new Error('Dealership ID required for vehicle details');
-          }
-
-          logger.info('Function call: getVehicleDetails', { params, dealershipId });
-
-          const result = await getVehicleDetails(dealershipId, params.identifier);
-          return JSON.stringify(result);
-        } catch (error) {
-          logger.error('getVehicleDetails function failed', { error, params });
-          return JSON.stringify({ 
-            success: false, 
-            error: 'Unable to get vehicle details at this time' 
-          });
-        }
-      },
-
-      getInventorySummary: async (params: any, context?: any) => {
-        try {
-          const dealershipId = context?.dealershipId || this.config.defaultDealershipId;
-          if (!dealershipId) {
-            throw new Error('Dealership ID required for inventory summary');
-          }
-
-          logger.info('Function call: getInventorySummary', { params, dealershipId });
-
-          const result = await getInventorySummary(dealershipId);
-          return JSON.stringify(result);
-        } catch (error) {
-          logger.error('getInventorySummary function failed', { error, params });
-          return JSON.stringify({ 
-            success: false, 
-            error: 'Unable to get inventory summary at this time' 
-          });
-        }
-      }
-    };
+    return createEnhancedInventoryHandlers(this.config.defaultDealershipId);
   }
   
   async routeMessage(
