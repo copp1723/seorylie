@@ -20,28 +20,28 @@ export default function NotificationTestPage() {
     phone: "",
     message: ""
   });
-  
+
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Validate form
   const validateForm = () => {
     const errors: FormErrors = {};
-    
+
     errors.email = composeValidators(
       validators.required,
       validators.email
     )(formData.email);
-    
+
     errors.password = composeValidators(
       validators.required,
       validators.minLength(8)
     )(formData.password);
-    
+
     errors.name = validators.required(formData.name);
-    
+
     errors.phone = formData.phone ? validators.phone(formData.phone) : undefined;
-    
+
     errors.message = composeValidators(
       validators.required,
       validators.minLength(10),
@@ -54,14 +54,14 @@ export default function NotificationTestPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       notifications.error("Form Validation Failed", "Please fix the errors below");
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -103,7 +103,7 @@ export default function NotificationTestPage() {
         {
           name: "Import Failed",
           action: () => notifications.error(
-            "Import Failed", 
+            "Import Failed",
             "Unable to process inventory file. Please check the format and try again.",
             {
               action: {
@@ -127,7 +127,7 @@ export default function NotificationTestPage() {
         {
           name: "Network Error",
           action: () => notifications.error(
-            "Network Error", 
+            "Network Error",
             "Unable to connect to the server. Please check your internet connection.",
             {
               action: {
@@ -190,7 +190,7 @@ export default function NotificationTestPage() {
           name: "Processing Import",
           action: () => {
             const id = notifications.loading("Processing", "Importing inventory data...");
-            setTimeout(() => {
+            setTimeout((): void => {
               notifications.removeNotification(id);
               notifications.success("Import Complete", "Successfully imported 150 vehicles");
             }, 3000);
@@ -203,7 +203,7 @@ export default function NotificationTestPage() {
               title: "Generating Report",
               description: "This may take a few moments...",
             });
-            setTimeout(() => {
+            setTimeout((): void => {
               loadingToast.dismiss();
               success({
                 title: "Report Ready",
@@ -221,7 +221,7 @@ export default function NotificationTestPage() {
           name: "Test 401 Unauthorized",
           action: async () => {
             try {
-              await apiClient.request('/test-401', { 
+              await apiClient.request('/test-401', {
                 showErrorToast: true,
                 errorMessage: "Authentication required. Please log in."
               });
@@ -234,7 +234,7 @@ export default function NotificationTestPage() {
           name: "Test 404 Not Found",
           action: async () => {
             try {
-              await apiClient.request('/test-404', { 
+              await apiClient.request('/test-404', {
                 showErrorToast: true,
                 errorMessage: "The requested resource was not found."
               });
@@ -247,8 +247,8 @@ export default function NotificationTestPage() {
           name: "Test Network Error",
           action: async () => {
             try {
-              await apiClient.request('/invalid-endpoint-12345', { 
-                showErrorToast: true 
+              await apiClient.request('/invalid-endpoint-12345', {
+                showErrorToast: true
               });
             } catch (error) {
               console.log("Expected network error caught:", error);
@@ -297,8 +297,8 @@ export default function NotificationTestPage() {
           <CardTitle>Form Validation Testing</CardTitle>
         </CardHeader>
         <CardContent>
-          <FormValidation 
-            errors={formErrors} 
+          <FormValidation
+            errors={formErrors}
             onSubmit={handleFormSubmit}
             isSubmitting={isSubmitting}
           >
@@ -314,7 +314,7 @@ export default function NotificationTestPage() {
                 required
                 placeholder="Enter your email"
               />
-              
+
               <FormField
                 label="Password"
                 name="password"
@@ -327,7 +327,7 @@ export default function NotificationTestPage() {
                 placeholder="Enter password"
                 helperText="Must be at least 8 characters"
               />
-              
+
               <FormField
                 label="Full Name"
                 name="name"
@@ -338,7 +338,7 @@ export default function NotificationTestPage() {
                 required
                 placeholder="Enter your full name"
               />
-              
+
               <FormField
                 label="Phone (Optional)"
                 name="phone"
@@ -351,7 +351,7 @@ export default function NotificationTestPage() {
                 helperText="Include country code"
               />
             </div>
-            
+
             <FormField
               label="Message"
               name="message"
@@ -365,9 +365,9 @@ export default function NotificationTestPage() {
               placeholder="Enter your message (10-500 characters)"
               helperText={`${formData.message.length}/500 characters`}
             />
-            
-            <Button 
-              type="submit" 
+
+            <Button
+              type="submit"
               disabled={isSubmitting}
               className="w-full md:w-auto"
             >

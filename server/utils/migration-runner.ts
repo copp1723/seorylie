@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { client } from '../db';
 import logger from './logger';
 
@@ -18,7 +18,7 @@ interface MigrationResult {
 
 export class MigrationRunner {
   private migrationsPath: string;
-  
+
   constructor(migrationsPath = path.join(process.cwd(), 'migrations')) {
     this.migrationsPath = migrationsPath;
   }
@@ -35,7 +35,7 @@ export class MigrationRunner {
         checksum VARCHAR(64) NOT NULL,
         execution_time_ms INTEGER
       );
-      
+
       CREATE INDEX IF NOT EXISTS migrations_applied_at_idx ON migrations(applied_at);
     `;
 
@@ -54,8 +54,8 @@ export class MigrationRunner {
 
     // Get applied migrations from database
     const appliedMigrations = await client<{ id: string; filename: string; applied_at: Date }[]>`
-      SELECT id, filename, applied_at 
-      FROM migrations 
+      SELECT id, filename, applied_at
+      FROM migrations
       ORDER BY applied_at
     `;
 
@@ -78,10 +78,10 @@ export class MigrationRunner {
    */
   async getAppliedMigrations(): Promise<Migration[]> {
     await this.initializeMigrationsTable();
-    
+
     const appliedMigrations = await client<{ id: string; filename: string; applied_at: Date }[]>`
-      SELECT id, filename, applied_at 
-      FROM migrations 
+      SELECT id, filename, applied_at
+      FROM migrations
       ORDER BY applied_at DESC
     `;
 
@@ -96,8 +96,9 @@ export class MigrationRunner {
    * Extract migration ID from filename (e.g., "0001_lead_management_schema.sql" -> "0001")
    */
   private extractMigrationId(filename: string): string {
-    const match = filename.match(/^(\d+)_/);
-    if (!match) {
+    // Explicitly type the regex match result
+    const match: RegExpMatchArray | null = filename.match(/^(\d+)_/);
+    if (!match || !match[1]) {
       throw new Error(`Invalid migration filename format: ${filename}`);
     }
     return match[1];
@@ -127,18 +128,18 @@ export class MigrationRunner {
    */
   private async runMigration(migration: Migration): Promise<MigrationResult> {
     const startTime = Date.now();
-    
+
     try {
       logger.info(`Running migration: ${migration.filename}`);
-      
+
       const content = this.readMigrationFile(migration.filename);
       const checksum = this.calculateChecksum(content);
-      
+
       // Execute migration in a transaction
       await client.begin(async (tx) => {
         // Run the migration SQL
         await tx.unsafe(content);
-        
+
         // Record the migration
         await tx`
           INSERT INTO migrations (id, filename, applied_at, checksum, execution_time_ms)
@@ -157,7 +158,7 @@ export class MigrationRunner {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       logger.error(`Migration ${migration.filename} failed:`, { error: err.message });
-      
+
       return {
         success: false,
         migration,
@@ -172,21 +173,22 @@ export class MigrationRunner {
    */
   private async rollbackMigration(migration: Migration): Promise<MigrationResult> {
     const startTime = Date.now();
-    
+
     try {
-      const rollbackFilename = migration.filename.replace('.sql', '_rollback.sql');
+      // Ensure we handle the string replacement properly
+      const rollbackFilename = migration.filename.replace(/\.sql$/, '_rollback.sql');
       logger.info(`Rolling back migration: ${migration.filename} using ${rollbackFilename}`);
-      
+
       const content = this.readMigrationFile(rollbackFilename);
-      
+
       // Execute rollback in a transaction
       await client.begin(async (tx) => {
         // Run the rollback SQL
         await tx.unsafe(content);
-        
+
         // Remove the migration record
         await tx`
-          DELETE FROM migrations 
+          DELETE FROM migrations
           WHERE id = ${migration.id}
         `;
       });
@@ -202,7 +204,7 @@ export class MigrationRunner {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       logger.error(`Rollback for ${migration.filename} failed:`, { error: err.message });
-      
+
       return {
         success: false,
         migration,
@@ -217,22 +219,22 @@ export class MigrationRunner {
    */
   async migrate(): Promise<MigrationResult[]> {
     await this.initializeMigrationsTable();
-    
+
     const pendingMigrations = await this.getPendingMigrations();
-    
+
     if (pendingMigrations.length === 0) {
       logger.info('No pending migrations found');
       return [];
     }
 
     logger.info(`Found ${pendingMigrations.length} pending migrations`);
-    
+
     const results: MigrationResult[] = [];
-    
+
     for (const migration of pendingMigrations) {
       const result = await this.runMigration(migration);
       results.push(result);
-      
+
       if (!result.success) {
         logger.error(`Migration failed: ${migration.filename}. Stopping migration process.`);
         break;
@@ -241,9 +243,9 @@ export class MigrationRunner {
 
     const successCount = results.filter(r => r.success).length;
     const totalTime = results.reduce((sum, r) => sum + (r.executionTime || 0), 0);
-    
+
     logger.info(`Migration complete: ${successCount}/${results.length} migrations applied in ${totalTime}ms`);
-    
+
     return results;
   }
 
@@ -252,9 +254,9 @@ export class MigrationRunner {
    */
   async rollback(count = 1): Promise<MigrationResult[]> {
     await this.initializeMigrationsTable();
-    
+
     const appliedMigrations = await this.getAppliedMigrations();
-    
+
     if (appliedMigrations.length === 0) {
       logger.info('No migrations to rollback');
       return [];
@@ -262,13 +264,13 @@ export class MigrationRunner {
 
     const migrationsToRollback = appliedMigrations.slice(0, count);
     logger.info(`Rolling back ${migrationsToRollback.length} migrations`);
-    
+
     const results: MigrationResult[] = [];
-    
+
     for (const migration of migrationsToRollback) {
       const result = await this.rollbackMigration(migration);
       results.push(result);
-      
+
       if (!result.success) {
         logger.error(`Rollback failed: ${migration.filename}. Stopping rollback process.`);
         break;
@@ -277,9 +279,9 @@ export class MigrationRunner {
 
     const successCount = results.filter(r => r.success).length;
     const totalTime = results.reduce((sum, r) => sum + (r.executionTime || 0), 0);
-    
+
     logger.info(`Rollback complete: ${successCount}/${results.length} migrations rolled back in ${totalTime}ms`);
-    
+
     return results;
   }
 
@@ -293,10 +295,10 @@ export class MigrationRunner {
     pendingMigrations: Migration[];
   }> {
     await this.initializeMigrationsTable();
-    
+
     const appliedMigrations = await this.getAppliedMigrations();
     const pendingMigrations = await this.getPendingMigrations();
-    
+
     return {
       appliedCount: appliedMigrations.length,
       pendingCount: pendingMigrations.length,
@@ -310,7 +312,7 @@ export class MigrationRunner {
    */
   async validate(): Promise<{ valid: boolean; errors: string[] }> {
     const errors: string[] = [];
-    
+
     try {
       const migrationFiles = fs.readdirSync(this.migrationsPath)
         .filter(file => file.endsWith('.sql') && !file.endsWith('_rollback.sql'))
@@ -319,18 +321,18 @@ export class MigrationRunner {
       for (const filename of migrationFiles) {
         try {
           this.extractMigrationId(filename);
-          
+
           // Check if rollback file exists
-          const rollbackFilename = filename.replace('.sql', '_rollback.sql');
+          const rollbackFilename = filename.replace(/\.sql$/, '_rollback.sql');
           const rollbackPath = path.join(this.migrationsPath, rollbackFilename);
-          
+
           if (!fs.existsSync(rollbackPath)) {
             errors.push(`Missing rollback file for ${filename}: ${rollbackFilename}`);
           }
-          
+
           // Validate file content can be read
           this.readMigrationFile(filename);
-          
+
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
           errors.push(`Invalid migration file ${filename}: ${err.message}`);

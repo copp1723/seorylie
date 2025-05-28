@@ -24,7 +24,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => [...prev, { id, ...props }]);
 
     // Auto dismiss after 5 seconds
-    setTimeout(() => {
+    setTimeout((): void => {
       setToasts((prev) => prev.filter((toast) => toast.id !== id));
     }, 5000);
   }, []);

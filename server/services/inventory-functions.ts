@@ -1,7 +1,7 @@
-import db from '../../db.js';
-import { vehicles } from '../../../shared/schema.js';
+import db from '../db';
+import { vehicles } from '../../shared/schema';
 import { eq, and, like, gte, lte, inArray, sql } from 'drizzle-orm';
-import logger from '../../utils/logger.js';
+import logger from '../utils/logger';
 
 export interface VehicleSearchParams {
   dealershipId: number;

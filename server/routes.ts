@@ -36,49 +36,62 @@ export async function registerRoutes(app: Express) {
   // Check database connection before proceeding
   const dbConnected = await checkDatabaseConnection();
   if (!dbConnected) {
-    logger.error('Cannot start server without database connection');
-    process.exit(1);
+    logger.warn('Database connection failed - some features may not work properly');
+    // Don't exit - allow server to start for frontend testing
   }
 
   // Configure session store
   const connectionString = process.env.DATABASE_URL;
   const isSupabase = connectionString?.includes('supabase.co');
 
-  const pgPool = new Pool({
-    connectionString: connectionString,
-    ssl: (process.env.NODE_ENV === 'production' || isSupabase) ? { rejectUnauthorized: false } : false,
-    max: 20,
-    idleTimeoutMillis: 30000,
-  });
+  let sessionStore;
+  
+  if (dbConnected) {
+    try {
+      const pgPool = new Pool({
+        connectionString: connectionString,
+        ssl: (process.env.NODE_ENV === 'production' || isSupabase) ? { rejectUnauthorized: false } : false,
+        max: 20,
+        idleTimeoutMillis: 30000,
+      });
 
-  const PgSessionStore = connectPgSimple(session);
+      const PgSessionStore = connectPgSimple(session);
+      logger.info('Initializing PostgreSQL session store');
 
-  logger.info('Initializing PostgreSQL session store');
+      sessionStore = new PgSessionStore({
+        pool: pgPool,
+        tableName: 'sessions',
+        createTableIfMissing: true,
+      });
 
-  // Initialize the session store
-  const sessionStore = new PgSessionStore({
-    pool: pgPool,
-    tableName: 'sessions',
-    createTableIfMissing: true,
-  });
-
-  logger.info('PostgreSQL session store initialized successfully');
+      logger.info('PostgreSQL session store initialized successfully');
+    } catch (error) {
+      logger.warn('Failed to initialize PostgreSQL session store, using memory store', error);
+      sessionStore = undefined; // Will use default memory store
+    }
+  } else {
+    logger.info('Using memory session store due to database connection issues');
+    sessionStore = undefined; // Will use default memory store
+  }
 
   // Configure session middleware
-  app.use(
-    session({
-      store: sessionStore,
-      secret: process.env.SESSION_SECRET || 'rylie-secure-secret',
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24, // 24 hours
-        sameSite: 'lax',
-      },
-    })
-  );
+  const sessionConfig: any = {
+    secret: process.env.SESSION_SECRET || 'rylie-secure-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      sameSite: 'lax',
+    },
+  };
+
+  if (sessionStore) {
+    sessionConfig.store = sessionStore;
+  }
+
+  app.use(session(sessionConfig));
 
   // Add CSRF protection
   const csrfProtection = csrf({ cookie: false });

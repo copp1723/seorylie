@@ -1,10 +1,10 @@
-import { AIResponseService, type AIResponseRequest, type AIResponseResult } from './ai-response-service.js';
+import { AIResponseService, type AIResponseRequest, type AIResponseResult } from './ai-response-service';
 import { 
   routeMessageThroughAgentSquad, 
   isAgentSquadReady, 
   type AgentSquadResponse 
-} from './agentSquad/index.js';
-import logger from '../utils/logger.js';
+} from './agentSquad/index';
+import logger from '../utils/logger';
 
 export interface HybridAIConfig {
   useAgentSquad: boolean;
@@ -153,7 +153,7 @@ export class HybridAIService {
   ): Promise<void> {
     try {
       // Import ConversationService to save the response
-      const { ConversationService } = await import('./conversation-service.js');
+      const { ConversationService } = await import('./conversation-service');
       const conversationService = new ConversationService();
 
       // Save Agent Squad response as AI message

@@ -30,11 +30,11 @@ router.post('/cache/clear', asyncHandler(async (req, res) => {
 // Cache for 5 minutes (300 seconds)
 router.get('/cache-demo', cacheMiddleware({ ttl: 300 }), asyncHandler(async (req, res) => {
   logger.info('Fetching performance-optimized cache demo data');
-  
+
   // Simulate database delay (in production, this would be a real query)
   const startTime = Date.now();
-  await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay to simulate DB query
-  
+  await new Promise<void>((resolve: () => void) => setTimeout(resolve, 300)); // 300ms delay to simulate DB query
+
   // Create mock dealerships for demonstration
   const dealerships = Array.from({ length: 10 }, (_, i) => ({
     id: i + 1,
@@ -47,10 +47,10 @@ router.get('/cache-demo', cacheMiddleware({ ttl: 300 }), asyncHandler(async (req
     state: ['NY', 'CA', 'IL', 'TX', 'AZ'][i % 5],
     created_at: new Date(Date.now() - i * 86400000).toISOString()
   }));
-  
+
   const duration = Date.now() - startTime;
   logger.info(`Generated ${dealerships.length} demo items in ${duration}ms`);
-  
+
   res.json({
     success: true,
     data: dealerships,
@@ -70,13 +70,13 @@ router.get('/cache-demo', cacheMiddleware({ ttl: 300 }), asyncHandler(async (req
 router.get('/cache-demo/:id', cacheMiddleware({ ttl: 180 }), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { category, limit = 20 } = req.query;
-  
+
   logger.info('Fetching cached demo data with parameters', { id, category });
-  
+
   // Simulate database delay
   const startTime = Date.now();
-  await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay to simulate complex DB query
-  
+  await new Promise<void>((resolve: () => void) => setTimeout(resolve, 500)); // 500ms delay to simulate complex DB query
+
   // Create demo items for demonstration
   const items = Array.from({ length: Math.min(Number(limit), 20) }, (_, i) => ({
     id: i + 1,
@@ -87,10 +87,10 @@ router.get('/cache-demo/:id', cacheMiddleware({ ttl: 180 }), asyncHandler(async 
     created_at: new Date(Date.now() - i * 86400000).toISOString(),
     rating: (Math.random() * 5).toFixed(1)
   }));
-  
+
   const duration = Date.now() - startTime;
   logger.info(`Generated ${items.length} demo items in ${duration}ms`);
-  
+
   res.json({
     success: true,
     data: items,
@@ -109,16 +109,16 @@ router.get('/cache-demo/:id', cacheMiddleware({ ttl: 180 }), asyncHandler(async 
 }));
 
 // Example of clearing cache when data changes
-router.post('/cache-demo/clear/:pattern', 
+router.post('/cache-demo/clear/:pattern',
   clearCacheMiddleware('demo'),  // Clear all demo caches
   asyncHandler(async (req, res) => {
     const { pattern } = req.params;
-    
+
     logger.info('Clearing cache with pattern', { pattern });
-    
+
     // Simulate database operation
     await new Promise(resolve => setTimeout(resolve, 200));
-    
+
     // Return success
     res.status(200).json({
       success: true,
@@ -137,7 +137,7 @@ router.post('/cache-demo/clear/:pattern',
 // Health check endpoint to verify cache service is working
 router.get('/cache/health', asyncHandler(async (req, res) => {
   const isHealthy = await cacheService.healthCheck();
-  
+
   res.json({
     success: true,
     cache: {

@@ -1,7 +1,7 @@
 import logger from '../utils/logger';
-import { 
-  channelRoutingService, 
-  ChannelMessage, 
+import {
+  channelRoutingService,
+  ChannelMessage,
   ChannelRoutingResult,
   DeliveryStatus,
   CommunicationChannel
@@ -43,7 +43,7 @@ export interface DeliveryStatusUpdate {
  */
 export class MessageDeliveryService {
   private static instance: MessageDeliveryService;
-  
+
   private constructor() {}
 
   static getInstance(): MessageDeliveryService {
@@ -161,7 +161,7 @@ export class MessageDeliveryService {
       });
 
       const results = await Promise.allSettled(promises);
-      
+
       return results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
@@ -235,9 +235,9 @@ export class MessageDeliveryService {
     try {
       // Get original message details from database
       // This would reconstruct the original request and retry
-      
+
       logger.info('Retrying message delivery', { deliveryAttemptId });
-      
+
       // For now, return a placeholder response
       throw new Error('Retry functionality not yet implemented');
 
@@ -289,7 +289,7 @@ export class MessageDeliveryService {
     failed: Array<{ request: MessageDeliveryRequest; error: string }>;
     totalProcessed: number;
   }> {
-    
+
     const {
       batchSize = 10,
       delayBetweenBatches = 1000, // 1 second
@@ -298,7 +298,7 @@ export class MessageDeliveryService {
 
     const successful: MessageDeliveryResponse[] = [];
     const failed: Array<{ request: MessageDeliveryRequest; error: string }> = [];
-    
+
     logger.info('Starting bulk message delivery', {
       totalMessages: requests.length,
       batchSize,
@@ -308,7 +308,7 @@ export class MessageDeliveryService {
     // Process in batches
     for (let i = 0; i < requests.length; i += batchSize) {
       const batch = requests.slice(i, i + batchSize);
-      
+
       // Check failure threshold
       const totalProcessed = successful.length + failed.length;
       if (totalProcessed > 0) {
@@ -342,7 +342,7 @@ export class MessageDeliveryService {
 
       // Delay between batches (except for last batch)
       if (i + batchSize < requests.length) {
-        await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+        await new Promise<void>((resolve: () => void) => setTimeout(resolve, delayBetweenBatches));
       }
 
       logger.info('Batch processed', {
@@ -375,7 +375,7 @@ export class MessageDeliveryService {
     message: ChannelMessage,
     routingResult: ChannelRoutingResult
   ): Promise<MessageDeliveryResponse> {
-    
+
     logger.warn('Primary channel unavailable, attempting fallback', {
       primaryChannel: routingResult.selectedChannel,
       fallbackChannels: routingResult.fallbackChannels
@@ -429,7 +429,7 @@ export class MessageDeliveryService {
 
     // Send via fallback channel
     const deliveryResult = await fallbackHandler.sendMessage(message);
-    
+
     if (deliveryResult.success) {
       await channelRoutingService.updateDeliveryStatus(
         routingResult.deliveryAttemptId,
@@ -458,7 +458,7 @@ export class MessageDeliveryService {
     routingResult: ChannelRoutingResult,
     error: string
   ): Promise<MessageDeliveryResponse> {
-    
+
     logger.error('Message delivery failed', undefined, {
       deliveryAttemptId: routingResult.deliveryAttemptId,
       channel: routingResult.selectedChannel,
@@ -480,7 +480,7 @@ export class MessageDeliveryService {
 
       if (fallbackHandler) {
         const deliveryResult = await fallbackHandler.sendMessage(message);
-        
+
         if (deliveryResult.success) {
           return {
             success: true,

@@ -8,27 +8,27 @@ export enum ErrorCodes {
   DATABASE_CONNECTION_ERROR = 'DB_CONNECTION_ERROR',
   DATABASE_QUERY_ERROR = 'DB_QUERY_ERROR',
   DATABASE_TRANSACTION_ERROR = 'DB_TRANSACTION_ERROR',
-  
+
   // Authentication errors
   AUTHENTICATION_FAILED = 'AUTH_FAILED',
   AUTHORIZATION_FAILED = 'AUTHZ_FAILED',
   TOKEN_EXPIRED = 'TOKEN_EXPIRED',
   INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
-  
+
   // Validation errors
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   INVALID_INPUT = 'INVALID_INPUT',
   MISSING_REQUIRED_FIELD = 'MISSING_FIELD',
-  
+
   // Business logic errors
   RESOURCE_NOT_FOUND = 'NOT_FOUND',
   RESOURCE_ALREADY_EXISTS = 'ALREADY_EXISTS',
   OPERATION_NOT_ALLOWED = 'NOT_ALLOWED',
-  
+
   // External service errors
   EMAIL_SERVICE_ERROR = 'EMAIL_ERROR',
   CACHE_SERVICE_ERROR = 'CACHE_ERROR',
-  
+
   // System errors
   INTERNAL_SERVER_ERROR = 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
@@ -78,14 +78,14 @@ export class ResponseHelper {
   }
 
   static error(
-    res: Response, 
-    error: AppError | Error, 
+    res: Response,
+    error: AppError | Error,
     requestId?: string
   ): Response {
     const isAppError = error instanceof CustomError;
     const statusCode = isAppError ? error.statusCode : 500;
     const code = isAppError ? error.code : ErrorCodes.INTERNAL_SERVER_ERROR;
-    
+
     const errorResponse = {
       success: false,
       error: {
@@ -149,9 +149,9 @@ export class ResponseHelper {
 
 // Async handler wrapper to catch async errors
 export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
@@ -169,29 +169,29 @@ export async function dbOperation<T>(
       return await operation();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt === retries) {
         logger.error(`Database operation failed after ${retries} attempts`, {
           error: lastError.message,
           stack: lastError.stack,
           attempt
         });
-        
+
         throw new CustomError(
           errorMessage,
           ErrorCodes.DATABASE_QUERY_ERROR,
           500,
-          { 
-            originalError: lastError.message, 
-            attempts: retries 
+          {
+            originalError: lastError.message,
+            attempts: retries
           }
         );
       }
 
       // Wait before retrying (exponential backoff)
       const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      
+      await new Promise<void>((resolve: () => void) => setTimeout(resolve, delay));
+
       logger.warn(`Database operation failed, retrying...`, {
         error: lastError.message,
         attempt,

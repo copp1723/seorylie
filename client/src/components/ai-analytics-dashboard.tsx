@@ -98,7 +98,7 @@ export function AIAnalyticsDashboard() {
     setLoading(true);
     try {
       // Mock data - in real app these would be API calls
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
+      await new Promise<void>((resolve: () => void) => setTimeout(resolve, 1000)); // Simulate API delay
 
       // Generate mock daily stats
       const days = parseInt(timeRange);

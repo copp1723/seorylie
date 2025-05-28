@@ -22,7 +22,7 @@ interface NotificationContextType {
   addNotification: (notification: Omit<Notification, "id">) => string;
   removeNotification: (id: string) => void;
   clearAllNotifications: () => void;
-  
+
   // Convenience methods
   success: (title: string, description?: string, options?: Partial<Notification>) => string;
   error: (title: string, description?: string, options?: Partial<Notification>) => string;
@@ -86,8 +86,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const addNotification = useCallback((notification: Omit<Notification, "id">) => {
     const id = generateId();
-    const duration = notification.duration !== undefined 
-      ? notification.duration 
+    const duration = notification.duration !== undefined
+      ? notification.duration
       : DEFAULT_DURATIONS[notification.type];
 
     const newNotification: Notification = {
@@ -101,7 +101,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     // Auto-dismiss if duration > 0
     if (duration > 0) {
-      setTimeout(() => {
+      setTimeout((): void => {
         removeNotification(id);
       }, duration);
     }
@@ -191,11 +191,11 @@ export function NotificationContainer() {
 }
 
 // Individual Notification Component
-function NotificationItem({ 
-  notification, 
-  onDismiss 
-}: { 
-  notification: Notification; 
+function NotificationItem({
+  notification,
+  onDismiss
+}: {
+  notification: Notification;
   onDismiss: () => void;
 }) {
   const Icon = NOTIFICATION_ICONS[notification.type];

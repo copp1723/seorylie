@@ -3,6 +3,7 @@
  */
 import { db } from '../db';
 import { followUps } from '../../shared/schema-extensions';
+import { users } from '../../shared/enhanced-schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { sendEmail } from './email-service';
 import * as schedule from 'node-schedule';
@@ -80,8 +81,8 @@ async function sendFollowUpReminder(followUpId: number) {
 
     // Get user email
     const [user] = await db.select()
-      .from('users')
-      .where(eq('users.id', followUp.assignedTo));
+      .from(users)
+      .where(eq(users.id, followUp.assignedTo));
 
     if (!user?.email) {
       console.error(`Cannot send follow-up reminder: User ${followUp.assignedTo} has no email`);

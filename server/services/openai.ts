@@ -10,7 +10,7 @@ let openai: OpenAI | null = null;
 
 try {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || apiKey === 'sk-actualOpenAIKeyHere') {
+  if (!apiKey || apiKey.trim() === '' || apiKey === 'sk-actualOpenAIKeyHere') {
     console.warn("OpenAI API key not configured - AI features will be disabled");
     openai = null;
   } else {
@@ -24,9 +24,9 @@ try {
 
 // Enhanced AI response with inventory integration and error resilience
 export async function generateAIResponse(
-  prompt: string, 
-  customerScenario?: string, 
-  dealershipId?: number, 
+  prompt: string,
+  customerScenario?: string,
+  dealershipId?: number,
   conversationHistory?: Array<{role: string, content: string}>
 ): Promise<string> {
   const maxRetries = 3;
@@ -40,9 +40,9 @@ export async function generateAIResponse(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      logger.info(`OpenAI request attempt ${attempt}`, { 
-        dealershipId, 
-        hasHistory: !!conversationHistory?.length 
+      logger.info(`OpenAI request attempt ${attempt}`, {
+        dealershipId,
+        hasHistory: !!conversationHistory?.length
       });
 
       // Construct the message to send to OpenAI
@@ -77,12 +77,12 @@ export async function generateAIResponse(
         }
 
         // Combine customer message with inventory context
-        const enhancedMessage = inventoryContext 
+        const enhancedMessage = inventoryContext
           ? `${customerScenario}\n\n${inventoryContext}`
           : customerScenario;
 
         messages.push({
-          role: "user", 
+          role: "user",
           content: enhancedMessage
         });
       } else {
@@ -106,30 +106,30 @@ export async function generateAIResponse(
 
       // Parse the JSON response
       const responseContent = response.choices[0].message.content || "{}";
-      
+
       try {
         const jsonResponse = JSON.parse(responseContent);
         // Extract the answer field from the JSON response if it exists
         if (jsonResponse.answer) {
-          logger.info('OpenAI response generated successfully', { 
-            attempt, 
+          logger.info('OpenAI response generated successfully', {
+            attempt,
             dealershipId,
-            responseLength: jsonResponse.answer.length 
+            responseLength: jsonResponse.answer.length
           });
           return jsonResponse.answer;
         } else {
           // If no answer field, just return the full content
-          logger.info('OpenAI response generated (raw content)', { 
-            attempt, 
+          logger.info('OpenAI response generated (raw content)', {
+            attempt,
             dealershipId,
-            responseLength: responseContent.length 
+            responseLength: responseContent.length
           });
           return responseContent;
         }
       } catch (parseError) {
         // If not valid JSON, return the raw content
-        logger.warn('OpenAI response not valid JSON, returning raw content', { 
-          attempt, 
+        logger.warn('OpenAI response not valid JSON, returning raw content', {
+          attempt,
           parseError: parseError instanceof Error ? parseError.message : String(parseError)
         });
         return responseContent;
@@ -137,7 +137,7 @@ export async function generateAIResponse(
 
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       logger.warn(`OpenAI request attempt ${attempt} failed`, {
         error: lastError.message,
         attempt,
@@ -147,12 +147,12 @@ export async function generateAIResponse(
 
       // Check if it's a rate limit error or temporary issue
       const isRetryableError = isRetryable(lastError);
-      
+
       if (attempt < maxRetries && isRetryableError) {
         // Exponential backoff: 1s, 2s, 4s
         const delayMs = Math.pow(2, attempt - 1) * 1000;
         logger.info(`Retrying OpenAI request in ${delayMs}ms`, { attempt, delayMs });
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await new Promise<void>((resolve: () => void) => setTimeout(resolve, delayMs));
         continue;
       }
 
@@ -233,7 +233,7 @@ function containsInventoryKeywords(message: string): boolean {
     // Condition
     'new', 'used', 'certified', 'pre-owned', 'cpo'
   ];
-  
+
   const lowerMessage = message.toLowerCase();
   return keywords.some(keyword => lowerMessage.includes(keyword));
 }
@@ -245,7 +245,7 @@ async function searchInventoryForContext(dealershipId: number, customerMessage: 
 
     // Extract potential vehicle information from the message
     const searchTerms = extractSearchTerms(customerMessage);
-    
+
     let query = db
       .select()
       .from(vehicles)
@@ -277,7 +277,7 @@ async function searchInventoryForContext(dealershipId: number, customerMessage: 
 
     const results = await query;
     logger.info('Inventory search results', { resultsCount: results.length });
-    
+
     return results;
   } catch (error) {
     logger.error('Error searching inventory:', error);
@@ -378,7 +378,7 @@ function formatInventoryContext(vehicles: Vehicle[]): string {
   const vehicleDescriptions = vehicles.map(vehicle => {
     const price = vehicle.salePrice || vehicle.msrp;
     const priceStr = price ? `$${(price / 100).toLocaleString()}` : 'Price available upon request';
-    
+
     return `${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim || ''} - ${priceStr} (Stock #${vehicle.stockNumber || 'N/A'})`;
   }).join(', ');
 
@@ -389,7 +389,7 @@ function formatInventoryContext(vehicles: Vehicle[]): string {
 export async function generateHandoverDossier(conversationHistory: string, customerScenario: string): Promise<any> {
   try {
     // Construct the prompt for the handover dossier
-    const systemPrompt = `Generate a sales lead handover dossier based on the conversation with a customer. 
+    const systemPrompt = `Generate a sales lead handover dossier based on the conversation with a customer.
     Format the response as a JSON object with the following structure:
     {
       "customerName": "Name or Anonymous if unknown",
@@ -430,7 +430,7 @@ export async function generateHandoverDossier(conversationHistory: string, custo
 // Generate response analysis
 export async function generateResponseAnalysis(prompt: string, customerScenario: string): Promise<any> {
   try {
-    const systemPrompt = `Analyze this customer interaction for a car dealership. 
+    const systemPrompt = `Analyze this customer interaction for a car dealership.
     Format the response as a JSON object with the following structure:
     {
       "customerName": "Name if detected, otherwise 'Unknown'",

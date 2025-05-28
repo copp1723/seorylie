@@ -11,25 +11,29 @@ import {
   cancelFollowUp 
 } from '../services/follow-up-scheduler';
 import { logAuditEvent } from '../services/user-management';
+import { db } from '../db';
+import { eq } from 'drizzle-orm';
+import { conversations } from '../../shared/lead-management-schema';
+import { followUps } from '../../shared/schema-extensions';
 
 const router = express.Router();
 
 // Get lead score for a conversation
 router.get('/conversations/:conversationId/lead-score', async (req, res) => {
   try {
-    const conversationId = parseInt(req.params.conversationId);
+    const conversationId = req.params.conversationId; // Keep as string for UUID
     
     // Get conversation to check permissions
-    const [conversation] = await req.db.select()
-      .from('conversations')
-      .where({ id: conversationId });
+    const [conversation] = await db.select()
+      .from(conversations)
+      .where(eq(conversations.id, conversationId));
     
     if (!conversation) {
       return res.status(404).json({ error: 'Conversation not found' });
     }
     
     // Check permissions
-    if (!req.user || (req.user.dealership_id !== conversation.dealership_id && req.user.role !== 'super_admin')) {
+    if (!req.user || (req.user.dealershipId !== conversation.dealershipId && req.user.role !== 'super_admin')) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
@@ -171,9 +175,9 @@ router.put('/follow-ups/:followUpId/complete', async (req, res) => {
     const { notes } = req.body;
     
     // Get follow-up to check permissions
-    const [followUp] = await req.db.select()
-      .from('follow_ups')
-      .where({ id: followUpId });
+    const [followUp] = await db.select()
+      .from(followUps)
+      .where(eq(followUps.id, followUpId));
     
     if (!followUp) {
       return res.status(404).json({ error: 'Follow-up not found' });
@@ -211,9 +215,9 @@ router.put('/follow-ups/:followUpId/cancel', async (req, res) => {
     const { reason } = req.body;
     
     // Get follow-up to check permissions
-    const [followUp] = await req.db.select()
-      .from('follow_ups')
-      .where({ id: followUpId });
+    const [followUp] = await db.select()
+      .from(followUps)
+      .where(eq(followUps.id, followUpId));
     
     if (!followUp) {
       return res.status(404).json({ error: 'Follow-up not found' });

@@ -319,5 +319,4 @@ export function useApiClient() {
 }
 
 // Export error types for use in components
-export { ApiError };
 export type { ApiSuccessResponse, ApiErrorResponse };

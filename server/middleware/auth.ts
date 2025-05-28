@@ -1,5 +1,5 @@
 // Auth middleware - wrapper around authentication middleware
-import { authenticationMiddleware } from './authentication.js';
+import { authenticationMiddleware } from './authentication';
 
 // Export authenticateSession as an alias for authenticationMiddleware
 export const authenticateSession = authenticationMiddleware;
@@ -12,4 +12,4 @@ export {
   requireVerifiedEmail,
   hashPassword,
   verifyPassword 
-} from './authentication.js';
+} from './authentication';

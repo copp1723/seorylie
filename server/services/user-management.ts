@@ -3,6 +3,7 @@
  */
 import { db } from '../db';
 import { users } from '../../shared/schema';
+import { dealerships } from '../../shared/enhanced-schema';
 import { eq, and, gte } from 'drizzle-orm';
 import { sendEmail } from './email-service';
 import { randomBytes } from 'crypto';
@@ -108,7 +109,7 @@ export async function createUserInvitation({
   const inviterName = inviter.name || 'A dealership administrator';
 
   // Get dealership name
-  const [dealership] = await db.select().from('dealerships').where(eq('dealerships.id', dealershipId));
+  const [dealership] = await db.select().from(dealerships).where(eq(dealerships.id, dealershipId));
   if (!dealership) {
     throw new Error('Dealership not found');
   }

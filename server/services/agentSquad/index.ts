@@ -1,5 +1,5 @@
 // AgentSquad service index - simplified for deployment
-import logger from '../../utils/logger.js';
+import logger from '../../utils/logger';
 
 // AgentSquad response type
 export interface AgentSquadResponse {

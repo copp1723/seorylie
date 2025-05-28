@@ -9,34 +9,34 @@ export enum ErrorCode {
   INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
   TOKEN_EXPIRED = 'TOKEN_EXPIRED',
   INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS',
-  
+
   // Validation
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   INVALID_INPUT = 'INVALID_INPUT',
   MISSING_REQUIRED_FIELD = 'MISSING_REQUIRED_FIELD',
-  
+
   // Database
   DATABASE_ERROR = 'DATABASE_ERROR',
   RECORD_NOT_FOUND = 'RECORD_NOT_FOUND',
   DUPLICATE_ENTRY = 'DUPLICATE_ENTRY',
   FOREIGN_KEY_VIOLATION = 'FOREIGN_KEY_VIOLATION',
-  
+
   // API & Services
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   TIMEOUT = 'TIMEOUT',
   BAD_GATEWAY = 'BAD_GATEWAY',
-  
+
   // Business Logic
   INVALID_OPERATION = 'INVALID_OPERATION',
   RESOURCE_LOCKED = 'RESOURCE_LOCKED',
   QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
-  
+
   // File Operations
   FILE_NOT_FOUND = 'FILE_NOT_FOUND',
   FILE_TOO_LARGE = 'FILE_TOO_LARGE',
   INVALID_FILE_TYPE = 'INVALID_FILE_TYPE',
-  
+
   // System
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   NOT_IMPLEMENTED = 'NOT_IMPLEMENTED',
@@ -97,7 +97,7 @@ export const handleError = (error: unknown): AppError => {
   if (error instanceof AppError) {
     return error;
   }
-  
+
   const message = error instanceof Error ? error.message : String(error);
   return new AppError(ErrorCode.INTERNAL_ERROR, message);
 };
@@ -114,7 +114,7 @@ export class ResponseHelper {
 
   static error(res: Response, error: unknown, statusCode: number = 500) {
     const appError = handleError(error);
-    
+
     return res.status(statusCode).json({
       success: false,
       error: {
@@ -127,8 +127,10 @@ export class ResponseHelper {
 }
 
 // Async handler for route handlers
-export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };

@@ -1,6 +1,6 @@
 /**
  * Common test utilities and helper functions
- * 
+ *
  * This file contains shared functionality for test suites.
  */
 
@@ -81,7 +81,7 @@ export function createMockNext(): jest.Mock {
  * Wait for a specified time (in milliseconds)
  */
 export function wait(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise<void>((resolve: () => void) => setTimeout(resolve, ms));
 }
 
 /**

@@ -2,6 +2,9 @@
  * Routes for customer insights and journey tracking
  */
 import express from 'express';
+import { db } from '../db';
+import { eq } from 'drizzle-orm';
+import { customerProfiles } from '../../shared/schema-extensions';
 import { 
   getOrCreateCustomerProfile, 
   recordCustomerInteraction, 
@@ -43,9 +46,9 @@ router.post('/customer-profiles/:profileId/interactions', async (req, res) => {
     const profileId = parseInt(req.params.profileId);
     
     // Get profile to check permissions
-    const [profile] = await req.db.select()
-      .from('customer_profiles')
-      .where({ id: profileId });
+    const [profile] = await db.select()
+      .from(customerProfiles)
+      .where(eq(customerProfiles.id, profileId));
     
     if (!profile) {
       return res.status(404).json({ error: 'Customer profile not found' });
@@ -82,9 +85,9 @@ router.get('/customer-profiles/:profileId/journey', async (req, res) => {
     const profileId = parseInt(req.params.profileId);
     
     // Get profile to check permissions
-    const [profile] = await req.db.select()
-      .from('customer_profiles')
-      .where({ id: profileId });
+    const [profile] = await db.select()
+      .from(customerProfiles)
+      .where(eq(customerProfiles.id, profileId));
     
     if (!profile) {
       return res.status(404).json({ error: 'Customer profile not found' });
@@ -110,9 +113,9 @@ router.get('/customer-profiles/:profileId/preferences', async (req, res) => {
     const profileId = parseInt(req.params.profileId);
     
     // Get profile to check permissions
-    const [profile] = await req.db.select()
-      .from('customer_profiles')
-      .where({ id: profileId });
+    const [profile] = await db.select()
+      .from(customerProfiles)
+      .where(eq(customerProfiles.id, profileId));
     
     if (!profile) {
       return res.status(404).json({ error: 'Customer profile not found' });
@@ -143,9 +146,9 @@ router.get('/customer-profiles/:profileId/buying-window', async (req, res) => {
     const profileId = parseInt(req.params.profileId);
     
     // Get profile to check permissions
-    const [profile] = await req.db.select()
-      .from('customer_profiles')
-      .where({ id: profileId });
+    const [profile] = await db.select()
+      .from(customerProfiles)
+      .where(eq(customerProfiles.id, profileId));
     
     if (!profile) {
       return res.status(404).json({ error: 'Customer profile not found' });

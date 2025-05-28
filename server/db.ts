@@ -1,13 +1,32 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import logger from './utils/logger';
 import { ConnectionParameters } from 'postgres';
 
-// Import from main schema file temporarily to avoid schema-resolver issues
-import * as schema from '../shared/schema';
+// Import from individual schema files to avoid circular dependency issues
+import * as baseSchema from '../shared/schema';
+import * as enhancedSchema from '../shared/enhanced-schema';
+import * as leadSchema from '../shared/lead-management-schema';
+import * as adfSchema from '../shared/adf-schema';
+import * as extensionsSchema from '../shared/schema-extensions';
+
+// Combine all schemas
+const schema = {
+  ...baseSchema,
+  ...enhancedSchema,
+  ...leadSchema,
+  ...adfSchema,
+  ...extensionsSchema
+};
 
 // Database connection configuration
-const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/rylie';
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is required but not configured');
+}
+const connectionString = process.env.DATABASE_URL;
 
 // Enhanced SSL configuration for better compatibility with various environments
 const isProduction = process.env.NODE_ENV === 'production';

@@ -1,8 +1,8 @@
 import express from 'express';
-import { hybridAIService } from '../services/hybrid-ai-service.js';
+import { hybridAIService } from '../services/hybrid-ai-service';
 import { initializeAgentSquad, isAgentSquadReady } from '../services/agentSquad/index';
-import logger from '../utils/logger.js';
-import { authenticateSession } from '../middleware/auth.js';
+import logger from '../utils/logger';
+import { authenticateSession } from '../middleware/auth';
 
 const router = express.Router();
 

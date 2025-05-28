@@ -1,9 +1,9 @@
 // AgentSquad service index file
 // Exports all AgentSquad functionality
 
-import { initializeOrchestrator } from './orchestrator.js';
-import * as inventoryFunctions from './inventory-functions.js';
-import { createRylieRetriever } from './rylie-retriever.js';
+import { initializeOrchestrator } from './orchestrator';
+import * as inventoryFunctions from './inventory-functions';
+import { createRylieRetriever } from './rylie-retriever';
 
 // Export individual modules
 export { initializeOrchestrator, inventoryFunctions, createRylieRetriever };

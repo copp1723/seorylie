@@ -1,7 +1,7 @@
-import db from '../../db.js';
-import { vehicles } from '../../../shared/schema.js';
+import db from '../../db';
+import { vehicles } from '../../../shared/schema';
 import { eq, and, like, gte, lte, inArray, sql } from 'drizzle-orm';
-import logger from '../../utils/logger.js';
+import logger from '../../utils/logger';
 
 export interface VehicleSearchParams {
   dealershipId: number;
@@ -321,7 +321,15 @@ export async function getInventorySummary(dealershipId: number): Promise<{
     .orderBy(sql`count(*) desc`)
     .limit(1);
 
-    const stats = summaryQuery[0];
+    const stats = summaryQuery[0] || {
+      total: 0,
+      newCount: 0,
+      usedCount: 0,
+      certifiedCount: 0,
+      avgPrice: 0,
+      minPrice: 0,
+      maxPrice: 0
+    };
     const makes = makesQuery.map(m => m.make);
     const mostCommonMake = mostCommonMakeQuery[0]?.make || '';
 

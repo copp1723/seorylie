@@ -14,7 +14,7 @@ export interface PhoneMaskingOptions {
  * Mask a phone number for logging purposes
  */
 export function maskPhoneNumber(
-  phoneNumber: string, 
+  phoneNumber: string,
   options: PhoneMaskingOptions = {}
 ): string {
   const {
@@ -41,7 +41,7 @@ export function maskPhoneNumber(
     // Show country code (e.g., +1 for US)
     const countryCode = digitsOnly.substring(0, digitsOnly.length - 10);
     maskedNumber = `+${countryCode} `;
-    
+
     // Mask the main number except last digits
     const mainNumber = digitsOnly.substring(countryCode.length);
     const visiblePart = mainNumber.slice(-visibleDigits);
@@ -61,7 +61,7 @@ export function maskPhoneNumber(
  * Mask multiple phone numbers in a text string
  */
 export function maskPhoneNumbersInText(
-  text: string, 
+  text: string,
   options: PhoneMaskingOptions = {}
 ): string {
   // Common phone number patterns
@@ -94,9 +94,9 @@ export function containsPhoneNumber(text: string): boolean {
  * Sanitize an object by masking phone numbers in all string values
  */
 export function sanitizeObjectForLogging(
-  obj: any, 
+  obj: unknown,
   options: PhoneMaskingOptions = {}
-): any {
+): unknown {
   if (obj === null || obj === undefined) {
     return obj;
   }
@@ -110,19 +110,19 @@ export function sanitizeObjectForLogging(
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeObjectForLogging(item, options));
+    return obj.map((item: unknown) => sanitizeObjectForLogging(item, options));
   }
 
   if (typeof obj === 'object') {
-    const sanitized: any = {};
-    
+    const sanitized: Record<string, unknown> = {};
+
     // Special handling for known phone number fields
     const phoneFields = ['phone', 'phoneNumber', 'to', 'from', 'toPhone', 'fromPhone', 'mobile'];
-    
+
     for (const [key, value] of Object.entries(obj)) {
       const lowerKey = key.toLowerCase();
-      
-      if (phoneFields.some(field => lowerKey.includes(field))) {
+
+      if (phoneFields.some((field: string) => lowerKey.includes(field))) {
         // This is likely a phone number field
         sanitized[key] = typeof value === 'string' ? maskPhoneNumber(value, options) : value;
       } else {
@@ -130,7 +130,7 @@ export function sanitizeObjectForLogging(
         sanitized[key] = sanitizeObjectForLogging(value, options);
       }
     }
-    
+
     return sanitized;
   }
 
@@ -164,16 +164,16 @@ export function sanitizeRequestForLogging(req: any): any {
  */
 export function formatPhoneNumberForDisplay(phoneNumber: string): string {
   if (!phoneNumber) return '';
-  
+
   const digitsOnly = phoneNumber.replace(/\D/g, '');
-  
+
   if (digitsOnly.length === 10) {
     return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
   } else if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
     const main = digitsOnly.slice(1);
     return `+1 (${main.slice(0, 3)}) ${main.slice(3, 6)}-${main.slice(6)}`;
   }
-  
+
   return phoneNumber; // Return as-is if can't format
 }
 
@@ -184,21 +184,21 @@ export function isValidPhoneNumber(phoneNumber: string): boolean {
   if (!phoneNumber || typeof phoneNumber !== 'string') {
     return false;
   }
-  
+
   const digitsOnly = phoneNumber.replace(/\D/g, '');
-  
+
   // US numbers: 10 digits or 11 digits starting with 1
   if (digitsOnly.length === 10) {
     return true;
   } else if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
     return true;
   }
-  
+
   // International numbers: 7-15 digits
   if (digitsOnly.length >= 7 && digitsOnly.length <= 15) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -208,7 +208,7 @@ export function isValidPhoneNumber(phoneNumber: string): boolean {
 export function extractPhoneNumbers(text: string): string[] {
   const phonePattern = /(\+?1?\s?)?\(?([0-9]{3})\)?\s?-?([0-9]{3})-?([0-9]{4})/g;
   const matches = text.match(phonePattern) || [];
-  
+
   return matches
     .map(match => match.replace(/\D/g, ''))
     .filter(phone => isValidPhoneNumber(phone))

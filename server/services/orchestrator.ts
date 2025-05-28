@@ -1,13 +1,13 @@
 import { AgentSquad, OpenAIAgent, OpenAIClassifier, InMemoryChatStorage } from 'agent-squad';
 import type { ConversationMessage } from 'agent-squad';
-import logger from '../../utils/logger.js';
+import logger from '../../utils/logger';
 import { 
   searchInventory, 
   getVehicleDetails, 
   getInventorySummary, 
   inventoryFunctionDefinitions 
-} from './inventory-functions.js';
-import { createRylieRetriever, type RylieRetrieverOptions } from './rylie-retriever.js';
+} from './inventory-functions';
+import { createRylieRetriever, type RylieRetrieverOptions } from './rylie-retriever';
 
 interface RylieAgentSquadConfig {
   openaiApiKey: string;

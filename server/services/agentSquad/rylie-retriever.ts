@@ -1,8 +1,8 @@
 import { Retriever } from 'agent-squad';
-import db from '../../db.js';
-import { vehicles, dealerships, personas } from '../../../shared/schema.js';
+import db from '../../db';
+import { vehicles, dealerships, personas } from '../../../shared/schema';
 import { eq, and, like, sql } from 'drizzle-orm';
-import logger from '../../utils/logger.js';
+import logger from '../../utils/logger';
 
 export interface RylieRetrieverOptions {
   dealershipId: number;
