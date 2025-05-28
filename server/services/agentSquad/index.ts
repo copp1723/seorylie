@@ -1,7 +1,8 @@
-// AgentSquad service index - simplified for deployment
+// AgentSquad service index - enhanced with full orchestrator integration
 import logger from '../../utils/logger';
+import { RylieAgentSquad } from './orchestrator';
 
-// AgentSquad response type
+// Enhanced AgentSquad response type
 export interface AgentSquadResponse {
   success: boolean;
   response?: string;
@@ -10,42 +11,111 @@ export interface AgentSquadResponse {
   conversationId?: string;
   error?: string;
   fallbackRequired?: boolean;
+  processingTime?: number;
+  confidence?: number;
+  escalated?: boolean;
+  sentiment?: string;
+  urgency?: string;
+  priority?: string;
+  fallback?: boolean;
 }
+
+// Global orchestrator instance
+let globalOrchestrator: RylieAgentSquad | null = null;
+let initializationPromise: Promise<boolean> | null = null;
 
 // AgentSquad readiness check
 export function isAgentSquadReady(): boolean {
   try {
-    // Basic readiness check - ensure core modules are available
-    return true;
+    // Check if orchestrator is initialized and healthy
+    return globalOrchestrator !== null;
   } catch (error) {
     logger.error('AgentSquad readiness check failed:', error);
     return false;
   }
 }
 
-// Initialize AgentSquad with configuration (simplified)
-export function initializeAgentSquad(config: { enabled: boolean; openaiApiKey?: string; fallbackToOriginal?: boolean }): boolean {
-  try {
-    if (!config.enabled) {
-      logger.info('Agent Squad is disabled in configuration');
-      return false;
-    }
-    
-    if (!config.openaiApiKey) {
-      logger.warn('Agent Squad: No OpenAI API key provided');
-      return false;
-    }
-    
-    logger.info('Agent Squad initialized successfully');
-    return true;
-    
-  } catch (error) {
-    logger.error('Failed to initialize Agent Squad:', error);
-    return false;
+// Get orchestrator health status
+export async function getAgentSquadHealth(): Promise<{
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  agents: number;
+  lastResponse: number;
+  errors: string[];
+}> {
+  if (!globalOrchestrator) {
+    return {
+      status: 'unhealthy',
+      agents: 0,
+      lastResponse: 0,
+      errors: ['Agent Squad not initialized']
+    };
   }
+  
+  return await globalOrchestrator.healthCheck();
 }
 
-// Route message through AgentSquad (simplified implementation)
+// Initialize AgentSquad with enhanced configuration
+export function initializeAgentSquad(config: { 
+  enabled: boolean; 
+  openaiApiKey?: string; 
+  fallbackToOriginal?: boolean;
+  defaultDealershipId?: number;
+  enableAnalytics?: boolean;
+  enableAdvancedRouting?: boolean;
+}): Promise<boolean> {
+  // Return existing promise if already initializing
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+  
+  initializationPromise = (async () => {
+    try {
+      if (!config.enabled) {
+        logger.info('Agent Squad is disabled in configuration');
+        return false;
+      }
+      
+      if (!config.openaiApiKey) {
+        logger.warn('Agent Squad: No OpenAI API key provided');
+        return false;
+      }
+      
+      // Initialize the orchestrator
+      globalOrchestrator = new RylieAgentSquad({
+        openaiApiKey: config.openaiApiKey,
+        defaultDealershipId: config.defaultDealershipId,
+        enableAnalytics: config.enableAnalytics ?? true,
+        enableAdvancedRouting: config.enableAdvancedRouting ?? true,
+        fallbackToGeneral: config.fallbackToOriginal ?? true
+      });
+      
+      // Verify health
+      const health = await globalOrchestrator.healthCheck();
+      if (health.status === 'unhealthy') {
+        logger.error('Agent Squad initialization failed health check', { health });
+        globalOrchestrator = null;
+        return false;
+      }
+      
+      logger.info('Agent Squad initialized successfully with full orchestrator', {
+        agents: health.agents,
+        status: health.status,
+        analytics: config.enableAnalytics,
+        advancedRouting: config.enableAdvancedRouting
+      });
+      return true;
+      
+    } catch (error) {
+      logger.error('Failed to initialize Agent Squad:', error);
+      globalOrchestrator = null;
+      return false;
+    }
+  })();
+  
+  return initializationPromise;
+}
+
+// Route message through AgentSquad orchestrator
 export async function routeMessageThroughAgentSquad(
   message: string,
   userId: string,
@@ -53,25 +123,142 @@ export async function routeMessageThroughAgentSquad(
   context?: any
 ): Promise<AgentSquadResponse> {
   try {
-    logger.info(`Routing message for user ${userId}, conversation ${conversationId}`);
+    if (!globalOrchestrator) {
+      logger.warn('Agent Squad not initialized, cannot route message');
+      return {
+        success: false,
+        error: 'Agent Squad not initialized',
+        fallbackRequired: true
+      };
+    }
     
-    // Simplified implementation - would normally use the full orchestrator
-    return {
-      success: true,
-      response: 'This is a placeholder response from AgentSquad.',
-      selectedAgent: 'general-agent',
-      reasoning: 'Placeholder routing logic',
-      conversationId: conversationId
-    };
+    logger.info(`Routing message through Agent Squad for user ${userId}, conversation ${conversationId}`);
+    
+    // Route through the full orchestrator
+    const result = await globalOrchestrator.routeMessage(
+      message,
+      userId,
+      conversationId,
+      context
+    );
+    
+    return result as AgentSquadResponse;
     
   } catch (error) {
     logger.error('Agent Squad routing failed:', error);
     
     return {
       success: false,
-      error: 'Agent routing failed',
+      error: error instanceof Error ? error.message : 'Agent routing failed',
       fallbackRequired: true
     };
+  }
+}
+
+// Get Agent Squad performance metrics
+export async function getAgentSquadMetrics(
+  dealershipId: number,
+  timeRange?: { start: Date; end: Date }
+): Promise<{
+  totalInteractions: number;
+  agentBreakdown: Record<string, number>;
+  averageResponseTime: number;
+  escalationRate: number;
+  averageConfidence: number;
+} | null> {
+  try {
+    if (!globalOrchestrator) {
+      logger.warn('Agent Squad not initialized, cannot get metrics');
+      return null;
+    }
+    
+    return await globalOrchestrator.getPerformanceMetrics(dealershipId, timeRange);
+    
+  } catch (error) {
+    logger.error('Failed to get Agent Squad metrics:', error);
+    return null;
+  }
+}
+
+// Update Agent Squad configuration for dealership
+export async function updateAgentSquadConfig(
+  dealershipId: number,
+  config: {
+    enabled?: boolean;
+    fallbackEnabled?: boolean;
+    confidenceThreshold?: number;
+    preferredAgents?: string[];
+    agentPersonalities?: Record<string, any>;
+  }
+): Promise<boolean> {
+  try {
+    if (!globalOrchestrator) {
+      logger.warn('Agent Squad not initialized, cannot update config');
+      return false;
+    }
+    
+    await globalOrchestrator.updateDealershipConfig(dealershipId, config);
+    logger.info('Agent Squad configuration updated', { dealershipId, config });
+    return true;
+    
+  } catch (error) {
+    logger.error('Failed to update Agent Squad configuration:', error);
+    return false;
+  }
+}
+
+// Get Agent Squad configuration for dealership
+export async function getAgentSquadConfig(dealershipId: number): Promise<{
+  enabled: boolean;
+  fallbackEnabled: boolean;
+  confidenceThreshold: number;
+  preferredAgents: string[];
+  agentPersonalities: Record<string, any>;
+} | null> {
+  try {
+    if (!globalOrchestrator) {
+      logger.warn('Agent Squad not initialized, cannot get config');
+      return null;
+    }
+    
+    return await globalOrchestrator.getDealershipConfig(dealershipId);
+    
+  } catch (error) {
+    logger.error('Failed to get Agent Squad configuration:', error);
+    return null;
+  }
+}
+
+// Clear conversation history
+export async function clearAgentSquadConversation(sessionId: string): Promise<boolean> {
+  try {
+    if (!globalOrchestrator) {
+      logger.warn('Agent Squad not initialized, cannot clear conversation');
+      return false;
+    }
+    
+    await globalOrchestrator.clearConversation(sessionId);
+    return true;
+    
+  } catch (error) {
+    logger.error('Failed to clear Agent Squad conversation:', error);
+    return false;
+  }
+}
+
+// Get conversation history
+export async function getAgentSquadConversationHistory(sessionId: string): Promise<any[]> {
+  try {
+    if (!globalOrchestrator) {
+      logger.warn('Agent Squad not initialized, cannot get conversation history');
+      return [];
+    }
+    
+    return await globalOrchestrator.getConversationHistory(sessionId);
+    
+  } catch (error) {
+    logger.error('Failed to get Agent Squad conversation history:', error);
+    return [];
   }
 }
 
@@ -79,5 +266,17 @@ export async function routeMessageThroughAgentSquad(
 export default {
   isAgentSquadReady,
   initializeAgentSquad,
-  routeMessageThroughAgentSquad
+  routeMessageThroughAgentSquad,
+  getAgentSquadHealth,
+  getAgentSquadMetrics,
+  updateAgentSquadConfig,
+  getAgentSquadConfig,
+  clearAgentSquadConversation,
+  getAgentSquadConversationHistory
 };
+
+// Export the main orchestrator class for advanced usage
+export { RylieAgentSquad } from './orchestrator';
+export type { RoutingDecision, SentimentAnalysis } from './advanced-routing';
+export type { RylieRetrieverOptions, RetrievedDocument } from './rylie-retriever';
+export type { VehicleSearchParams, VehicleSearchResult } from './inventory-functions';

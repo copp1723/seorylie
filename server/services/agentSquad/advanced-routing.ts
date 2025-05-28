@@ -1,5 +1,5 @@
-import { logger } from '../../utils/logger';
-import db from '../../db/index';
+import logger from '../../utils/logger';
+import { db } from '../../db';
 import { sql } from 'drizzle-orm';
 
 export interface SentimentAnalysis {

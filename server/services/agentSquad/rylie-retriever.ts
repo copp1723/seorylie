@@ -1,5 +1,5 @@
 import { Retriever } from 'agent-squad';
-import db from '../../db';
+import { db } from '../../db';
 import { vehicles, dealerships, personas } from '../../../shared/schema';
 import { eq, and, like, sql } from 'drizzle-orm';
 import logger from '../../utils/logger';

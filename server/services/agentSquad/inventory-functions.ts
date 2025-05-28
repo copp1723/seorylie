@@ -1,4 +1,4 @@
-import db from '../../db';
+import { db } from '../../db';
 import { vehicles } from '../../../shared/schema';
 import { eq, and, like, gte, lte, sql } from 'drizzle-orm';
 import logger from '../../utils/logger';
