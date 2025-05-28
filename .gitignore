@@ -17,8 +17,6 @@ logs/
 *.log
 
 # Nested repositories (should not be tracked)
-1rylie/
-1rylie-1/
 
 # Agent Squad test files (temporary)
 simple-agent-squad-test.js
