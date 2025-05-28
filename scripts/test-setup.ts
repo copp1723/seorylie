@@ -1,6 +1,7 @@
 import { db } from '../server/db';
 import { sql } from 'drizzle-orm';
 import * as crypto from 'crypto';
+import bcrypt from 'bcrypt';
 
 /**
  * This script sets up a minimal test environment for the Rylie AI platform
@@ -22,8 +23,8 @@ async function testSetup() {
       dealershipId = existingDealershipResult[0].id;
     } else {
       const newDealershipResult = await db.execute(sql`
-        INSERT INTO dealerships (name, location, contact_email, contact_phone, domain, handover_email)
-        VALUES ('Test Dealership', '123 Test Street, Testville, CA 90210', 'contact@testdealership.com', '(555) 123-4567', 'testdealership.com', 'sales@testdealership.com')
+        INSERT INTO dealerships (name, subdomain, contact_email, contact_phone, address, city, state, zip, website)
+        VALUES ('Test Dealership', 'test-dealership', 'contact@testdealership.com', '(555) 123-4567', '123 Test Street', 'Testville', 'CA', '90210', 'https://testdealership.com')
         RETURNING id
       `);
 
@@ -41,11 +42,14 @@ async function testSetup() {
     if (existingAdminResult && existingAdminResult.length > 0) {
       console.log('Admin user already exists.');
     } else {
+      // Hash the password properly
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      
       await db.execute(sql`
         INSERT INTO users (id, username, name, email, password, role, dealership_id)
-        VALUES (${adminId}, 'admin_user', 'Admin User', 'admin@testdealership.com', 'hashed_password_here', 'admin', ${dealershipId})
+        VALUES (${adminId}, 'admin_user', 'Admin User', 'admin@testdealership.com', ${hashedPassword}, 'dealership_admin', ${dealershipId})
       `);
-      console.log('Created admin user.');
+      console.log('Created admin user with credentials: admin_user / admin123');
     }
 
     // 3. Create API key if it doesn't exist
@@ -133,8 +137,8 @@ Always remember to personalize your responses for {{customerName}}.`;
       // Toyota RAV4
       await db.execute(sql`
         INSERT INTO vehicles (
-          dealership_id, stock_number, make, model, year, trim, exterior_color,
-          interior_color, vin, mileage, price, msrp, body_style, transmission,
+          dealership_id, stock_number, make, model, year, trim, ext_color,
+          int_color, vin, mileage, sale_price, msrp, body_style, transmission,
           engine, fuel_type, drivetrain, features, description, images, status
         ) VALUES (
           ${dealershipId}, 'ST12345', 'Toyota', 'RAV4', 2025, 'XLE Premium',
@@ -142,15 +146,15 @@ Always remember to personalize your responses for {{customerName}}.`;
           31495, 32999, 'SUV', '8-Speed Automatic', '2.5L 4-Cylinder', 'Hybrid',
           'All-Wheel Drive', ARRAY['Sunroof', 'Navigation', 'Premium Audio'],
           'Brand new Toyota RAV4 Hybrid with excellent fuel economy.',
-          ARRAY['https://example.com/img1.jpg'], 'active'
+          ARRAY['https://example.com/img1.jpg'], 'Available'
         )
       `);
 
       // Honda Accord
       await db.execute(sql`
         INSERT INTO vehicles (
-          dealership_id, stock_number, make, model, year, trim, exterior_color,
-          interior_color, vin, mileage, price, msrp, body_style, transmission,
+          dealership_id, stock_number, make, model, year, trim, ext_color,
+          int_color, vin, mileage, sale_price, msrp, body_style, transmission,
           engine, fuel_type, drivetrain, features, description, images, status
         ) VALUES (
           ${dealershipId}, 'ST54321', 'Honda', 'Accord', 2024, 'Sport',
@@ -158,15 +162,15 @@ Always remember to personalize your responses for {{customerName}}.`;
           27895, 28999, 'Sedan', 'CVT', '1.5L Turbo', 'Gasoline',
           'Front-Wheel Drive', ARRAY['Apple CarPlay', 'Android Auto', 'Lane Keep Assist'],
           'Stylish and efficient Honda Accord Sport.',
-          ARRAY['https://example.com/img2.jpg'], 'active'
+          ARRAY['https://example.com/img2.jpg'], 'Available'
         )
       `);
 
       // Ford F-150
       await db.execute(sql`
         INSERT INTO vehicles (
-          dealership_id, stock_number, make, model, year, trim, exterior_color,
-          interior_color, vin, mileage, price, msrp, body_style, transmission,
+          dealership_id, stock_number, make, model, year, trim, ext_color,
+          int_color, vin, mileage, sale_price, msrp, body_style, transmission,
           engine, fuel_type, drivetrain, features, description, images, status
         ) VALUES (
           ${dealershipId}, 'ST67890', 'Ford', 'F-150', 2024, 'Lariat',
@@ -174,7 +178,7 @@ Always remember to personalize your responses for {{customerName}}.`;
           51995, 53995, 'Truck', '10-Speed Automatic', '3.5L EcoBoost V6', 'Gasoline',
           '4x4', ARRAY['Leather Seats', 'SYNC 4', 'Tow Package'],
           'Powerful and capable Ford F-150 Lariat.',
-          ARRAY['https://example.com/img3.jpg'], 'active'
+          ARRAY['https://example.com/img3.jpg'], 'Available'
         )
       `);
 

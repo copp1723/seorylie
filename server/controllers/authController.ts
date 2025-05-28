@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import db from '../db';
 import { users } from '../../shared/schema';
 import logger from '../utils/logger';
+import bcrypt from 'bcrypt';
 
 // Real authentication controller
 export const loginUser = async (req: Request, res: Response) => {
@@ -23,8 +24,8 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Authentication failed' });
     }
 
-    // For now, use simple password check (in production, use bcrypt)
-    const isValidPassword = password === 'password123' || user.password === password;
+    // Use bcrypt to verify password
+    const isValidPassword = await bcrypt.compare(password, user.password || '');
 
     if (!isValidPassword) {
       logger.warn(`Login attempt failed: Invalid password for user ${username}`);
