@@ -1,5 +1,7 @@
 import { ConversationService } from './conversation-service';
 import { generateAIResponse } from './openai';
+import { enhancedAIService } from './enhanced-ai-service';
+import { conversationIntelligence } from './conversation-intelligence';
 import { eq, desc } from 'drizzle-orm';
 import db from '../db';
 import { messages, conversations, personas } from '../../shared/lead-management-schema';
@@ -65,18 +67,103 @@ export class EnhancedConversationService extends ConversationService {
         context.persona?.arguments || {}
       );
 
-      // Generate AI response with enhanced context
-      const response = await generateAIResponse(
-        processedPrompt,
+      // Use enhanced AI service for intelligent, contextual responses
+      const response = await enhancedAIService.generateResponse(
+        options.conversationId,
         options.content,
-        options.includeInventoryContext ? options.dealershipId : undefined,
-        conversationHistory
+        options.dealershipId,
+        conversationHistory.map(msg => ({
+          id: `${Date.now()}-${Math.random()}`,
+          content: msg.content,
+          role: msg.role as 'user' | 'assistant',
+          timestamp: new Date()
+        }))
       );
 
       return { response, context };
 
     } catch (error) {
       logger.error('Error generating AI response with context:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate intelligent chat response (simplified interface)
+   */
+  async generateIntelligentChatResponse(
+    conversationId: string,
+    userMessage: string,
+    dealershipId: number
+  ): Promise<string> {
+    try {
+      logger.info('Generating intelligent chat response', {
+        conversationId,
+        dealershipId,
+        messageLength: userMessage.length
+      });
+
+      // Use enhanced AI service directly for the most intelligent response
+      const response = await enhancedAIService.generateResponse(
+        conversationId,
+        userMessage,
+        dealershipId
+      );
+
+      // Store the conversation in our regular system as well
+      await this.addMessage({
+        conversationId,
+        content: userMessage,
+        sender: 'customer'
+      });
+
+      await this.addMessage({
+        conversationId,
+        content: response,
+        sender: 'ai'
+      });
+
+      return response;
+
+    } catch (error) {
+      logger.error('Error generating intelligent chat response:', error);
+      
+      // Fallback to basic response
+      return "I apologize, but I'm having a technical issue right now. Could you please repeat your question? I want to make sure I give you the best help possible.";
+    }
+  }
+
+  /**
+   * Start an intelligent conversation
+   */
+  async startIntelligentConversation(
+    dealershipId: number,
+    customerId?: string
+  ): Promise<{ conversationId: string; greeting: string }> {
+    try {
+      // Create a new conversation ID
+      const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Generate contextual greeting
+      const greeting = await enhancedAIService.generateContextualGreeting(conversationId, dealershipId);
+      
+      // Store the greeting as the first message
+      await this.addMessage({
+        conversationId,
+        content: greeting,
+        sender: 'ai'
+      });
+
+      logger.info('Started intelligent conversation', {
+        conversationId,
+        dealershipId,
+        customerId
+      });
+
+      return { conversationId, greeting };
+
+    } catch (error) {
+      logger.error('Error starting intelligent conversation:', error);
       throw error;
     }
   }

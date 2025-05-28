@@ -11,6 +11,8 @@ import {
   type MessageSender,
   type MessageType
 } from '../../shared/lead-management-schema';
+import { enhancedAIService } from './enhanced-ai-service';
+import { conversationIntelligence } from './conversation-intelligence';
 import logger from '../utils/logger';
 
 export interface ReplyMessageData {
@@ -137,6 +139,66 @@ export class ConversationService {
         description: `${replyData.sender} sent a message: ${replyData.content.substring(0, 100)}${replyData.content.length > 100 ? '...' : ''}`,
         messageId: newMessage.id
       });
+
+      // Generate intelligent AI response if message is from customer
+      if (replyData.sender === 'customer') {
+        try {
+          const aiResponse = await enhancedAIService.generateResponse(
+            replyData.conversationId,
+            replyData.content,
+            dealershipId
+          );
+
+          if (aiResponse) {
+            // Send AI response automatically
+            const aiMessageData: InsertMessage = {
+              conversationId: replyData.conversationId,
+              content: aiResponse,
+              contentType: 'text',
+              type: 'outbound',
+              sender: 'ai',
+              senderName: 'Rylie AI Assistant',
+              isRead: true
+            };
+
+            const [aiMessage] = await db
+              .insert(messages)
+              .values(aiMessageData)
+              .returning();
+
+            // Update conversation after AI response
+            await db
+              .update(conversations)
+              .set({
+                lastMessageAt: new Date(),
+                messageCount: conversation.messageCount + 2, // +1 for customer message, +1 for AI response
+                updatedAt: new Date(),
+                status: 'active'
+              })
+              .where(eq(conversations.id, replyData.conversationId));
+
+            // Log AI response activity
+            await db.insert(leadActivities).values({
+              leadId: conversation.leadId,
+              type: 'ai_response',
+              description: `AI generated intelligent response: ${aiResponse.substring(0, 100)}${aiResponse.length > 100 ? '...' : ''}`,
+              messageId: aiMessage.id
+            });
+
+            logger.info('Intelligent AI response generated and sent', {
+              customerMessageId: newMessage.id,
+              aiMessageId: aiMessage.id,
+              conversationId: replyData.conversationId
+            });
+          }
+        } catch (error) {
+          logger.error('Error generating intelligent AI response', {
+            error: error instanceof Error ? error.message : String(error),
+            conversationId: replyData.conversationId
+          });
+          // Don't fail the entire request if AI response fails
+        }
+      }
 
       logger.info('Reply message sent successfully', {
         messageId: newMessage.id,

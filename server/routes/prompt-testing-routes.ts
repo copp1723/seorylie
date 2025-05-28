@@ -2,7 +2,7 @@ import { Router } from 'express';
 import db from "../db";
 import { personas } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
-import { generateAIResponse } from '../services/openai';
+import { generateAIResponse, generateResponseAnalysis, generateHandoverDossier } from '../services/openai';
 import { enhancedConversationService } from '../services/enhanced-conversation-service';
 import logger from '../utils/logger';
 import { authenticationMiddleware } from '../middleware/authentication';
@@ -45,6 +45,9 @@ router.post('/test', async (req, res) => {
       includeInventory ? dealershipId : undefined
     );
 
+    // Generate response analysis
+    const analysis = await generateResponseAnalysis(processedPrompt, testMessage);
+
     logger.info('Prompt test completed', {
       userId: req.session.userId,
       promptLength: prompt.length,
@@ -57,6 +60,7 @@ router.post('/test', async (req, res) => {
       processedPrompt,
       aiResponse,
       testMessage,
+      analysis,
       includeInventory: includeInventory || false,
       timestamp: new Date().toISOString()
     });
@@ -178,6 +182,53 @@ router.get('/personas', async (req, res) => {
   } catch (error: any) {
     logger.error('Error fetching personas:', error);
     res.status(500).json({ error: 'Failed to fetch personas' });
+  }
+});
+
+// Generate handover dossier
+router.post('/generate-handover', async (req, res) => {
+  try {
+    // Check if user is authenticated (supports both session and development bypass)
+    if (!req.session?.userId && !req.user?.userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { conversationHistory, customerScenario } = req.body;
+    
+    if (!conversationHistory && !customerScenario) {
+      return res.status(400).json({ error: 'Conversation history or customer scenario is required' });
+    }
+
+    // Format conversation history as a string if it's an array
+    let conversationText = '';
+    if (Array.isArray(conversationHistory)) {
+      conversationText = conversationHistory.map((msg: any) => 
+        `${msg.role === 'customer' ? 'Customer' : 'Assistant'}: ${msg.content}`
+      ).join('\n');
+    } else {
+      conversationText = conversationHistory || customerScenario;
+    }
+
+    // Generate handover dossier
+    const handoverDossier = await generateHandoverDossier(conversationText, customerScenario || conversationText);
+
+    logger.info('Handover dossier generated', {
+      userId: req.session?.userId || req.user?.userId,
+      conversationLength: conversationText.length
+    });
+
+    res.json({
+      success: true,
+      handoverDossier,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error: any) {
+    logger.error('Handover generation error:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate handover dossier',
+      message: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : 'Internal server error'
+    });
   }
 });
 

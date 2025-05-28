@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Copy, Plus, Minus, AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ResponseAnalysis } from "@/components/ResponseAnalysis";
 
 const DEFAULT_SYSTEM_PROMPT = `System Prompt for Automotive Sales Agent AI
 You are an automotive sales agent named [ARG-Agent Name], working for [ARG-Employer Name], a dealership committed to exceptional customer service and top-quality vehicles ([ARG-Information About Employer]). Your job is to connect with customers, understand their needs, and guide them toward purchasing a vehicle from our inventory ([ARG-Products]) that perfectly fits their lifestyle. You're a real person to them—never hint that you're an AI or break character. Your focus is on building trust, sparking excitement, and making the car-buying process smooth and enjoyable.
@@ -182,6 +183,8 @@ export default function AdvancedPromptTesting() {
   const [error, setError] = useState("");
   const [isHandoverLoading, setIsHandoverLoading] = useState(false);
   const [handoverDossier, setHandoverDossier] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [lastTestResult, setLastTestResult] = useState<any>(null);
 
   // Communication channel
   const [channel, setChannel] = useState<string>("sms");
@@ -308,16 +311,16 @@ export default function AdvancedPromptTesting() {
     setIsLoading(true);
     setError("");
 
-    // Prepare the request payload
+    // Prepare the request payload to match the backend API
     const payload = {
+      prompt: systemPrompt,
       customerMessage,
-      systemPrompt,
-      channel,
-      customerInfo,
-      dealershipContext,
-      conversationHistory: includeHistory ? conversationHistory : [],
-      relevantVehicles: includeVehicles ? vehicles : [],
-      formatOptions,
+      dealershipId: dealershipContext.dealershipId,
+      includeInventory: includeVehicles,
+      conversationHistory: includeHistory ? conversationHistory.map(msg => ({
+        role: msg.role === "customer" ? "user" : "assistant",
+        content: msg.content
+      })) : undefined
     };
 
     try {
@@ -335,6 +338,14 @@ export default function AdvancedPromptTesting() {
 
       const data = await result.json();
 
+      // Store the complete test result
+      setLastTestResult(data);
+      
+      // Extract the analysis from the response
+      if (data.analysis) {
+        setAnalysis(data.analysis);
+      }
+
       // Update conversation history with this exchange
       const newCustomerMessage = {
         role: "customer",
@@ -344,7 +355,7 @@ export default function AdvancedPromptTesting() {
 
       const newAssistantMessage = {
         role: "assistant",
-        content: data.response,
+        content: data.aiResponse || data.response,
         timestamp: new Date(),
       };
 
@@ -356,7 +367,7 @@ export default function AdvancedPromptTesting() {
       ]);
 
       // Update the response display
-      setResponse(showJson ? JSON.stringify(data, null, 2) : data.response);
+      setResponse(showJson ? JSON.stringify(data, null, 2) : (data.aiResponse || data.response));
 
       // Clear the customer message input for the next message
       setCustomerMessage("");
@@ -385,139 +396,33 @@ export default function AdvancedPromptTesting() {
     setIsHandoverLoading(true);
     setError("");
 
-    // Create an enhanced handover dossier with more customer information
     try {
-      // Extract insights from conversation history
-      const messageText = conversationHistory
-        .filter((msg) => msg.role === "customer")
-        .map((msg) => msg.content)
-        .join(" ");
+      // Format conversation history for the API
+      const formattedHistory = conversationHistory.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
 
-      // Create potential insights based on conversation content
-      const insights = [];
-
-      // Default budget insight
-      insights.push({
-        key: "Budget",
-        value: "Around $30,000",
-        confidence: 0.85,
-      });
-
-      // Timeline insight
-      insights.push({
-        key: "Timeline",
-        value: "Looking to purchase within 2 weeks",
-        confidence: 0.9,
-      });
-
-      // Check for financing keywords
-      if (
-        messageText.toLowerCase().includes("financ") ||
-        messageText.toLowerCase().includes("loan") ||
-        messageText.toLowerCase().includes("credit")
-      ) {
-        insights.push({
-          key: "Financing",
-          value: "Interested in financing options",
-          confidence: 0.95,
-        });
-      }
-
-      // Check for trade-in keywords
-      if (
-        messageText.toLowerCase().includes("trade") ||
-        messageText.toLowerCase().includes("sell my") ||
-        messageText.toLowerCase().includes("my car")
-      ) {
-        insights.push({
-          key: "Trade-in",
-          value: "Has a vehicle to trade in",
-          confidence: 0.9,
-        });
-      }
-
-      // Check for family keywords
-      if (
-        messageText.toLowerCase().includes("famil") ||
-        messageText.toLowerCase().includes("kid") ||
-        messageText.toLowerCase().includes("child")
-      ) {
-        insights.push({
-          key: "Family",
-          value: "Shopping for family vehicle",
-          confidence: 0.8,
-        });
-      }
-
-      // Enhanced handover dossier
-      const enhancedDossier = {
-        id: Math.floor(Math.random() * 10000),
-        customerName: customerInfo.name,
-        customerContact:
-          customerInfo.email || customerInfo.phone || "Not provided",
-        conversationSummary:
-          "Customer has requested assistance from a human representative",
-        conversationStarted: new Date().toISOString(),
-        conversationLength: conversationHistory.length,
-        urgency: "medium",
-        customerInsights: insights,
-        vehicleInterests:
-          includeVehicles && vehicles.length > 0
-            ? vehicles.map((v) => ({
-                make: v.make,
-                model: v.model,
-                year: v.year,
-                trim: v.trim,
-                confidence: 0.8,
-              }))
-            : [
-                {
-                  make: "Honda",
-                  model: "Accord",
-                  year: 2023,
-                  trim: "Sport",
-                  confidence: 0.8,
-                },
-              ],
-        escalationReason:
-          "Customer requested human assistance via prompt testing interface",
-        suggestedApproach:
-          "Review conversation history and focus on addressing customer's specific needs about financing options and vehicle preferences.",
-        nextSteps: [
-          "Contact customer within 24 hours",
-          "Prepare financing pre-approval options",
-          "Schedule test drive appointment",
-        ],
-        handoverAgent: "System",
-        handoverTime: new Date().toISOString(),
-      };
-
-      // Set the handover dossier state
-      setHandoverDossier(enhancedDossier);
-
-      // Add a handover message to the conversation history
-      setConversationHistory([
-        ...conversationHistory,
-        {
-          role: "assistant",
-          content:
-            "Conversation has been escalated to a human representative. They will review your information and reach out to you shortly.",
+      const result = await fetch("/api/prompt-test/generate-handover", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      ]);
+        body: JSON.stringify({
+          conversationHistory: formattedHistory,
+          customerScenario: customerMessage || "Customer interaction for handover"
+        }),
+      });
 
-      // Show the handover dossier details
-      setResponse(
-        JSON.stringify(
-          {
-            success: true,
-            dossier: enhancedDossier,
-            message: "Handover dossier created successfully",
-          },
-          null,
-          2,
-        ),
-      );
-      setShowJson(true);
+      if (!result.ok) {
+        throw new Error(`Error: ${result.status}`);
+      }
+
+      const data = await result.json();
+      
+      if (data.handoverDossier) {
+        setHandoverDossier(data.handoverDossier);
+      }
     } catch (err) {
       console.error("Error generating handover:", err);
       setError(
@@ -526,6 +431,10 @@ export default function AdvancedPromptTesting() {
     } finally {
       setIsHandoverLoading(false);
     }
+  };
+
+  const handleGenerateHandover = () => {
+    handleHandover();
   };
 
   return (
@@ -1080,6 +989,18 @@ export default function AdvancedPromptTesting() {
                 </CardFooter>
               )}
             </Card>
+
+            {/* Response Analysis Component */}
+            {(analysis || handoverDossier) && (
+              <ResponseAnalysis
+                analysis={analysis}
+                handoverDossier={handoverDossier}
+                onGenerateHandover={handleGenerateHandover}
+                isGeneratingHandover={isHandoverLoading}
+                showJson={showJson}
+                onToggleJson={() => setShowJson(!showJson)}
+              />
+            )}
           </div>
         </TabsContent>
 

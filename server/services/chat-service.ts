@@ -4,6 +4,7 @@ import logger from '../utils/logger';
 import db from '../db';
 import { sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { enhancedConversationService } from './enhanced-conversation-service';
 
 interface ChatMessage {
   id: string;
@@ -259,6 +260,45 @@ export class ChatServer {
         message: chatMessage,
         timestamp: new Date()
       });
+
+      // Generate intelligent AI response if message is from customer
+      if (connection.type === 'customer' && connection.dealershipId) {
+        try {
+          const aiResponse = await enhancedConversationService.generateIntelligentChatResponse({
+            conversationId: connection.conversationId.toString(),
+            content: content,
+            dealershipId: connection.dealershipId,
+            userId: connection.userId || 0
+          });
+
+          if (aiResponse) {
+            const aiMessage: ChatMessage = {
+              id: uuidv4(),
+              conversationId: connection.conversationId,
+              senderId: 0, // AI assistant
+              senderType: 'agent',
+              content: aiResponse,
+              messageType: 'text',
+              timestamp: new Date(),
+              metadata: { isAI: true, respondingTo: chatMessage.id }
+            };
+
+            await this.saveMessage(aiMessage);
+
+            // Broadcast AI response to all participants
+            this.broadcastToRoom(connection.conversationId, {
+              type: 'new_message',
+              message: aiMessage,
+              timestamp: new Date()
+            });
+          }
+        } catch (error) {
+          logger.error('Error generating AI response', { 
+            error: error instanceof Error ? error.message : String(error),
+            conversationId: connection.conversationId 
+          });
+        }
+      }
 
       // Update conversation last activity
       await this.updateConversationActivity(connection.conversationId);

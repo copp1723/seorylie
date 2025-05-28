@@ -169,7 +169,7 @@ CREATE TABLE conversations (
     last_message_at TIMESTAMP,
     message_count INTEGER DEFAULT 0,
     is_ai_assisted BOOLEAN DEFAULT true,
-    ai_persona_id INTEGER REFERENCES personas(id),
+    ai_persona_id INTEGER, -- REFERENCES personas(id) when personas table exists
     external_thread_id VARCHAR(255),
     tags JSONB DEFAULT '[]',
     priority VARCHAR(20) NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),

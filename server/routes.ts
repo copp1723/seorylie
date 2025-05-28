@@ -19,6 +19,7 @@ import userManagementRoutes from './routes/user-management-routes';
 import customerInsightsRoutes from './routes/customer-insights-routes';
 import inventoryRoutes from './routes/inventory-routes';
 import { tenantContextMiddleware } from './middleware/tenant-context';
+import WebSocketChatServer from './ws-server';
 
 // Check database connection
 async function checkDatabaseConnection() {
@@ -45,7 +46,7 @@ export async function registerRoutes(app: Express) {
   const isSupabase = connectionString?.includes('supabase.co');
 
   let sessionStore;
-  
+
   if (dbConnected) {
     try {
       const pgPool = new Pool({
@@ -150,5 +151,15 @@ export async function registerRoutes(app: Express) {
 
   // Create and return HTTP server
   const server = createServer(app);
+
+  // Initialize WebSocket server
+  try {
+    const wsServer = new WebSocketChatServer();
+    wsServer.initialize(server);
+    logger.info('WebSocket chat server initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize WebSocket server:', error);
+  }
+
   return server;
 }
