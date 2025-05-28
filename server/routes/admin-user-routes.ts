@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import db from '../db';
 import logger from '../utils/logger';
 import { users, dealerships, magicLinkInvitations } from '../../shared/enhanced-schema';
-import { eq, isNull, and, ne } from 'drizzle-orm';
+import { eq, and, ne, or, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
 import { hash } from 'bcrypt';
@@ -162,8 +162,10 @@ router.post('/users', async (req: Request, res: Response) => {
     const existingUser = await db.select({ id: users.id })
       .from(users)
       .where(
-        eq(users.username, userData.username) ||
-        eq(users.email, userData.email)
+        or(
+          eq(users.username, userData.username),
+          eq(users.email, userData.email)
+        )
       );
 
     if (existingUser.length > 0) {
@@ -659,7 +661,7 @@ router.get('/invitations', async (req: Request, res: Response) => {
         name: dealerships.name,
       })
       .from(dealerships)
-      .where(dealerships.id.in(dealershipIds));
+      .where(inArray(dealerships.id, dealershipIds));
 
       dealershipResults.forEach(d => {
         dealershipMap.set(d.id, d.name);
@@ -680,7 +682,7 @@ router.get('/invitations', async (req: Request, res: Response) => {
         username: users.username,
       })
       .from(users)
-      .where(users.id.in(inviterIds));
+      .where(inArray(users.id, inviterIds));
 
       inviterResults.forEach(u => {
         inviterMap.set(u.id, u.name || u.username);
