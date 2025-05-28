@@ -99,9 +99,7 @@ export async function generateAIResponse(
         messages: messages,
         temperature: 0.7,
         max_tokens: 800,
-        response_format: { type: "json_object" },
-        // Add timeout handling
-        timeout: 30000 // 30 seconds
+        response_format: { type: "json_object" }
       });
 
       // Parse the JSON response

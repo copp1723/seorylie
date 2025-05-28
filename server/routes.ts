@@ -108,6 +108,7 @@ export async function registerRoutes(app: Express) {
       '/api/login',
       '/api/logout',
       '/api/user',
+      '/api/prompt-test',
     ];
 
     // Check if the current route should be exempt
@@ -130,6 +131,7 @@ export async function registerRoutes(app: Express) {
 
   // Register route modules
   app.use('/api/prompt-testing', promptRoutes);
+  app.use('/api/prompt-test', promptRoutes);
 
   // Authentication routes
   app.use('/api', localAuthRoutes);

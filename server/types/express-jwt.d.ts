@@ -1,6 +1,14 @@
 // Express request augmentation for JWT authentication
-import { Request } from 'express';
-import { JWTPayload } from '../middleware/jwt-auth';
+
+export interface JWTPayload {
+  userId: string;
+  dealershipId: number;
+  role: string;
+  permissions: string[];
+  iat?: number;
+  exp?: number;
+  jti?: string;
+}
 
 declare global {
   namespace Express {

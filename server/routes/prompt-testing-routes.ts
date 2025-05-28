@@ -5,14 +5,18 @@ import { eq } from 'drizzle-orm';
 import { generateAIResponse } from '../services/openai';
 import { enhancedConversationService } from '../services/enhanced-conversation-service';
 import logger from '../utils/logger';
+import { authenticationMiddleware } from '../middleware/authentication';
 
 const router = Router();
+
+// Apply authentication middleware to all routes
+router.use(authenticationMiddleware);
 
 // Test a prompt with variables and real AI
 router.post('/test', async (req, res) => {
   try {
-    // Check if user is authenticated
-    if (!req.session.userId) {
+    // Check if user is authenticated (supports both session and development bypass)
+    if (!req.session?.userId && !req.user?.userId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 

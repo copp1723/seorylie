@@ -2,10 +2,6 @@ import type { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import logger from '../utils/logger';
 
-// Import type augmentations
-import '../types/express-jwt';
-import '../types/express-session';
-
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isTest = process.env.NODE_ENV === 'test';

@@ -6,8 +6,7 @@ import db from '../db';
 import { sql } from 'drizzle-orm';
 import type { StringValue } from 'ms';
 
-// Import the type augmentations
-import '../types/express-jwt';
+// Type augmentations are handled globally
 
 export interface JWTPayload {
   userId: string;
