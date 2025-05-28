@@ -1,5 +1,7 @@
 import fetch from 'node-fetch';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 /**
  * Test script to demonstrate the manual report trigger functionality
  */
@@ -7,14 +9,14 @@ async function testReportTrigger() {
   try {
     // Get the first dealership
     console.log("Getting dealership...");
-    const dealershipsResponse = await fetch('http://localhost:5000/api/dealerships');
+    const dealershipsResponse = await fetch(`${BASE_URL}/api/dealerships`);
     const dealerships = await dealershipsResponse.json();
     const dealership = dealerships[0];
     console.log(`Using dealership: ${dealership.name} (ID: ${dealership.id})`);
     
     // Generate a test API key
     console.log("\nGenerating a test API key...");
-    const apiKeyResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/apikeys`, {
+    const apiKeyResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/apikeys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ description: 'Report Trigger Test' })
@@ -26,7 +28,7 @@ async function testReportTrigger() {
     
     // Create a test schedule
     console.log("\nCreating a test schedule for reference...");
-    const scheduleResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/reports/schedule`, {
+    const scheduleResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/reports/schedule`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,7 +47,7 @@ async function testReportTrigger() {
     
     // Test manual report trigger
     console.log("\n----- TESTING MANUAL REPORT TRIGGER -----");
-    const triggerResponse = await fetch('http://localhost:5000/api/reports/trigger', {
+    const triggerResponse = await fetch(`${BASE_URL}/api/reports/trigger`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,7 +61,7 @@ async function testReportTrigger() {
     // Clean up - delete the test schedule
     if (scheduleData && scheduleData.id) {
       console.log(`\nCleaning up - deleting schedule ${scheduleData.id}...`);
-      const deleteResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/reports/schedule/${scheduleData.id}`, {
+      const deleteResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/reports/schedule/${scheduleData.id}`, {
         method: 'DELETE',
         headers: {
           'X-API-Key': apiKey

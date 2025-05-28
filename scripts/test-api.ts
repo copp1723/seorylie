@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 // In a real scenario, we would use actual API keys from the database
 const generateTestKey = async (dealershipId: number) => {
   try {
-    const response = await fetch(`http://localhost:5000/api/dealerships/${dealershipId}/apikeys`, {
+    const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3000'}/api/dealerships/${dealershipId}/apikeys`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -26,7 +26,7 @@ const generateTestKey = async (dealershipId: number) => {
 const testInboundMessage = async (apiKey: string, dealershipId: number) => {
   console.log('\n----- Testing /api/inbound endpoint -----');
   try {
-    const response = await fetch('http://localhost:5000/api/inbound', {
+    const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3000'}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,7 +56,7 @@ const testInboundMessage = async (apiKey: string, dealershipId: number) => {
 const testReplyEndpoint = async (apiKey: string, conversationId: number) => {
   console.log('\n----- Testing /api/reply endpoint -----');
   try {
-    const response = await fetch('http://localhost:5000/api/reply', {
+    const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3000'}/api/reply`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ const testReplyEndpoint = async (apiKey: string, conversationId: number) => {
 const testHandoverEndpoint = async (apiKey: string, conversationId: number) => {
   console.log('\n----- Testing /api/handover endpoint -----');
   try {
-    const response = await fetch('http://localhost:5000/api/handover', {
+    const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3000'}/api/handover`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

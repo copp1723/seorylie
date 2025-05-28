@@ -1,5 +1,6 @@
 
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import { cacheService } from '../services/unified-cache-service';
 import db, { executeQuery } from '../db';
 import logger from '../utils/logger';
@@ -30,21 +31,21 @@ router.get('/health', asyncHandler(async (req: Request, res: Response) => {
   try {
     // Check database health
     healthChecks.services.database = await executeQuery(async () => true);
-    
+
     // Check cache health
     healthChecks.services.cache = await cacheService.healthCheck();
-    
+
     // Determine overall status
     const allServicesHealthy = Object.values(healthChecks.services).every(Boolean);
     healthChecks.status = allServicesHealthy ? 'healthy' : 'degraded';
-    
+
     const statusCode = allServicesHealthy ? 200 : 503;
     res.status(statusCode).json(healthChecks);
-    
+
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     logger.error('Health check failed', { error: err.message });
-    
+
     healthChecks.status = 'unhealthy';
     res.status(503).json(healthChecks);
   }
@@ -100,7 +101,7 @@ router.get('/cache/stats', asyncHandler(async (req: Request, res: Response) => {
 router.post('/cache/clear', asyncHandler(async (req: Request, res: Response) => {
   try {
     const { pattern, prefix } = req.body;
-    
+
     if (pattern) {
       await cacheService.invalidatePattern(pattern, { prefix });
       logger.info(`Cache cleared by pattern: ${pattern}`, { prefix });
@@ -121,7 +122,7 @@ router.post('/cache/clear', asyncHandler(async (req: Request, res: Response) => 
 router.get('/database/performance', asyncHandler(async (req: Request, res: Response) => {
   try {
     const isHealthy = await executeQuery(async () => true);
-    
+
     const dbPerformance = {
       timestamp: new Date().toISOString(),
       connection: {
@@ -162,24 +163,24 @@ router.get('/summary', asyncHandler(async (req: Request, res: Response) => {
 
     const memoryUsage = process.memoryUsage();
     const systemLoad = os.loadavg()[0];
-    
+
     let performanceScore = 100;
-    
+
     const hitRate = parseFloat(cacheStats.hitRate.replace('%', ''));
     if (hitRate < 80) performanceScore -= (80 - hitRate);
-    
+
     const memoryUsagePercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
     if (memoryUsagePercent > 80) performanceScore -= (memoryUsagePercent - 80);
-    
+
     if (systemLoad > 1) performanceScore -= (systemLoad - 1) * 10;
-    
+
     performanceScore = Math.max(0, Math.round(performanceScore));
 
     const summary = {
       timestamp: new Date().toISOString(),
       overallScore: performanceScore,
-      status: performanceScore >= 80 ? 'excellent' : 
-              performanceScore >= 60 ? 'good' : 
+      status: performanceScore >= 80 ? 'excellent' :
+              performanceScore >= 60 ? 'good' :
               performanceScore >= 40 ? 'fair' : 'poor',
       services: {
         database: dbHealth ? 'healthy' : 'degraded',

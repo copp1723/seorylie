@@ -3,7 +3,7 @@
  * Provides consistent response formatting across all API endpoints
  */
 
-import { Response } from 'express';
+import type { Response } from 'express';
 import logger from './logger';
 
 /**
@@ -48,29 +48,29 @@ export const ERROR_CODES = {
   FORBIDDEN: 'FORBIDDEN',
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
   SESSION_EXPIRED: 'SESSION_EXPIRED',
-  
+
   // Validation
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   INVALID_INPUT: 'INVALID_INPUT',
   MISSING_REQUIRED_FIELD: 'MISSING_REQUIRED_FIELD',
-  
+
   // Resource Management
   NOT_FOUND: 'NOT_FOUND',
   ALREADY_EXISTS: 'ALREADY_EXISTS',
   RESOURCE_CONFLICT: 'RESOURCE_CONFLICT',
-  
+
   // Business Logic
   INVENTORY_IMPORT_FAILED: 'INVENTORY_IMPORT_FAILED',
   EMAIL_SEND_FAILED: 'EMAIL_SEND_FAILED',
   CHAT_UNAVAILABLE: 'CHAT_UNAVAILABLE',
   DEALERSHIP_INACTIVE: 'DEALERSHIP_INACTIVE',
-  
+
   // System Errors
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   DATABASE_ERROR: 'DATABASE_ERROR',
   EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR',
-  
+
   // Rate Limiting
   RATE_LIMITED: 'RATE_LIMITED',
   TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
@@ -79,9 +79,9 @@ export const ERROR_CODES = {
 /**
  * User-friendly error messages and actions
  */
-const ERROR_CONFIGS: Record<string, { 
-  userMessage: string; 
-  action?: ErrorResponse['action'] 
+const ERROR_CONFIGS: Record<string, {
+  userMessage: string;
+  action?: ErrorResponse['action']
 }> = {
   [ERROR_CODES.UNAUTHORIZED]: {
     userMessage: 'Please log in to continue',
@@ -318,7 +318,7 @@ export const HttpStatus = {
   CREATED: 201,               // Resource created successfully
   ACCEPTED: 202,              // Request accepted but not yet completed
   NO_CONTENT: 204,            // Success with no content to return
-  
+
   // Client error responses
   BAD_REQUEST: 400,           // Invalid request format or parameters
   UNAUTHORIZED: 401,          // Authentication required
@@ -329,7 +329,7 @@ export const HttpStatus = {
   GONE: 410,                  // Resource no longer available
   UNPROCESSABLE_ENTITY: 422,  // Validation errors
   TOO_MANY_REQUESTS: 429,     // Rate limit exceeded
-  
+
   // Server error responses
   INTERNAL_SERVER_ERROR: 500, // Unexpected server error
   NOT_IMPLEMENTED: 501,       // Endpoint not yet implemented

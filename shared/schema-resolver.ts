@@ -72,6 +72,14 @@ export {
   insertMessageSchema,
   insertHandoverSchema,
   insertLeadActivitySchema,
+
+  inboundLeadSchema,
+  replyMessageSchema,
+  handoverRequestSchema
+} from './lead-management-schema';
+
+// Re-export types from lead-management-schema.ts
+export type {
   LeadSource,
   LeadStatus,
   LeadPriority,
@@ -93,10 +101,7 @@ export {
   Handover,
   InsertHandover,
   LeadActivity,
-  InsertLeadActivity,
-  inboundLeadSchema,
-  replyMessageSchema,
-  handoverRequestSchema
+  InsertLeadActivity
 } from './lead-management-schema';
 
 // Re-export from adf-schema.ts
@@ -112,7 +117,11 @@ export {
   adfEmailQueueRelations,
   insertAdfLeadSchema,
   insertAdfProcessingLogSchema,
-  insertAdfEmailQueueSchema,
+  insertAdfEmailQueueSchema
+} from './adf-schema';
+
+// Re-export types from adf-schema.ts
+export type {
   AdfLeadStatus,
   AdfRequestType,
   AdfProcessingStatus,
@@ -144,7 +153,11 @@ export {
   insertCustomerProfileSchema,
   insertCustomerInteractionSchema,
   insertCustomerInsightSchema,
-  insertResponseSuggestionSchema,
+  insertResponseSuggestionSchema
+} from './schema-extensions';
+
+// Re-export types from schema-extensions.ts
+export type {
   EscalationTrigger,
   InsertEscalationTrigger,
   LeadScore,
@@ -192,7 +205,11 @@ export {
   leadDetailResponseSchema,
   conversationListResponseSchema,
   conversationDetailResponseSchema,
-  twilioWebhookSchema,
+  twilioWebhookSchema
+} from './api-schemas';
+
+// Re-export types from api-schemas.ts
+export type {
   InboundLeadRequest,
   LeadCreationResponse,
   ReplyMessageRequest,

@@ -579,7 +579,7 @@ router.post('/invitations', async (req: Request, res: Response) => {
 
     // Send invitation email if email service is configured
     try {
-      const inviteUrl = `${process.env.APP_URL || 'http://localhost:5000'}/magic-link?token=${token}`;
+      const inviteUrl = `${process.env.APP_URL || 'http://localhost:3000'}/magic-link?token=${token}`;
 
       await sendEmail({
         to: invitationData.email,
@@ -803,7 +803,7 @@ router.post('/invitations/:id/resend', async (req: Request, res: Response) => {
 
     // Send invitation email if email service is configured
     try {
-      const inviteUrl = `${process.env.APP_URL || 'http://localhost:5000'}/magic-link?token=${invitation.token}`;
+      const inviteUrl = `${process.env.APP_URL || 'http://localhost:3000'}/magic-link?token=${invitation.token}`;
 
       await sendEmail({
         to: invitation.email,

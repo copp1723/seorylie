@@ -24,7 +24,7 @@ const logger = winston.createLogger({
       format: winston.format.combine(
         winston.format.colorize(),
         winston.format.printf(
-          ({ timestamp, level, message, ...meta }) => 
+          ({ timestamp, level, message, ...meta }) =>
             `${timestamp} ${level}: ${message} ${
               Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
             }`
@@ -59,15 +59,15 @@ if (process.env.NODE_ENV === 'production') {
 
 // Helper functions to log with context and automatic phone number masking
 export default {
-  info: (message: string, context?: any) => {
+  info: (message: string, context?: unknown) => {
     logger.info(message, context ? sanitizeObjectForLogging(context) : context);
   },
 
-  warn: (message: string, context?: any) => {
+  warn: (message: string, context?: unknown) => {
     logger.warn(message, context ? sanitizeObjectForLogging(context) : context);
   },
 
-  error: (message: string, error?: unknown, context?: any) => {
+  error: (message: string, error?: unknown, context?: unknown) => {
     if (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       logger.error(`${message}: ${err.message}`, {
@@ -79,28 +79,28 @@ export default {
     }
   },
 
-  debug: (message: string, context?: any) => {
+  debug: (message: string, context?: unknown) => {
     logger.debug(message, context ? sanitizeObjectForLogging(context) : context);
   },
 
   // Additional methods for specific use cases
-  sms: (message: string, context?: any) => {
+  sms: (message: string, context?: unknown) => {
     // Special logging for SMS operations with enhanced masking
     const sanitizedContext = context ? sanitizeObjectForLogging(context, {
       visibleDigits: 0, // Don't show any digits for SMS logs
       maskCharacter: '*'
     }) : context;
-    
+
     logger.info(`[SMS] ${message}`, sanitizedContext);
   },
 
-  security: (message: string, context?: any) => {
+  security: (message: string, context?: unknown) => {
     // Security-related logging with maximum sanitization
     const sanitizedContext = context ? sanitizeObjectForLogging(context, {
       visibleDigits: 0,
       maskCharacter: 'X'
     }) : context;
-    
+
     logger.warn(`[SECURITY] ${message}`, sanitizedContext);
   }
 };

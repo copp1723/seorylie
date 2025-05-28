@@ -1,15 +1,15 @@
 /**
  * CSRF Protection Middleware
- * 
+ *
  * This middleware provides Cross-Site Request Forgery protection
  * for sensitive routes that modify data.
  */
 
 import csrf from 'csurf';
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
 // Initialize CSRF protection middleware
-export const csrfProtection = csrf({ 
+export const csrfProtection = csrf({
   cookie: {
     key: '_csrf',
     httpOnly: true,

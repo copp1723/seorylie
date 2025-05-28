@@ -1,9 +1,11 @@
 import fetch from 'node-fetch';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 // Retrieve API key from database
 async function getApiKey() {
   try {
-    const response = await fetch('http://localhost:5000/api/dealerships/1/apikeys');
+    const response = await fetch(`${BASE_URL}/api/dealerships/1/apikeys`);
     const apiKeys = await response.json();
     return apiKeys[0]?.key || null;
   } catch (error) {
@@ -16,7 +18,7 @@ async function getApiKey() {
 async function testInboundMessage(apiKey: string) {
   console.log('\n----- Testing /api/inbound endpoint -----');
   try {
-    const response = await fetch('http://localhost:5000/api/inbound', {
+    const response = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

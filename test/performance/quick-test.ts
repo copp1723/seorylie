@@ -55,7 +55,7 @@ class QuickPerformanceTest {
     const startTime = Date.now();
 
     try {
-      const response = await fetch('http://localhost:5000/api/metrics/health');
+      const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3000'}/api/metrics/health`);
       result.duration = Date.now() - startTime;
 
       if (response.ok) {
@@ -129,7 +129,7 @@ class QuickPerformanceTest {
 
     try {
       // Test database through the API
-      const response = await fetch('http://localhost:5000/api/metrics/database/performance');
+      const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3000'}/api/metrics/database/performance`);
       result.duration = Date.now() - startTime;
 
       if (response.ok) {
@@ -163,7 +163,7 @@ export const options = {
 };
 
 export default function () {
-  const baseUrl = 'http://localhost:5000';
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
 
   // Test health endpoint
   const healthResponse = http.get(\`\${baseUrl}/api/metrics/health\`);

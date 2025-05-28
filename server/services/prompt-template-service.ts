@@ -85,8 +85,8 @@ export class PromptTemplateService {
       // 3. Highest priority
       // 4. Highest success rate
       const result = await db.execute(sql`
-        SELECT pt.*, 
-               CASE 
+        SELECT pt.*,
+               CASE
                  WHEN pt.lead_source = ${criteria.leadSource || null} THEN 1
                  WHEN pt.lead_source IS NULL THEN 2
                  ELSE 3
@@ -96,7 +96,7 @@ export class PromptTemplateService {
         AND pt.template_type = ${criteria.templateType}
         AND pt.is_active = true
         AND (pt.lead_source = ${criteria.leadSource || null} OR pt.lead_source IS NULL)
-        ORDER BY 
+        ORDER BY
           source_priority ASC,
           pt.priority ASC,
           pt.success_rate DESC NULLS LAST,
@@ -185,7 +185,7 @@ export class PromptTemplateService {
           template_id, conversation_id, customer_id, dealership_id,
           lead_source, rendered_prompt, variables_used
         )
-        SELECT 
+        SELECT
           ${templateId}, ${conversationId}, ${customerId}, pt.dealership_id,
           pt.lead_source, ${renderedPrompt}, ${JSON.stringify(variablesUsed)}
         FROM prompt_templates pt
@@ -231,10 +231,10 @@ export class PromptTemplateService {
           version, is_active, is_default, created_by
         )
         VALUES (
-          ${templateId}, ${template.dealershipId}, ${template.name}, 
-          ${template.description || null}, ${template.leadSource || null}, 
+          ${templateId}, ${template.dealershipId}, ${template.name},
+          ${template.description || null}, ${template.leadSource || null},
           ${template.templateType}, ${template.promptContent}, ${template.tone},
-          ${template.language}, ${JSON.stringify(template.variables)}, 
+          ${template.language}, ${JSON.stringify(template.variables)},
           ${JSON.stringify(template.conditions || {})}, ${template.priority},
           ${template.version}, ${template.isActive}, ${template.isDefault},
           ${template.createdBy}
@@ -284,7 +284,7 @@ export class PromptTemplateService {
         if (value !== undefined) {
           const dbKey = this.camelToSnakeCase(key);
           updateFields.push(`${dbKey} = ?`);
-          
+
           if (key === 'variables' || key === 'conditions') {
             updateValues.push(JSON.stringify(value));
           } else {
@@ -298,7 +298,7 @@ export class PromptTemplateService {
       }
 
       await db.execute(sql`
-        UPDATE prompt_templates 
+        UPDATE prompt_templates
         SET ${sql.raw(updateFields.join(', '))}
         WHERE id = ${templateId}
       `);
@@ -351,15 +351,15 @@ export class PromptTemplateService {
   ): Promise<PromptTemplate[]> {
     try {
       let whereConditions = [`dealership_id = ${dealershipId}`];
-      
+
       if (filters.leadSource !== undefined) {
         whereConditions.push(`lead_source = '${filters.leadSource}'`);
       }
-      
+
       if (filters.templateType) {
         whereConditions.push(`template_type = '${filters.templateType}'`);
       }
-      
+
       if (filters.isActive !== undefined) {
         whereConditions.push(`is_active = ${filters.isActive}`);
       }
@@ -368,13 +368,13 @@ export class PromptTemplateService {
       const limit = filters.limit || 100;
 
       const result = await db.execute(sql`
-        SELECT * FROM prompt_templates 
+        SELECT * FROM prompt_templates
         WHERE ${sql.raw(whereClause)}
         ORDER BY priority ASC, created_at DESC
         LIMIT ${limit}
       `);
 
-      return (result.rows || []).map(row => this.mapRowToTemplate(row as any));
+      return (result || []).map(row => this.mapRowToTemplate(row as any));
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -393,7 +393,7 @@ export class PromptTemplateService {
   ): Promise<any> {
     try {
       const result = await db.execute(sql`
-        SELECT 
+        SELECT
           COUNT(*) as total_usage,
           COUNT(CASE WHEN response_received THEN 1 END) as responses_received,
           COUNT(CASE WHEN conversation_successful THEN 1 END) as successful_conversations,
@@ -405,11 +405,11 @@ export class PromptTemplateService {
         AND used_at BETWEEN ${startDate} AND ${endDate}
       `);
 
-      const analytics = result.rows[0] || {};
+      const analytics = result[0] || {};
 
       // Get daily usage breakdown
       const dailyResult = await db.execute(sql`
-        SELECT 
+        SELECT
           DATE(used_at) as date,
           COUNT(*) as usage_count,
           COUNT(CASE WHEN conversation_successful THEN 1 END) as successful_count
@@ -422,7 +422,7 @@ export class PromptTemplateService {
 
       return {
         summary: analytics,
-        dailyBreakdown: dailyResult.rows || []
+        dailyBreakdown: dailyResult || []
       };
 
     } catch (error) {
@@ -446,18 +446,18 @@ export class PromptTemplateService {
   } {
     try {
       const rendered = this.renderTemplate(template, sampleContext);
-      
+
       // Check for missing variables
       const missingVariables: string[] = [];
       const warnings: string[] = [];
-      
+
       template.variables.forEach(variable => {
         if (variable.required) {
           const variableKey = variable.name.toLowerCase().replace(/\s+/g, '_');
-          const hasValue = sampleContext.customVariables?.[variableKey] || 
+          const hasValue = sampleContext.customVariables?.[variableKey] ||
                           sampleContext.customVariables?.[variable.name] ||
                           Object.values(sampleContext).some(v => v !== undefined);
-          
+
           if (!hasValue) {
             missingVariables.push(variable.name);
           }
@@ -519,7 +519,7 @@ export class PromptTemplateService {
     leadSource?: string
   ): Promise<void> {
     await db.execute(sql`
-      UPDATE prompt_templates 
+      UPDATE prompt_templates
       SET is_default = false
       WHERE dealership_id = ${dealershipId}
       AND template_type = ${templateType}

@@ -1,5 +1,5 @@
 import express from 'express';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import logger from '../utils/logger';
 import { twilioSMSService } from '../services/twilio-sms-service';
 import { validateBody } from '../middleware/validation';
@@ -12,7 +12,7 @@ const validateTwilioSignature = (req: Request, res: Response, next: express.Next
   try {
     const twilioSignature = req.headers['x-twilio-signature'] as string;
     const webhookUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-    
+
     // In production, validate the signature using Twilio's validation
     // For now, we'll just check that the header exists
     if (!twilioSignature && process.env.NODE_ENV === 'production') {
@@ -52,13 +52,13 @@ const twilioInboundWebhookSchema = z.object({
 /**
  * Webhook endpoint for SMS delivery status updates
  */
-router.post('/status', 
+router.post('/status',
   validateTwilioSignature,
   validateBody(twilioStatusWebhookSchema),
   async (req: Request, res: Response) => {
     try {
       const webhookData = req.body;
-      
+
       logger.info('Received Twilio status webhook', {
         messageSid: webhookData.MessageSid,
         status: webhookData.MessageStatus,
@@ -74,11 +74,11 @@ router.post('/status',
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to process Twilio status webhook', { 
+      logger.error('Failed to process Twilio status webhook', {
         error: err.message,
-        body: req.body 
+        body: req.body
       });
-      
+
       // Return 200 to prevent Twilio from retrying
       res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     }
@@ -94,7 +94,7 @@ router.post('/inbound',
   async (req: Request, res: Response) => {
     try {
       const webhookData = req.body;
-      
+
       logger.info('Received inbound SMS', {
         messageSid: webhookData.MessageSid,
         from: twilioSMSService.maskPhoneNumber(webhookData.From),
@@ -105,19 +105,19 @@ router.post('/inbound',
       // Check for opt-out keywords
       const body = webhookData.Body.toLowerCase().trim();
       const optOutKeywords = ['stop', 'stopall', 'unsubscribe', 'quit', 'cancel', 'end', 'opt-out', 'optout'];
-      
+
       if (optOutKeywords.some(keyword => body.includes(keyword))) {
         // Find dealership ID based on the "To" number
         const dealershipId = await findDealershipByPhoneNumber(webhookData.To);
-        
+
         if (dealershipId) {
           // Handle opt-out in both SMS service and customer records
           await twilioSMSService.handleOptOut(dealershipId, webhookData.From, 'user_request');
           await updateCustomerOptOutStatus(dealershipId, webhookData.From, true);
-          
+
           // Send confirmation message
           await sendOptOutConfirmation(dealershipId, webhookData.From);
-          
+
           logger.info('Opt-out processed', {
             dealership: dealershipId,
             phone: twilioSMSService.maskPhoneNumber(webhookData.From)
@@ -126,14 +126,14 @@ router.post('/inbound',
       } else if (body.includes('start') || body.includes('subscribe') || body.includes('yes')) {
         // Handle opt-in
         const dealershipId = await findDealershipByPhoneNumber(webhookData.To);
-        
+
         if (dealershipId) {
           await handleOptIn(dealershipId, webhookData.From);
           await updateCustomerOptOutStatus(dealershipId, webhookData.From, false);
-          
+
           // Send welcome back message
           await sendOptInConfirmation(dealershipId, webhookData.From);
-          
+
           logger.info('Opt-in processed', {
             dealership: dealershipId,
             phone: twilioSMSService.maskPhoneNumber(webhookData.From)
@@ -150,11 +150,11 @@ router.post('/inbound',
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to process inbound SMS webhook', { 
+      logger.error('Failed to process inbound SMS webhook', {
         error: err.message,
-        body: req.body 
+        body: req.body
       });
-      
+
       // Return 200 to prevent Twilio from retrying
       res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
     }
@@ -189,18 +189,18 @@ async function handleOptIn(dealershipId: number, phoneNumber: string): Promise<v
     // Remove from opt-out list or mark as opted back in
     const db = (await import('../db')).default;
     const { sql } = await import('drizzle-orm');
-    
+
     const crypto = require('crypto');
     const normalizedPhone = phoneNumber.replace(/\D/g, '');
     const phoneHash = crypto.createHash('sha256').update(normalizedPhone).digest('hex');
-    
+
     await db.execute(sql`
-      UPDATE sms_opt_outs 
+      UPDATE sms_opt_outs
       SET opted_back_in_at = NOW()
-      WHERE dealership_id = ${dealershipId} 
+      WHERE dealership_id = ${dealershipId}
       AND phone_number_hash = ${phoneHash}
     `);
-    
+
     logger.info('Phone number opted back in', {
       dealership: dealershipId,
       phone: twilioSMSService.maskPhoneNumber(phoneNumber)
@@ -216,7 +216,7 @@ async function forwardToConversationSystem(webhookData: any): Promise<void> {
     // 1. Find or create a conversation for this phone number
     // 2. Add the message to the conversation
     // 3. Potentially notify human agents or trigger automated responses
-    
+
     logger.info('Inbound SMS forwarded to conversation system', {
       from: twilioSMSService.maskPhoneNumber(webhookData.From),
       to: webhookData.To,
@@ -231,23 +231,23 @@ async function updateCustomerOptOutStatus(dealershipId: number, phoneNumber: str
   try {
     const db = (await import('../db')).default;
     const { sql } = await import('drizzle-orm');
-    
+
     // Normalize phone number for matching
     const normalizedPhone = phoneNumber.replace(/\D/g, '');
-    
+
     // Update customer record if exists
     await db.execute(sql`
-      UPDATE customers 
+      UPDATE customers
       SET opted_out = ${optedOut},
           opted_out_at = ${optedOut ? sql`NOW()` : sql`NULL`},
           updated_at = NOW()
-      WHERE dealership_id = ${dealershipId} 
+      WHERE dealership_id = ${dealershipId}
       AND (
         phone LIKE ${'%' + normalizedPhone.slice(-10)}
         OR alternate_phone LIKE ${'%' + normalizedPhone.slice(-10)}
       )
     `);
-    
+
     logger.info('Customer opt-out status updated', {
       dealership: dealershipId,
       phone: twilioSMSService.maskPhoneNumber(phoneNumber),
@@ -261,19 +261,19 @@ async function updateCustomerOptOutStatus(dealershipId: number, phoneNumber: str
 async function sendOptOutConfirmation(dealershipId: number, phoneNumber: string): Promise<void> {
   try {
     const confirmationMessage = "You have been unsubscribed from SMS messages. Reply START to opt back in.";
-    
+
     // Use a direct Twilio send here since this is a compliance message
     const credentials = await (await import('../services/credentials-service')).credentialsService.getTwilioCredentials(dealershipId);
     if (credentials?.accountSid && credentials?.authToken && credentials?.fromNumber) {
       const { Twilio } = await import('twilio');
       const client = new Twilio(credentials.accountSid, credentials.authToken);
-      
+
       await client.messages.create({
         body: confirmationMessage,
         from: credentials.fromNumber,
         to: phoneNumber
       });
-      
+
       logger.info('Opt-out confirmation sent', {
         dealership: dealershipId,
         phone: twilioSMSService.maskPhoneNumber(phoneNumber)
@@ -287,19 +287,19 @@ async function sendOptOutConfirmation(dealershipId: number, phoneNumber: string)
 async function sendOptInConfirmation(dealershipId: number, phoneNumber: string): Promise<void> {
   try {
     const welcomeMessage = "Welcome back! You are now subscribed to receive SMS messages from us. Reply STOP to opt out anytime.";
-    
+
     // Use a direct Twilio send here since this is a compliance message
     const credentials = await (await import('../services/credentials-service')).credentialsService.getTwilioCredentials(dealershipId);
     if (credentials?.accountSid && credentials?.authToken && credentials?.fromNumber) {
       const { Twilio } = await import('twilio');
       const client = new Twilio(credentials.accountSid, credentials.authToken);
-      
+
       await client.messages.create({
         body: welcomeMessage,
         from: credentials.fromNumber,
         to: phoneNumber
       });
-      
+
       logger.info('Opt-in confirmation sent', {
         dealership: dealershipId,
         phone: twilioSMSService.maskPhoneNumber(phoneNumber)

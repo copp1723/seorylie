@@ -11,7 +11,7 @@ export const options = {
 };
 
 export default function () {
-  const baseUrl = 'http://localhost:5000';
+  const baseUrl = __ENV.BASE_URL || 'http://localhost:3000';
   
   // Test health endpoint
   const healthResponse = http.get(`${baseUrl}/api/metrics/health`);

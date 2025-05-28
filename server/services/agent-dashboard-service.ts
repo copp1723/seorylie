@@ -427,7 +427,7 @@ export class AgentDashboardService {
         LIMIT ${limit}
       `);
 
-      return (result.rows || []).map((row: any) => ({
+      return (result || []).map((row: any) => ({
         id: row.id,
         agentId: row.agent_id,
         type: row.type,

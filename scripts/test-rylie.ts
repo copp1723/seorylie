@@ -1,13 +1,15 @@
 import fetch from 'node-fetch';
 import { randomBytes } from 'crypto';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 // Simple test script to try out Rylie's conversational capabilities
 
 async function testRylie() {
   try {
     // 1. First, get a list of dealerships
     console.log("Getting dealerships...");
-    const dealershipsResponse = await fetch('http://localhost:5000/api/dealerships');
+    const dealershipsResponse = await fetch(`${BASE_URL}/api/dealerships`);
     const dealerships = await dealershipsResponse.json();
     
     if (!dealerships || dealerships.length === 0) {
@@ -20,7 +22,7 @@ async function testRylie() {
     
     // 2. Create a test API key for this dealership
     console.log("\nGenerating a test API key...");
-    const apiKeyResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/apikeys`, {
+    const apiKeyResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/apikeys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -44,7 +46,7 @@ async function testRylie() {
     const initialMessage = "Hi there, I'm looking for a family SUV with good safety features. Can you help me?";
     console.log(`CUSTOMER: ${initialMessage}`);
     
-    const inboundResponse = await fetch('http://localhost:5000/api/inbound', {
+    const inboundResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +85,7 @@ async function testRylie() {
     const followUpMessage = "I'm particularly interested in the Toyota RAV4. Does it have all-wheel drive?";
     console.log(`CUSTOMER: ${followUpMessage}`);
     
-    const followUpResponse = await fetch('http://localhost:5000/api/inbound', {
+    const followUpResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -112,7 +114,7 @@ async function testRylie() {
     const escalationMessage = "What's the best financing deal you can offer me on this RAV4?";
     console.log(`CUSTOMER: ${escalationMessage}`);
     
-    const escalationResponse = await fetch('http://localhost:5000/api/inbound', {
+    const escalationResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,11 +1,11 @@
 /**
  * Tenant Context Middleware
- * 
+ *
  * This middleware establishes the dealership context for each request
  * and sets the appropriate PostgreSQL session variables to enforce RLS policies.
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import db from "../db";
 import logger from '../utils/logger';
 
@@ -39,26 +39,26 @@ export const tenantContextMiddleware = async (req: Request, res: Response, next:
 
     // The code below is unreachable due to the return statement above
     // It's kept for reference in case we need to re-enable it later
-    
+
     // Set PostgreSQL session variables to enforce RLS policies
     // This code is unreachable but keeping it for future reference
     // We're fixing the TypeScript errors to maintain code quality
     if (req.method !== 'GET' && req.dealershipContext) {
       const context = req.dealershipContext;
-      
+
       // This code is unreachable, so we're adding a type assertion
       // to prevent TypeScript errors. In a real scenario, proper null
       // checking would be implemented.
-      
+
       // Only set for write operations to improve performance
       await db.execute(`
         SELECT set_tenant_context(
-          ${context!.userId}, 
-          '${context!.userRole}', 
+          ${context!.userId},
+          '${context!.userRole}',
           ${context!.dealershipId || 'NULL'}
         );
       `);
-      
+
       logger.debug('Tenant context set for database session', {
         userId: context!.userId,
         userRole: context!.userRole,
@@ -111,20 +111,20 @@ export const enforceDealershipAccess = (resourceType: string) => {
     /* Original dealership access check code (commented out for bypass)
     try {
       const { dealershipContext } = req;
-      
+
       // Skip for super_admin role
       if (dealershipContext?.userRole === 'super_admin') {
         return next();
       }
-      
+
       // For resource-specific routes, ensure the resource belongs to the user's dealership
       if (req.params.id) {
         const resourceId = parseInt(req.params.id);
-        
+
         // Query structure will vary based on resource type
         let query = '';
         let params: any[] = [];
-        
+
         switch (resourceType) {
           case 'systemPrompt':
             query = 'SELECT dealership_id FROM system_prompts WHERE id = $1';
@@ -146,17 +146,17 @@ export const enforceDealershipAccess = (resourceType: string) => {
           default:
             return next();
         }
-        
+
         // Execute the query
         const result = await db.execute(query, params);
         const rows = result as any[];
-        
+
         if (rows.length === 0) {
           return res.status(404).json({ error: 'Resource not found' });
         }
-        
+
         const resourceDealershipId = rows[0].dealership_id;
-        
+
         // Ensure the resource belongs to the user's dealership
         if (resourceDealershipId !== dealershipContext?.dealershipId) {
           logger.warn('Unauthorized access attempt to resource from different dealership', {
@@ -166,11 +166,11 @@ export const enforceDealershipAccess = (resourceType: string) => {
             resourceType,
             resourceId,
           });
-          
+
           return res.status(403).json({ error: 'Access denied' });
         }
       }
-      
+
       next();
     } catch (error) {
       logger.error('Error enforcing dealership access:', error);
@@ -188,14 +188,14 @@ export const enforceRoleAccess = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     // AUTHENTICATION BYPASS - Always allow access regardless of role
     return next();
-    
+
     /* Original role check code (commented out for bypass)
     const { dealershipContext } = req;
-    
+
     if (!dealershipContext) {
       return res.status(401).json({ error: 'Authentication required' });
     }
-    
+
     if (!allowedRoles.includes(dealershipContext.userRole)) {
       logger.warn('Unauthorized role access attempt', {
         userId: dealershipContext.userId,
@@ -203,10 +203,10 @@ export const enforceRoleAccess = (allowedRoles: string[]) => {
         requiredRoles: allowedRoles,
         path: req.path,
       });
-      
+
       return res.status(403).json({ error: 'Access denied' });
     }
-    
+
     next();
     */
   };

@@ -7,7 +7,7 @@
  * Tests all major user journeys from dealership onboarding to daily operations
  */
 
-const BASE_URL = 'http://127.0.0.1:3000';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 // Test Results Collector
 const testResults = {

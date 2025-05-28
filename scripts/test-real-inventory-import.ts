@@ -8,6 +8,8 @@ import { storage } from '../server/storage';
 import fs from 'fs';
 import path from 'path';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 // Helper for API requests
 async function apiRequest(endpoint: string, method = 'GET', body?: any) {
   try {
@@ -32,7 +34,7 @@ async function apiRequest(endpoint: string, method = 'GET', body?: any) {
     }
 
     // Make the API request
-    const url = `http://localhost:5000${endpoint}`;
+    const url = `${BASE_URL}${endpoint}`;
     const response = await fetch(url, {
       method,
       headers: {

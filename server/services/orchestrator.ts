@@ -1,11 +1,11 @@
 import { AgentSquad, OpenAIAgent, OpenAIClassifier, InMemoryChatStorage } from 'agent-squad';
 import type { ConversationMessage } from 'agent-squad';
 import logger from '../../utils/logger';
-import { 
-  searchInventory, 
-  getVehicleDetails, 
-  getInventorySummary, 
-  inventoryFunctionDefinitions 
+import {
+  searchInventory,
+  getVehicleDetails,
+  getInventorySummary,
+  inventoryFunctionDefinitions
 } from './inventory-functions';
 import { createRylieRetriever, type RylieRetrieverOptions } from './rylie-retriever';
 
@@ -20,25 +20,25 @@ export class RylieAgentSquad {
   private classifier: OpenAIClassifier;
   private retriever: any; // Will be set per dealership
   private config: RylieAgentSquadConfig;
-  
+
   constructor(config: RylieAgentSquadConfig) {
     this.config = config;
     this.storage = new InMemoryChatStorage();
     this.orchestrator = new AgentSquad({ storage: this.storage });
-    
+
     // Initialize classifier for intent routing
     this.classifier = new OpenAIClassifier({
       apiKey: config.openaiApiKey,
       model: 'gpt-4o-mini', // Using faster model for classification
       examples: this.getAutomotiveClassificationExamples()
     });
-    
+
     // Initialize automotive-specific agents with enhanced capabilities
     this.initializeAgents(config);
-    
+
     logger.info('RylieAgentSquad initialized with enhanced automotive agents');
   }
-  
+
   private getAutomotiveClassificationExamples() {
     return [
       {
@@ -48,7 +48,7 @@ export class RylieAgentSquad {
       },
       {
         userMessage: "What financing options do you have?",
-        agentName: "finance-agent", 
+        agentName: "finance-agent",
         reason: "Customer inquiry about financing and payment options"
       },
       {
@@ -73,7 +73,7 @@ export class RylieAgentSquad {
       }
     ];
   }
-  
+
   private initializeAgents(config: RylieAgentSquadConfig) {
     // Create function handlers for inventory operations
     const functionHandlers = this.createFunctionHandlers();
@@ -82,7 +82,7 @@ export class RylieAgentSquad {
     const generalAgent = new OpenAIAgent({
       name: 'general-agent',
       description: 'Friendly general automotive assistant for initial customer interactions',
-      instructions: `You are Rylie, a helpful automotive assistant. Greet customers warmly and help them get started. 
+      instructions: `You are Rylie, a helpful automotive assistant. Greet customers warmly and help them get started.
       Keep responses conversational and guide them toward specific needs (inventory, financing, service, etc.).
       Always be friendly and professional, representing the dealership's brand.
       Use the available functions to help customers with specific requests.`,
@@ -93,18 +93,18 @@ export class RylieAgentSquad {
         getInventorySummary: functionHandlers.getInventorySummary
       }
     });
-    
+
     // Inventory Specialist - Vehicle search and details with full function calling
     const inventoryAgent = new OpenAIAgent({
-      name: 'inventory-agent', 
+      name: 'inventory-agent',
       description: 'Specialist in vehicle inventory, features, and availability with direct database access',
       instructions: `You are an expert automotive inventory specialist with access to real-time inventory data.
-      
+
       CAPABILITIES:
       - Search inventory using searchInventory() function based on customer criteria
-      - Get detailed vehicle information using getVehicleDetails() function  
+      - Get detailed vehicle information using getVehicleDetails() function
       - Provide inventory overview using getInventorySummary() function
-      
+
       GUIDELINES:
       - Always use functions to provide accurate, up-to-date information
       - Ask clarifying questions to refine search criteria
@@ -117,11 +117,11 @@ export class RylieAgentSquad {
       functions: inventoryFunctionDefinitions,
       functionHandlers: functionHandlers
     });
-    
+
     // Finance Specialist - Loans, leases, payments
     const financeAgent = new OpenAIAgent({
       name: 'finance-agent',
-      description: 'Expert in automotive financing options and payment calculations', 
+      description: 'Expert in automotive financing options and payment calculations',
       instructions: `You are a knowledgeable automotive finance specialist. Help customers understand:
       - Loan vs lease options
       - Payment calculations and terms
@@ -131,7 +131,7 @@ export class RylieAgentSquad {
       apiKey: config.openaiApiKey,
       model: 'gpt-4o'
     });
-    
+
     // Service Specialist - Maintenance and repairs
     const serviceAgent = new OpenAIAgent({
       name: 'service-agent',
@@ -145,7 +145,7 @@ export class RylieAgentSquad {
       apiKey: config.openaiApiKey,
       model: 'gpt-4o'
     });
-    
+
     // Trade-in Specialist - Vehicle valuation
     const tradeAgent = new OpenAIAgent({
       name: 'trade-agent',
@@ -158,7 +158,7 @@ export class RylieAgentSquad {
       apiKey: config.openaiApiKey,
       model: 'gpt-4o'
     });
-    
+
     // Sales Specialist - Test drives and closing
     const salesAgent = new OpenAIAgent({
       name: 'sales-agent',
@@ -172,7 +172,7 @@ export class RylieAgentSquad {
       apiKey: config.openaiApiKey,
       model: 'gpt-4o'
     });
-    
+
     // Add all agents to orchestrator
     this.orchestrator.addAgent(generalAgent);
     this.orchestrator.addAgent(inventoryAgent);
@@ -180,10 +180,10 @@ export class RylieAgentSquad {
     this.orchestrator.addAgent(serviceAgent);
     this.orchestrator.addAgent(tradeAgent);
     this.orchestrator.addAgent(salesAgent);
-    
+
     // Set classifier
     this.orchestrator.setClassifier(this.classifier);
-    
+
     logger.info('Initialized 6 automotive specialist agents with enhanced capabilities');
   }
 
@@ -200,7 +200,7 @@ export class RylieAgentSquad {
           }
 
           logger.info('Function call: searchInventory', { params, dealershipId });
-          
+
           const result = await searchInventory({
             dealershipId,
             ...params
@@ -209,9 +209,9 @@ export class RylieAgentSquad {
           return JSON.stringify(result);
         } catch (error) {
           logger.error('searchInventory function failed', { error, params });
-          return JSON.stringify({ 
-            success: false, 
-            error: 'Unable to search inventory at this time' 
+          return JSON.stringify({
+            success: false,
+            error: 'Unable to search inventory at this time'
           });
         }
       },
@@ -229,9 +229,9 @@ export class RylieAgentSquad {
           return JSON.stringify(result);
         } catch (error) {
           logger.error('getVehicleDetails function failed', { error, params });
-          return JSON.stringify({ 
-            success: false, 
-            error: 'Unable to get vehicle details at this time' 
+          return JSON.stringify({
+            success: false,
+            error: 'Unable to get vehicle details at this time'
           });
         }
       },
@@ -249,15 +249,15 @@ export class RylieAgentSquad {
           return JSON.stringify(result);
         } catch (error) {
           logger.error('getInventorySummary function failed', { error, params });
-          return JSON.stringify({ 
-            success: false, 
-            error: 'Unable to get inventory summary at this time' 
+          return JSON.stringify({
+            success: false,
+            error: 'Unable to get inventory summary at this time'
           });
         }
       }
     };
   }
-  
+
   async routeMessage(
     message: string,
     userId: string,
@@ -266,7 +266,7 @@ export class RylieAgentSquad {
   ) {
     try {
       logger.info(`Routing message for user ${userId}, session ${sessionId}: ${message.substring(0, 100)}...`);
-      
+
       // Set up retriever for this dealership if available
       if (context?.dealershipId && !this.retriever) {
         this.retriever = createRylieRetriever({
@@ -287,7 +287,7 @@ export class RylieAgentSquad {
         userId: userId,
         sessionId: sessionId
       };
-      
+
       const startTime = Date.now();
       const response = await this.orchestrator.routeRequest(
         message,
@@ -296,12 +296,12 @@ export class RylieAgentSquad {
         enhancedContext
       );
       const processingTime = Date.now() - startTime;
-      
+
       logger.info(`Agent ${response.selectedAgent} handled the request`, {
         processingTime,
         reasoning: response.reasoning
       });
-      
+
       return {
         success: true,
         response: response.response,
@@ -311,10 +311,10 @@ export class RylieAgentSquad {
         conversationId: sessionId,
         confidence: response.confidence || 0.8
       };
-      
+
     } catch (error) {
       logger.error('Agent Squad routing error:', error);
-      
+
       return {
         success: false,
         error: 'Failed to route message through agent squad',
@@ -322,7 +322,7 @@ export class RylieAgentSquad {
       };
     }
   }
-  
+
   async getConversationHistory(sessionId: string): Promise<ConversationMessage[]> {
     try {
       return await this.storage.getConversationHistory(sessionId);
@@ -331,7 +331,7 @@ export class RylieAgentSquad {
       return [];
     }
   }
-  
+
   async clearConversation(sessionId: string): Promise<void> {
     try {
       await this.storage.clearConversation(sessionId);
@@ -340,4 +340,9 @@ export class RylieAgentSquad {
       logger.error('Failed to clear conversation:', error);
     }
   }
+}
+
+// Factory function to initialize orchestrator
+export function initializeOrchestrator(config: RylieAgentSquadConfig): RylieAgentSquad {
+  return new RylieAgentSquad(config);
 }

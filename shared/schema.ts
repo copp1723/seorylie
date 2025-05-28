@@ -389,5 +389,27 @@ export type InsertExperimentVariant = z.infer<typeof insertExperimentVariantSche
 export type PromptMetric = typeof promptMetrics.$inferSelect;
 export type InsertPromptMetric = z.infer<typeof insertPromptMetricSchema>;
 
+// Dealership variables table for custom configuration
+export const dealershipVariables = pgTable('dealership_variables', {
+  id: serial('id').primaryKey(),
+  dealershipId: integer('dealership_id').notNull().references(() => dealerships.id, { onDelete: 'cascade' }),
+  key: varchar('key', { length: 255 }).notNull(),
+  value: text('value'),
+  description: text('description'),
+  isActive: boolean('is_active').default(true),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow(),
+}, (table: any) => ({
+  dealershipIdx: index('variable_dealership_idx').on(table.dealershipId),
+  uniqueKey: unique('unique_dealership_variable').on(table.dealershipId, table.key),
+}));
+
+// Add dealership variables insert schema
+export const insertDealershipVariableSchema = createInsertSchema(dealershipVariables).omit({ id: true, created_at: true, updated_at: true });
+
+// Add dealership variables types
+export type DealershipVariable = typeof dealershipVariables.$inferSelect;
+export type InsertDealershipVariable = z.infer<typeof insertDealershipVariableSchema>;
+
 // Re-export types from schema-extensions for convenience
 export type { CustomerInsight, ResponseSuggestion } from './schema-extensions';

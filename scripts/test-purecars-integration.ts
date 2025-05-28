@@ -14,7 +14,7 @@ const rl = readline.createInterface({
 
 // Configuration for the test
 const config = {
-  apiUrl: 'http://localhost:5000/api',
+  apiUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/api`,
   apiKey: '',
   dealerId: '',
   customerName: 'Test Customer',

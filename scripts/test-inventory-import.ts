@@ -11,6 +11,8 @@ import { db } from '../server/db';
 import { vehicles, dealerships } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 // Create readline interface for interactive mode
 const rl = readline.createInterface({
   input: process.stdin,
@@ -29,7 +31,7 @@ function prompt(question: string): Promise<string> {
 // Function to make API requests to the server
 async function apiRequest(endpoint: string, method = 'GET', body?: any) {
   try {
-    const url = `http://localhost:5000/api${endpoint}`;
+    const url = `${BASE_URL}/api${endpoint}`;
     const options: RequestInit = {
       method,
       headers: {

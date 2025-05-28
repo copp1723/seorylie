@@ -1,19 +1,21 @@
 import fetch from 'node-fetch';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 // Test script to demonstrate the email reporting functionality
 
 async function testEmailReports() {
   try {
     // Get the first dealership
     console.log("Getting dealership...");
-    const dealershipsResponse = await fetch('http://localhost:5000/api/dealerships');
+    const dealershipsResponse = await fetch(`${BASE_URL}/api/dealerships`);
     const dealerships = await dealershipsResponse.json();
     const dealership = dealerships[0];
     console.log(`Using dealership: ${dealership.name} (ID: ${dealership.id})`);
     
     // Generate a test API key
     console.log("\nGenerating a test API key...");
-    const apiKeyResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/apikeys`, {
+    const apiKeyResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/apikeys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ description: 'Email Reports Test' })
@@ -27,7 +29,7 @@ async function testEmailReports() {
     console.log("\n----- TESTING SCHEDULED EMAIL REPORTS -----");
     
     console.log("Creating a daily email report schedule...");
-    const scheduleResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/reports/schedule`, {
+    const scheduleResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/reports/schedule`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -46,7 +48,7 @@ async function testEmailReports() {
     
     // 2. Test retrieving scheduled reports
     console.log("\nRetrieving scheduled reports...");
-    const getSchedulesResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/reports/schedule`, {
+    const getSchedulesResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/reports/schedule`, {
       headers: {
         'X-API-Key': apiKey
       }
@@ -59,7 +61,7 @@ async function testEmailReports() {
     console.log("\n----- TESTING ON-DEMAND EMAIL REPORTS -----");
     
     console.log("Generating a report for recent conversations...");
-    const generateResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/reports/generate`, {
+    const generateResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/reports/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -78,7 +80,7 @@ async function testEmailReports() {
     // 4. Cleanup - delete the schedule we created
     if (scheduleData && scheduleData.id) {
       console.log(`\nCleaning up - deleting schedule ${scheduleData.id}...`);
-      const deleteResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/reports/schedule/${scheduleData.id}`, {
+      const deleteResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/reports/schedule/${scheduleData.id}`, {
         method: 'DELETE',
         headers: {
           'X-API-Key': apiKey

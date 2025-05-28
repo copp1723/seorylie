@@ -14,20 +14,20 @@ async function testSetup() {
     const existingDealershipResult = await db.execute(sql`
       SELECT id FROM dealerships WHERE name = 'Test Dealership' LIMIT 1
     `);
-    
+
     let dealershipId: number;
-    
-    if (existingDealershipResult.rows && existingDealershipResult.rows.length > 0) {
+
+    if (existingDealershipResult && existingDealershipResult.length > 0) {
       console.log('Test dealership already exists.');
-      dealershipId = existingDealershipResult.rows[0].id;
+      dealershipId = existingDealershipResult[0].id;
     } else {
       const newDealershipResult = await db.execute(sql`
         INSERT INTO dealerships (name, location, contact_email, contact_phone, domain, handover_email)
         VALUES ('Test Dealership', '123 Test Street, Testville, CA 90210', 'contact@testdealership.com', '(555) 123-4567', 'testdealership.com', 'sales@testdealership.com')
         RETURNING id
       `);
-      
-      dealershipId = newDealershipResult.rows[0].id;
+
+      dealershipId = newDealershipResult[0].id;
       console.log(`Created test dealership with ID: ${dealershipId}`);
     }
 
@@ -37,8 +37,8 @@ async function testSetup() {
     const existingAdminResult = await db.execute(sql`
       SELECT id FROM users WHERE id = ${adminId} LIMIT 1
     `);
-    
-    if (existingAdminResult.rows && existingAdminResult.rows.length > 0) {
+
+    if (existingAdminResult && existingAdminResult.length > 0) {
       console.log('Admin user already exists.');
     } else {
       await db.execute(sql`
@@ -53,9 +53,9 @@ async function testSetup() {
     const existingApiKeyResult = await db.execute(sql`
       SELECT key FROM api_keys WHERE dealership_id = ${dealershipId} LIMIT 1
     `);
-    
+
     let apiKeyValue: string;
-    
+
     if (existingApiKeyResult.rows && existingApiKeyResult.rows.length > 0) {
       console.log('API key already exists.');
       apiKeyValue = existingApiKeyResult.rows[0].key;
@@ -73,7 +73,7 @@ async function testSetup() {
     const existingPersonaResult = await db.execute(sql`
       SELECT id FROM personas WHERE dealership_id = ${dealershipId} LIMIT 1
     `);
-    
+
     if (existingPersonaResult.rows && existingPersonaResult.rows.length > 0) {
       console.log('Default persona already exists.');
     } else {
@@ -103,7 +103,7 @@ INFORMATION TO COLLECT:
 - Financing needs
 
 Always remember to personalize your responses for {{customerName}}.`;
-      
+
       const personaArgs = JSON.stringify({
         tone: 'professional',
         priorityFeatures: ['Safety', 'Fuel Efficiency', 'Technology'],
@@ -111,7 +111,7 @@ Always remember to personalize your responses for {{customerName}}.`;
         financingUrl: 'https://testdealership.com/financing',
         handoverEmail: 'sales@testdealership.com'
       });
-      
+
       await db.execute(sql`
         INSERT INTO personas (dealership_id, name, prompt_template, arguments, is_default)
         VALUES (${dealershipId}, 'Default Sales Assistant', ${promptTemplate}, ${personaArgs}::jsonb, true)
@@ -124,60 +124,60 @@ Always remember to personalize your responses for {{customerName}}.`;
     const existingVehiclesResult = await db.execute(sql`
       SELECT id FROM vehicles WHERE dealership_id = ${dealershipId} LIMIT 1
     `);
-    
+
     if (existingVehiclesResult.rows && existingVehiclesResult.rows.length > 0) {
       console.log('Vehicles already exist.');
     } else {
       console.log('Creating sample vehicles...');
-      
+
       // Toyota RAV4
       await db.execute(sql`
         INSERT INTO vehicles (
-          dealership_id, stock_number, make, model, year, trim, exterior_color, 
-          interior_color, vin, mileage, price, msrp, body_style, transmission, 
+          dealership_id, stock_number, make, model, year, trim, exterior_color,
+          interior_color, vin, mileage, price, msrp, body_style, transmission,
           engine, fuel_type, drivetrain, features, description, images, status
         ) VALUES (
-          ${dealershipId}, 'ST12345', 'Toyota', 'RAV4', 2025, 'XLE Premium', 
-          'Midnight Black Metallic', 'Black Leather', 'TEST12345678901234', 0, 
-          31495, 32999, 'SUV', '8-Speed Automatic', '2.5L 4-Cylinder', 'Hybrid', 
-          'All-Wheel Drive', ARRAY['Sunroof', 'Navigation', 'Premium Audio'], 
-          'Brand new Toyota RAV4 Hybrid with excellent fuel economy.', 
+          ${dealershipId}, 'ST12345', 'Toyota', 'RAV4', 2025, 'XLE Premium',
+          'Midnight Black Metallic', 'Black Leather', 'TEST12345678901234', 0,
+          31495, 32999, 'SUV', '8-Speed Automatic', '2.5L 4-Cylinder', 'Hybrid',
+          'All-Wheel Drive', ARRAY['Sunroof', 'Navigation', 'Premium Audio'],
+          'Brand new Toyota RAV4 Hybrid with excellent fuel economy.',
           ARRAY['https://example.com/img1.jpg'], 'active'
         )
       `);
-      
+
       // Honda Accord
       await db.execute(sql`
         INSERT INTO vehicles (
-          dealership_id, stock_number, make, model, year, trim, exterior_color, 
-          interior_color, vin, mileage, price, msrp, body_style, transmission, 
+          dealership_id, stock_number, make, model, year, trim, exterior_color,
+          interior_color, vin, mileage, price, msrp, body_style, transmission,
           engine, fuel_type, drivetrain, features, description, images, status
         ) VALUES (
-          ${dealershipId}, 'ST54321', 'Honda', 'Accord', 2024, 'Sport', 
-          'Platinum White Pearl', 'Black Cloth', 'TEST98765432109876', 0, 
-          27895, 28999, 'Sedan', 'CVT', '1.5L Turbo', 'Gasoline', 
-          'Front-Wheel Drive', ARRAY['Apple CarPlay', 'Android Auto', 'Lane Keep Assist'], 
-          'Stylish and efficient Honda Accord Sport.', 
+          ${dealershipId}, 'ST54321', 'Honda', 'Accord', 2024, 'Sport',
+          'Platinum White Pearl', 'Black Cloth', 'TEST98765432109876', 0,
+          27895, 28999, 'Sedan', 'CVT', '1.5L Turbo', 'Gasoline',
+          'Front-Wheel Drive', ARRAY['Apple CarPlay', 'Android Auto', 'Lane Keep Assist'],
+          'Stylish and efficient Honda Accord Sport.',
           ARRAY['https://example.com/img2.jpg'], 'active'
         )
       `);
-      
+
       // Ford F-150
       await db.execute(sql`
         INSERT INTO vehicles (
-          dealership_id, stock_number, make, model, year, trim, exterior_color, 
-          interior_color, vin, mileage, price, msrp, body_style, transmission, 
+          dealership_id, stock_number, make, model, year, trim, exterior_color,
+          interior_color, vin, mileage, price, msrp, body_style, transmission,
           engine, fuel_type, drivetrain, features, description, images, status
         ) VALUES (
-          ${dealershipId}, 'ST67890', 'Ford', 'F-150', 2024, 'Lariat', 
-          'Velocity Blue', 'Medium Earth Gray', 'TEST13579246802468', 0, 
-          51995, 53995, 'Truck', '10-Speed Automatic', '3.5L EcoBoost V6', 'Gasoline', 
-          '4x4', ARRAY['Leather Seats', 'SYNC 4', 'Tow Package'], 
-          'Powerful and capable Ford F-150 Lariat.', 
+          ${dealershipId}, 'ST67890', 'Ford', 'F-150', 2024, 'Lariat',
+          'Velocity Blue', 'Medium Earth Gray', 'TEST13579246802468', 0,
+          51995, 53995, 'Truck', '10-Speed Automatic', '3.5L EcoBoost V6', 'Gasoline',
+          '4x4', ARRAY['Leather Seats', 'SYNC 4', 'Tow Package'],
+          'Powerful and capable Ford F-150 Lariat.',
           ARRAY['https://example.com/img3.jpg'], 'active'
         )
       `);
-      
+
       console.log('Created 3 sample vehicles.');
     }
 
@@ -187,14 +187,14 @@ Always remember to personalize your responses for {{customerName}}.`;
     console.log(`API Key: ${apiKeyValue || '(use existing key)'}`);
     console.log('Admin User ID: 1234567890');
     console.log('============================');
-    
+
     console.log('\nNext steps:');
     console.log('1. Make sure to add these environment variables:');
     console.log('   - SESSION_SECRET=your_secure_session_secret');
     console.log('   - OPENAI_API_KEY=your_openai_api_key');
     console.log('   - SENDGRID_API_KEY=your_sendgrid_api_key');
     console.log('   - REPLIT_DOMAINS=your_replit_domain');
-    
+
   } catch (error) {
     console.error('Error setting up test environment:', error);
     process.exit(1);

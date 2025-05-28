@@ -1,6 +1,8 @@
 import fetch from 'node-fetch';
 import { randomBytes } from 'crypto';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 // Test script for trying out Rylie's enhanced conversational capabilities
 // with the new style guide, links and handover functionality
 
@@ -8,7 +10,7 @@ async function testEnhancedRylie() {
   try {
     // 1. First, get a list of dealerships
     console.log("Getting dealerships...");
-    const dealershipsResponse = await fetch('http://localhost:5000/api/dealerships');
+    const dealershipsResponse = await fetch(`${BASE_URL}/api/dealerships`);
     const dealerships = await dealershipsResponse.json();
     
     if (!dealerships || dealerships.length === 0) {
@@ -21,7 +23,7 @@ async function testEnhancedRylie() {
     
     // 2. Create a test API key for this dealership
     console.log("\nGenerating a test API key...");
-    const apiKeyResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/apikeys`, {
+    const apiKeyResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/apikeys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -40,7 +42,7 @@ async function testEnhancedRylie() {
     
     // 3. Get or create a persona with the enhanced properties
     console.log("\nSetting up enhanced persona with links and handover email...");
-    const personasResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/personas`);
+    const personasResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/personas`);
     const personas = await personasResponse.json();
     
     let persona;
@@ -54,7 +56,7 @@ async function testEnhancedRylie() {
     
     // 4. Update the persona with our enhanced arguments
     console.log("\nUpdating persona with trade-in link, financing link, and handover email...");
-    const updatePersonaResponse = await fetch(`http://localhost:5000/api/personas/${persona.id}`, {
+    const updatePersonaResponse = await fetch(`${BASE_URL}/api/personas/${persona.id}`, {
       method: 'PATCH',
       headers: { 
         'Content-Type': 'application/json',
@@ -78,7 +80,7 @@ async function testEnhancedRylie() {
     const initialMessage = "Hey there! I've been looking at SUVs for my growing family. We need something spacious but also good on gas.";
     console.log(`CUSTOMER: ${initialMessage}`);
     
-    const inboundResponse = await fetch('http://localhost:5000/api/inbound', {
+    const inboundResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -117,7 +119,7 @@ async function testEnhancedRylie() {
     const tradeInMessage = "I have a 2018 Honda Civic I'd like to trade in. How does that process work?";
     console.log(`CUSTOMER: ${tradeInMessage}`);
     
-    const tradeInResponse = await fetch('http://localhost:5000/api/inbound', {
+    const tradeInResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -140,7 +142,7 @@ async function testEnhancedRylie() {
     const financingMessage = "What kind of financing options do you offer for qualified buyers?";
     console.log(`CUSTOMER: ${financingMessage}`);
     
-    const financingResponse = await fetch('http://localhost:5000/api/inbound', {
+    const financingResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -163,7 +165,7 @@ async function testEnhancedRylie() {
     const handoverMessage = "I'm ready to buy! Can I come in today to sign the papers and drive home in my new SUV?";
     console.log(`CUSTOMER: ${handoverMessage}`);
     
-    const handoverResponse = await fetch('http://localhost:5000/api/inbound', {
+    const handoverResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

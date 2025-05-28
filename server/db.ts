@@ -4,7 +4,6 @@ dotenv.config();
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import logger from './utils/logger';
-import { ConnectionParameters } from 'postgres';
 
 // Import from individual schema files to avoid circular dependency issues
 import * as baseSchema from '../shared/schema';

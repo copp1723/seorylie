@@ -1,19 +1,21 @@
 import fetch from 'node-fetch';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 // Simple test script to demonstrate the handover dossier functionality
 
 async function testHandoverDossier() {
   try {
     // Get the first dealership
     console.log("Getting dealership...");
-    const dealershipsResponse = await fetch('http://localhost:5000/api/dealerships');
+    const dealershipsResponse = await fetch(`${BASE_URL}/api/dealerships`);
     const dealerships = await dealershipsResponse.json();
     const dealership = dealerships[0];
     console.log(`Using dealership: ${dealership.name} (ID: ${dealership.id})`);
     
     // Generate a test API key
     console.log("\nGenerating a test API key...");
-    const apiKeyResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/apikeys`, {
+    const apiKeyResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/apikeys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ description: 'Handover Dossier Test' })
@@ -31,7 +33,7 @@ async function testHandoverDossier() {
     const initialMessage = "Hi there, I'm interested in a luxury SUV for my family. We need something with three rows of seats.";
     console.log(`CUSTOMER: ${initialMessage}`);
     
-    const initialResponse = await fetch('http://localhost:5000/api/inbound', {
+    const initialResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,7 +58,7 @@ async function testHandoverDossier() {
     const followupMessage = "I currently have a BMW X5, but I'm looking to upgrade. Do you have any X7s in stock?";
     console.log(`CUSTOMER: ${followupMessage}`);
     
-    const followupResponse = await fetch('http://localhost:5000/api/inbound', {
+    const followupResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -78,7 +80,7 @@ async function testHandoverDossier() {
     const handoverMessage = "I'm ready to buy today if you can give me your best price. I can come in this afternoon to finalize the deal.";
     console.log(`CUSTOMER: ${handoverMessage}`);
     
-    const handoverResponse = await fetch('http://localhost:5000/api/inbound', {
+    const handoverResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -102,7 +104,7 @@ async function testHandoverDossier() {
       
       // Get the conversation details to verify it was properly escalated
       console.log("\nRetrieving conversation to verify escalation...");
-      const conversationResponse = await fetch(`http://localhost:5000/api/conversations/${conversationId}`);
+      const conversationResponse = await fetch(`${BASE_URL}/api/conversations/${conversationId}`);
       const conversationData = await conversationResponse.json();
       
       console.log(`Conversation status in database: ${conversationData.conversation.status}`);

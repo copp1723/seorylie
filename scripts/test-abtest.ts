@@ -3,6 +3,8 @@
  * This script simulates conversation flow using the A/B testing system
  */
 import fetch from 'node-fetch';
+
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 import { randomUUID } from 'crypto';
 
 // Function to generate a random customer message
@@ -28,7 +30,7 @@ async function testABTesting() {
     console.log('Testing A/B testing infrastructure...\n');
     
     // Step 1: Get dealership info for testing
-    const dealershipsResponse = await fetch('http://localhost:5000/api/dealerships');
+    const dealershipsResponse = await fetch(`${BASE_URL}/api/dealerships`);
     const dealerships = await dealershipsResponse.json();
     
     if (!dealerships || dealerships.length === 0) {
@@ -39,7 +41,7 @@ async function testABTesting() {
     console.log(`Using dealership ID: ${dealershipId}\n`);
     
     // Step 2: Get API key for authentication
-    const apiKeyResponse = await fetch(`http://localhost:5000/api/dealerships/${dealershipId}/apikeys`);
+    const apiKeyResponse = await fetch(`${BASE_URL}/api/dealerships/${dealershipId}/apikeys`);
     const apiKeys = await apiKeyResponse.json();
     
     if (!apiKeys || apiKeys.length === 0) {
@@ -51,7 +53,7 @@ async function testABTesting() {
     
     // Step 3: Create a test prompt variant
     console.log('Creating a test prompt variant...');
-    const variantResponse = await fetch('http://localhost:5000/api/abtest/variants', {
+    const variantResponse = await fetch(`${BASE_URL}/api/abtest/variants`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -85,7 +87,7 @@ async function testABTesting() {
     
     // Step 4: Create a second variant for comparison
     console.log('Creating a second test prompt variant...');
-    const variant2Response = await fetch('http://localhost:5000/api/abtest/variants', {
+    const variant2Response = await fetch(`${BASE_URL}/api/abtest/variants`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,7 +121,7 @@ async function testABTesting() {
     
     // Step 5: Create an experiment with both variants
     console.log('Creating an experiment with both variants...');
-    const experimentResponse = await fetch('http://localhost:5000/api/abtest/experiments', {
+    const experimentResponse = await fetch(`${BASE_URL}/api/abtest/experiments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -152,7 +154,7 @@ async function testABTesting() {
     console.log('Simulating conversations to test the A/B testing system...\n');
     
     // Create a conversation
-    const conversationResponse = await fetch('http://localhost:5000/api/inbound', {
+    const conversationResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -173,7 +175,7 @@ async function testABTesting() {
     // Send some follow-up messages to generate more test data
     for (let i = 0; i < 5; i++) {
       console.log(`Sending follow-up message ${i + 1}...`);
-      const replyResponse = await fetch('http://localhost:5000/api/reply', {
+      const replyResponse = await fetch(`${BASE_URL}/api/reply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +196,7 @@ async function testABTesting() {
     
     // Step 7: Get the experiment results
     console.log('Fetching experiment results...');
-    const resultsResponse = await fetch(`http://localhost:5000/api/abtest/experiments/${experiment.id}/results`, {
+    const resultsResponse = await fetch(`${BASE_URL}/api/abtest/experiments/${experiment.id}/results`, {
       headers: {
         'X-API-Key': apiKey
       }

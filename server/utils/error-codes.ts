@@ -104,7 +104,7 @@ export const handleError = (error: unknown): AppError => {
 
 // Helper for consistent API responses
 export class ResponseHelper {
-  static success(res: Response, data: any, message: string = 'Success') {
+  static success(res: Response, data: unknown, message: string = 'Success') {
     return res.status(200).json({
       success: true,
       message,

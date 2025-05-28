@@ -409,7 +409,7 @@ export const inventoryFunctionDefinitions = [
           description: 'Maximum number of results to return (default: 20)'
         }
       },
-      required: []
+      required: [] as string[]
     }
   },
   {
@@ -423,7 +423,7 @@ export const inventoryFunctionDefinitions = [
           description: 'Vehicle VIN number or database ID'
         }
       },
-      required: ['identifier']
+      required: ['identifier'] as string[]
     }
   },
   {
@@ -432,7 +432,7 @@ export const inventoryFunctionDefinitions = [
     parameters: {
       type: 'object',
       properties: {},
-      required: []
+      required: [] as string[]
     }
   }
 ];

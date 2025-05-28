@@ -27,7 +27,7 @@ export class CredentialsService {
 
   constructor() {
     this.encryptionKey = process.env.CREDENTIALS_ENCRYPTION_KEY || 'default-key-change-in-production';
-    
+
     if (this.encryptionKey === 'default-key-change-in-production' && process.env.NODE_ENV === 'production') {
       logger.error('CRITICAL: Using default encryption key in production. Set CREDENTIALS_ENCRYPTION_KEY environment variable.');
       throw new Error('Invalid encryption key configuration');
@@ -47,7 +47,7 @@ export class CredentialsService {
   async storeCredentials(config: CredentialConfig): Promise<void> {
     try {
       const encryptedCredentials = this.encrypt(JSON.stringify(config.credentials));
-      
+
       await db.execute(sql`
         INSERT INTO dealership_credentials (
           dealership_id, provider, encrypted_credentials, is_active, created_at, updated_at
@@ -74,7 +74,7 @@ export class CredentialsService {
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to store credentials', { 
+      logger.error('Failed to store credentials', {
         error: err.message,
         dealership: config.dealershipId,
         provider: config.provider
@@ -89,23 +89,23 @@ export class CredentialsService {
   async getCredentials(dealershipId: number, provider: string): Promise<Record<string, string> | null> {
     try {
       const result = await db.execute(sql`
-        SELECT encrypted_credentials 
-        FROM dealership_credentials 
-        WHERE dealership_id = ${dealershipId} 
+        SELECT encrypted_credentials
+        FROM dealership_credentials
+        WHERE dealership_id = ${dealershipId}
         AND provider = ${provider}
         AND is_active = true
       `);
 
-      if (!result.rows[0]?.encrypted_credentials) {
+      if (!result[0]?.encrypted_credentials) {
         return null;
       }
 
-      const decrypted = this.decrypt(result.rows[0].encrypted_credentials);
+      const decrypted = this.decrypt(result[0].encrypted_credentials);
       return JSON.parse(decrypted);
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to retrieve credentials', { 
+      logger.error('Failed to retrieve credentials', {
         error: err.message,
         dealership: dealershipId,
         provider: provider
@@ -120,7 +120,7 @@ export class CredentialsService {
   async getTwilioCredentials(dealershipId: number): Promise<TwilioCredentials | null> {
     try {
       const credentials = await this.getCredentials(dealershipId, 'twilio');
-      
+
       if (!credentials) {
         // Fall back to environment variables for default configuration
         const envCredentials = {
@@ -147,7 +147,7 @@ export class CredentialsService {
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get Twilio credentials', { 
+      logger.error('Failed to get Twilio credentials', {
         error: err.message,
         dealership: dealershipId
       });
@@ -162,10 +162,10 @@ export class CredentialsService {
     try {
       const { Twilio } = await import('twilio');
       const client = new Twilio(credentials.accountSid, credentials.authToken);
-      
+
       // Test the credentials by fetching account info
       await client.api.accounts(credentials.accountSid).fetch();
-      
+
       logger.info('Twilio credentials validation successful');
       return true;
 
@@ -214,7 +214,7 @@ export class CredentialsService {
 
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to rotate credentials', { 
+      logger.error('Failed to rotate credentials', {
         error: err.message,
         dealership: dealershipId,
         provider: provider
@@ -231,10 +231,10 @@ export class CredentialsService {
     const algorithm = 'aes-256-gcm';
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipher(algorithm, this.encryptionKey);
-    
+
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    
+
     return iv.toString('hex') + ':' + encrypted;
   }
 
@@ -247,10 +247,10 @@ export class CredentialsService {
     const [ivHex, encrypted] = encryptedText.split(':');
     const iv = Buffer.from(ivHex, 'hex');
     const decipher = crypto.createDecipher(algorithm, this.encryptionKey);
-    
+
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    
+
     return decrypted;
   }
 

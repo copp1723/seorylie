@@ -3,7 +3,7 @@
  * Provides standardized response formatting for API endpoints
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { HttpStatus } from '../utils/api-response';
 
 /**
@@ -26,7 +26,7 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
       data,
       ...(message && { message })
     };
-    
+
     return this.status(statusCode).json(response);
   };
 
@@ -57,7 +57,7 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
       },
       ...(message && { message })
     };
-    
+
     return this.status(statusCode).json(response);
   };
 
@@ -75,14 +75,14 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
     code?: string
   ): Response {
     const errorMessage = error instanceof Error ? error.message : error;
-    
+
     const response = {
       success: false,
       error: errorMessage,
       ...(details && { details }),
       ...(code && { code })
     };
-    
+
     return this.status(statusCode).json(response);
   };
 
@@ -101,7 +101,7 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
       details: validationErrors,
       code: 'VALIDATION_ERROR'
     };
-    
+
     return this.status(HttpStatus.UNPROCESSABLE_ENTITY).json(response);
   };
 
@@ -117,12 +117,12 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
     const response = {
       success: false,
       error: `${resourceType} not found`,
-      ...(resourceId && { 
-        details: { resourceId, resourceType } 
+      ...(resourceId && {
+        details: { resourceId, resourceType }
       }),
       code: 'RESOURCE_NOT_FOUND'
     };
-    
+
     return this.status(HttpStatus.NOT_FOUND).json(response);
   };
 

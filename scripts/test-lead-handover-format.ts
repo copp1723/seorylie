@@ -1,19 +1,21 @@
 import fetch from 'node-fetch';
 
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 // Test script to demonstrate the new lead handover format
 
 async function testLeadHandoverFormat() {
   try {
     // Get the first dealership
     console.log("Getting dealership...");
-    const dealershipsResponse = await fetch('http://localhost:5000/api/dealerships');
+    const dealershipsResponse = await fetch(`${BASE_URL}/api/dealerships`);
     const dealerships = await dealershipsResponse.json();
     const dealership = dealerships[0];
     console.log(`Using dealership: ${dealership.name} (ID: ${dealership.id})`);
     
     // Generate a test API key
     console.log("\nGenerating a test API key...");
-    const apiKeyResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/apikeys`, {
+    const apiKeyResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/apikeys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ description: 'New Format Handover Test' })
@@ -25,7 +27,7 @@ async function testLeadHandoverFormat() {
     
     // Get and update the first persona with handover email
     console.log("\nUpdating persona with handover email...");
-    const personasResponse = await fetch(`http://localhost:5000/api/dealerships/${dealership.id}/personas`);
+    const personasResponse = await fetch(`${BASE_URL}/api/dealerships/${dealership.id}/personas`);
     const personas = await personasResponse.json();
     
     if (!personas || personas.length === 0) {
@@ -37,7 +39,7 @@ async function testLeadHandoverFormat() {
     console.log(`Using persona: ${persona.name}`);
     
     // Update the persona with handover email
-    const updateResponse = await fetch(`http://localhost:5000/api/personas/${persona.id}`, {
+    const updateResponse = await fetch(`${BASE_URL}/api/personas/${persona.id}`, {
       method: 'PATCH',
       headers: { 
         'Content-Type': 'application/json',
@@ -61,7 +63,7 @@ async function testLeadHandoverFormat() {
     const initialMessage = "Hi there, I'm Kyle. I just moved to the area and my car broke down yesterday. I need a reliable vehicle for work ASAP.";
     console.log(`CUSTOMER: ${initialMessage}`);
     
-    const initialResponse = await fetch('http://localhost:5000/api/inbound', {
+    const initialResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -86,7 +88,7 @@ async function testLeadHandoverFormat() {
     const financesMessage = "I had some medical bills last year that hurt my credit score, but I've been at my job for 3 years with stable income. Would financing be a problem?";
     console.log(`CUSTOMER: ${financesMessage}`);
     
-    const financesResponse = await fetch('http://localhost:5000/api/inbound', {
+    const financesResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -108,7 +110,7 @@ async function testLeadHandoverFormat() {
     const preferencesMessage = "I need something fuel-efficient but spacious enough for my tools. I'm a contractor, so I'm hauling equipment daily.";
     console.log(`CUSTOMER: ${preferencesMessage}`);
     
-    const preferencesResponse = await fetch('http://localhost:5000/api/inbound', {
+    const preferencesResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -130,7 +132,7 @@ async function testLeadHandoverFormat() {
     const purchaseMessage = "I need to make this happen today. My buddy can drop me off at the dealership this afternoon. What's the next step to secure financing and drive home in a new truck?";
     console.log(`CUSTOMER: ${purchaseMessage}`);
     
-    const purchaseResponse = await fetch('http://localhost:5000/api/inbound', {
+    const purchaseResponse = await fetch(`${BASE_URL}/api/inbound`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

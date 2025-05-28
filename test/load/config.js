@@ -1,7 +1,7 @@
 // Load Testing Configuration
 export const config = {
   // Base URL for the application
-  baseUrl: __ENV.BASE_URL || 'http://localhost:5000',
+  baseUrl: __ENV.BASE_URL || 'http://localhost:3000',
 
   // Test scenarios configuration
   scenarios: {
