@@ -57,7 +57,7 @@
     // Disallow accessing properties via index signature without checks
     "noPropertyAccessFromIndexSignature": true,
     // Surface unused import types as errors
-    "importsNotUsedAsValues": "error",
+    "verbatimModuleSyntax": true,
     // Require explicit override keyword
     "noImplicitOverride": true,
 
