@@ -2,18 +2,18 @@
 
 > **Enterprise-Grade AI Platform**: CleanRylie is a comprehensive multi-tenant AI platform designed for automotive dealerships, featuring real-time conversation management, intelligent lead processing, and advanced analytics.
 
-## 🌟 Key Features
+## Key Features
 
-- **🤖 AI-Powered Conversations**: OpenAI GPT-4 integration with customizable personas
-- **🏢 Multi-Tenant Architecture**: Secure dealership isolation with role-based access control
+- ** AI-Powered Conversations**: OpenAI GPT-4 integration with customizable personas
+- ** Multi-Tenant Architecture**: Secure dealership isolation with role-based access control
 - **⚡ Real-Time Communication**: WebSocket-powered chat with typing indicators and live updates
-- **📊 Advanced Analytics**: Customer insights, conversation analytics, and performance metrics
-- **🔄 Automated Lead Processing**: ADF email parsing and intelligent lead routing
-- **📱 Multi-Channel Support**: SMS, email, and web chat integration
-- **🎯 A/B Testing**: Built-in prompt experimentation and performance optimization
-- **🔒 Enterprise Security**: JWT authentication, CSRF protection, and data encryption
+- ** Advanced Analytics**: Customer insights, conversation analytics, and performance metrics
+- ** Automated Lead Processing**: ADF email parsing and intelligent lead routing
+- ** Multi-Channel Support**: SMS, email, and web chat integration
+- ** A/B Testing**: Built-in prompt experimentation and performance optimization
+- ** Enterprise Security**: JWT authentication, CSRF protection, and data encryption
 
-## 🚀 Quick Start
+##Quick Start
 
 ### Prerequisites
 
@@ -89,7 +89,7 @@ cleanrylie/
 └── docs/                     # Technical documentation
 ```
 
-## 💻 Technology Stack
+##  Technology Stack
 
 ### **Frontend**
 - **React 18**: Modern React with hooks and concurrent features
@@ -217,7 +217,7 @@ npm run env:validate
 npm run deploy:check
 ```
 
-## 🧪 Testing
+##  Testing
 
 ### **Unit & Integration Tests**
 
@@ -323,7 +323,7 @@ curl http://localhost:5000/api/metrics/database
 - **Deployment**: Production deployment and monitoring setup
 - **Contributing**: Code standards and contribution guidelines
 
-## 🔧 Development Workflow
+## Development Workflow
 
 ### **Daily Development**
 
@@ -374,7 +374,7 @@ npm run migrate:status
 npm run migrate:rollback
 ```
 
-## 🛡️ Security Features
+##  Security Features
 
 - **Multi-tenant isolation**: Dealership-based data segregation
 - **Role-based access control**: Admin, manager, user, and API roles
@@ -385,7 +385,7 @@ npm run migrate:rollback
 - **Data encryption**: Sensitive data encryption at rest and in transit
 - **Audit logging**: Complete audit trail for compliance
 
-## 🚀 Performance Optimizations
+##  Performance Optimizations
 
 - **Database indexing**: Optimized indexes for multi-tenant queries
 - **Caching layer**: Redis-based caching with in-memory fallback
@@ -396,7 +396,7 @@ npm run migrate:rollback
 
 ---
 
-## 📞 Support & Contributing
+##  Support & Contributing
 
 ### **Getting Help**
 1. Check the [documentation](docs/) for detailed guides
