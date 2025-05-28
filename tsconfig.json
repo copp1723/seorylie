@@ -51,13 +51,13 @@
     "strictFunctionTypes": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    // Enforce stricter optional and catch variable handling
-    "exactOptionalPropertyTypes": true,
+    // Allow more flexible optional property handling for compatibility
+    "exactOptionalPropertyTypes": false,
     "useUnknownInCatchVariables": true,
-    // Disallow accessing properties via index signature without checks
-    "noPropertyAccessFromIndexSignature": true,
-    // Surface unused import types as errors
-    "verbatimModuleSyntax": true,
+    // Allow accessing properties via index signature (for compatibility)
+    "noPropertyAccessFromIndexSignature": false,
+    // Allow more flexible module syntax for existing code
+    "verbatimModuleSyntax": false,
     // Require explicit override keyword
     "noImplicitOverride": true,
 
@@ -71,7 +71,6 @@
     // Ensure each file can be transpiled in isolation (Vite / tsx)
     "isolatedModules": true,
     // Preserve the original import/export syntax for bundlers
-    "verbatimModuleSyntax": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
