@@ -2,7 +2,7 @@
 export const config = {
   // Base URL for the application
   baseUrl: __ENV.BASE_URL || 'http://localhost:5000',
-  
+
   // Test scenarios configuration
   scenarios: {
     light_load: {
@@ -21,7 +21,7 @@ export const config = {
       rampUp: '2m'
     }
   },
-  
+
   // Performance thresholds
   thresholds: {
     // 95% of requests should be below 1000ms
@@ -35,7 +35,7 @@ export const config = {
     // Chat message latency
     chat_message_duration: ['p(95)<500'],
   },
-  
+
   // Test data
   testData: {
     dealerships: [
@@ -67,7 +67,7 @@ export const config = {
       }
     ]
   },
-  
+
   // Database configuration for direct queries
   database: {
     host: __ENV.DB_HOST || 'localhost',
@@ -128,10 +128,5 @@ export function endTimer(startTime) {
   return Date.now() - startTime;
 }
 
-// Custom metrics for k6
-export const customMetrics = {
-  chatMessageDuration: new Trend('chat_message_duration'),
-  dbQueryDuration: new Trend('db_query_duration'),
-  inventoryImportDuration: new Trend('inventory_import_duration'),
-  websocketConnectionTime: new Trend('websocket_connection_time')
-};
+// Note: Custom metrics are defined in individual test files
+// This avoids import issues with k6 modules in the config file
