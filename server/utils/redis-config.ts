@@ -18,7 +18,7 @@ const redisOptions = {
   port: REDIS_PORT,
   password: REDIS_PASSWORD,
   tls: REDIS_TLS ? {} : undefined,
-  retryStrategy: (times: number) => {
+  retryStrategy: (times: number): number | null => {
     // In development, limit retries to prevent log spam
     if (process.env.NODE_ENV !== 'production' && times > 5) {
       logger.warn('Redis retry limit reached in development mode, stopping retries');
@@ -33,7 +33,7 @@ const redisOptions = {
   enableOfflineQueue: false, // Disable in development to prevent hanging
   maxRetriesPerRequest: process.env.NODE_ENV === 'production' ? 10 : 3, // Fewer retries in dev
   connectTimeout: 5000, // Shorter timeout in development
-  reconnectOnError: (err: Error) => {
+  reconnectOnError: (err: Error): boolean => {
     // In development, don't reconnect on ECONNREFUSED
     if (process.env.NODE_ENV !== 'production' && err.message.includes('ECONNREFUSED')) {
       return false;
@@ -66,7 +66,7 @@ const createRedisClient = () => {
     }
   });
 
-  client.on('reconnecting', (delay) => {
+  client.on('reconnecting', (delay: number) => {
     logger.info(`Redis client reconnecting in ${delay}ms`);
   });
 
@@ -74,10 +74,10 @@ const createRedisClient = () => {
 };
 
 // Singleton Redis client for the application
-let redisClient: Redis.Redis | null = null;
+let redisClient: Redis | null = null;
 
 // Function to get or create a Redis client
-export const getRedisClient = () => {
+export const getRedisClient = (): Redis => {
   if (!redisClient) {
     redisClient = createRedisClient();
   }
@@ -126,17 +126,17 @@ export const closeRedisConnection = async (): Promise<void> => {
 
 // Fallback in-memory store for development environments
 export class InMemoryStore {
-  private store: Map<string, any> = new Map();
+  private store: Map<string, unknown> = new Map();
 
-  async get(key: string): Promise<any> {
-    return this.store.get(key);
+  async get<T = unknown>(key: string): Promise<T | undefined> {
+    return this.store.get(key) as T | undefined;
   }
 
-  async set(key: string, value: any, ttl?: number): Promise<void> {
+  async set(key: string, value: unknown, ttl?: number): Promise<void> {
     this.store.set(key, value);
 
     if (ttl) {
-      setTimeout(() => {
+      setTimeout((): void => {
         this.store.delete(key);
       }, ttl * 1000);
     }

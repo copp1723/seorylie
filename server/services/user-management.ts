@@ -102,11 +102,17 @@ export async function createUserInvitation({
 
   // Get inviter's name
   const [inviter] = await db.select().from(users).where(eq(users.id, invitedBy));
-  const inviterName = inviter?.name || 'A dealership administrator';
+  if (!inviter) {
+    throw new Error('Inviter user not found');
+  }
+  const inviterName = inviter.name || 'A dealership administrator';
 
   // Get dealership name
   const [dealership] = await db.select().from('dealerships').where(eq('dealerships.id', dealershipId));
-  const dealershipName = dealership?.name || 'our dealership';
+  if (!dealership) {
+    throw new Error('Dealership not found');
+  }
+  const dealershipName = dealership.name || 'our dealership';
 
   await sendEmail({
     to: email,
@@ -158,7 +164,7 @@ export async function acceptUserInvitation(token: string, userData: {
   const [user] = await db.insert(users).values({
     email: invitation.email,
     name: userData.name,
-    password_hash: await hashPassword(userData.password),
+    password: await hashPassword(userData.password),
     role: invitation.role,
     dealership_id: invitation.dealershipId,
     is_verified: true

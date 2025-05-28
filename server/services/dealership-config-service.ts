@@ -26,7 +26,11 @@ export class DealershipConfigService {
         .where(sql`${dealerships.id} = ${dealershipId}`)
         .limit(1);
         
-        return result[0]?.mode || 'rylie_ai';
+        if (!result[0]) {
+          throw new Error(`Dealership not found: ${dealershipId}`);
+        }
+        
+        return result[0].mode || 'rylie_ai';
       }, { ttl: 300 });
     } catch (error) {
       logger.error('Error getting dealership mode', { error, dealershipId });
@@ -91,7 +95,7 @@ export class DealershipConfigService {
         .where(sql`${dealerships.id} = ${dealershipId}`)
         .limit(1);
 
-        if (result.length === 0) {
+        if (!result[0]) {
           throw new Error(`Dealership not found: ${dealershipId}`);
         }
 

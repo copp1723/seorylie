@@ -153,7 +153,7 @@ export async function verifyMagicLinkToken(
       )
       .limit(1);
     
-    if (invitation.length === 0) {
+    if (!invitation[0]) {
       return { 
         success: false, 
         error: 'Invalid or expired magic link.' 
@@ -168,13 +168,13 @@ export async function verifyMagicLinkToken(
     let userId: number;
     
     // If user doesn't exist, create a new user
-    if (existingUser.length === 0) {
+    if (!existingUser[0]) {
       const newUser = await db.insert(users).values({
         email,
         role: validInvitation.role || 'user',
-        dealershipId: validInvitation.dealershipId || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        dealership_id: validInvitation.dealershipId || null,
+        created_at: new Date(),
+        updated_at: new Date(),
       }).returning({ id: users.id });
       
       userId = newUser[0].id;
