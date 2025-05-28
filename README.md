@@ -6,7 +6,7 @@
 
 - ** AI-Powered Conversations**: OpenAI GPT-4 integration with customizable personas
 - ** Multi-Tenant Architecture**: Secure dealership isolation with role-based access control
-- **⚡ Real-Time Communication**: WebSocket-powered chat with typing indicators and live updates
+- ** Real-Time Communication**: WebSocket-powered chat with typing indicators and live updates
 - ** Advanced Analytics**: Customer insights, conversation analytics, and performance metrics
 - ** Automated Lead Processing**: ADF email parsing and intelligent lead routing
 - ** Multi-Channel Support**: SMS, email, and web chat integration
