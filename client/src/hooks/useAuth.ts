@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toastSuccess, toastError } from "@/components/ui/use-toast";
 
 export interface User {
   id: number;
@@ -150,6 +151,19 @@ export function useAuth() {
     onSuccess: (userData) => {
       // Update cache with user data
       queryClient.setQueryData(["/api/user"], userData);
+      
+      // Show success notification
+      toastSuccess({
+        title: "Login Successful",
+        description: `Welcome back, ${userData.name || userData.username}!`,
+      });
+    },
+    onError: (error: Error) => {
+      // Show error notification
+      toastError({
+        title: "Login Failed",
+        description: error.message || "Invalid credentials. Please try again.",
+      });
     },
   });
 
@@ -159,6 +173,19 @@ export function useAuth() {
     onSuccess: (userData) => {
       // Update cache with user data
       queryClient.setQueryData(["/api/user"], userData);
+      
+      // Show success notification
+      toastSuccess({
+        title: "Account Created",
+        description: "Welcome to CleanRylie! Your account has been created successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      // Show error notification
+      toastError({
+        title: "Registration Failed",
+        description: error.message || "Unable to create account. Please try again.",
+      });
     },
   });
 
@@ -168,12 +195,40 @@ export function useAuth() {
     onSuccess: () => {
       // Clear user from cache
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Show success notification
+      toastSuccess({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+    },
+    onError: (error: Error) => {
+      // Show error notification but still clear the cache
+      queryClient.setQueryData(["/api/user"], null);
+      toastError({
+        title: "Logout Error",
+        description: "There was an issue logging out, but you have been signed out locally.",
+      });
     },
   });
 
   // Magic link mutation
   const magicLinkMutation = useMutation({
     mutationFn: loginWithMagicLink,
+    onSuccess: () => {
+      // Show success notification
+      toastSuccess({
+        title: "Magic Link Sent",
+        description: "Check your email for a login link.",
+      });
+    },
+    onError: (error: Error) => {
+      // Show error notification
+      toastError({
+        title: "Failed to Send Magic Link",
+        description: error.message || "Unable to send magic link. Please try again.",
+      });
+    },
   });
 
   // Simple logout function that uses the mutation

@@ -1,15 +1,19 @@
 import * as React from "react";
+import { CheckCircle, AlertCircle, XCircle, Info, Clock } from "lucide-react";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000;
 
+type ToastVariant = "default" | "destructive" | "success" | "warning" | "info" | "loading";
+
 type ToasterToast = ToastProps & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
+  variant?: ToastVariant;
 };
 
 const actionTypes = {
@@ -166,12 +170,66 @@ function useToast() {
     };
   }, [state]);
 
+  const success = (props: Omit<Toast, "variant">) => {
+    return toast({ ...props, variant: "success" });
+  };
+
+  const error = (props: Omit<Toast, "variant">) => {
+    return toast({ ...props, variant: "destructive" });
+  };
+
+  const warning = (props: Omit<Toast, "variant">) => {
+    return toast({ ...props, variant: "warning" });
+  };
+
+  const info = (props: Omit<Toast, "variant">) => {
+    return toast({ ...props, variant: "info" });
+  };
+
+  const loading = (props: Omit<Toast, "variant">) => {
+    return toast({ ...props, variant: "loading" });
+  };
+
   return {
     ...state,
     toast,
+    success,
+    error,
+    warning,
+    info,
+    loading,
     dismiss: (toastId?: string) =>
       dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
   };
 }
 
-export { useToast, toast };
+// Convenience functions for direct use
+const toastSuccess = (props: Omit<Toast, "variant">) => {
+  return toast({ ...props, variant: "success" });
+};
+
+const toastError = (props: Omit<Toast, "variant">) => {
+  return toast({ ...props, variant: "destructive" });
+};
+
+const toastWarning = (props: Omit<Toast, "variant">) => {
+  return toast({ ...props, variant: "warning" });
+};
+
+const toastInfo = (props: Omit<Toast, "variant">) => {
+  return toast({ ...props, variant: "info" });
+};
+
+const toastLoading = (props: Omit<Toast, "variant">) => {
+  return toast({ ...props, variant: "loading" });
+};
+
+export { 
+  useToast, 
+  toast, 
+  toastSuccess, 
+  toastError, 
+  toastWarning, 
+  toastInfo, 
+  toastLoading 
+};

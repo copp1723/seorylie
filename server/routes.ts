@@ -17,6 +17,7 @@ import escalationRoutes from './routes/escalation-routes';
 import leadManagementRoutes from './routes/lead-management-routes';
 import userManagementRoutes from './routes/user-management-routes';
 import customerInsightsRoutes from './routes/customer-insights-routes';
+import inventoryRoutes from './routes/inventory-routes';
 import { tenantContextMiddleware } from './middleware/tenant-context';
 
 // Check database connection
@@ -130,6 +131,7 @@ export async function registerRoutes(app: Express) {
   app.use('/api', leadManagementRoutes);
   app.use('/api', userManagementRoutes);
   app.use('/api', customerInsightsRoutes);
+  app.use('/api', inventoryRoutes);
 
   // Create and return HTTP server
   const server = createServer(app);

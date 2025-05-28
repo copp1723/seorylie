@@ -16,17 +16,18 @@ import BrandingPage from "@/pages/admin/branding";
 import ChatDemo from "@/pages/ChatDemo";
 import ChatTestPage from "@/pages/ChatTestPage";
 import SimplePromptTestPage from "@/pages/SimplePromptTestPage";
+import NotificationTestPage from "@/components/NotificationTestPage";
 import { useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import Layout from "@/components/layout/layout";
 import { Toaster } from "@/components/ui/toaster";
 import { queryClient } from "@/lib/queryClient";
-import { ToastProvider } from "@/hooks/use-toast";
+import { NotificationProvider, NotificationContainer } from "@/hooks/useNotifications";
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
+      <NotificationProvider>
         <div className="min-h-screen">
           <Switch>
             <Route path="/auth" component={LoginPage} />
@@ -104,6 +105,11 @@ function App() {
                 <SimplePromptTestPage />
               </Layout>
             </Route>
+            <Route path="/notifications-test">
+              <Layout>
+                <NotificationTestPage />
+              </Layout>
+            </Route>
             <Route path="/">
               <ProtectedRoute>
                 <Layout>
@@ -124,9 +130,12 @@ function App() {
               </div>
             </Route>
           </Switch>
+          
+          {/* Multiple notification systems for comprehensive coverage */}
           <Toaster />
+          <NotificationContainer />
         </div>
-      </ToastProvider>
+      </NotificationProvider>
     </QueryClientProvider>
   );
 }
