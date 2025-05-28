@@ -61,7 +61,7 @@ npm run test:quick
 npm run migrate:status
 ```
 
-## 📁 Project Architecture
+##  Project Architecture
 
 ```
 cleanrylie/
@@ -130,7 +130,7 @@ cleanrylie/
 - **Supertest**: API endpoint testing
 - **TypeScript**: Compile-time error detection
 
-## 🗄️ Database Setup
+##  Database Setup
 
 ### **Schema Management**
 
@@ -162,7 +162,7 @@ npm run migrate:status
 - **Audit logging** for compliance and debugging
 - **Automated backups** and point-in-time recovery
 
-## 🔑 Environment Configuration
+## Environment Configuration
 
 ### **Required Variables**
 
