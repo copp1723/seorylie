@@ -51,7 +51,15 @@
     "strictFunctionTypes": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+    // Enforce stricter optional and catch variable handling
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+    // Disallow accessing properties via index signature without checks
+    "noPropertyAccessFromIndexSignature": true,
+    // Surface unused import types as errors
+    "importsNotUsedAsValues": "error",
+    // Require explicit override keyword
+    "noImplicitOverride": true,
 
     // =============================================================================
     // MODULE RESOLUTION
@@ -60,6 +68,10 @@
     // Use bundler module resolution for modern build tools
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    // Ensure each file can be transpiled in isolation (Vite / tsx)
+    "isolatedModules": true,
+    // Preserve the original import/export syntax for bundlers
+    "verbatimModuleSyntax": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
@@ -92,7 +104,7 @@
     // =============================================================================
 
     // Skip type checking of declaration files for faster builds
-    "skipLibCheck": true,
+    "skipLibCheck": false,
 
     // Enable downlevel iteration for better compatibility
     "downlevelIteration": true,
