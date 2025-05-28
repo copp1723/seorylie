@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, count, gte, lte } from 'drizzle-orm';
 import db from '../db';
 import { 
   customers, 
@@ -125,19 +125,27 @@ export class LeadService {
    * Generate unique lead number
    */
   private async generateLeadNumber(dealershipId: number): Promise<string> {
-    const year = new Date().getFullYear().toString().slice(-2);
-    
-    // Count existing leads for this dealership this year
-    const leadCount = await db
-      .select({ count: leads.id })
+    const now = new Date();
+    const yearFull = now.getFullYear();           // e.g. 2025
+    const yearShort = yearFull.toString().slice(-2); // "25"
+
+    // Define the current calendar year window
+    const startOfYear = new Date(yearFull, 0, 1, 0, 0, 0, 0);
+    const endOfYear = new Date(yearFull, 11, 31, 23, 59, 59, 999);
+
+    // Count existing leads for this dealership within the same year
+    const [{ total }] = await db
+      .select({ total: count(leads.id).as('total') })
       .from(leads)
       .where(and(
         eq(leads.dealershipId, dealershipId),
-        eq(leads.createdAt, new Date().getFullYear())
-      ));
-    
-    const count = leadCount.length + 1;
-    return `LEAD-${dealershipId}-${year}-${count.toString().padStart(4, '0')}`;
+        gte(leads.createdAt, startOfYear),
+        lte(leads.createdAt, endOfYear)
+      ))
+      .limit(1);
+
+    const nextSeq = Number(total ?? 0) + 1;
+    return `LEAD-${dealershipId}-${yearShort}-${nextSeq.toString().padStart(4, '0')}`;
   }
 
   /**

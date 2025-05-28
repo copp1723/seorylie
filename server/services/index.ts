@@ -5,8 +5,27 @@ import { initializeOrchestrator } from './orchestrator';
 import * as inventoryFunctions from './inventory-functions';
 import { createRylieRetriever } from './rylie-retriever';
 
-// Export individual modules
-export { initializeOrchestrator, inventoryFunctions, createRylieRetriever };
+// Typed request payload for routing
+export interface AgentSquadRequest {
+  dealershipId: number;
+  conversationId: string;
+  prompt: string;
+  /**
+   * Arbitrary runtime context passed from the caller.
+   * Keep as unknown so the handler must narrow it before use.
+   */
+  context: unknown;
+}
+
+// Configuration object for boot‑strapping AgentSquad
+export interface AgentSquadConfig {
+  enabled: boolean;
+  openaiApiKey?: string;
+  /**
+   * If true, fall back to legacy logic when AgentSquad fails.
+   */
+  fallbackToOriginal?: boolean;
+}
 
 // AgentSquad response type
 export interface AgentSquadResponse {
@@ -19,12 +38,7 @@ export interface AgentSquadResponse {
 }
 
 // Route message through AgentSquad
-export async function routeMessageThroughAgentSquad(request: {
-  dealershipId: number;
-  conversationId: string;
-  prompt: string;
-  context: any;
-}): Promise<AgentSquadResponse> {
+export async function routeMessageThroughAgentSquad(request: AgentSquadRequest): Promise<AgentSquadResponse> {
   try {
     // Simple implementation - would normally use orchestrator
     return {
@@ -56,7 +70,7 @@ export function isAgentSquadReady(): boolean {
 }
 
 // Initialize AgentSquad with configuration
-export function initializeAgentSquad(config: { enabled: boolean; openaiApiKey?: string; fallbackToOriginal?: boolean }) {
+export function initializeAgentSquad(config: AgentSquadConfig): boolean {
   try {
     if (!config.enabled) {
       return false;

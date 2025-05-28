@@ -2,6 +2,8 @@
  * Setup script to create database tables for new features
  */
 import { db } from '../server/db';
+import { eq } from 'drizzle-orm';
+import { dealerships } from '../shared/schema';
 import { 
   escalationTriggers, 
   leadScores, 
@@ -124,13 +126,13 @@ async function setupNewFeatures() {
     console.log('Successfully created all new feature tables');
     
     // Add default escalation triggers for each dealership
-    const dealerships = await db.select().from('dealerships');
+    const dealershipsList = await db.select().from(dealerships);
     
-    for (const dealership of dealerships) {
+    for (const dealership of dealershipsList) {
       // Check if dealership already has triggers
       const existingTriggers = await db.select()
-        .from('escalation_triggers')
-        .where({ dealership_id: dealership.id });
+        .from(escalationTriggers)
+        .where(eq(escalationTriggers.dealershipId, dealership.id));
       
       if (existingTriggers.length === 0) {
         // Add default triggers

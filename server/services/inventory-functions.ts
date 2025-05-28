@@ -1,6 +1,6 @@
 import db from '../db';
 import { vehicles } from '../../shared/schema';
-import { eq, and, like, gte, lte, inArray, sql } from 'drizzle-orm';
+import { eq, and, like, gte, lte, sql } from 'drizzle-orm';
 import logger from '../utils/logger';
 
 export interface VehicleSearchParams {
@@ -55,12 +55,6 @@ export async function searchInventory(params: VehicleSearchParams): Promise<{
     logger.info('Searching inventory with params', { params });
 
     const filtersApplied: string[] = [];
-    let query = db.select().from(vehicles)
-      .where(and(
-        eq(vehicles.dealershipId, params.dealershipId),
-        eq(vehicles.isActive, true)
-      ));
-
     // Build dynamic where conditions
     const conditions = [
       eq(vehicles.dealershipId, params.dealershipId),

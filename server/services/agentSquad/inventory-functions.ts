@@ -1,6 +1,6 @@
 import db from '../../db';
 import { vehicles } from '../../../shared/schema';
-import { eq, and, like, gte, lte, inArray, sql } from 'drizzle-orm';
+import { eq, and, like, gte, lte, sql } from 'drizzle-orm';
 import logger from '../../utils/logger';
 
 export interface VehicleSearchParams {
@@ -55,11 +55,6 @@ export async function searchInventory(params: VehicleSearchParams): Promise<{
     logger.info('Searching inventory with params', { params });
 
     const filtersApplied: string[] = [];
-    let query = db.select().from(vehicles)
-      .where(and(
-        eq(vehicles.dealershipId, params.dealershipId),
-        eq(vehicles.isActive, true)
-      ));
 
     // Build dynamic where conditions
     const conditions = [
@@ -321,15 +316,7 @@ export async function getInventorySummary(dealershipId: number): Promise<{
     .orderBy(sql`count(*) desc`)
     .limit(1);
 
-    const stats = summaryQuery[0] || {
-      total: 0,
-      newCount: 0,
-      usedCount: 0,
-      certifiedCount: 0,
-      avgPrice: 0,
-      minPrice: 0,
-      maxPrice: 0
-    };
+    const stats = summaryQuery[0];
     const makes = makesQuery.map(m => m.make);
     const mostCommonMake = mostCommonMakeQuery[0]?.make || '';
 

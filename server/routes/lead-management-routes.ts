@@ -42,9 +42,9 @@ router.get('/conversations/:conversationId/lead-score', async (req, res) => {
     if (!leadScore) {
       // Calculate score if it doesn't exist
       const score = await calculateLeadScore(conversationId);
-      res.json({ score });
+      return res.json({ score });
     } else {
-      res.json(leadScore);
+      return res.json(leadScore);
     }
   } catch (error) {
     console.error('Error getting lead score:', error);
@@ -59,12 +59,12 @@ router.get('/dealerships/:dealershipId/top-leads', async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
     
     // Check permissions
-    if (!req.user || (req.user.dealership_id !== dealershipId && req.user.role !== 'super_admin')) {
+    if (!req.user || (req.user.dealershipId !== dealershipId && req.user.role !== 'super_admin')) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
     const topLeads = await getTopLeads(dealershipId, limit);
-    res.json({ leads: topLeads });
+    return res.json({ leads: topLeads });
   } catch (error) {
     console.error('Error getting top leads:', error);
     res.status(500).json({ error: 'Failed to get top leads' });
@@ -85,7 +85,7 @@ router.post('/follow-ups', async (req, res) => {
     } = req.body;
     
     // Check permissions
-    if (!req.user || (req.user.dealership_id !== dealershipId && req.user.role !== 'super_admin')) {
+    if (!req.user || (req.user.dealershipId !== dealershipId && req.user.role !== 'super_admin')) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
@@ -106,7 +106,7 @@ router.post('/follow-ups', async (req, res) => {
     
     // Log the action
     await logAuditEvent({
-      userId: req.user.id,
+      userId: parseInt(req.user.userId),
       dealershipId,
       action: 'schedule_follow_up',
       resourceType: 'follow_up',
@@ -114,7 +114,7 @@ router.post('/follow-ups', async (req, res) => {
       details: { customerName, assignedTo, scheduledTime }
     });
     
-    res.status(201).json({ followUp });
+    return res.status(201).json({ followUp });
   } catch (error) {
     console.error('Error scheduling follow-up:', error);
     res.status(500).json({ error: 'Failed to schedule follow-up' });
@@ -129,9 +129,9 @@ router.get('/my-follow-ups', async (req, res) => {
     }
     
     const status = req.query.status as string;
-    const followUps = await getUserFollowUps(req.user.id, status);
+    const followUps = await getUserFollowUps(parseInt(req.user.userId), status);
     
-    res.json({ followUps });
+    return res.json({ followUps });
   } catch (error) {
     console.error('Error getting follow-ups:', error);
     res.status(500).json({ error: 'Failed to get follow-ups' });
@@ -144,7 +144,7 @@ router.get('/dealerships/:dealershipId/follow-ups', async (req, res) => {
     const dealershipId = parseInt(req.params.dealershipId);
     
     // Check permissions
-    if (!req.user || (req.user.dealership_id !== dealershipId && req.user.role !== 'super_admin')) {
+    if (!req.user || (req.user.dealershipId !== dealershipId && req.user.role !== 'super_admin')) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
@@ -161,7 +161,7 @@ router.get('/dealerships/:dealershipId/follow-ups', async (req, res) => {
     
     const followUps = await getDealershipFollowUps(dealershipId, status, dateRange);
     
-    res.json({ followUps });
+    return res.json({ followUps });
   } catch (error) {
     console.error('Error getting dealership follow-ups:', error);
     res.status(500).json({ error: 'Failed to get follow-ups' });
@@ -184,8 +184,8 @@ router.put('/follow-ups/:followUpId/complete', async (req, res) => {
     }
     
     // Check permissions
-    if (!req.user || (req.user.id !== followUp.assigned_to && 
-        req.user.dealership_id !== followUp.dealership_id && 
+    if (!req.user || (parseInt(req.user.userId) !== followUp.assignedTo && 
+        req.user.dealershipId !== followUp.dealershipId && 
         req.user.role !== 'super_admin')) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
@@ -194,14 +194,14 @@ router.put('/follow-ups/:followUpId/complete', async (req, res) => {
     
     // Log the action
     await logAuditEvent({
-      userId: req.user.id,
-      dealershipId: followUp.dealership_id,
+      userId: parseInt(req.user.userId),
+      dealershipId: followUp.dealershipId,
       action: 'complete_follow_up',
       resourceType: 'follow_up',
       resourceId: followUpId
     });
     
-    res.json({ followUp: updatedFollowUp });
+    return res.json({ followUp: updatedFollowUp });
   } catch (error) {
     console.error('Error completing follow-up:', error);
     res.status(500).json({ error: 'Failed to complete follow-up' });
@@ -224,8 +224,8 @@ router.put('/follow-ups/:followUpId/cancel', async (req, res) => {
     }
     
     // Check permissions
-    if (!req.user || (req.user.id !== followUp.assigned_to && 
-        req.user.dealership_id !== followUp.dealership_id && 
+    if (!req.user || (parseInt(req.user.userId) !== followUp.assignedTo && 
+        req.user.dealershipId !== followUp.dealershipId && 
         req.user.role !== 'super_admin')) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
@@ -234,15 +234,15 @@ router.put('/follow-ups/:followUpId/cancel', async (req, res) => {
     
     // Log the action
     await logAuditEvent({
-      userId: req.user.id,
-      dealershipId: followUp.dealership_id,
+      userId: parseInt(req.user.userId),
+      dealershipId: followUp.dealershipId,
       action: 'cancel_follow_up',
       resourceType: 'follow_up',
       resourceId: followUpId,
       details: { reason }
     });
     
-    res.json({ followUp: updatedFollowUp });
+    return res.json({ followUp: updatedFollowUp });
   } catch (error) {
     console.error('Error canceling follow-up:', error);
     res.status(500).json({ error: 'Failed to cancel follow-up' });

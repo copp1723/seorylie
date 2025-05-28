@@ -1,6 +1,12 @@
 import db from "../db";
-import { eq, desc, asc, and, gte, lte, inArray, sql, count } from 'drizzle-orm';
+import {
+  eq,
+  and,
+  sql,
+  count
+} from 'drizzle-orm';
 import { users, dealerships } from '../../shared/schema';
+import { conversations, messages } from '../../shared/schema';
 import logger from '../utils/logger';
 import { cacheService, createCacheKey } from './unified-cache-service';
 import type { User } from '../../shared/schema';
@@ -46,117 +52,102 @@ export async function getRecentConversations(
 ): Promise<PaginatedConversations> {
   const offset = (page - 1) * limit;
 
-  try {
-    const query = db.select()
-      .from(sql`conversations`)
-      .where(sql`dealership_id = ${dealershipId}`)
+  // Build dynamic WHERE conditions
+  const conditions = [
+    eq(conversations.dealershipId, dealershipId),
+  ] as const;
+  const whereClause = status
+    ? and(...conditions, eq(conversations.status, status))
+    : and(...conditions);
+
+  // Query paginated rows & total count in parallel
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select()
+      .from(conversations)
+      .where(whereClause)
       .limit(limit)
-      .offset(offset);
+      .offset(offset),
+    db
+      .select({ total: count(conversations.id).as('total') })
+      .from(conversations)
+      .where(whereClause)
+  ]);
 
-    if (status) {
-      query.where(sql`status = ${status}`);
-    }
-
-    const [conversations, countResult] = await Promise.all([
-      query.execute(),
-      db.select({ count: sql`count(*)` })
-        .from(sql`conversations`)
-        .where(sql`dealership_id = ${dealershipId}`)
-        .execute()
-    ]);
-
-    const total = Number(countResult[0]?.count || 0);
-
-    return {
-      conversations: conversations.map(conv => ({
-        id: conv.id,
-        customerName: conv.customer_name,
-        customerEmail: conv.customer_email,
-        customerPhone: conv.customer_phone,
-        status: conv.status,
-        createdAt: new Date(conv.created_at),
-        updatedAt: new Date(conv.updated_at),
-        messageCount: conv.message_count || 0
-      })),
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit)
-    };
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('Error fetching conversations', { error: err.message });
-    throw err;
-  }
+  return {
+    conversations: rows.map((conv) => ({
+      id: conv.id,
+      customerName: conv.customerName,
+      customerEmail: conv.customerEmail,
+      customerPhone: conv.customerPhone,
+      status: conv.status,
+      createdAt: conv.createdAt,
+      updatedAt: conv.updatedAt,
+      messageCount: conv.messageCount ?? 0
+    })),
+    total: Number(total ?? 0),
+    page,
+    limit,
+    totalPages: Math.ceil(Number(total ?? 0) / limit)
+  };
 }
 
 export async function getConversationWithMessages(
   conversationId: number,
   messageLimit: number = 50
 ): Promise<ConversationWithMessages | null> {
-  try {
-    const [conversation, messages] = await Promise.all([
-      db.select()
-        .from(sql`conversations`)
-        .where(sql`id = ${conversationId}`)
-        .limit(1)
-        .execute(),
-      db.select()
-        .from(sql`messages`)
-        .where(sql`conversation_id = ${conversationId}`)
-        .orderBy(sql`created_at desc`)
-        .limit(messageLimit)
-        .execute()
-    ]);
+  const [conversation] = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .limit(1);
 
-    if (!conversation[0]) return null;
+  if (!conversation) return null;
 
-    return {
-      id: conversation[0].id,
-      customerName: conversation[0].customer_name,
-      customerEmail: conversation[0].customer_email,
-      customerPhone: conversation[0].customer_phone,
-      status: conversation[0].status,
-      createdAt: new Date(conversation[0].created_at),
-      updatedAt: new Date(conversation[0].updated_at),
-      messageCount: 0,
-      messages: messages.map(msg => ({
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(sql`${messages.createdAt} desc`)
+    .limit(messageLimit);
+
+  return {
+    id: conversation.id,
+    customerName: conversation.customerName,
+    customerEmail: conversation.customerEmail,
+    customerPhone: conversation.customerPhone,
+    status: conversation.status,
+    createdAt: conversation.createdAt,
+    updatedAt: conversation.updatedAt,
+    messageCount: conversation.messageCount ?? 0,
+    messages: rows
+      .map((msg) => ({
         id: msg.id,
         content: msg.content,
-        isFromCustomer: msg.is_from_customer,
-        createdAt: new Date(msg.created_at),
+        isFromCustomer: msg.isFromCustomer,
+        createdAt: msg.createdAt,
         metadata: msg.metadata
-      })).reverse()
-    };
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('Error fetching conversation', { error: err.message });
-    throw err;
-  }
+      }))
+      .reverse()
+  };
 }
 
 export async function getConversationCountsByStatus(
   dealershipId: number
 ): Promise<Record<string, number>> {
-  try {
-    const results = await db.select({
-      status: sql`status`,
-      count: sql`count(*)`
+  const results = await db
+    .select({
+      status: conversations.status,
+      count: count(conversations.id).as('count')
     })
-      .from(sql`conversations`)
-      .where(sql`dealership_id = ${dealershipId}`)
-      .groupBy(sql`status`)
-      .execute();
+    .from(conversations)
+    .where(eq(conversations.dealershipId, dealershipId))
+    .groupBy(conversations.status);
 
-    return results.reduce((acc, row) => {
-      acc[row.status] = Number(row.count);
-      return acc;
-    }, {} as Record<string, number>);
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('Error fetching counts', { error: err.message });
-    throw err;
-  }
+  return results.reduce((acc, row) => {
+    acc[row.status] = Number(row.count);
+    return acc;
+  }, {} as Record<string, number>);
 }
 
 export async function findUserForAuth(loginIdentifier: string): Promise<User | null> {
@@ -203,25 +194,25 @@ export async function searchConversations(
   try {
     const pattern = `%${searchTerm}%`;
     const results = await db.select()
-      .from(sql`conversations`)
+      .from(conversations)
       .where(sql`
-        dealership_id = ${dealershipId}
+        ${conversations.dealershipId} = ${dealershipId}
         AND (
-          customer_name ILIKE ${pattern}
-          OR customer_email ILIKE ${pattern}
-          OR customer_phone ILIKE ${pattern}
+          ${conversations.customerName} ILIKE ${pattern}
+          OR ${conversations.customerEmail} ILIKE ${pattern}
+          OR ${conversations.customerPhone} ILIKE ${pattern}
         )
       `)
       .limit(limit);
 
     return results.map(conv => ({
       id: conv.id,
-      customerName: conv.customer_name,
-      customerEmail: conv.customer_email,
-      customerPhone: conv.customer_phone,
+      customerName: conv.customerName,
+      customerEmail: conv.customerEmail,
+      customerPhone: conv.customerPhone,
       status: conv.status,
-      createdAt: new Date(conv.created_at),
-      updatedAt: new Date(conv.updated_at),
+      createdAt: new Date(conv.createdAt),
+      updatedAt: new Date(conv.updatedAt),
       messageCount: 0
     }));
   } catch (error) {
@@ -238,18 +229,18 @@ export async function getConversationAnalytics(
 ): Promise<any[]> {
   try {
     return await db.select({
-      date: sql`date(created_at)`,
-      totalConversations: sql`count(distinct id)`,
+      date: sql`date(${conversations.createdAt})`,
+      totalConversations: sql`count(distinct ${conversations.id})`,
       messagesCount: sql`count(*)`
     })
-      .from(sql`conversations`)
+      .from(conversations)
       .where(sql`
-        dealership_id = ${dealershipId}
-        AND created_at >= ${startDate.toISOString()}
-        AND created_at <= ${endDate.toISOString()}
+        ${conversations.dealershipId} = ${dealershipId}
+        AND ${conversations.createdAt} >= ${startDate.toISOString()}
+        AND ${conversations.createdAt} <= ${endDate.toISOString()}
       `)
-      .groupBy(sql`date(created_at)`)
-      .orderBy(sql`date(created_at)`)
+      .groupBy(sql`date(${conversations.createdAt})`)
+      .orderBy(sql`date(${conversations.createdAt})`)
       .execute();
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
