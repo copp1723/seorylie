@@ -10,6 +10,12 @@ import {
 import { createRylieRetriever, type RylieRetrieverOptions } from './rylie-retriever';
 import { advancedRoutingEngine, type RoutingDecision, type SentimentAnalysis } from './advanced-routing';
 import { client } from '../../db';
+import { 
+  AGENT_CONFIGURATIONS, 
+  ENHANCED_CLASSIFICATION_EXAMPLES,
+  type AgentConfiguration 
+} from './agent-configurations';
+import { AGENT_PROMPT_TEMPLATES } from './agent-prompt-templates';
 
 interface RylieAgentSquadConfig {
   openaiApiKey: string;
@@ -67,151 +73,164 @@ export class RylieAgentSquad {
   }
   
   private getAutomotiveClassificationExamples() {
-    return [
-      {
-        userMessage: "I'm looking for a red Honda Civic",
-        agentName: "inventory-agent",
-        reason: "Customer is searching for specific vehicle inventory"
-      },
-      {
-        userMessage: "What financing options do you have?",
-        agentName: "finance-agent", 
-        reason: "Customer inquiry about financing and payment options"
-      },
-      {
-        userMessage: "I need to schedule a service appointment",
-        agentName: "service-agent",
-        reason: "Customer wants to book vehicle service or maintenance"
-      },
-      {
-        userMessage: "What's my trade-in value?",
-        agentName: "trade-agent",
-        reason: "Customer asking about vehicle trade-in valuation"
-      },
-      {
-        userMessage: "Can I schedule a test drive?",
-        agentName: "sales-agent",
-        reason: "Customer ready for sales interaction and test drive"
-      },
-      {
-        userMessage: "Hi there, just browsing",
-        agentName: "general-agent",
-        reason: "General inquiry or greeting without specific intent"
-      }
-    ];
+    // Use enhanced classification examples from configurations
+    return ENHANCED_CLASSIFICATION_EXAMPLES;
   }
   
   private initializeAgents(config: RylieAgentSquadConfig) {
     // Create function handlers for inventory operations
     const functionHandlers = this.createFunctionHandlers();
 
-    // General Sales Assistant - Primary entry point
-    const generalAgent = new OpenAIAgent({
-      name: 'general-agent',
-      description: 'Friendly general automotive assistant for initial customer interactions',
-      instructions: `You are Rylie, a helpful automotive assistant. Greet customers warmly and help them get started. 
-      Keep responses conversational and guide them toward specific needs (inventory, financing, service, etc.).
-      Always be friendly and professional, representing the dealership's brand.
-      Use the available functions to help customers with specific requests.`,
-      apiKey: config.openaiApiKey,
-      model: 'gpt-4o',
-      functions: [inventoryFunctionDefinitions[2]], // getInventorySummary for general overview
-      functionHandlers: {
-        getInventorySummary: functionHandlers.getInventorySummary
+    // Initialize all agents using comprehensive configurations
+    const agentInstances: OpenAIAgent[] = [];
+
+    // Core 6 automotive agents
+    const coreAgents = [
+      'general-agent',
+      'inventory-agent', 
+      'finance-agent',
+      'service-agent',
+      'trade-agent',
+      'sales-agent'
+    ];
+
+    for (const agentName of coreAgents) {
+      const agentConfig = AGENT_CONFIGURATIONS[agentName];
+      const promptTemplate = AGENT_PROMPT_TEMPLATES[agentName];
+      
+      if (!agentConfig || !promptTemplate) {
+        logger.warn(`Missing configuration for agent: ${agentName}`);
+        continue;
       }
-    });
-    
-    // Inventory Specialist - Vehicle search and details with full function calling
-    const inventoryAgent = new OpenAIAgent({
-      name: 'inventory-agent', 
-      description: 'Specialist in vehicle inventory, features, and availability with direct database access',
-      instructions: `You are an expert automotive inventory specialist with access to real-time inventory data.
+
+      // Build comprehensive instruction prompt
+      const instructions = this.buildAgentInstructions(agentConfig, promptTemplate);
       
-      CAPABILITIES:
-      - Search inventory using searchInventory() function based on customer criteria
-      - Get detailed vehicle information using getVehicleDetails() function  
-      - Provide inventory overview using getInventorySummary() function
+      // Determine functions and handlers for this agent
+      let agentFunctions: any[] = [];
+      let agentFunctionHandlers: Record<string, any> = {};
       
-      GUIDELINES:
-      - Always use functions to provide accurate, up-to-date information
-      - Ask clarifying questions to refine search criteria
-      - Present vehicle options clearly with key details (price, mileage, features)
-      - Suggest similar alternatives when exact matches aren't available
-      - Encourage test drives and schedule visits when customers show interest
-      - Be specific about availability and mention stock numbers when provided`,
-      apiKey: config.openaiApiKey,
-      model: 'gpt-4o',
-      functions: inventoryFunctionDefinitions,
-      functionHandlers: functionHandlers
-    });
+      if (agentName === 'inventory-agent') {
+        // Inventory agent gets full function calling capabilities
+        agentFunctions = inventoryFunctionDefinitions;
+        agentFunctionHandlers = functionHandlers;
+      } else if (agentName === 'general-agent') {
+        // General agent gets inventory summary for overview
+        agentFunctions = [inventoryFunctionDefinitions[2]];
+        agentFunctionHandlers = {
+          getInventorySummary: functionHandlers.getInventorySummary
+        };
+      }
+      // Other agents can be extended with specific functions later
+
+      const agent = new OpenAIAgent({
+        name: agentConfig.name,
+        description: agentConfig.description,
+        instructions: instructions,
+        apiKey: config.openaiApiKey,
+        model: agentConfig.model || 'gpt-4o',
+        functions: agentFunctions,
+        functionHandlers: agentFunctionHandlers
+      });
+
+      agentInstances.push(agent);
+      this.orchestrator.addAgent(agent);
+      
+      logger.info(`Initialized ${agentName} with enhanced configuration`, {
+        capabilities: agentConfig.capabilities.length,
+        trainingExamples: agentConfig.trainingExamples.length,
+        hasFunctions: agentFunctions.length > 0
+      });
+    }
+
+    // Add lead source specific agents
+    this.initializeLeadSourceAgents(config, functionHandlers);
     
-    // Finance Specialist - Loans, leases, payments
-    const financeAgent = new OpenAIAgent({
-      name: 'finance-agent',
-      description: 'Expert in automotive financing options and payment calculations', 
-      instructions: `You are a knowledgeable automotive finance specialist. Help customers understand:
-      - Loan vs lease options
-      - Payment calculations and terms
-      - Credit requirements and pre-approval process
-      - Trade-in impact on financing
-      Be helpful but always recommend speaking with our finance team for final approval and rates.`,
-      apiKey: config.openaiApiKey,
-      model: 'gpt-4o'
-    });
-    
-    // Service Specialist - Maintenance and repairs
-    const serviceAgent = new OpenAIAgent({
-      name: 'service-agent',
-      description: 'Automotive service and maintenance specialist',
-      instructions: `You are an automotive service specialist. Help customers with:
-      - Service appointment scheduling
-      - Maintenance recommendations based on mileage/age
-      - Common repair questions and estimates
-      - Warranty information
-      Always emphasize the importance of regular maintenance and certified technicians.`,
-      apiKey: config.openaiApiKey,
-      model: 'gpt-4o'
-    });
-    
-    // Trade-in Specialist - Vehicle valuation
-    const tradeAgent = new OpenAIAgent({
-      name: 'trade-agent',
-      description: 'Vehicle trade-in and valuation specialist',
-      instructions: `You are a trade-in valuation specialist. Help customers understand:
-      - Factors affecting trade-in value (condition, mileage, market demand)
-      - Required documentation for trade-in process
-      - How trade-ins work with financing
-      Always recommend an in-person appraisal for accurate valuation.`,
-      apiKey: config.openaiApiKey,
-      model: 'gpt-4o'
-    });
-    
-    // Sales Specialist - Test drives and closing
-    const salesAgent = new OpenAIAgent({
-      name: 'sales-agent',
-      description: 'Sales specialist for test drives and purchase process',
-      instructions: `You are a sales specialist focused on helping customers take the next step:
-      - Schedule test drives and showroom visits
-      - Explain the purchase process
-      - Handle objections and concerns
-      - Connect customers with sales team when they're ready
-      Be consultative, not pushy. Focus on finding the right fit for the customer.`,
-      apiKey: config.openaiApiKey,
-      model: 'gpt-4o'
-    });
-    
-    // Add all agents to orchestrator
-    this.orchestrator.addAgent(generalAgent);
-    this.orchestrator.addAgent(inventoryAgent);
-    this.orchestrator.addAgent(financeAgent);
-    this.orchestrator.addAgent(serviceAgent);
-    this.orchestrator.addAgent(tradeAgent);
-    this.orchestrator.addAgent(salesAgent);
-    
-    // Set classifier
+    // Set classifier with enhanced examples
     this.orchestrator.setClassifier(this.classifier);
     
-    logger.info('Initialized 6 automotive specialist agents with enhanced capabilities');
+    logger.info('Initialized comprehensive automotive agent suite', {
+      coreAgents: coreAgents.length,
+      totalAgents: agentInstances.length + 2, // +2 for lead source agents
+      enhancedPrompts: true,
+      domainKnowledge: true
+    });
+  }
+
+  /**
+   * Build comprehensive instruction prompts from configuration and templates
+   */
+  private buildAgentInstructions(config: AgentConfiguration, template: any): string {
+    return `${template.basePrompt}
+
+${template.domainKnowledge}
+
+${template.conversationGuidelines}
+
+${template.specializedSkills}
+
+${template.escalationGuidelines}
+
+CAPABILITIES:
+${config.capabilities.map(cap => `- ${cap}`).join('\n')}
+
+TRAINING EXAMPLES:
+${template.examples}`;
+  }
+
+  /**
+   * Initialize lead source specific agents
+   */
+  private initializeLeadSourceAgents(config: RylieAgentSquadConfig, functionHandlers: any) {
+    // Credit Specialist Agent
+    const creditAgent = new OpenAIAgent({
+      name: 'credit-agent',
+      description: AGENT_CONFIGURATIONS['credit-agent'].description,
+      instructions: this.buildAgentInstructions(
+        AGENT_CONFIGURATIONS['credit-agent'],
+        { 
+          basePrompt: AGENT_CONFIGURATIONS['credit-agent'].systemPrompt,
+          domainKnowledge: '',
+          conversationGuidelines: '',
+          specializedSkills: '',
+          escalationGuidelines: '',
+          examples: AGENT_CONFIGURATIONS['credit-agent'].trainingExamples
+            .map(ex => `Customer: "${ex.userMessage}"\nSpecialist: "${ex.expectedResponse}"`)
+            .join('\n\n')
+        }
+      ),
+      apiKey: config.openaiApiKey,
+      model: 'gpt-4o'
+    });
+
+    // Lease Specialist Agent  
+    const leaseAgent = new OpenAIAgent({
+      name: 'lease-agent',
+      description: AGENT_CONFIGURATIONS['lease-agent'].description,
+      instructions: this.buildAgentInstructions(
+        AGENT_CONFIGURATIONS['lease-agent'],
+        {
+          basePrompt: AGENT_CONFIGURATIONS['lease-agent'].systemPrompt,
+          domainKnowledge: '',
+          conversationGuidelines: '',
+          specializedSkills: '',
+          escalationGuidelines: '',
+          examples: AGENT_CONFIGURATIONS['lease-agent'].trainingExamples
+            .map(ex => `Customer: "${ex.userMessage}"\nSpecialist: "${ex.expectedResponse}"`)
+            .join('\n\n')
+        }
+      ),
+      apiKey: config.openaiApiKey,
+      model: 'gpt-4o'
+    });
+
+    this.orchestrator.addAgent(creditAgent);
+    this.orchestrator.addAgent(leaseAgent);
+    
+    logger.info('Initialized lead source specific agents', {
+      creditAgent: true,
+      leaseAgent: true
+    });
   }
 
   /**
