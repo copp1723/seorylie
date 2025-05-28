@@ -2,8 +2,8 @@ import { pgTable, serial, text, varchar, timestamp, boolean, integer, json, uniq
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { dealerships, users, customers } from "./enhanced-schema";
-import { conversations } from "./lead-management-schema";
+import { dealerships, users } from "./enhanced-schema";
+import { conversations, customers } from "./lead-management-schema";
 
 // Escalation triggers for customizable handover logic
 export const escalationTriggers = pgTable('escalation_triggers', {
