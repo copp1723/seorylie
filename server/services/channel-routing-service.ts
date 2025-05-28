@@ -566,7 +566,7 @@ export class ChannelRoutingService {
 }
 
 // Export strategy classes for testing and custom implementations
-export { ChannelSelectionStrategy, PriorityChannelStrategy, UrgencyChannelStrategy };
+export type { ChannelSelectionStrategy, PriorityChannelStrategy, UrgencyChannelStrategy }
 
 // Export singleton instance
 export const channelRoutingService = new ChannelRoutingService();

@@ -424,5 +424,5 @@ export function createCacheKey(...parts: (string | number)[]): string {
 
 // Export singleton instance
 export const cacheService = new UnifiedCacheService();
-export { UnifiedCacheService };
+export type { UnifiedCacheService }
 export type { CacheOptions, CacheStats };

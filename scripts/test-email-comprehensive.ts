@@ -357,4 +357,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     });
 }
 
-export { EmailTestSuite };
+export type { EmailTestSuite }

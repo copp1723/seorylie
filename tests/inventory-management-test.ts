@@ -1021,4 +1021,4 @@ INVALID_VIN	Toyota	Camry	2020	30000	25000	used
 }
 
 // Export for use in other test files
-export { InventoryTestSuite, Vehicle, TestResult };
+export type { InventoryTestSuite, Vehicle, TestResult }

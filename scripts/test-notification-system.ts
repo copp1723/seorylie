@@ -427,4 +427,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     });
 }
 
-export { NotificationTestRunner };
+export type { NotificationTestRunner }
