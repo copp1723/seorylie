@@ -1,131 +1,141 @@
 /**
- * Initialize tracing first to capture all instrumentation
+ * Main server entry point
  */
-import { initTracing } from './observability/tracing';
-const tracingSdk = initTracing();
-
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import path from 'path';
-import { db } from './db';
+import { config } from 'dotenv';
+import { authenticateJWT } from './middleware/jwt-auth';
+import { setupRoutes } from './routes';
+import { initializeWebSocketServer, WebSocketService } from './services/websocket-service';
 import { logger } from './utils/logger';
-import { setupWebSocketServer } from './ws-server';
-import { WebSocketService } from './services/websocket-service';
-import { ToolRegistryService } from './services/tool-registry';
+import { db } from './db';
+import { setupViteServer } from './vite';
+import { setupCache } from './utils/cache';
+import { setupRateLimiter } from './middleware/rate-limit';
+import { setupTieredRateLimiter } from './middleware/tiered-rate-limit';
+import { authenticateSession } from './middleware/authentication';
+import { setupCSRF } from './middleware/csrf';
+import { errorHandler } from './utils/error-handler';
 import { OrchestratorService } from './services/orchestrator';
-import { crossServiceAgent } from './services/cross-service-agent';
-import { analyticsClient } from './services/analytics-client';
-import { AgentSquad } from './services/agentSquad';
-import { initMetrics } from './observability/metrics';
-
-// Import routes
-import authRoutes from './routes/auth-routes';
-import promptTestRoutes from './routes/prompt-test';
-import monitoringRoutes from './routes/monitoring-routes';
+import { ToolRegistryService } from './services/tool-registry';
+import { setupMetrics } from './observability/metrics';
+import { setupTracing } from './observability/tracing';
+import agentSquadRoutes from './routes/agent-squad-routes';
 import agentOrchestrationRoutes from './routes/agent-orchestration-routes';
 import sandboxRoutes from './routes/sandbox-routes';
 import toolsRoutes from './routes/tools-routes';
+import adsRoutes from './routes/ads-routes';
+import monitoringRoutes from './routes/monitoring-routes';
+
+// Load environment variables
+config();
 
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Setup observability
+setupTracing();
+setupMetrics(app);
+
+// Setup middleware
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Session configuration
+const sessionConfig: session.SessionOptions = {
+  secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+};
+
+// Use session middleware
+app.use(session(sessionConfig));
+
+// Setup cache if Redis is available
+setupCache();
+
+// Setup rate limiters
+setupRateLimiter(app);
+setupTieredRateLimiter(app);
+
+// Setup CSRF protection
+setupCSRF(app);
+
 // Create HTTP server
 const server = createServer(app);
 
 // Create WebSocket server
-const wss = new WebSocketServer({ noServer: true });
+const wss = new WebSocketServer({ server, path: '/ws' });
+const webSocketService = initializeWebSocketServer(wss);
 
-// Initialize WebSocket service
-const webSocketService = new WebSocketService(wss);
+// Create Tool Registry service
+const toolRegistryService = new ToolRegistryService(webSocketService);
 
-// Initialize Tool Registry Service
-const toolRegistryService = new ToolRegistryService(db, webSocketService);
+// Create Orchestrator service
+const orchestratorService = new OrchestratorService(toolRegistryService);
 
-// Initialize Orchestrator Service
-const orchestratorService = new OrchestratorService(db, webSocketService, toolRegistryService);
+// Setup routes
+setupRoutes(app);
 
-// Initialize Agent Squad
-const agentSquad = new AgentSquad(db, webSocketService, toolRegistryService);
+// Add agent squad routes
+app.use('/api/agent-squad', authenticateSession, agentSquadRoutes);
 
-// Setup WebSocket server
-setupWebSocketServer(server, wss, webSocketService, orchestratorService);
+// Add agent orchestration routes
+app.use('/api/agents', authenticateJWT, agentOrchestrationRoutes);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Add sandbox routes
+app.use('/api/sandboxes', authenticateJWT, sandboxRoutes);
 
-// Initialize Prometheus metrics before routes
-initMetrics(app);
+// Add tools routes
+app.use('/api/tools', authenticateJWT, toolsRoutes);
 
-// Session configuration
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    },
-  })
-);
+// Add Google Ads API routes
+app.use('/api/ads', adsRoutes);
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/prompt-test', promptTestRoutes);
-app.use('/api/agents', agentOrchestrationRoutes);
-app.use('/api/sandboxes', sandboxRoutes);
-app.use('/api/tools', toolsRoutes);
+// Add monitoring routes
 app.use('/api/metrics', monitoringRoutes);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', version: process.env.npm_package_version });
-});
+// Error handling middleware
+app.use(errorHandler);
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/dist')));
+// Setup Vite in development
+if (process.env.NODE_ENV === 'development') {
+  setupViteServer(app);
+} else {
+  // Serve static files in production
+  app.use(express.static(path.join(__dirname, '../client')));
   
+  // Handle client-side routing
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+    res.sendFile(path.join(__dirname, '../client/index.html'));
   });
 }
 
-// Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// Start the server
+// Start server
 server.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
-  logger.info(`WebSocket server initialized`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`Metrics available at: http://localhost:${PORT}/metrics`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
   
-  // Shutdown tracing if initialized
-  if (tracingSdk) {
-    tracingSdk.shutdown()
-      .then(() => logger.info('Tracing terminated'))
-      .catch(error => logger.error('Error shutting down tracing', error));
-  }
-  
-  server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
+  // Perform database checks
+  db.query('SELECT NOW()').then(() => {
+    logger.info('Database connection successful');
+  }).catch(err => {
+    logger.error('Database connection failed', { error: err.message });
+    process.exit(1);
   });
 });
 
-export default app;
+export { app, server, webSocketService, toolRegistryService, orchestratorService };
