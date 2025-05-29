@@ -1,1334 +1,2342 @@
 /**
- * Enhanced Orchestrator Service (v2)
+ * Orchestrator Service v2
  * 
- * Provides sandbox isolation, rate limiting, and WebSocket channel namespacing
- * for secure and controlled agent execution environments.
+ * Enhanced orchestration service that manages cross-service workflows,
+ * supports complex execution patterns, and provides replayable logs.
+ * 
+ * Capabilities:
+ * - Sequential, parallel, and conditional execution patterns
+ * - Cross-service communication via EventBus
+ * - Sandbox isolation and rate limiting
+ * - Correlation tracking across service boundaries
+ * - Replayable logs for Agent Studio
+ * - Workflow checkpoints and rollback support
  */
 
-import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger';
 import { db } from '../db';
 import { 
   sandboxes, 
-  sandbox_sessions, 
-  token_usage_logs, 
-  Sandbox, 
-  SandboxSession, 
-  TokenUsageLog,
-  InsertSandbox,
-  InsertSandboxSession
+  sandboxSessions, 
+  tokenUsageLogs,
+  tools as toolsTable,
+  agentTools
 } from '../../shared/schema';
-import { logger } from '../utils/logger';
-import { toolRegistry, ToolRequest, ToolResponse } from './tool-registry';
-import { getWebSocketService, WebSocketService, MessageType } from './websocket-service';
-import { AgentSquadOrchestrator } from './agentSquad';
-import { EventEmitter } from 'events';
-import { v4 as uuidv4 } from 'uuid';
-import { WebSocket } from 'ws';
-import { performance } from 'perf_hooks';
+import { 
+  eq, 
+  and, 
+  lte, 
+  gte, 
+  sum, 
+  sql, 
+  desc, 
+  asc,
+  isNull
+} from 'drizzle-orm';
+import { WebSocketService } from './websocket-service';
+import { ToolRegistryService } from './tool-registry';
+import { EventBus, EventType } from './event-bus';
+import { AdsAutomationWorker, AdsTaskType } from './ads-automation-worker';
+import { analyticsClient } from './analytics-client';
+import { CircuitBreaker } from './circuit-breaker';
 
-// Rate limit error
+// Error types
 export class RateLimitExceededError extends Error {
-  constructor(
-    public sandboxId: number,
-    public limit: number,
-    public timeframe: 'hourly' | 'daily',
-    public currentUsage: number
-  ) {
-    super(`Rate limit exceeded: ${timeframe} limit of ${limit} tokens reached (current usage: ${currentUsage})`);
+  constructor(message: string, public limit: number, public usage: number, public type: string) {
+    super(message);
     this.name = 'RateLimitExceededError';
   }
 }
 
-// Sandbox not found error
 export class SandboxNotFoundError extends Error {
-  constructor(public identifier: string | number) {
-    super(`Sandbox not found: ${identifier}`);
+  constructor(message: string) {
+    super(message);
     this.name = 'SandboxNotFoundError';
   }
 }
 
-// Unauthorized sandbox access error
-export class UnauthorizedSandboxAccessError extends Error {
-  constructor(public sandboxId: number, public userId?: number) {
-    super(`Unauthorized access to sandbox ${sandboxId}${userId ? ` by user ${userId}` : ''}`);
-    this.name = 'UnauthorizedSandboxAccessError';
+export class SessionNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SessionNotFoundError';
   }
 }
 
-// Sandbox operation types for token tracking
-export enum SandboxOperationType {
-  AGENT_MESSAGE = 'agent_message',
-  TOOL_EXECUTION = 'tool_execution',
-  FUNCTION_CALL = 'function_call',
-  ANALYTICS_QUERY = 'analytics_query',
-  AUTOMATION_TASK = 'automation_task',
-  SYSTEM_PROMPT = 'system_prompt'
+export class WorkflowExecutionError extends Error {
+  constructor(message: string, public step: string, public details: any) {
+    super(message);
+    this.name = 'WorkflowExecutionError';
+  }
 }
 
-// Sandbox WebSocket message
-interface SandboxWebSocketMessage {
-  type: string;
-  sandboxId: number;
-  sessionId: string;
-  payload: any;
-  timestamp?: number;
-  requestId?: string;
+// Workflow types
+export enum WorkflowPattern {
+  SEQUENTIAL = 'sequential',
+  PARALLEL = 'parallel',
+  CONDITIONAL = 'conditional'
 }
 
-// Sandbox session context
-export interface SandboxSessionContext {
+export enum WorkflowStepStatus {
+  PENDING = 'pending',
+  RUNNING = 'running',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  SKIPPED = 'skipped'
+}
+
+export interface WorkflowStep {
+  id: string;
+  name: string;
+  tool: string;
+  parameters: Record<string, any>;
+  condition?: string; // For conditional steps
+  dependsOn?: string[]; // For parallel with dependencies
+  status: WorkflowStepStatus;
+  result?: any;
+  error?: any;
+  startTime?: Date;
+  endTime?: Date;
+  checkpoint?: boolean; // Whether this step is a checkpoint
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description?: string;
+  pattern: WorkflowPattern;
+  steps: WorkflowStep[];
+  status: WorkflowStepStatus;
+  correlationId: string;
   sandboxId: number;
-  sessionId: string;
   userId?: number;
   dealershipId?: number;
-  websocketChannel: string;
+  startTime?: Date;
+  endTime?: Date;
+  rollbackOnFailure?: boolean;
+  currentStepIndex?: number;
+  result?: any;
+  error?: any;
 }
 
-// Operation options
-export interface SandboxOperationOptions {
-  maxTokens?: number;
-  priority?: 'high' | 'normal' | 'low';
-  timeout?: number;
-  streaming?: boolean;
-}
-
-// Token usage tracking
-interface TokenUsage {
-  sandboxId: number;
-  sessionId: string;
-  operationType: SandboxOperationType;
-  tokensUsed: number;
-  requestId: string;
-}
+// Predefined workflows
+export const PREDEFINED_WORKFLOWS: Record<string, Omit<Workflow, 'id' | 'correlationId' | 'sandboxId' | 'status'>> = {
+  'sales-analysis-update': {
+    name: 'Sales Analysis and VinSolutions Update',
+    description: 'Analyze sales data and update VinSolutions CRM',
+    pattern: WorkflowPattern.SEQUENTIAL,
+    steps: [
+      {
+        id: 'step1',
+        name: 'Analyze Sales Data',
+        tool: 'watchdog_analysis',
+        parameters: {
+          question: 'What are the top-performing sales reps this month?',
+          includeMetrics: ['total_sales', 'conversion_rate', 'average_deal_value']
+        },
+        status: WorkflowStepStatus.PENDING,
+        checkpoint: true
+      },
+      {
+        id: 'step2',
+        name: 'Update VinSolutions CRM',
+        tool: 'vin_agent_task',
+        parameters: {
+          taskType: 'update_crm_dashboard',
+          platformId: 'vinsolutions',
+          updateType: 'sales_performance'
+        },
+        status: WorkflowStepStatus.PENDING
+      }
+    ],
+    rollbackOnFailure: true
+  },
+  'inventory-analysis-campaign': {
+    name: 'Inventory Analysis and Google Ads Campaign',
+    description: 'Analyze inventory and create targeted Google Ads campaign',
+    pattern: WorkflowPattern.SEQUENTIAL,
+    steps: [
+      {
+        id: 'step1',
+        name: 'Analyze Inventory',
+        tool: 'watchdog_analysis',
+        parameters: {
+          question: 'Which vehicle models have the highest inventory levels?',
+          includeMetrics: ['inventory_count', 'days_on_lot', 'price_competitiveness']
+        },
+        status: WorkflowStepStatus.PENDING,
+        checkpoint: true
+      },
+      {
+        id: 'step2',
+        name: 'Create Google Ads Campaign',
+        tool: 'google_ads.createCampaign',
+        parameters: {
+          campaignName: 'High Inventory Promotion',
+          budget: {
+            amount: 100,
+            deliveryMethod: 'STANDARD'
+          },
+          bidStrategy: {
+            type: 'MAXIMIZE_CONVERSIONS'
+          },
+          isDryRun: true
+        },
+        status: WorkflowStepStatus.PENDING
+      }
+    ],
+    rollbackOnFailure: false
+  },
+  'customer-insight-automation': {
+    name: 'Customer Insight and Automation',
+    description: 'Generate customer insights and automate follow-up tasks',
+    pattern: WorkflowPattern.PARALLEL,
+    steps: [
+      {
+        id: 'step1',
+        name: 'Customer Segmentation Analysis',
+        tool: 'watchdog_analysis',
+        parameters: {
+          question: 'What are the key customer segments based on purchase history?',
+          includeMetrics: ['customer_lifetime_value', 'purchase_frequency', 'service_visits']
+        },
+        status: WorkflowStepStatus.PENDING
+      },
+      {
+        id: 'step2',
+        name: 'Lead Source Analysis',
+        tool: 'watchdog_analysis',
+        parameters: {
+          question: 'Which lead sources have the highest conversion rates?',
+          includeMetrics: ['conversion_rate', 'cost_per_lead', 'lead_quality_score']
+        },
+        status: WorkflowStepStatus.PENDING
+      },
+      {
+        id: 'step3',
+        name: 'Schedule Follow-up Tasks',
+        tool: 'vin_agent_task',
+        parameters: {
+          taskType: 'schedule_followups',
+          platformId: 'vinsolutions',
+          targetSegment: 'high_value_customers'
+        },
+        dependsOn: ['step1', 'step2'],
+        status: WorkflowStepStatus.PENDING
+      }
+    ],
+    rollbackOnFailure: false
+  },
+  'conditional-marketing-workflow': {
+    name: 'Conditional Marketing Workflow',
+    description: 'Analyze performance and conditionally create marketing campaigns',
+    pattern: WorkflowPattern.CONDITIONAL,
+    steps: [
+      {
+        id: 'step1',
+        name: 'Performance Analysis',
+        tool: 'watchdog_analysis',
+        parameters: {
+          question: 'What is our current ROI on marketing spend?',
+          includeMetrics: ['marketing_roi', 'cost_per_acquisition', 'conversion_rate']
+        },
+        status: WorkflowStepStatus.PENDING,
+        checkpoint: true
+      },
+      {
+        id: 'step2a',
+        name: 'Create High-Budget Campaign',
+        tool: 'google_ads.createCampaign',
+        parameters: {
+          campaignName: 'High ROI Expansion Campaign',
+          budget: {
+            amount: 200,
+            deliveryMethod: 'STANDARD'
+          },
+          bidStrategy: {
+            type: 'MAXIMIZE_CONVERSIONS'
+          }
+        },
+        condition: 'step1.result.metrics.marketing_roi > 3',
+        status: WorkflowStepStatus.PENDING
+      },
+      {
+        id: 'step2b',
+        name: 'Create Conservative Campaign',
+        tool: 'google_ads.createCampaign',
+        parameters: {
+          campaignName: 'Conservative Optimization Campaign',
+          budget: {
+            amount: 50,
+            deliveryMethod: 'STANDARD'
+          },
+          bidStrategy: {
+            type: 'MAXIMIZE_CONVERSIONS_VALUE'
+          }
+        },
+        condition: 'step1.result.metrics.marketing_roi <= 3',
+        status: WorkflowStepStatus.PENDING
+      }
+    ],
+    rollbackOnFailure: false
+  }
+};
 
 /**
- * Orchestrator Service (v2)
- * 
- * Manages sandboxed agent execution environments with token rate limiting
- * and isolated WebSocket channels.
+ * Orchestrator Service class
+ * Manages cross-service workflows and tool execution
  */
 export class OrchestratorService {
-  private wsService: WebSocketService;
-  private sandboxChannels: Map<string, Set<WebSocket>> = new Map();
-  private sandboxSessions: Map<string, SandboxSessionContext> = new Map();
-  private metricsCollector = {
-    totalOperations: 0,
-    successfulOperations: 0,
-    failedOperations: 0,
-    rateLimitedOperations: 0,
-    totalTokensUsed: 0,
-    operationTimes: new Map<string, number[]>(),
-    lastOperationTimestamp: Date.now()
-  };
-  
+  private webSocketService: WebSocketService;
+  private toolRegistry: ToolRegistryService;
+  private eventBus: EventBus;
+  private adsAutomationWorker: AdsAutomationWorker;
+  private analyticsCircuitBreaker: CircuitBreaker;
+  private adsCircuitBreaker: CircuitBreaker;
+  private activeWorkflows: Map<string, Workflow> = new Map();
+  private replayableLogs: Map<string, any[]> = new Map();
+
   constructor(
-    private agentSquad?: AgentSquadOrchestrator
+    webSocketService: WebSocketService,
+    toolRegistry: ToolRegistryService,
+    eventBus: EventBus,
+    adsAutomationWorker: AdsAutomationWorker
   ) {
-    this.wsService = getWebSocketService();
-    this.initializeWebSocketChannels();
-    
-    // Start periodic cleanup and metrics logging
-    setInterval(() => this.cleanupInactiveSessions(), 15 * 60 * 1000); // Every 15 minutes
-    setInterval(() => this.logMetrics(), 5 * 60 * 1000); // Every 5 minutes
-    
-    logger.info('Orchestrator Service (v2) initialized');
+    this.webSocketService = webSocketService;
+    this.toolRegistry = toolRegistry;
+    this.eventBus = eventBus;
+    this.adsAutomationWorker = adsAutomationWorker;
+
+    // Set up circuit breakers for external services
+    this.analyticsCircuitBreaker = new CircuitBreaker({
+      name: 'analytics-api',
+      maxFailures: 3,
+      resetTimeout: 30000,
+      timeout: 10000,
+      failureStatusCodes: [500, 502, 503, 504]
+    });
+
+    this.adsCircuitBreaker = new CircuitBreaker({
+      name: 'google-ads-api',
+      maxFailures: 3,
+      resetTimeout: 60000,
+      timeout: 15000,
+      failureStatusCodes: [500, 502, 503, 504]
+    });
+
+    // Subscribe to relevant events
+    this.subscribeToEvents();
   }
-  
+
   /**
-   * Initialize WebSocket channels for sandbox communication
+   * Subscribe to relevant events from the event bus
    */
-  private initializeWebSocketChannels(): void {
-    // This method will be called to set up WebSocket channel handling
-    // The actual implementation depends on how your WebSocket server is configured
-    
-    logger.info('Initializing sandbox WebSocket channels');
-    
-    // The WebSocket server should be configured to route messages to the appropriate handler
-    // based on the URL path, e.g., /ws/sandbox/:id
-    
-    // We'll implement this in a separate WebSocket routing setup
+  private async subscribeToEvents(): Promise<void> {
+    try {
+      const consumerId = `orchestrator-${uuidv4().substring(0, 8)}`;
+
+      // Subscribe to task completion events
+      await this.eventBus.subscribe(
+        consumerId,
+        [EventType.TASK_COMPLETED, EventType.TASK_FAILED],
+        async (event) => {
+          logger.debug(`Received task event: ${event.type}`, { eventData: event });
+
+          // Find any workflows waiting on this task
+          for (const [workflowId, workflow] of this.activeWorkflows.entries()) {
+            if (workflow.correlationId === event.correlationId) {
+              // Update the workflow with the task result
+              await this.updateWorkflowWithTaskResult(workflowId, event);
+            }
+          }
+        }
+      );
+
+      // Subscribe to ads automation events
+      await this.eventBus.subscribe(
+        consumerId,
+        [EventType.CAMPAIGN_CREATED, EventType.CAMPAIGN_DRY_RUN],
+        async (event) => {
+          logger.debug(`Received ads event: ${event.type}`, { eventData: event });
+
+          // Add to replayable logs if correlation ID exists
+          if (event.correlationId) {
+            this.addToReplayableLogs(event.correlationId, {
+              type: 'ads_event',
+              event: event.type,
+              data: event,
+              timestamp: new Date().toISOString()
+            });
+          }
+        }
+      );
+
+      logger.info('Orchestrator subscribed to events', {
+        consumerId,
+        events: [
+          EventType.TASK_COMPLETED,
+          EventType.TASK_FAILED,
+          EventType.CAMPAIGN_CREATED,
+          EventType.CAMPAIGN_DRY_RUN
+        ]
+      });
+    } catch (error) {
+      logger.error('Failed to subscribe to events', {
+        error: (error as Error).message,
+        stack: (error as Error).stack
+      });
+    }
   }
-  
+
   /**
    * Create a new sandbox
    */
-  async createSandbox(data: Omit<InsertSandbox, 'created_at' | 'updated_at'>): Promise<Sandbox> {
+  public async createSandbox(params: {
+    name: string;
+    description?: string;
+    userId: number;
+    dealershipId: number;
+    hourlyTokenLimit?: number;
+    dailyTokenLimit?: number;
+    dailyCostLimit?: number;
+  }): Promise<any> {
     try {
-      const [sandbox] = await db.insert(sandboxes).values(data).returning();
-      
-      logger.info(`Created sandbox: ${sandbox.name} (ID: ${sandbox.id})`, {
+      // Set default limits if not provided
+      const hourlyTokenLimit = params.hourlyTokenLimit || 10000;  // 10k tokens per hour
+      const dailyTokenLimit = params.dailyTokenLimit || 100000;   // 100k tokens per day
+      const dailyCostLimit = params.dailyCostLimit || 5.0;        // $5 per day
+
+      // Insert sandbox into database
+      const [sandbox] = await db.insert(sandboxes).values({
+        name: params.name,
+        description: params.description,
+        userId: params.userId,
+        dealershipId: params.dealershipId,
+        hourlyTokenLimit,
+        dailyTokenLimit,
+        dailyCostLimit,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+
+      logger.info(`Created sandbox: ${sandbox.id}`, {
         sandboxId: sandbox.id,
-        dealershipId: sandbox.dealership_id
+        name: params.name,
+        userId: params.userId,
+        dealershipId: params.dealershipId
       });
-      
+
+      // Publish sandbox creation event
+      await this.eventBus.publish(EventType.SANDBOX_CREATED, {
+        sandboxId: sandbox.id,
+        name: params.name,
+        userId: params.userId,
+        dealershipId: params.dealershipId,
+        timestamp: new Date().toISOString()
+      });
+
       return sandbox;
     } catch (error) {
       logger.error('Error creating sandbox', {
-        error: error instanceof Error ? error.message : String(error),
-        data
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+        params
       });
       throw error;
     }
   }
-  
+
   /**
-   * Get a sandbox by ID
+   * Get sandbox by ID
    */
-  async getSandbox(id: number): Promise<Sandbox | null> {
+  public async getSandbox(sandboxId: number): Promise<any> {
     try {
       const sandbox = await db.query.sandboxes.findFirst({
-        where: eq(sandboxes.id, id)
+        where: and(
+          eq(sandboxes.id, sandboxId),
+          eq(sandboxes.isActive, true)
+        )
       });
-      
+
+      if (!sandbox) {
+        throw new SandboxNotFoundError(`Sandbox not found: ${sandboxId}`);
+      }
+
       return sandbox;
     } catch (error) {
-      logger.error(`Error getting sandbox with ID ${id}`, {
-        error: error instanceof Error ? error.message : String(error)
-      });
-      throw error;
-    }
-  }
-  
-  /**
-   * Update a sandbox
-   */
-  async updateSandbox(id: number, data: Partial<Omit<InsertSandbox, 'created_at' | 'updated_at'>>): Promise<Sandbox | null> {
-    try {
-      const [updatedSandbox] = await db.update(sandboxes)
-        .set(data)
-        .where(eq(sandboxes.id, id))
-        .returning();
-      
-      if (!updatedSandbox) {
-        return null;
+      if (error instanceof SandboxNotFoundError) {
+        throw error;
       }
-      
-      logger.info(`Updated sandbox: ${updatedSandbox.name} (ID: ${updatedSandbox.id})`, {
-        sandboxId: updatedSandbox.id
+      logger.error('Error getting sandbox', {
+        error: (error as Error).message,
+        sandboxId
       });
-      
-      return updatedSandbox;
-    } catch (error) {
-      logger.error(`Error updating sandbox with ID ${id}`, {
-        error: error instanceof Error ? error.message : String(error),
-        data
-      });
-      throw error;
+      throw new Error(`Failed to get sandbox: ${(error as Error).message}`);
     }
   }
-  
-  /**
-   * Delete a sandbox
-   */
-  async deleteSandbox(id: number): Promise<boolean> {
-    try {
-      // First, delete all sessions for this sandbox
-      await db.delete(sandbox_sessions)
-        .where(eq(sandbox_sessions.sandbox_id, id));
-      
-      // Then delete the sandbox
-      const [deletedSandbox] = await db.delete(sandboxes)
-        .where(eq(sandboxes.id, id))
-        .returning();
-      
-      if (!deletedSandbox) {
-        return false;
-      }
-      
-      logger.info(`Deleted sandbox: ${deletedSandbox.name} (ID: ${deletedSandbox.id})`, {
-        sandboxId: deletedSandbox.id
-      });
-      
-      return true;
-    } catch (error) {
-      logger.error(`Error deleting sandbox with ID ${id}`, {
-        error: error instanceof Error ? error.message : String(error)
-      });
-      throw error;
-    }
-  }
-  
-  /**
-   * Get all sandboxes for a dealership
-   */
-  async getSandboxesByDealership(dealershipId: number): Promise<Sandbox[]> {
-    try {
-      return await db.query.sandboxes.findMany({
-        where: eq(sandboxes.dealership_id, dealershipId),
-        orderBy: [desc(sandboxes.created_at)]
-      });
-    } catch (error) {
-      logger.error(`Error getting sandboxes for dealership ${dealershipId}`, {
-        error: error instanceof Error ? error.message : String(error)
-      });
-      throw error;
-    }
-  }
-  
-  /**
-   * Get all sandboxes owned by a user
-   */
-  async getSandboxesByOwner(ownerId: number): Promise<Sandbox[]> {
-    try {
-      return await db.query.sandboxes.findMany({
-        where: eq(sandboxes.owner_id, ownerId),
-        orderBy: [desc(sandboxes.created_at)]
-      });
-    } catch (error) {
-      logger.error(`Error getting sandboxes for owner ${ownerId}`, {
-        error: error instanceof Error ? error.message : String(error)
-      });
-      throw error;
-    }
-  }
-  
+
   /**
    * Create a new sandbox session
    */
-  async createSandboxSession(data: {
+  public async createSandboxSession(params: {
     sandboxId: number;
-    userId?: number;
-    dealershipId?: number;
-  }): Promise<SandboxSessionContext> {
+    userId: number;
+    dealershipId: number;
+    clientId?: string;
+    metadata?: Record<string, any>;
+  }): Promise<any> {
     try {
-      // Check if sandbox exists
-      const sandbox = await this.getSandbox(data.sandboxId);
-      if (!sandbox) {
-        throw new SandboxNotFoundError(data.sandboxId);
-      }
-      
-      // Generate a unique session ID and WebSocket channel
-      const sessionId = this.generateSessionId();
-      const websocketChannel = `ws/sandbox/${data.sandboxId}/${sessionId}`;
-      
-      // Create the session in the database
-      const [session] = await db.insert(sandbox_sessions).values({
-        sandbox_id: data.sandboxId,
-        session_id: sessionId,
-        user_id: data.userId,
-        websocket_channel: websocketChannel,
-        is_active: true,
-        last_activity: new Date()
-      }).returning();
-      
-      // Create session context
-      const sessionContext: SandboxSessionContext = {
-        sandboxId: data.sandboxId,
+      // Check if sandbox exists and is active
+      const sandbox = await this.getSandbox(params.sandboxId);
+
+      // Generate session ID
+      const sessionId = `sess_${uuidv4().replace(/-/g, '')}`;
+
+      // Insert session into database
+      const [session] = await db.insert(sandboxSessions).values({
+        sandboxId: params.sandboxId,
         sessionId,
-        userId: data.userId,
-        dealershipId: data.dealershipId,
-        websocketChannel
-      };
-      
-      // Store in memory for quick access
-      this.sandboxSessions.set(sessionId, sessionContext);
-      
+        userId: params.userId,
+        dealershipId: params.dealershipId,
+        clientId: params.clientId,
+        metadata: params.metadata || {},
+        isActive: true,
+        startedAt: new Date(),
+        lastActivityAt: new Date()
+      }).returning();
+
       logger.info(`Created sandbox session: ${sessionId}`, {
-        sandboxId: data.sandboxId,
-        userId: data.userId,
-        websocketChannel
+        sandboxId: params.sandboxId,
+        sessionId,
+        userId: params.userId
       });
-      
-      return sessionContext;
-    } catch (error) {
-      logger.error('Error creating sandbox session', {
-        error: error instanceof Error ? error.message : String(error),
-        sandboxId: data.sandboxId,
-        userId: data.userId
+
+      // Publish session creation event
+      await this.eventBus.publish(EventType.SESSION_CREATED, {
+        sandboxId: params.sandboxId,
+        sessionId,
+        userId: params.userId,
+        dealershipId: params.dealershipId,
+        timestamp: new Date().toISOString()
       });
-      throw error;
-    }
-  }
-  
-  /**
-   * Get a sandbox session by ID
-   */
-  async getSandboxSession(sessionId: string): Promise<SandboxSession | null> {
-    try {
-      // Check in-memory cache first
-      if (this.sandboxSessions.has(sessionId)) {
-        // Still need to get the full record from the database
-        const session = await db.query.sandbox_sessions.findFirst({
-          where: eq(sandbox_sessions.session_id, sessionId)
-        });
-        
-        return session;
-      }
-      
-      // Not in cache, query database
-      const session = await db.query.sandbox_sessions.findFirst({
-        where: eq(sandbox_sessions.session_id, sessionId)
-      });
-      
-      if (session) {
-        // Add to in-memory cache
-        this.sandboxSessions.set(sessionId, {
-          sandboxId: session.sandbox_id,
-          sessionId: session.session_id,
-          userId: session.user_id || undefined,
-          websocketChannel: session.websocket_channel
-        });
-      }
-      
+
       return session;
     } catch (error) {
-      logger.error(`Error getting sandbox session: ${sessionId}`, {
-        error: error instanceof Error ? error.message : String(error)
+      logger.error('Error creating sandbox session', {
+        error: (error as Error).message,
+        sandboxId: params.sandboxId,
+        userId: params.userId
       });
       throw error;
     }
   }
-  
+
   /**
-   * Update a sandbox session
+   * Get sandbox session by ID
    */
-  async updateSandboxSession(sessionId: string, data: {
-    isActive?: boolean;
-  }): Promise<SandboxSession | null> {
+  public async getSandboxSession(sessionId: string): Promise<any> {
     try {
-      // Update the session in the database
-      const [updatedSession] = await db.update(sandbox_sessions)
-        .set({
-          ...data,
-          last_activity: new Date()
-        })
-        .where(eq(sandbox_sessions.session_id, sessionId))
-        .returning();
-      
-      if (!updatedSession) {
-        return null;
+      const session = await db.query.sandboxSessions.findFirst({
+        where: and(
+          eq(sandboxSessions.sessionId, sessionId),
+          eq(sandboxSessions.isActive, true)
+        )
+      });
+
+      if (!session) {
+        throw new SessionNotFoundError(`Session not found: ${sessionId}`);
       }
-      
-      logger.debug(`Updated sandbox session: ${sessionId}`, {
-        isActive: data.isActive
-      });
-      
-      return updatedSession;
+
+      return session;
     } catch (error) {
-      logger.error(`Error updating sandbox session: ${sessionId}`, {
-        error: error instanceof Error ? error.message : String(error),
-        data
+      if (error instanceof SessionNotFoundError) {
+        throw error;
+      }
+      logger.error('Error getting sandbox session', {
+        error: (error as Error).message,
+        sessionId
       });
-      throw error;
+      throw new Error(`Failed to get sandbox session: ${(error as Error).message}`);
     }
   }
-  
+
   /**
-   * Delete a sandbox session
+   * Update sandbox session last activity
    */
-  async deleteSandboxSession(sessionId: string): Promise<boolean> {
+  public async updateSessionActivity(sessionId: string): Promise<void> {
     try {
-      // Delete the session from the database
-      const [deletedSession] = await db.delete(sandbox_sessions)
-        .where(eq(sandbox_sessions.session_id, sessionId))
-        .returning();
-      
-      if (!deletedSession) {
+      await db.update(sandboxSessions)
+        .set({ lastActivityAt: new Date() })
+        .where(eq(sandboxSessions.sessionId, sessionId));
+    } catch (error) {
+      logger.error('Error updating session activity', {
+        error: (error as Error).message,
+        sessionId
+      });
+    }
+  }
+
+  /**
+   * Check token rate limits for a sandbox
+   * Returns true if within limits, false if exceeded
+   */
+  public async checkRateLimits(params: {
+    sandboxId: number;
+    sessionId: string;
+    estimatedTokens: number;
+  }): Promise<boolean> {
+    try {
+      const { sandboxId, sessionId, estimatedTokens } = params;
+
+      // Get sandbox to check limits
+      const sandbox = await this.getSandbox(sandboxId);
+
+      // Check hourly limit
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const hourlyUsage = await db
+        .select({ total: sum(tokenUsageLogs.tokenCount) })
+        .from(tokenUsageLogs)
+        .where(
+          and(
+            eq(tokenUsageLogs.sandboxId, sandboxId),
+            gte(tokenUsageLogs.timestamp, hourAgo)
+          )
+        );
+
+      const hourlyTotal = hourlyUsage[0]?.total || 0;
+      if (hourlyTotal + estimatedTokens > sandbox.hourlyTokenLimit) {
+        logger.warn('Hourly token limit exceeded', {
+          sandboxId,
+          sessionId,
+          hourlyUsage: hourlyTotal,
+          hourlyLimit: sandbox.hourlyTokenLimit,
+          estimatedTokens
+        });
         return false;
       }
-      
-      // Remove from in-memory cache
-      this.sandboxSessions.delete(sessionId);
-      
-      logger.info(`Deleted sandbox session: ${sessionId}`, {
-        sandboxId: deletedSession.sandbox_id
-      });
-      
+
+      // Check daily limit
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const dailyUsage = await db
+        .select({ total: sum(tokenUsageLogs.tokenCount) })
+        .from(tokenUsageLogs)
+        .where(
+          and(
+            eq(tokenUsageLogs.sandboxId, sandboxId),
+            gte(tokenUsageLogs.timestamp, dayAgo)
+          )
+        );
+
+      const dailyTotal = dailyUsage[0]?.total || 0;
+      if (dailyTotal + estimatedTokens > sandbox.dailyTokenLimit) {
+        logger.warn('Daily token limit exceeded', {
+          sandboxId,
+          sessionId,
+          dailyUsage: dailyTotal,
+          dailyLimit: sandbox.dailyTokenLimit,
+          estimatedTokens
+        });
+        return false;
+      }
+
       return true;
     } catch (error) {
-      logger.error(`Error deleting sandbox session: ${sessionId}`, {
-        error: error instanceof Error ? error.message : String(error)
+      logger.error('Error checking rate limits', {
+        error: (error as Error).message,
+        sandboxId: params.sandboxId,
+        sessionId: params.sessionId
       });
-      throw error;
+      // Default to allowing the request in case of errors
+      return true;
     }
   }
-  
+
   /**
-   * Get all sessions for a sandbox
+   * Log token usage for a sandbox
    */
-  async getSandboxSessions(sandboxId: number): Promise<SandboxSession[]> {
+  public async logTokenUsage(params: {
+    sandboxId: number;
+    sessionId: string;
+    tokenCount: number;
+    operationType: string;
+    metadata?: Record<string, any>;
+  }): Promise<void> {
     try {
-      return await db.query.sandbox_sessions.findMany({
-        where: eq(sandbox_sessions.sandbox_id, sandboxId),
-        orderBy: [desc(sandbox_sessions.last_activity)]
+      const { sandboxId, sessionId, tokenCount, operationType, metadata } = params;
+
+      // Insert token usage log
+      await db.insert(tokenUsageLogs).values({
+        sandboxId,
+        sessionId,
+        tokenCount,
+        operationType,
+        metadata: metadata || {},
+        timestamp: new Date()
       });
+
+      // Update session activity
+      await this.updateSessionActivity(sessionId);
     } catch (error) {
-      logger.error(`Error getting sessions for sandbox ${sandboxId}`, {
-        error: error instanceof Error ? error.message : String(error)
+      logger.error('Error logging token usage', {
+        error: (error as Error).message,
+        sandboxId: params.sandboxId,
+        sessionId: params.sessionId,
+        tokenCount: params.tokenCount
       });
-      throw error;
     }
   }
-  
+
   /**
-   * Track token usage for a sandbox operation
+   * Execute a tool within a sandbox
    */
-  async trackTokenUsage(usage: TokenUsage): Promise<boolean> {
+  public async executeTool(params: {
+    sandboxId: number;
+    sessionId: string;
+    toolName: string;
+    parameters: Record<string, any>;
+    estimatedTokens?: number;
+    userId?: number;
+    dealershipId?: number;
+    correlationId?: string;
+  }): Promise<any> {
+    const correlationId = params.correlationId || uuidv4();
+    let startTime = Date.now();
+
     try {
-      // Call the database function to record token usage
-      const result = await db.execute(sql`
-        SELECT record_token_usage(
-          ${usage.sandboxId},
-          ${usage.sessionId},
-          ${usage.operationType},
-          ${usage.tokensUsed},
-          ${usage.requestId}
-        ) as success
-      `);
-      
-      const success = result[0]?.success === true;
-      
-      // Update metrics
-      this.metricsCollector.totalOperations++;
-      this.metricsCollector.totalTokensUsed += usage.tokensUsed;
-      this.metricsCollector.lastOperationTimestamp = Date.now();
-      
-      if (success) {
-        this.metricsCollector.successfulOperations++;
-      } else {
-        this.metricsCollector.rateLimitedOperations++;
+      const { sandboxId, sessionId, toolName, parameters, estimatedTokens = 500 } = params;
+
+      // Check if sandbox and session exist
+      const sandbox = await this.getSandbox(sandboxId);
+      const session = await this.getSandboxSession(sessionId);
+
+      // Check rate limits
+      const withinLimits = await this.checkRateLimits({
+        sandboxId,
+        sessionId,
+        estimatedTokens
+      });
+
+      if (!withinLimits) {
+        const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const hourlyUsage = await db
+          .select({ total: sum(tokenUsageLogs.tokenCount) })
+          .from(tokenUsageLogs)
+          .where(
+            and(
+              eq(tokenUsageLogs.sandboxId, sandboxId),
+              gte(tokenUsageLogs.timestamp, hourAgo)
+            )
+          );
+
+        const hourlyTotal = hourlyUsage[0]?.total || 0;
         
-        // Get current sandbox usage for error details
-        const sandbox = await this.getSandbox(usage.sandboxId);
-        if (sandbox) {
-          // Determine if hourly or daily limit was exceeded
-          const hourlyLimitExceeded = sandbox.current_hourly_usage + usage.tokensUsed > sandbox.token_limit_per_hour;
-          const dailyLimitExceeded = sandbox.current_daily_usage + usage.tokensUsed > sandbox.token_limit_per_day;
-          
-          if (hourlyLimitExceeded) {
-            throw new RateLimitExceededError(
-              usage.sandboxId,
-              sandbox.token_limit_per_hour,
-              'hourly',
-              sandbox.current_hourly_usage
-            );
-          } else if (dailyLimitExceeded) {
-            throw new RateLimitExceededError(
-              usage.sandboxId,
-              sandbox.token_limit_per_day,
-              'daily',
-              sandbox.current_daily_usage
-            );
+        // Send rate limit exceeded event to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'rate_limit_exceeded',
+          data: {
+            sandboxId,
+            sessionId,
+            toolName,
+            limit: sandbox.hourlyTokenLimit,
+            usage: hourlyTotal,
+            estimatedTokens,
+            timestamp: new Date().toISOString()
           }
-        }
-        
-        // Generic rate limit error if we couldn't determine the specific limit
+        });
+
+        // Publish rate limit event
+        await this.eventBus.publish(EventType.RATE_LIMIT_EXCEEDED, {
+          sandboxId,
+          sessionId,
+          toolName,
+          limit: sandbox.hourlyTokenLimit,
+          usage: hourlyTotal,
+          estimatedTokens,
+          timestamp: new Date().toISOString(),
+          correlationId
+        });
+
+        // Add to replayable logs
+        this.addToReplayableLogs(correlationId, {
+          type: 'error',
+          error: 'rate_limit_exceeded',
+          data: {
+            sandboxId,
+            sessionId,
+            toolName,
+            limit: sandbox.hourlyTokenLimit,
+            usage: hourlyTotal,
+            estimatedTokens
+          },
+          timestamp: new Date().toISOString()
+        });
+
         throw new RateLimitExceededError(
-          usage.sandboxId,
-          0,
-          'hourly',
-          0
+          'Rate limit exceeded',
+          sandbox.hourlyTokenLimit,
+          hourlyTotal,
+          'hourly'
         );
       }
+
+      // Log the tool execution start
+      logger.info(`Executing tool: ${toolName}`, {
+        sandboxId,
+        sessionId,
+        toolName,
+        correlationId,
+        estimatedTokens
+      });
+
+      // Add to replayable logs
+      this.addToReplayableLogs(correlationId, {
+        type: 'tool_start',
+        tool: toolName,
+        parameters,
+        timestamp: new Date().toISOString()
+      });
+
+      // Send tool execution start event to WebSocket
+      this.webSocketService.sendToSession(sessionId, {
+        type: 'tool_start',
+        data: {
+          tool: toolName,
+          parameters,
+          timestamp: new Date().toISOString(),
+          correlationId
+        }
+      });
+
+      // Publish tool execution started event
+      await this.eventBus.publish(EventType.TOOL_EXECUTION_STARTED, {
+        sandboxId,
+        sessionId,
+        toolName,
+        parameters,
+        timestamp: new Date().toISOString(),
+        correlationId,
+        userId: params.userId,
+        dealershipId: params.dealershipId
+      });
+
+      // Execute the tool based on its type
+      let result;
       
-      return success;
-    } catch (error) {
-      // Only log if it's not a RateLimitExceededError, since that's expected
-      if (!(error instanceof RateLimitExceededError)) {
-        logger.error('Error tracking token usage', {
-          error: error instanceof Error ? error.message : String(error),
-          sandboxId: usage.sandboxId,
-          sessionId: usage.sessionId,
-          operationType: usage.operationType,
-          tokensUsed: usage.tokensUsed
+      // Check if it's a Watchdog analytics tool
+      if (toolName === 'watchdog_analysis') {
+        // Execute analytics query with circuit breaker
+        result = await this.analyticsCircuitBreaker.execute(async () => {
+          return await analyticsClient.answerQuestion(
+            parameters.uploadId,
+            parameters.question,
+            {
+              correlationId,
+              sandboxId,
+              sessionId
+            }
+          );
+        });
+
+        // Stream results to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'tool_stream',
+          data: {
+            tool: toolName,
+            streamEvent: 'data',
+            data: result,
+            timestamp: new Date().toISOString(),
+            correlationId
+          }
+        });
+      } 
+      // Check if it's a Google Ads tool
+      else if (toolName === 'google_ads.createCampaign') {
+        // Execute Google Ads operation with circuit breaker
+        result = await this.adsCircuitBreaker.execute(async () => {
+          // Queue the task in the ads automation worker
+          const taskId = await this.adsAutomationWorker.addTask({
+            taskType: AdsTaskType.CAMPAIGN_CREATION,
+            accountId: parameters.accountId,
+            correlationId,
+            sandboxId,
+            userId: params.userId,
+            dealershipId: params.dealershipId,
+            campaignName: parameters.campaignName,
+            budget: parameters.budget,
+            bidStrategy: parameters.bidStrategy,
+            isDryRun: parameters.isDryRun || false
+          });
+
+          // Return initial response with task ID
+          return {
+            success: true,
+            taskId,
+            status: 'queued',
+            message: 'Campaign creation task queued successfully'
+          };
+        });
+
+        // Stream initial response to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'tool_stream',
+          data: {
+            tool: toolName,
+            streamEvent: 'data',
+            data: result,
+            timestamp: new Date().toISOString(),
+            correlationId
+          }
+        });
+      } 
+      // For other tools, use the tool registry
+      else {
+        result = await this.toolRegistry.executeTool(toolName, parameters, {
+          correlationId,
+          sandboxId,
+          sessionId,
+          userId: params.userId,
+          dealershipId: params.dealershipId,
+          onProgress: (data) => {
+            // Stream progress events to WebSocket
+            this.webSocketService.sendToSession(sessionId, {
+              type: 'tool_stream',
+              data: {
+                tool: toolName,
+                streamEvent: 'progress',
+                data,
+                timestamp: new Date().toISOString(),
+                correlationId
+              }
+            });
+
+            // Add to replayable logs
+            this.addToReplayableLogs(correlationId, {
+              type: 'tool_progress',
+              tool: toolName,
+              data,
+              timestamp: new Date().toISOString()
+            });
+          }
         });
       }
+
+      // Calculate actual tokens used (estimate if not provided by tool)
+      const tokensUsed = result.tokenUsage || estimatedTokens;
+
+      // Log token usage
+      await this.logTokenUsage({
+        sandboxId,
+        sessionId,
+        tokenCount: tokensUsed,
+        operationType: `tool:${toolName}`,
+        metadata: {
+          correlationId,
+          parameters,
+          executionTime: Date.now() - startTime
+        }
+      });
+
+      // Add to replayable logs
+      this.addToReplayableLogs(correlationId, {
+        type: 'tool_complete',
+        tool: toolName,
+        result,
+        tokensUsed,
+        executionTime: Date.now() - startTime,
+        timestamp: new Date().toISOString()
+      });
+
+      // Send tool execution complete event to WebSocket
+      this.webSocketService.sendToSession(sessionId, {
+        type: 'tool_complete',
+        data: {
+          tool: toolName,
+          result,
+          tokensUsed,
+          executionTime: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+          correlationId
+        }
+      });
+
+      // Publish tool execution completed event
+      await this.eventBus.publish(EventType.TOOL_EXECUTION_COMPLETED, {
+        sandboxId,
+        sessionId,
+        toolName,
+        result,
+        tokensUsed,
+        executionTime: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        correlationId,
+        userId: params.userId,
+        dealershipId: params.dealershipId
+      });
+
+      logger.info(`Tool execution completed: ${toolName}`, {
+        sandboxId,
+        sessionId,
+        toolName,
+        correlationId,
+        tokensUsed,
+        executionTime: Date.now() - startTime
+      });
+
+      return result;
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
       
+      logger.error(`Tool execution failed: ${params.toolName}`, {
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+        sandboxId: params.sandboxId,
+        sessionId: params.sessionId,
+        toolName: params.toolName,
+        correlationId,
+        executionTime
+      });
+
+      // Add to replayable logs
+      this.addToReplayableLogs(correlationId, {
+        type: 'tool_error',
+        tool: params.toolName,
+        error: {
+          message: (error as Error).message,
+          name: (error as Error).name,
+          stack: (error as Error).stack
+        },
+        executionTime,
+        timestamp: new Date().toISOString()
+      });
+
+      // Send error event to WebSocket
+      this.webSocketService.sendToSession(params.sessionId, {
+        type: 'tool_error',
+        data: {
+          tool: params.toolName,
+          error: {
+            message: (error as Error).message,
+            name: (error as Error).name
+          },
+          executionTime,
+          timestamp: new Date().toISOString(),
+          correlationId
+        }
+      });
+
+      // Publish tool execution failed event
+      await this.eventBus.publish(EventType.TOOL_EXECUTION_FAILED, {
+        sandboxId: params.sandboxId,
+        sessionId: params.sessionId,
+        toolName: params.toolName,
+        error: {
+          message: (error as Error).message,
+          name: (error as Error).name
+        },
+        executionTime,
+        timestamp: new Date().toISOString(),
+        correlationId,
+        userId: params.userId,
+        dealershipId: params.dealershipId
+      });
+
       // Rethrow the error
       throw error;
     }
   }
-  
+
   /**
-   * Check if an operation would exceed rate limits without recording usage
+   * Execute a workflow
    */
-  async checkRateLimit(sandboxId: number, tokensToUse: number): Promise<{
-    allowed: boolean;
-    hourlyLimit: number;
-    hourlyUsage: number;
-    dailyLimit: number;
-    dailyUsage: number;
-  }> {
+  public async executeWorkflow(params: {
+    workflowId: string;
+    sandboxId: number;
+    sessionId: string;
+    userId?: number;
+    dealershipId?: number;
+    parameters?: Record<string, any>;
+    correlationId?: string;
+  }): Promise<any> {
+    const correlationId = params.correlationId || uuidv4();
+    const startTime = Date.now();
+
     try {
-      // Get sandbox with current usage
-      const sandbox = await this.getSandbox(sandboxId);
-      if (!sandbox) {
-        throw new SandboxNotFoundError(sandboxId);
-      }
-      
-      // Check if sandbox is active
-      if (!sandbox.is_active) {
-        return {
-          allowed: false,
-          hourlyLimit: sandbox.token_limit_per_hour,
-          hourlyUsage: sandbox.current_hourly_usage,
-          dailyLimit: sandbox.token_limit_per_day,
-          dailyUsage: sandbox.current_daily_usage
+      const { workflowId, sandboxId, sessionId, parameters = {} } = params;
+
+      // Check if it's a predefined workflow
+      let workflow: Workflow;
+      if (PREDEFINED_WORKFLOWS[workflowId]) {
+        // Create a new workflow instance from predefined template
+        workflow = {
+          ...PREDEFINED_WORKFLOWS[workflowId],
+          id: uuidv4(),
+          correlationId,
+          sandboxId,
+          userId: params.userId,
+          dealershipId: params.dealershipId,
+          status: WorkflowStepStatus.PENDING,
+          startTime: new Date()
         };
+
+        // Apply parameters to workflow steps
+        workflow.steps = workflow.steps.map(step => {
+          // Apply parameters that match step.parameters keys
+          const updatedParameters = { ...step.parameters };
+          Object.keys(parameters).forEach(key => {
+            if (key in updatedParameters) {
+              updatedParameters[key] = parameters[key];
+            }
+          });
+          return { ...step, parameters: updatedParameters };
+        });
+      } else {
+        // Check if it's a custom workflow from database
+        // This would be implemented in a real system
+        throw new Error(`Workflow not found: ${workflowId}`);
       }
-      
-      // Check if usage would exceed limits
-      const hourlyAllowed = sandbox.current_hourly_usage + tokensToUse <= sandbox.token_limit_per_hour;
-      const dailyAllowed = sandbox.current_daily_usage + tokensToUse <= sandbox.token_limit_per_day;
-      
-      return {
-        allowed: hourlyAllowed && dailyAllowed,
-        hourlyLimit: sandbox.token_limit_per_hour,
-        hourlyUsage: sandbox.current_hourly_usage,
-        dailyLimit: sandbox.token_limit_per_day,
-        dailyUsage: sandbox.current_daily_usage
-      };
-    } catch (error) {
-      logger.error(`Error checking rate limit for sandbox ${sandboxId}`, {
-        error: error instanceof Error ? error.message : String(error),
-        tokensToUse
+
+      // Store workflow in active workflows
+      this.activeWorkflows.set(workflow.id, workflow);
+
+      // Initialize replayable logs for this workflow
+      this.replayableLogs.set(correlationId, []);
+
+      // Add workflow start to replayable logs
+      this.addToReplayableLogs(correlationId, {
+        type: 'workflow_start',
+        workflow: {
+          id: workflow.id,
+          name: workflow.name,
+          pattern: workflow.pattern
+        },
+        timestamp: new Date().toISOString()
       });
-      throw error;
-    }
-  }
-  
-  /**
-   * Reset usage counters for all sandboxes
-   */
-  async resetUsageCounters(): Promise<void> {
-    try {
-      // Call the database function to reset counters
-      await db.execute(sql`SELECT reset_token_usage_counters()`);
-      
-      logger.info('Reset token usage counters for all sandboxes');
-    } catch (error) {
-      logger.error('Error resetting usage counters', {
-        error: error instanceof Error ? error.message : String(error)
+
+      // Send workflow started event to WebSocket
+      this.webSocketService.sendToSession(sessionId, {
+        type: 'workflow_start',
+        data: {
+          workflow: {
+            id: workflow.id,
+            name: workflow.name,
+            pattern: workflow.pattern,
+            steps: workflow.steps.map(s => ({
+              id: s.id,
+              name: s.name,
+              tool: s.tool,
+              status: s.status
+            }))
+          },
+          timestamp: new Date().toISOString(),
+          correlationId
+        }
       });
-      throw error;
-    }
-  }
-  
-  /**
-   * Get token usage statistics for a sandbox
-   */
-  async getSandboxUsageStats(sandboxId: number): Promise<{
-    hourlyUsage: number;
-    dailyUsage: number;
-    hourlyLimit: number;
-    dailyLimit: number;
-    hourlyRemaining: number;
-    dailyRemaining: number;
-    usageByType: Record<string, number>;
-    usageBySession: Record<string, number>;
-  }> {
-    try {
-      // Get sandbox with current usage
-      const sandbox = await this.getSandbox(sandboxId);
-      if (!sandbox) {
-        throw new SandboxNotFoundError(sandboxId);
-      }
-      
-      // Get usage by operation type
-      const usageByTypeResult = await db.execute(sql`
-        SELECT operation_type, SUM(tokens_used) as total_tokens
-        FROM token_usage_logs
-        WHERE sandbox_id = ${sandboxId}
-        AND created_at > NOW() - INTERVAL '24 hours'
-        GROUP BY operation_type
-      `);
-      
-      const usageByType: Record<string, number> = {};
-      for (const row of usageByTypeResult) {
-        usageByType[row.operation_type] = Number(row.total_tokens);
-      }
-      
-      // Get usage by session
-      const usageBySessionResult = await db.execute(sql`
-        SELECT session_id, SUM(tokens_used) as total_tokens
-        FROM token_usage_logs
-        WHERE sandbox_id = ${sandboxId}
-        AND created_at > NOW() - INTERVAL '24 hours'
-        GROUP BY session_id
-      `);
-      
-      const usageBySession: Record<string, number> = {};
-      for (const row of usageBySessionResult) {
-        usageBySession[row.session_id] = Number(row.total_tokens);
-      }
-      
-      return {
-        hourlyUsage: sandbox.current_hourly_usage,
-        dailyUsage: sandbox.current_daily_usage,
-        hourlyLimit: sandbox.token_limit_per_hour,
-        dailyLimit: sandbox.token_limit_per_day,
-        hourlyRemaining: sandbox.token_limit_per_hour - sandbox.current_hourly_usage,
-        dailyRemaining: sandbox.token_limit_per_day - sandbox.current_daily_usage,
-        usageByType,
-        usageBySession
-      };
-    } catch (error) {
-      logger.error(`Error getting usage stats for sandbox ${sandboxId}`, {
-        error: error instanceof Error ? error.message : String(error)
-      });
-      throw error;
-    }
-  }
-  
-  /**
-   * Execute a tool within a sandbox context with rate limiting
-   */
-  async executeToolInSandbox(
-    sessionId: string,
-    toolRequest: Omit<ToolRequest, 'context'>,
-    estimatedTokens: number
-  ): Promise<ToolResponse> {
-    const startTime = performance.now();
-    const requestId = this.generateRequestId();
-    
-    try {
-      // Get session and sandbox
-      const session = await this.getSandboxSession(sessionId);
-      if (!session) {
-        throw new Error(`Session not found: ${sessionId}`);
-      }
-      
-      const sandboxId = session.sandbox_id;
-      
-      // Check and track token usage
-      await this.trackTokenUsage({
+
+      // Publish workflow started event
+      await this.eventBus.publish(EventType.ORCHESTRATION_SEQUENCE_STARTED, {
+        workflowId: workflow.id,
+        workflowName: workflow.name,
+        pattern: workflow.pattern,
         sandboxId,
         sessionId,
-        operationType: SandboxOperationType.TOOL_EXECUTION,
-        tokensUsed: estimatedTokens,
-        requestId
+        tools: workflow.steps.map(s => s.tool),
+        timestamp: new Date().toISOString(),
+        correlationId,
+        userId: params.userId,
+        dealershipId: params.dealershipId
       });
-      
-      // Create tool context
-      const toolContext = {
-        agentId: `sandbox-${sandboxId}`,
-        sessionId,
-        requestId,
-        timestamp: Date.now()
-      };
-      
-      // Execute the tool
-      const result = await toolRegistry.executeTool({
-        ...toolRequest,
-        context: toolContext
-      });
-      
-      // Track operation time
-      const operationTime = performance.now() - startTime;
-      if (!this.metricsCollector.operationTimes.has('tool_execution')) {
-        this.metricsCollector.operationTimes.set('tool_execution', []);
+
+      // Update workflow status
+      workflow.status = WorkflowStepStatus.RUNNING;
+      this.activeWorkflows.set(workflow.id, { ...workflow });
+
+      // Execute workflow based on pattern
+      let result;
+      switch (workflow.pattern) {
+        case WorkflowPattern.SEQUENTIAL:
+          result = await this.executeSequentialWorkflow(workflow, sessionId);
+          break;
+        case WorkflowPattern.PARALLEL:
+          result = await this.executeParallelWorkflow(workflow, sessionId);
+          break;
+        case WorkflowPattern.CONDITIONAL:
+          result = await this.executeConditionalWorkflow(workflow, sessionId);
+          break;
+        default:
+          throw new Error(`Unsupported workflow pattern: ${workflow.pattern}`);
       }
-      this.metricsCollector.operationTimes.get('tool_execution')?.push(operationTime);
-      
-      return result;
-    } catch (error) {
-      // Track failed operation
-      this.metricsCollector.failedOperations++;
-      
-      // Handle rate limit errors
-      if (error instanceof RateLimitExceededError) {
-        logger.warn(`Rate limit exceeded for sandbox session ${sessionId}`, {
-          error: error.message,
-          sandboxId: error.sandboxId,
-          limit: error.limit,
-          timeframe: error.timeframe,
-          currentUsage: error.currentUsage
-        });
-        
-        return {
-          success: false,
-          toolName: toolRequest.toolName,
-          error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: error.message
-          },
-          meta: {
-            processingTime: performance.now() - startTime,
-            requestId
-          }
-        };
-      }
-      
-      // Handle other errors
-      logger.error(`Error executing tool in sandbox: ${sessionId}`, {
-        error: error instanceof Error ? error.message : String(error),
-        toolName: toolRequest.toolName,
-        requestId
-      });
-      
-      return {
-        success: false,
-        toolName: toolRequest.toolName,
-        error: {
-          code: 'SANDBOX_EXECUTION_ERROR',
-          message: error instanceof Error ? error.message : String(error)
+
+      // Update workflow status and end time
+      workflow.status = WorkflowStepStatus.COMPLETED;
+      workflow.endTime = new Date();
+      workflow.result = result;
+      this.activeWorkflows.set(workflow.id, { ...workflow });
+
+      // Add workflow completion to replayable logs
+      this.addToReplayableLogs(correlationId, {
+        type: 'workflow_complete',
+        workflow: {
+          id: workflow.id,
+          name: workflow.name,
+          pattern: workflow.pattern
         },
-        meta: {
-          processingTime: performance.now() - startTime,
-          requestId
+        result,
+        executionTime: Date.now() - startTime,
+        timestamp: new Date().toISOString()
+      });
+
+      // Send workflow completed event to WebSocket
+      this.webSocketService.sendToSession(sessionId, {
+        type: 'workflow_complete',
+        data: {
+          workflow: {
+            id: workflow.id,
+            name: workflow.name,
+            pattern: workflow.pattern,
+            steps: workflow.steps.map(s => ({
+              id: s.id,
+              name: s.name,
+              tool: s.tool,
+              status: s.status,
+              result: s.result
+            }))
+          },
+          result,
+          executionTime: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+          correlationId
         }
+      });
+
+      // Publish workflow completed event
+      await this.eventBus.publish(EventType.ORCHESTRATION_SEQUENCE_COMPLETED, {
+        workflowId: workflow.id,
+        workflowName: workflow.name,
+        pattern: workflow.pattern,
+        sandboxId,
+        sessionId,
+        tools: workflow.steps.map(s => s.tool),
+        results: workflow.steps.map(s => ({
+          stepId: s.id,
+          tool: s.tool,
+          status: s.status,
+          result: s.result
+        })),
+        executionTime: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        correlationId,
+        userId: params.userId,
+        dealershipId: params.dealershipId
+      });
+
+      logger.info(`Workflow execution completed: ${workflow.name}`, {
+        workflowId: workflow.id,
+        sandboxId,
+        sessionId,
+        correlationId,
+        executionTime: Date.now() - startTime
+      });
+
+      return {
+        workflowId: workflow.id,
+        name: workflow.name,
+        status: workflow.status,
+        steps: workflow.steps.map(s => ({
+          id: s.id,
+          name: s.name,
+          tool: s.tool,
+          status: s.status,
+          result: s.result
+        })),
+        result,
+        executionTime: Date.now() - startTime
       };
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      
+      logger.error(`Workflow execution failed: ${params.workflowId}`, {
+        error: (error as Error).message,
+        stack: (error as Error).stack,
+        sandboxId: params.sandboxId,
+        sessionId: params.sessionId,
+        workflowId: params.workflowId,
+        correlationId,
+        executionTime
+      });
+
+      // Add to replayable logs
+      this.addToReplayableLogs(correlationId, {
+        type: 'workflow_error',
+        workflowId: params.workflowId,
+        error: {
+          message: (error as Error).message,
+          name: (error as Error).name,
+          stack: (error as Error).stack
+        },
+        executionTime,
+        timestamp: new Date().toISOString()
+      });
+
+      // Send error event to WebSocket
+      this.webSocketService.sendToSession(params.sessionId, {
+        type: 'workflow_error',
+        data: {
+          workflowId: params.workflowId,
+          error: {
+            message: (error as Error).message,
+            name: (error as Error).name
+          },
+          executionTime,
+          timestamp: new Date().toISOString(),
+          correlationId
+        }
+      });
+
+      // Publish workflow failed event
+      await this.eventBus.publish(EventType.ORCHESTRATION_SEQUENCE_FAILED, {
+        workflowId: params.workflowId,
+        sandboxId: params.sandboxId,
+        sessionId: params.sessionId,
+        error: {
+          message: (error as Error).message,
+          name: (error as Error).name
+        },
+        executionTime,
+        timestamp: new Date().toISOString(),
+        correlationId,
+        userId: params.userId,
+        dealershipId: params.dealershipId
+      });
+
+      // Rethrow the error
+      throw error;
     }
   }
-  
+
   /**
-   * Execute a streaming tool within a sandbox context with rate limiting
+   * Execute a sequential workflow
    */
-  executeToolStreamInSandbox(
-    sessionId: string,
-    toolRequest: Omit<ToolRequest, 'context'>,
-    estimatedTokens: number
-  ): EventEmitter {
-    const emitter = new EventEmitter();
-    const requestId = this.generateRequestId();
-    
-    // Process asynchronously
-    (async () => {
-      try {
-        // Get session and sandbox
-        const session = await this.getSandboxSession(sessionId);
-        if (!session) {
-          emitter.emit('error', new Error(`Session not found: ${sessionId}`));
-          return;
+  private async executeSequentialWorkflow(workflow: Workflow, sessionId: string): Promise<any> {
+    const results = [];
+
+    for (let i = 0; i < workflow.steps.length; i++) {
+      const step = workflow.steps[i];
+      workflow.currentStepIndex = i;
+
+      // Update step status
+      step.status = WorkflowStepStatus.RUNNING;
+      step.startTime = new Date();
+      this.activeWorkflows.set(workflow.id, { ...workflow });
+
+      // Send step started event to WebSocket
+      this.webSocketService.sendToSession(sessionId, {
+        type: 'workflow_step_start',
+        data: {
+          workflowId: workflow.id,
+          stepId: step.id,
+          stepName: step.name,
+          tool: step.tool,
+          parameters: step.parameters,
+          timestamp: new Date().toISOString(),
+          correlationId: workflow.correlationId
         }
-        
-        const sandboxId = session.sandbox_id;
-        
-        try {
-          // Check and track token usage
-          await this.trackTokenUsage({
-            sandboxId,
-            sessionId,
-            operationType: SandboxOperationType.TOOL_EXECUTION,
-            tokensUsed: estimatedTokens,
-            requestId
+      });
+
+      try {
+        // Execute the tool for this step
+        const result = await this.executeTool({
+          sandboxId: workflow.sandboxId,
+          sessionId,
+          toolName: step.tool,
+          parameters: step.parameters,
+          userId: workflow.userId,
+          dealershipId: workflow.dealershipId,
+          correlationId: workflow.correlationId
+        });
+
+        // Update step with result
+        step.status = WorkflowStepStatus.COMPLETED;
+        step.result = result;
+        step.endTime = new Date();
+        this.activeWorkflows.set(workflow.id, { ...workflow });
+
+        // Send step completed event to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'workflow_step_complete',
+          data: {
+            workflowId: workflow.id,
+            stepId: step.id,
+            stepName: step.name,
+            tool: step.tool,
+            result,
+            timestamp: new Date().toISOString(),
+            correlationId: workflow.correlationId
+          }
+        });
+
+        results.push(result);
+
+        // If this is a checkpoint step and it failed, stop the workflow
+        if (step.checkpoint && !this.isStepSuccessful(step)) {
+          logger.warn(`Checkpoint step failed, stopping workflow: ${workflow.id}`, {
+            workflowId: workflow.id,
+            stepId: step.id,
+            stepName: step.name
           });
-        } catch (error) {
-          // Handle rate limit errors
-          if (error instanceof RateLimitExceededError) {
-            emitter.emit('data', {
-              type: 'error',
-              toolName: toolRequest.toolName,
-              requestId,
-              timestamp: Date.now(),
-              error: {
-                code: 'RATE_LIMIT_EXCEEDED',
-                message: error.message,
-                details: {
-                  limit: error.limit,
-                  timeframe: error.timeframe,
-                  currentUsage: error.currentUsage
-                }
+          break;
+        }
+      } catch (error) {
+        // Update step with error
+        step.status = WorkflowStepStatus.FAILED;
+        step.error = {
+          message: (error as Error).message,
+          name: (error as Error).name
+        };
+        step.endTime = new Date();
+        this.activeWorkflows.set(workflow.id, { ...workflow });
+
+        // Send step failed event to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'workflow_step_error',
+          data: {
+            workflowId: workflow.id,
+            stepId: step.id,
+            stepName: step.name,
+            tool: step.tool,
+            error: {
+              message: (error as Error).message,
+              name: (error as Error).name
+            },
+            timestamp: new Date().toISOString(),
+            correlationId: workflow.correlationId
+          }
+        });
+
+        // If rollback is enabled, perform rollback
+        if (workflow.rollbackOnFailure) {
+          await this.rollbackWorkflow(workflow, i, sessionId);
+        }
+
+        // Rethrow the error to stop the workflow
+        throw new WorkflowExecutionError(
+          `Step ${step.name} failed: ${(error as Error).message}`,
+          step.id,
+          error
+        );
+      }
+    }
+
+    return {
+      success: true,
+      results
+    };
+  }
+
+  /**
+   * Execute a parallel workflow
+   */
+  private async executeParallelWorkflow(workflow: Workflow, sessionId: string): Promise<any> {
+    // Group steps by dependencies
+    const independentSteps = workflow.steps.filter(step => !step.dependsOn || step.dependsOn.length === 0);
+    const dependentSteps = workflow.steps.filter(step => step.dependsOn && step.dependsOn.length > 0);
+
+    // Execute independent steps in parallel
+    const independentPromises = independentSteps.map(async (step, index) => {
+      // Update step status
+      step.status = WorkflowStepStatus.RUNNING;
+      step.startTime = new Date();
+      this.activeWorkflows.set(workflow.id, { ...workflow });
+
+      // Send step started event to WebSocket
+      this.webSocketService.sendToSession(sessionId, {
+        type: 'workflow_step_start',
+        data: {
+          workflowId: workflow.id,
+          stepId: step.id,
+          stepName: step.name,
+          tool: step.tool,
+          parameters: step.parameters,
+          timestamp: new Date().toISOString(),
+          correlationId: workflow.correlationId
+        }
+      });
+
+      try {
+        // Execute the tool for this step
+        const result = await this.executeTool({
+          sandboxId: workflow.sandboxId,
+          sessionId,
+          toolName: step.tool,
+          parameters: step.parameters,
+          userId: workflow.userId,
+          dealershipId: workflow.dealershipId,
+          correlationId: workflow.correlationId
+        });
+
+        // Update step with result
+        step.status = WorkflowStepStatus.COMPLETED;
+        step.result = result;
+        step.endTime = new Date();
+        this.activeWorkflows.set(workflow.id, { ...workflow });
+
+        // Send step completed event to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'workflow_step_complete',
+          data: {
+            workflowId: workflow.id,
+            stepId: step.id,
+            stepName: step.name,
+            tool: step.tool,
+            result,
+            timestamp: new Date().toISOString(),
+            correlationId: workflow.correlationId
+          }
+        });
+
+        return { stepId: step.id, result };
+      } catch (error) {
+        // Update step with error
+        step.status = WorkflowStepStatus.FAILED;
+        step.error = {
+          message: (error as Error).message,
+          name: (error as Error).name
+        };
+        step.endTime = new Date();
+        this.activeWorkflows.set(workflow.id, { ...workflow });
+
+        // Send step failed event to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'workflow_step_error',
+          data: {
+            workflowId: workflow.id,
+            stepId: step.id,
+            stepName: step.name,
+            tool: step.tool,
+            error: {
+              message: (error as Error).message,
+              name: (error as Error).name
+            },
+            timestamp: new Date().toISOString(),
+            correlationId: workflow.correlationId
+          }
+        });
+
+        // If this is a checkpoint step, throw error to stop workflow
+        if (step.checkpoint) {
+          throw new WorkflowExecutionError(
+            `Checkpoint step ${step.name} failed: ${(error as Error).message}`,
+            step.id,
+            error
+          );
+        }
+
+        return { stepId: step.id, error };
+      }
+    });
+
+    // Wait for all independent steps to complete
+    const independentResults = await Promise.allSettled(independentPromises);
+    
+    // Check if any checkpoint steps failed
+    const checkpointFailed = independentSteps.some(
+      step => step.checkpoint && step.status === WorkflowStepStatus.FAILED
+    );
+
+    if (checkpointFailed) {
+      // If rollback is enabled, perform rollback
+      if (workflow.rollbackOnFailure) {
+        await this.rollbackWorkflow(workflow, -1, sessionId);
+      }
+
+      throw new WorkflowExecutionError(
+        'Workflow execution failed: checkpoint step failed',
+        'checkpoint',
+        { workflow }
+      );
+    }
+
+    // Execute dependent steps if there are any
+    if (dependentSteps.length > 0) {
+      // Create a map of step IDs to results
+      const stepResults = new Map<string, any>();
+      independentResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          stepResults.set(result.value.stepId, result.value.result);
+        }
+      });
+
+      // Execute dependent steps that have all dependencies satisfied
+      const dependentPromises = dependentSteps
+        .filter(step => {
+          // Check if all dependencies are completed successfully
+          return step.dependsOn!.every(depId => {
+            const depStep = workflow.steps.find(s => s.id === depId);
+            return depStep && depStep.status === WorkflowStepStatus.COMPLETED;
+          });
+        })
+        .map(async step => {
+          // Update step status
+          step.status = WorkflowStepStatus.RUNNING;
+          step.startTime = new Date();
+          this.activeWorkflows.set(workflow.id, { ...workflow });
+
+          // Send step started event to WebSocket
+          this.webSocketService.sendToSession(sessionId, {
+            type: 'workflow_step_start',
+            data: {
+              workflowId: workflow.id,
+              stepId: step.id,
+              stepName: step.name,
+              tool: step.tool,
+              parameters: step.parameters,
+              timestamp: new Date().toISOString(),
+              correlationId: workflow.correlationId
+            }
+          });
+
+          try {
+            // Prepare parameters with dependency results
+            const enhancedParams = { ...step.parameters };
+            step.dependsOn!.forEach(depId => {
+              if (stepResults.has(depId)) {
+                // Add dependency results to parameters
+                enhancedParams[`dep_${depId}`] = stepResults.get(depId);
               }
             });
-            
-            emitter.emit('data', {
-              type: 'end',
-              toolName: toolRequest.toolName,
-              requestId,
-              timestamp: Date.now()
+
+            // Execute the tool for this step
+            const result = await this.executeTool({
+              sandboxId: workflow.sandboxId,
+              sessionId,
+              toolName: step.tool,
+              parameters: enhancedParams,
+              userId: workflow.userId,
+              dealershipId: workflow.dealershipId,
+              correlationId: workflow.correlationId
             });
-            
-            return;
+
+            // Update step with result
+            step.status = WorkflowStepStatus.COMPLETED;
+            step.result = result;
+            step.endTime = new Date();
+            this.activeWorkflows.set(workflow.id, { ...workflow });
+
+            // Send step completed event to WebSocket
+            this.webSocketService.sendToSession(sessionId, {
+              type: 'workflow_step_complete',
+              data: {
+                workflowId: workflow.id,
+                stepId: step.id,
+                stepName: step.name,
+                tool: step.tool,
+                result,
+                timestamp: new Date().toISOString(),
+                correlationId: workflow.correlationId
+              }
+            });
+
+            return { stepId: step.id, result };
+          } catch (error) {
+            // Update step with error
+            step.status = WorkflowStepStatus.FAILED;
+            step.error = {
+              message: (error as Error).message,
+              name: (error as Error).name
+            };
+            step.endTime = new Date();
+            this.activeWorkflows.set(workflow.id, { ...workflow });
+
+            // Send step failed event to WebSocket
+            this.webSocketService.sendToSession(sessionId, {
+              type: 'workflow_step_error',
+              data: {
+                workflowId: workflow.id,
+                stepId: step.id,
+                stepName: step.name,
+                tool: step.tool,
+                error: {
+                  message: (error as Error).message,
+                  name: (error as Error).name
+                },
+                timestamp: new Date().toISOString(),
+                correlationId: workflow.correlationId
+              }
+            });
+
+            return { stepId: step.id, error };
           }
-          
-          // Handle other errors
-          emitter.emit('error', error);
-          return;
+        });
+
+      // Wait for dependent steps to complete
+      const dependentResults = await Promise.allSettled(dependentPromises);
+
+      // Add dependent results to the step results map
+      dependentResults.forEach(result => {
+        if (result.status === 'fulfilled') {
+          stepResults.set(result.value.stepId, result.value.result);
         }
-        
-        // Create tool context
-        const toolContext = {
-          agentId: `sandbox-${sandboxId}`,
-          sessionId,
-          requestId,
-          timestamp: Date.now()
-        };
-        
-        // Execute the tool with streaming
-        const toolEmitter = toolRegistry.executeToolStream({
-          ...toolRequest,
-          context: toolContext,
-          streaming: true
-        });
-        
-        // Forward events from tool emitter to our emitter
-        toolEmitter.on('data', (data) => {
-          emitter.emit('data', data);
-        });
-        
-        toolEmitter.on('error', (error) => {
-          emitter.emit('error', error);
-        });
-      } catch (error) {
-        // Track failed operation
-        this.metricsCollector.failedOperations++;
-        
-        // Handle errors
-        logger.error(`Error setting up tool stream in sandbox: ${sessionId}`, {
-          error: error instanceof Error ? error.message : String(error),
-          toolName: toolRequest.toolName,
-          requestId
-        });
-        
-        emitter.emit('error', error);
-      }
-    })();
-    
-    return emitter;
-  }
-  
-  /**
-   * Process an agent message within a sandbox context
-   */
-  async processAgentMessage(
-    sessionId: string,
-    message: string,
-    estimatedTokens: number = 500 // Default token estimate if not provided
-  ): Promise<{
-    success: boolean;
-    response?: string;
-    error?: {
-      code: string;
-      message: string;
-      details?: any;
-    };
-  }> {
-    const startTime = performance.now();
-    const requestId = this.generateRequestId();
-    
-    try {
-      // Get session and sandbox
-      const session = await this.getSandboxSession(sessionId);
-      if (!session) {
-        throw new Error(`Session not found: ${sessionId}`);
-      }
-      
-      const sandboxId = session.sandbox_id;
-      
-      // Check and track token usage
-      await this.trackTokenUsage({
-        sandboxId,
-        sessionId,
-        operationType: SandboxOperationType.AGENT_MESSAGE,
-        tokensUsed: estimatedTokens,
-        requestId
       });
-      
-      // If we have an AgentSquad, use it to process the message
-      if (this.agentSquad) {
-        // Create a context object for the agent
-        const agentContext = {
-          agentId: `sandbox-${sandboxId}`,
-          sessionId,
-          requestId,
-          sandboxId,
-          websocketChannel: session.websocket_channel
-        };
-        
-        // Process the message with the AgentSquad
-        const response = await this.agentSquad.processMessage(
-          message,
-          agentContext
-        );
-        
-        // Track operation time
-        const operationTime = performance.now() - startTime;
-        if (!this.metricsCollector.operationTimes.has('agent_message')) {
-          this.metricsCollector.operationTimes.set('agent_message', []);
-        }
-        this.metricsCollector.operationTimes.get('agent_message')?.push(operationTime);
-        
+
+      // Collect all results
+      const allResults = Array.from(stepResults.entries()).map(([stepId, result]) => {
+        const step = workflow.steps.find(s => s.id === stepId);
         return {
-          success: true,
-          response
+          stepId,
+          stepName: step?.name,
+          tool: step?.tool,
+          result
         };
-      } else {
-        // No AgentSquad available
-        logger.warn('No AgentSquad available to process message', {
-          sessionId,
-          sandboxId
-        });
-        
-        return {
-          success: false,
-          error: {
-            code: 'AGENT_SQUAD_UNAVAILABLE',
-            message: 'No AgentSquad available to process message'
-          }
-        };
-      }
-    } catch (error) {
-      // Track failed operation
-      this.metricsCollector.failedOperations++;
-      
-      // Handle rate limit errors
-      if (error instanceof RateLimitExceededError) {
-        logger.warn(`Rate limit exceeded for sandbox session ${sessionId}`, {
-          error: error.message,
-          sandboxId: error.sandboxId,
-          limit: error.limit,
-          timeframe: error.timeframe,
-          currentUsage: error.currentUsage
-        });
-        
-        return {
-          success: false,
-          error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: error.message,
-            details: {
-              limit: error.limit,
-              timeframe: error.timeframe,
-              currentUsage: error.currentUsage
-            }
-          }
-        };
-      }
-      
-      // Handle other errors
-      logger.error(`Error processing agent message in sandbox: ${sessionId}`, {
-        error: error instanceof Error ? error.message : String(error),
-        requestId
       });
-      
+
       return {
-        success: false,
-        error: {
-          code: 'SANDBOX_EXECUTION_ERROR',
-          message: error instanceof Error ? error.message : String(error)
-        }
+        success: true,
+        results: allResults
       };
     }
+
+    // Collect results from independent steps
+    const results = independentResults
+      .filter(result => result.status === 'fulfilled')
+      .map(result => (result as PromiseFulfilledResult<any>).value);
+
+    return {
+      success: true,
+      results
+    };
   }
-  
+
   /**
-   * Send a message to a sandbox WebSocket channel
+   * Execute a conditional workflow
    */
-  sendToSandboxChannel(
-    sandboxId: number,
-    sessionId: string,
-    message: any
-  ): boolean {
-    try {
-      // Get the session
-      const sessionContext = this.sandboxSessions.get(sessionId);
-      if (!sessionContext) {
-        logger.warn(`Session not found for message: ${sessionId}`, {
-          sandboxId
-        });
-        return false;
+  private async executeConditionalWorkflow(workflow: Workflow, sessionId: string): Promise<any> {
+    const results = [];
+
+    // Execute steps in order, but only if conditions are met
+    for (let i = 0; i < workflow.steps.length; i++) {
+      const step = workflow.steps[i];
+      workflow.currentStepIndex = i;
+
+      // Check if step has a condition
+      if (step.condition && i > 0) {
+        // Evaluate condition against previous step results
+        const shouldExecute = await this.evaluateCondition(step.condition, workflow);
+
+        if (!shouldExecute) {
+          // Skip this step
+          step.status = WorkflowStepStatus.SKIPPED;
+          this.activeWorkflows.set(workflow.id, { ...workflow });
+
+          // Send step skipped event to WebSocket
+          this.webSocketService.sendToSession(sessionId, {
+            type: 'workflow_step_skip',
+            data: {
+              workflowId: workflow.id,
+              stepId: step.id,
+              stepName: step.name,
+              tool: step.tool,
+              condition: step.condition,
+              timestamp: new Date().toISOString(),
+              correlationId: workflow.correlationId
+            }
+          });
+
+          continue;
+        }
       }
-      
-      // Create the sandbox message
-      const sandboxMessage: SandboxWebSocketMessage = {
-        type: message.type || 'sandbox_message',
-        sandboxId,
-        sessionId,
-        payload: message,
-        timestamp: Date.now(),
-        requestId: message.requestId || this.generateRequestId()
-      };
-      
-      // Send to the WebSocket channel
-      return this.wsService.sendToSession(sessionId, {
-        type: MessageType.CHAT_MESSAGE, // Use an appropriate message type
-        message: JSON.stringify(sandboxMessage),
-        timestamp: new Date().toISOString(),
-        metadata: {
-          sandboxId,
-          sessionId,
-          channelType: 'sandbox'
+
+      // Update step status
+      step.status = WorkflowStepStatus.RUNNING;
+      step.startTime = new Date();
+      this.activeWorkflows.set(workflow.id, { ...workflow });
+
+      // Send step started event to WebSocket
+      this.webSocketService.sendToSession(sessionId, {
+        type: 'workflow_step_start',
+        data: {
+          workflowId: workflow.id,
+          stepId: step.id,
+          stepName: step.name,
+          tool: step.tool,
+          parameters: step.parameters,
+          timestamp: new Date().toISOString(),
+          correlationId: workflow.correlationId
         }
       });
+
+      try {
+        // Execute the tool for this step
+        const result = await this.executeTool({
+          sandboxId: workflow.sandboxId,
+          sessionId,
+          toolName: step.tool,
+          parameters: step.parameters,
+          userId: workflow.userId,
+          dealershipId: workflow.dealershipId,
+          correlationId: workflow.correlationId
+        });
+
+        // Update step with result
+        step.status = WorkflowStepStatus.COMPLETED;
+        step.result = result;
+        step.endTime = new Date();
+        this.activeWorkflows.set(workflow.id, { ...workflow });
+
+        // Send step completed event to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'workflow_step_complete',
+          data: {
+            workflowId: workflow.id,
+            stepId: step.id,
+            stepName: step.name,
+            tool: step.tool,
+            result,
+            timestamp: new Date().toISOString(),
+            correlationId: workflow.correlationId
+          }
+        });
+
+        results.push(result);
+
+        // If this is a checkpoint step and it failed, stop the workflow
+        if (step.checkpoint && !this.isStepSuccessful(step)) {
+          logger.warn(`Checkpoint step failed, stopping workflow: ${workflow.id}`, {
+            workflowId: workflow.id,
+            stepId: step.id,
+            stepName: step.name
+          });
+          break;
+        }
+      } catch (error) {
+        // Update step with error
+        step.status = WorkflowStepStatus.FAILED;
+        step.error = {
+          message: (error as Error).message,
+          name: (error as Error).name
+        };
+        step.endTime = new Date();
+        this.activeWorkflows.set(workflow.id, { ...workflow });
+
+        // Send step failed event to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'workflow_step_error',
+          data: {
+            workflowId: workflow.id,
+            stepId: step.id,
+            stepName: step.name,
+            tool: step.tool,
+            error: {
+              message: (error as Error).message,
+              name: (error as Error).name
+            },
+            timestamp: new Date().toISOString(),
+            correlationId: workflow.correlationId
+          }
+        });
+
+        // If rollback is enabled, perform rollback
+        if (workflow.rollbackOnFailure) {
+          await this.rollbackWorkflow(workflow, i, sessionId);
+        }
+
+        // Rethrow the error to stop the workflow
+        throw new WorkflowExecutionError(
+          `Step ${step.name} failed: ${(error as Error).message}`,
+          step.id,
+          error
+        );
+      }
+    }
+
+    return {
+      success: true,
+      results
+    };
+  }
+
+  /**
+   * Evaluate a condition against workflow step results
+   */
+  private async evaluateCondition(condition: string, workflow: Workflow): Promise<boolean> {
+    try {
+      // Parse the condition (e.g., "step1.result.metrics.marketing_roi > 3")
+      const [stepRef, comparison] = condition.split(/\s*(>|<|>=|<=|==|!=)\s*/);
+      const operator = condition.match(/(>|<|>=|<=|==|!=)/)?.[0];
+      const valueStr = condition.split(/\s*(>|<|>=|<=|==|!=)\s*/)[2];
+
+      if (!stepRef || !operator || !valueStr) {
+        logger.error(`Invalid condition format: ${condition}`);
+        return false;
+      }
+
+      // Extract step ID from the reference
+      const stepId = stepRef.split('.')[0];
+      const step = workflow.steps.find(s => s.id === stepId);
+
+      if (!step || step.status !== WorkflowStepStatus.COMPLETED) {
+        logger.error(`Referenced step not found or not completed: ${stepId}`);
+        return false;
+      }
+
+      // Extract the value from the step result using the path
+      const path = stepRef.split('.').slice(1);
+      let actualValue = step.result;
+      
+      for (const segment of path) {
+        if (actualValue && typeof actualValue === 'object' && segment in actualValue) {
+          actualValue = actualValue[segment];
+        } else {
+          logger.error(`Path not found in step result: ${path.join('.')}`);
+          return false;
+        }
+      }
+
+      // Parse the comparison value
+      let comparisonValue: any;
+      try {
+        comparisonValue = JSON.parse(valueStr);
+      } catch (e) {
+        // If not valid JSON, treat as string
+        comparisonValue = valueStr;
+      }
+
+      // Perform the comparison
+      switch (operator) {
+        case '>':
+          return actualValue > comparisonValue;
+        case '<':
+          return actualValue < comparisonValue;
+        case '>=':
+          return actualValue >= comparisonValue;
+        case '<=':
+          return actualValue <= comparisonValue;
+        case '==':
+          return actualValue == comparisonValue;
+        case '!=':
+          return actualValue != comparisonValue;
+        default:
+          return false;
+      }
     } catch (error) {
-      logger.error(`Error sending message to sandbox channel: ${sandboxId}/${sessionId}`, {
-        error: error instanceof Error ? error.message : String(error)
+      logger.error(`Error evaluating condition: ${condition}`, {
+        error: (error as Error).message
       });
       return false;
     }
   }
-  
+
   /**
-   * Handle a message received from a sandbox WebSocket channel
+   * Roll back a workflow to a previous state
    */
-  async handleSandboxMessage(
-    sandboxId: number,
-    sessionId: string,
-    message: any
-  ): Promise<void> {
+  private async rollbackWorkflow(workflow: Workflow, failedStepIndex: number, sessionId: string): Promise<void> {
+    logger.info(`Rolling back workflow: ${workflow.id}`, {
+      workflowId: workflow.id,
+      failedStepIndex
+    });
+
+    // Send rollback started event to WebSocket
+    this.webSocketService.sendToSession(sessionId, {
+      type: 'workflow_rollback_start',
+      data: {
+        workflowId: workflow.id,
+        timestamp: new Date().toISOString(),
+        correlationId: workflow.correlationId
+      }
+    });
+
+    // Identify steps that need rollback (completed steps up to the failed step)
+    const stepsToRollback = workflow.steps
+      .filter((step, index) => 
+        index < failedStepIndex && 
+        step.status === WorkflowStepStatus.COMPLETED
+      )
+      .reverse(); // Roll back in reverse order
+
+    // Perform rollback for each step
+    for (const step of stepsToRollback) {
+      try {
+        // Check if the step has a rollback action
+        // In a real system, you would define rollback actions for each step
+        // For now, just log the rollback
+        logger.info(`Rolling back step: ${step.id}`, {
+          workflowId: workflow.id,
+          stepId: step.id,
+          stepName: step.name
+        });
+
+        // Send step rollback event to WebSocket
+        this.webSocketService.sendToSession(sessionId, {
+          type: 'workflow_step_rollback',
+          data: {
+            workflowId: workflow.id,
+            stepId: step.id,
+            stepName: step.name,
+            timestamp: new Date().toISOString(),
+            correlationId: workflow.correlationId
+          }
+        });
+
+        // Perform actual rollback action
+        // This would depend on the specific step and tool
+        // For example, if a step created a resource, the rollback would delete it
+      } catch (error) {
+        logger.error(`Error rolling back step: ${step.id}`, {
+          error: (error as Error).message,
+          workflowId: workflow.id,
+          stepId: step.id
+        });
+      }
+    }
+
+    // Send rollback completed event to WebSocket
+    this.webSocketService.sendToSession(sessionId, {
+      type: 'workflow_rollback_complete',
+      data: {
+        workflowId: workflow.id,
+        timestamp: new Date().toISOString(),
+        correlationId: workflow.correlationId
+      }
+    });
+  }
+
+  /**
+   * Update a workflow with task result from event
+   */
+  private async updateWorkflowWithTaskResult(workflowId: string, event: any): Promise<void> {
     try {
-      // Get the session
-      const session = await this.getSandboxSession(sessionId);
-      if (!session) {
-        logger.warn(`Session not found for message: ${sessionId}`, {
-          sandboxId
-        });
-        return;
+      const workflow = this.activeWorkflows.get(workflowId);
+      if (!workflow) return;
+
+      // Find the step that corresponds to this task
+      const stepIndex = workflow.steps.findIndex(step => 
+        step.tool === event.taskType && 
+        step.status === WorkflowStepStatus.RUNNING
+      );
+
+      if (stepIndex === -1) return;
+
+      const step = workflow.steps[stepIndex];
+
+      // Update step with result
+      if (event.type === EventType.TASK_COMPLETED) {
+        step.status = WorkflowStepStatus.COMPLETED;
+        step.result = event.result;
+        step.endTime = new Date();
+      } else if (event.type === EventType.TASK_FAILED) {
+        step.status = WorkflowStepStatus.FAILED;
+        step.error = event.error;
+        step.endTime = new Date();
       }
-      
-      // Process the message based on its type
-      if (message.type === 'agent_message') {
-        // Process agent message
-        const response = await this.processAgentMessage(
-          sessionId,
-          message.content,
-          message.estimatedTokens
-        );
-        
-        // Send response back to the client
-        this.sendToSandboxChannel(sandboxId, sessionId, {
-          type: 'agent_response',
-          requestId: message.requestId,
-          success: response.success,
-          content: response.response,
-          error: response.error
-        });
-      } else if (message.type === 'tool_request') {
-        // Execute tool
-        const response = await this.executeToolInSandbox(
-          sessionId,
-          {
-            toolName: message.toolName,
-            parameters: message.parameters
-          },
-          message.estimatedTokens || 1000 // Default estimate if not provided
-        );
-        
-        // Send response back to the client
-        this.sendToSandboxChannel(sandboxId, sessionId, {
-          type: 'tool_response',
-          requestId: message.requestId,
-          toolName: message.toolName,
-          success: response.success,
-          data: response.data,
-          error: response.error
-        });
-      } else if (message.type === 'tool_stream_request') {
-        // Execute streaming tool
-        const emitter = this.executeToolStreamInSandbox(
-          sessionId,
-          {
-            toolName: message.toolName,
-            parameters: message.parameters,
-            streaming: true
-          },
-          message.estimatedTokens || 1000 // Default estimate if not provided
-        );
-        
-        // Forward events to the client
-        emitter.on('data', (data) => {
-          this.sendToSandboxChannel(sandboxId, sessionId, {
-            type: 'tool_stream',
-            requestId: message.requestId,
-            toolName: message.toolName,
-            streamEvent: data
-          });
-        });
-        
-        emitter.on('error', (error) => {
-          this.sendToSandboxChannel(sandboxId, sessionId, {
-            type: 'tool_stream',
-            requestId: message.requestId,
-            toolName: message.toolName,
-            streamEvent: {
-              type: 'error',
-              error: {
-                code: 'TOOL_EXECUTION_ERROR',
-                message: error instanceof Error ? error.message : String(error)
-              }
-            }
-          });
-        });
-      } else {
-        // Unknown message type
-        logger.warn(`Unknown message type received in sandbox: ${message.type}`, {
-          sandboxId,
-          sessionId
-        });
-      }
-    } catch (error) {
-      logger.error(`Error handling sandbox message: ${sandboxId}/${sessionId}`, {
-        error: error instanceof Error ? error.message : String(error),
-        message
-      });
-      
-      // Send error back to the client
-      this.sendToSandboxChannel(sandboxId, sessionId, {
-        type: 'error',
-        requestId: message.requestId,
-        error: {
-          code: 'SANDBOX_MESSAGE_ERROR',
-          message: error instanceof Error ? error.message : String(error)
+
+      // Update workflow
+      this.activeWorkflows.set(workflowId, { ...workflow });
+
+      // Send step update to WebSocket
+      this.webSocketService.sendToSession(workflow.sandboxId.toString(), {
+        type: event.type === EventType.TASK_COMPLETED ? 'workflow_step_complete' : 'workflow_step_error',
+        data: {
+          workflowId,
+          stepId: step.id,
+          stepName: step.name,
+          tool: step.tool,
+          result: step.result,
+          error: step.error,
+          timestamp: new Date().toISOString(),
+          correlationId: workflow.correlationId
         }
       });
-    }
-  }
-  
-  /**
-   * Clean up inactive sessions
-   */
-  private async cleanupInactiveSessions(): Promise<void> {
-    try {
-      // Find inactive sessions (no activity for 24 hours)
-      const inactiveSessions = await db.query.sandbox_sessions.findMany({
-        where: lte(
-          sandbox_sessions.last_activity,
-          new Date(Date.now() - 24 * 60 * 60 * 1000) // 24 hours ago
-        )
-      });
-      
-      if (inactiveSessions.length === 0) {
-        return;
-      }
-      
-      logger.info(`Cleaning up ${inactiveSessions.length} inactive sandbox sessions`);
-      
-      // Delete inactive sessions
-      for (const session of inactiveSessions) {
-        await this.deleteSandboxSession(session.session_id);
-      }
     } catch (error) {
-      logger.error('Error cleaning up inactive sessions', {
-        error: error instanceof Error ? error.message : String(error)
+      logger.error(`Error updating workflow with task result: ${workflowId}`, {
+        error: (error as Error).message,
+        workflowId,
+        eventType: event.type
       });
     }
   }
-  
+
   /**
-   * Log metrics
+   * Check if a step was successful
    */
-  private logMetrics(): void {
+  private isStepSuccessful(step: WorkflowStep): boolean {
+    if (step.status !== WorkflowStepStatus.COMPLETED) return false;
+    
+    // Check if result indicates success
+    // This would depend on the specific tool and result format
+    if (step.result && typeof step.result === 'object') {
+      return step.result.success === true;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Add an entry to replayable logs
+   */
+  private addToReplayableLogs(correlationId: string, entry: any): void {
+    if (!this.replayableLogs.has(correlationId)) {
+      this.replayableLogs.set(correlationId, []);
+    }
+    
+    this.replayableLogs.get(correlationId)!.push(entry);
+    
+    // Limit log size to prevent memory issues
+    const logs = this.replayableLogs.get(correlationId)!;
+    if (logs.length > 1000) {
+      this.replayableLogs.set(correlationId, logs.slice(-1000));
+    }
+  }
+
+  /**
+   * Get replayable logs for a correlation ID
+   */
+  public getReplayableLogs(correlationId: string): any[] {
+    return this.replayableLogs.get(correlationId) || [];
+  }
+
+  /**
+   * Get available tools for a sandbox
+   */
+  public async getAvailableTools(sandboxId: number): Promise<any[]> {
     try {
-      // Calculate average operation times
-      const averageOperationTimes: Record<string, number> = {};
-      for (const [operationType, times] of this.metricsCollector.operationTimes.entries()) {
-        if (times.length > 0) {
-          const sum = times.reduce((acc, time) => acc + time, 0);
-          averageOperationTimes[operationType] = sum / times.length;
+      // Get tools from database
+      const tools = await db.query.toolsTable.findMany({
+        where: eq(toolsTable.isActive, true),
+        with: {
+          agentTools: {
+            where: eq(agentTools.sandboxId, sandboxId)
+          }
         }
-      }
-      
-      // Log the metrics
-      logger.info('Orchestrator metrics', {
-        totalOperations: this.metricsCollector.totalOperations,
-        successfulOperations: this.metricsCollector.successfulOperations,
-        failedOperations: this.metricsCollector.failedOperations,
-        rateLimitedOperations: this.metricsCollector.rateLimitedOperations,
-        totalTokensUsed: this.metricsCollector.totalTokensUsed,
-        averageOperationTimes,
-        lastOperationTimestamp: this.metricsCollector.lastOperationTimestamp
       });
-      
-      // Reset operation times to prevent memory growth
-      for (const operationType of this.metricsCollector.operationTimes.keys()) {
-        this.metricsCollector.operationTimes.set(operationType, []);
-      }
+
+      // Transform to include enabled status
+      return tools.map(tool => ({
+        id: tool.id,
+        name: tool.name,
+        description: tool.description,
+        type: tool.type,
+        service: tool.service,
+        endpoint: tool.endpoint,
+        enabled: tool.agentTools.length > 0,
+        inputSchema: tool.inputSchema,
+        outputSchema: tool.outputSchema
+      }));
     } catch (error) {
-      logger.error('Error logging metrics', {
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  }
-  
-  /**
-   * Generate a unique session ID
-   */
-  private generateSessionId(): string {
-    return `sess_${uuidv4()}`;
-  }
-  
-  /**
-   * Generate a unique request ID
-   */
-  private generateRequestId(): string {
-    return `req_${uuidv4()}`;
-  }
-  
-  /**
-   * Get sandbox health status
-   */
-  async getSandboxHealth(sandboxId: number): Promise<{
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    activeSessions: number;
-    tokenUsage: {
-      hourlyUsage: number;
-      dailyUsage: number;
-      hourlyLimit: number;
-      dailyLimit: number;
-      hourlyUtilizationPercent: number;
-      dailyUtilizationPercent: number;
-    };
-    lastActivity?: Date;
-  }> {
-    try {
-      // Get sandbox
-      const sandbox = await this.getSandbox(sandboxId);
-      if (!sandbox) {
-        throw new SandboxNotFoundError(sandboxId);
-      }
-      
-      // Get active sessions
-      const sessions = await this.getSandboxSessions(sandboxId);
-      const activeSessions = sessions.filter(s => s.is_active).length;
-      
-      // Get last activity
-      let lastActivity: Date | undefined;
-      if (sessions.length > 0) {
-        lastActivity = sessions[0].last_activity;
-      }
-      
-      // Calculate usage percentages
-      const hourlyUtilizationPercent = (sandbox.current_hourly_usage / sandbox.token_limit_per_hour) * 100;
-      const dailyUtilizationPercent = (sandbox.current_daily_usage / sandbox.token_limit_per_day) * 100;
-      
-      // Determine health status
-      let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-      
-      if (!sandbox.is_active) {
-        status = 'unhealthy';
-      } else if (hourlyUtilizationPercent > 90 || dailyUtilizationPercent > 90) {
-        status = 'degraded';
-      }
-      
-      return {
-        status,
-        activeSessions,
-        tokenUsage: {
-          hourlyUsage: sandbox.current_hourly_usage,
-          dailyUsage: sandbox.current_daily_usage,
-          hourlyLimit: sandbox.token_limit_per_hour,
-          dailyLimit: sandbox.token_limit_per_day,
-          hourlyUtilizationPercent,
-          dailyUtilizationPercent
-        },
-        lastActivity
-      };
-    } catch (error) {
-      logger.error(`Error getting health for sandbox ${sandboxId}`, {
-        error: error instanceof Error ? error.message : String(error)
+      logger.error('Error getting available tools', {
+        error: (error as Error).message,
+        sandboxId
       });
       throw error;
     }
   }
-  
+
   /**
-   * Estimate token usage for a message
+   * Enable a tool for a sandbox
    */
-  estimateTokenUsage(message: string): number {
-    // Simple estimation: ~4 characters per token for English text
-    // This is a very rough estimate and should be replaced with a more accurate method
-    return Math.ceil(message.length / 4);
+  public async enableTool(params: {
+    sandboxId: number;
+    toolId: number;
+    userId: number;
+  }): Promise<void> {
+    try {
+      const { sandboxId, toolId, userId } = params;
+
+      // Check if tool is already enabled
+      const existing = await db.query.agentTools.findFirst({
+        where: and(
+          eq(agentTools.sandboxId, sandboxId),
+          eq(agentTools.toolId, toolId)
+        )
+      });
+
+      if (existing) return;
+
+      // Enable tool
+      await db.insert(agentTools).values({
+        sandboxId,
+        toolId,
+        enabledBy: userId,
+        enabledAt: new Date()
+      });
+
+      logger.info(`Tool enabled for sandbox: ${toolId}`, {
+        sandboxId,
+        toolId,
+        userId
+      });
+    } catch (error) {
+      logger.error('Error enabling tool', {
+        error: (error as Error).message,
+        sandboxId: params.sandboxId,
+        toolId: params.toolId
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Disable a tool for a sandbox
+   */
+  public async disableTool(params: {
+    sandboxId: number;
+    toolId: number;
+  }): Promise<void> {
+    try {
+      const { sandboxId, toolId } = params;
+
+      // Disable tool
+      await db.delete(agentTools)
+        .where(
+          and(
+            eq(agentTools.sandboxId, sandboxId),
+            eq(agentTools.toolId, toolId)
+          )
+        );
+
+      logger.info(`Tool disabled for sandbox: ${toolId}`, {
+        sandboxId,
+        toolId
+      });
+    } catch (error) {
+      logger.error('Error disabling tool', {
+        error: (error as Error).message,
+        sandboxId: params.sandboxId,
+        toolId: params.toolId
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get sandbox usage statistics
+   */
+  public async getSandboxUsage(sandboxId: number): Promise<any> {
+    try {
+      // Get total token usage
+      const totalUsage = await db
+        .select({ total: sum(tokenUsageLogs.tokenCount) })
+        .from(tokenUsageLogs)
+        .where(eq(tokenUsageLogs.sandboxId, sandboxId));
+
+      // Get hourly usage
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const hourlyUsage = await db
+        .select({ total: sum(tokenUsageLogs.tokenCount) })
+        .from(tokenUsageLogs)
+        .where(
+          and(
+            eq(tokenUsageLogs.sandboxId, sandboxId),
+            gte(tokenUsageLogs.timestamp, hourAgo)
+          )
+        );
+
+      // Get daily usage
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const dailyUsage = await db
+        .select({ total: sum(tokenUsageLogs.tokenCount) })
+        .from(tokenUsageLogs)
+        .where(
+          and(
+            eq(tokenUsageLogs.sandboxId, sandboxId),
+            gte(tokenUsageLogs.timestamp, dayAgo)
+          )
+        );
+
+      // Get usage by operation type
+      const usageByType = await db
+        .select({
+          operationType: tokenUsageLogs.operationType,
+          total: sum(tokenUsageLogs.tokenCount)
+        })
+        .from(tokenUsageLogs)
+        .where(eq(tokenUsageLogs.sandboxId, sandboxId))
+        .groupBy(tokenUsageLogs.operationType);
+
+      // Get active sessions
+      const activeSessions = await db
+        .select({ count: sql`count(*)` })
+        .from(sandboxSessions)
+        .where(
+          and(
+            eq(sandboxSessions.sandboxId, sandboxId),
+            eq(sandboxSessions.isActive, true)
+          )
+        );
+
+      // Get sandbox details
+      const sandbox = await this.getSandbox(sandboxId);
+
+      return {
+        sandboxId,
+        name: sandbox.name,
+        totalTokens: totalUsage[0]?.total || 0,
+        hourlyTokens: hourlyUsage[0]?.total || 0,
+        dailyTokens: dailyUsage[0]?.total || 0,
+        hourlyLimit: sandbox.hourlyTokenLimit,
+        dailyLimit: sandbox.dailyTokenLimit,
+        usageByType: usageByType.map(item => ({
+          operationType: item.operationType,
+          tokens: item.total
+        })),
+        activeSessions: activeSessions[0]?.count || 0,
+        isActive: sandbox.isActive,
+        createdAt: sandbox.createdAt
+      };
+    } catch (error) {
+      logger.error('Error getting sandbox usage', {
+        error: (error as Error).message,
+        sandboxId
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get workflow by ID
+   */
+  public getWorkflow(workflowId: string): Workflow | undefined {
+    return this.activeWorkflows.get(workflowId);
+  }
+
+  /**
+   * Get active workflows for a sandbox
+   */
+  public getActiveWorkflows(sandboxId: number): Workflow[] {
+    return Array.from(this.activeWorkflows.values())
+      .filter(workflow => workflow.sandboxId === sandboxId);
+  }
+
+  /**
+   * Clean up old workflows and logs
+   */
+  public cleanupOldData(): void {
+    const now = Date.now();
+    
+    // Clean up workflows older than 24 hours
+    for (const [workflowId, workflow] of this.activeWorkflows.entries()) {
+      if (workflow.endTime && now - workflow.endTime.getTime() > 24 * 60 * 60 * 1000) {
+        this.activeWorkflows.delete(workflowId);
+      }
+    }
+    
+    // Clean up logs older than 24 hours
+    for (const [correlationId, logs] of this.replayableLogs.entries()) {
+      if (logs.length > 0) {
+        const lastLog = logs[logs.length - 1];
+        if (lastLog.timestamp && now - new Date(lastLog.timestamp).getTime() > 24 * 60 * 60 * 1000) {
+          this.replayableLogs.delete(correlationId);
+        }
+      }
+    }
   }
 }
 
-// Export a singleton instance
-export const orchestrator = new OrchestratorService();
+// Export singleton instance
+export const orchestratorService = new OrchestratorService(
+  // These will be injected when the module is imported
+  null as any, // webSocketService will be injected
+  null as any, // toolRegistry will be injected
+  null as any, // eventBus will be injected
+  null as any  // adsAutomationWorker will be injected
+);
 
-// Export types
-export type { 
-  SandboxSessionContext, 
-  SandboxOperationOptions,
-  TokenUsage
-};
-export { SandboxOperationType };
+export default orchestratorService;
