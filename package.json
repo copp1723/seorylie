@@ -11,6 +11,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "preview": "npm run build && npm run start",
     "check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "check:watch": "tsc --noEmit --watch",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",

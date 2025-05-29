@@ -29,12 +29,14 @@ import agentOrchestrationRoutes from './routes/agent-orchestration-routes';
 import sandboxRoutes from './routes/sandbox-routes';
 import toolsRoutes from './routes/tools-routes';
 import adsRoutes from './routes/ads-routes';
+import featureFlagRoutes from './routes/feature-flags';
 
 // Import middleware
 import { errorHandler } from './utils/error-handler';
 import { authenticate } from './middleware/authentication';
 import { rateLimiter } from './middleware/rate-limit';
 import { validateRequest } from './middleware/validation';
+import { featureFlagMiddleware } from './middleware/feature-flags';
 
 // Import services
 import { logger } from './utils/logger';
@@ -74,6 +76,7 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(featureFlagMiddleware);
 app.use(metricsMiddleware);
 app.use(promBundle({ includeMethod: true, includePath: true }));
 
@@ -109,6 +112,7 @@ app.use('/api/sandboxes', authenticate, sandboxRoutes);
 app.use('/api/tools', authenticate, toolsRoutes);
 app.use('/api/ads', adsRoutes);
 app.use('/api/metrics', authenticate, monitoringRoutes);
+app.use('/api/admin/feature-flags', featureFlagRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

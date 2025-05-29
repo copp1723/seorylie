@@ -22,6 +22,7 @@ import Settings from './pages/settings';
 import Security from './pages/security';
 import NotFound from './pages/not-found';
 import AgentStudio from './pages/agent-studio';
+import IntegrationDashboardPage from './pages/integration-dashboard';
 
 function App() {
   return (
@@ -80,6 +81,12 @@ function App() {
                 <Route path="/agent-studio">
                   <ProtectedRoute>
                     <AgentStudio />
+                  </ProtectedRoute>
+                </Route>
+                {/* Integration Dashboard route */}
+                <Route path="/integration">
+                  <ProtectedRoute>
+                    <IntegrationDashboardPage />
                   </ProtectedRoute>
                 </Route>
                 {/* Catch-all route */}

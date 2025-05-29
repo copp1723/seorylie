@@ -5,7 +5,7 @@ import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { AlertCircle, Clock, Copy, Edit, MoreVertical, Play, Trash2, Zap, Database, Tool, Settings, CheckCircle, XCircle, PauseCircle } from 'lucide-react';
+import { AlertCircle, Clock, Copy, Edit, MoreVertical, Play, Trash2, Zap, Database, Wrench, Settings, CheckCircle, XCircle, PauseCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Progress } from '../ui/progress';
 
@@ -222,7 +222,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
           {/* Tools Section */}
           <div>
             <div className="text-sm font-medium mb-1 flex items-center">
-              <Tool className="h-3 w-3 mr-1 text-muted-foreground" />
+              <Wrench className="h-3 w-3 mr-1 text-muted-foreground" />
               <span>Tools</span>
             </div>
             <div className="flex flex-wrap gap-1">
