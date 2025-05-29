@@ -1,165 +1,101 @@
-import express, { Express } from 'express';
-import { createServer } from 'http';
-import session from 'express-session';
-import connectPgSimple from 'connect-pg-simple';
-import { Pool } from 'pg';
-import csrf from 'csurf';
-import logger from './utils/logger';
-import { db } from './db';
-
-// Import route modules
-import promptRoutes from './routes/prompt-testing-routes';
+import express from 'express';
+import authRoutes from './routes/auth-routes';
 import localAuthRoutes from './routes/local-auth-routes';
 import magicLinkRoutes from './routes/magic-link';
 import adminRoutes from './routes/admin-routes';
 import adminUserRoutes from './routes/admin-user-routes';
-import escalationRoutes from './routes/escalation-routes';
-import leadManagementRoutes from './routes/lead-management-routes';
-import userManagementRoutes from './routes/user-management-routes';
-import customerInsightsRoutes from './routes/customer-insights-routes';
+import dealershipConfigRoutes from './routes/dealership-config-routes';
 import inventoryRoutes from './routes/inventory-routes';
-import { tenantContextMiddleware } from './middleware/tenant-context';
-import WebSocketChatServer from './ws-server';
+import promptTestingRoutes from './routes/prompt-testing-routes';
+import simplePromptTest from './routes/simple-prompt-test';
+import monitoringRoutes from './routes/monitoring-routes';
+import optimizedRoutes from './routes/optimized-routes';
+import optimizedApi from './routes/optimized-api';
+import apiDocs from './routes/api-docs';
+import leadApiRoutes from './routes/lead-api-routes';
+import leadManagementRoutes from './routes/lead-management-routes';
+import agentDashboardRoutes from './routes/agent-dashboard-routes';
+import agentSquadRoutes from './routes/agent-squad-routes';
+import userManagementRoutes from './routes/user-management-routes';
+import conversationLogsRoutes from './routes/conversation-logs-routes';
+import customerInsightsRoutes from './routes/customer-insights-routes';
+import escalationRoutes from './routes/escalation-routes';
+import performanceRoutes from './routes/performance-routes';
+import twilioWebhooks from './routes/twilio-webhooks';
+import sendgridWebhook from './routes/webhooks/sendgrid';
+import apiResponseExamples from './routes/api-response-examples';
+import cacheDemoRoutes from './routes/cache-demo-routes';
+import logger from './utils/logger';
 
-// Check database connection
-async function checkDatabaseConnection() {
-  try {
-    await db.execute('SELECT NOW()');
-    console.log('PostgreSQL connection test successful');
-    return true;
-  } catch (error) {
-    console.error('PostgreSQL connection test failed:', error);
-    return false;
-  }
-}
+export default function registerRoutes(app: express.Express) {
+  logger.info('Registering routes');
 
-export async function registerRoutes(app: Express) {
-  // Check database connection before proceeding
-  const dbConnected = await checkDatabaseConnection();
-  if (!dbConnected) {
-    logger.warn('Database connection failed - some features may not work properly');
-    // Don't exit - allow server to start for frontend testing
-  }
-
-  // Configure session store
-  const connectionString = process.env.DATABASE_URL;
-  const isSupabase = connectionString?.includes('supabase.co');
-
-  let sessionStore;
-
-  if (dbConnected) {
-    try {
-      const pgPool = new Pool({
-        connectionString: connectionString,
-        ssl: (process.env.NODE_ENV === 'production' || isSupabase) ? { rejectUnauthorized: false } : false,
-        max: 20,
-        idleTimeoutMillis: 30000,
-      });
-
-      const PgSessionStore = connectPgSimple(session);
-      logger.info('Initializing PostgreSQL session store');
-
-      sessionStore = new PgSessionStore({
-        pool: pgPool,
-        tableName: 'sessions',
-        createTableIfMissing: true,
-      });
-
-      logger.info('PostgreSQL session store initialized successfully');
-    } catch (error) {
-      logger.warn('Failed to initialize PostgreSQL session store, using memory store', error);
-      sessionStore = undefined; // Will use default memory store
-    }
-  } else {
-    logger.info('Using memory session store due to database connection issues');
-    sessionStore = undefined; // Will use default memory store
-  }
-
-  // Configure session middleware
-  const sessionConfig: any = {
-    secret: process.env.SESSION_SECRET || 'rylie-secure-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      sameSite: 'lax',
-    },
-  };
-
-  if (sessionStore) {
-    sessionConfig.store = sessionStore;
-  }
-
-  app.use(session(sessionConfig));
-
-  // Add CSRF protection
-  const csrfProtection = csrf({ cookie: false });
-
-  // Apply CSRF protection to all routes except those that need to be exempt
-  app.use((req, res, next) => {
-    // List of routes that should be exempt from CSRF protection
-    const exemptRoutes = [
-      '/api/magic-link/verify',
-      '/api/inbound',
-      '/api/webhook',
-      '/api/metrics',
-      '/api/health',
-      '/api/login',
-      '/api/logout',
-      '/api/user',
-      '/api/prompt-test',
-    ];
-
-    // Check if the current route should be exempt
-    const isExempt = exemptRoutes.some(route => req.path.startsWith(route));
-
-    if (isExempt) {
-      next();
-    } else {
-      csrfProtection(req, res, next);
-    }
-  });
-
-  // Add CSRF token endpoint
-  app.get('/api/csrf-token', csrfProtection, (req, res) => {
-    res.json({ csrfToken: req.csrfToken() });
-  });
-
-  // Add tenant context middleware for multi-tenancy
-  app.use(tenantContextMiddleware);
-
-  // Register route modules
-  app.use('/api/prompt-testing', promptRoutes);
-  app.use('/api/prompt-test', promptRoutes);
+  // API Documentation
+  app.use('/api-docs', apiDocs);
 
   // Authentication routes
-  app.use('/api', localAuthRoutes);
-  app.use('/api/magic-link', magicLinkRoutes);
+  app.use('/auth', authRoutes);
+  app.use('/auth/local', localAuthRoutes);
+  app.use('/auth/magic-link', magicLinkRoutes);
 
   // Admin routes
-  app.use('/api/admin', adminRoutes);
-  app.use('/api/admin', adminUserRoutes);
+  app.use('/admin', adminRoutes);
+  app.use('/admin/users', adminUserRoutes);
 
-  // New feature routes
-  app.use('/api', escalationRoutes);
-  app.use('/api', leadManagementRoutes);
-  app.use('/api', userManagementRoutes);
-  app.use('/api', customerInsightsRoutes);
-  app.use('/api', inventoryRoutes);
+  // Dealership configuration
+  app.use('/dealership-config', dealershipConfigRoutes);
 
-  // Create and return HTTP server
-  const server = createServer(app);
+  // Inventory management
+  app.use('/inventory', inventoryRoutes);
 
-  // Initialize WebSocket server
-  try {
-    const wsServer = new WebSocketChatServer();
-    wsServer.initialize(server);
-    logger.info('WebSocket chat server initialized successfully');
-  } catch (error) {
-    logger.error('Failed to initialize WebSocket server:', error);
-  }
+  // Prompt testing
+  app.use('/prompt-testing', promptTestingRoutes);
+  app.use('/simple-prompt-test', simplePromptTest);
 
-  return server;
+  // Monitoring and health checks
+  app.use('/api', monitoringRoutes);
+
+  // Optimized routes
+  app.use('/optimized', optimizedRoutes);
+  app.use('/api/v2', optimizedApi);
+
+  // Lead management
+  app.use('/api/leads', leadApiRoutes);
+  app.use('/lead-management', leadManagementRoutes);
+
+  // Agent dashboard
+  app.use('/agent-dashboard', agentDashboardRoutes);
+  app.use('/agent-squad', agentSquadRoutes);
+
+  // User management
+  app.use('/user-management', userManagementRoutes);
+
+  // Conversation logs
+  app.use('/conversation-logs', conversationLogsRoutes);
+
+  // Customer insights
+  app.use('/customer-insights', customerInsightsRoutes);
+
+  // Escalation routes
+  app.use('/escalation', escalationRoutes);
+
+  // Performance routes
+  app.use('/performance', performanceRoutes);
+
+  // Webhooks
+  app.use('/webhooks/twilio', twilioWebhooks);
+  app.use('/webhooks', sendgridWebhook);
+
+  // API Response Examples
+  app.use('/api-response-examples', apiResponseExamples);
+
+  // Cache demo routes
+  app.use('/cache-demo', cacheDemoRoutes);
+
+  // Default route
+  app.get('/', (req, res) => {
+    res.json({ message: 'API is running' });
+  });
+
+  logger.info('Routes registered successfully');
 }
