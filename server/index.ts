@@ -1,3 +1,9 @@
+/**
+ * Initialize tracing first to capture all instrumentation
+ */
+import { initTracing } from './observability/tracing';
+const tracingSdk = initTracing();
+
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
@@ -13,6 +19,7 @@ import { OrchestratorService } from './services/orchestrator';
 import { crossServiceAgent } from './services/cross-service-agent';
 import { analyticsClient } from './services/analytics-client';
 import { AgentSquad } from './services/agentSquad';
+import { initMetrics } from './observability/metrics';
 
 // Import routes
 import authRoutes from './routes/auth-routes';
@@ -51,6 +58,9 @@ setupWebSocketServer(server, wss, webSocketService, orchestratorService);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Initialize Prometheus metrics before routes
+initMetrics(app);
 
 // Session configuration
 app.use(
@@ -98,11 +108,20 @@ server.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
   logger.info(`WebSocket server initialized`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`Metrics available at: http://localhost:${PORT}/metrics`);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
+  
+  // Shutdown tracing if initialized
+  if (tracingSdk) {
+    tracingSdk.shutdown()
+      .then(() => logger.info('Tracing terminated'))
+      .catch(error => logger.error('Error shutting down tracing', error));
+  }
+  
   server.close(() => {
     logger.info('Server closed');
     process.exit(0);
