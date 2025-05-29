@@ -19,6 +19,8 @@ import userManagementRoutes from './routes/user-management-routes';
 import customerInsightsRoutes from './routes/customer-insights-routes';
 import inventoryRoutes from './routes/inventory-routes';
 import predictionRoutes from './routes/prediction-routes';
+import sendgridWebhook from './routes/webhooks/sendgrid';
+import emailRoutes from './routes/email-routes';
 import { tenantContextMiddleware } from './middleware/tenant-context';
 import WebSocketChatServer from './ws-server';
 
@@ -111,6 +113,8 @@ export async function registerRoutes(app: Express) {
       '/api/logout',
       '/api/user',
       '/api/prompt-test',
+      '/webhooks/sendgrid', // Add SendGrid webhook to exemptions
+      '/api/email/status'   // Add email status endpoint to exemptions
     ];
 
     // Check if the current route should be exempt
@@ -139,6 +143,9 @@ export async function registerRoutes(app: Express) {
   app.use('/api', localAuthRoutes);
   app.use('/api/magic-link', magicLinkRoutes);
 
+  // Email routes (ADF-05)
+  app.use('/api/email', emailRoutes);
+  
   // Admin routes
   app.use('/api/admin', adminRoutes);
   app.use('/api/admin', adminUserRoutes);
@@ -150,6 +157,9 @@ export async function registerRoutes(app: Express) {
   app.use('/api', customerInsightsRoutes);
   app.use('/api', inventoryRoutes);
   app.use('/api/predictions', predictionRoutes);
+
+  // Webhook routes
+  app.use('/webhooks', sendgridWebhook);
 
   // Create and return HTTP server
   const server = createServer(app);
