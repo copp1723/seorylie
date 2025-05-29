@@ -30,6 +30,7 @@ CLEANRYLIE_API="http://localhost:3000/api/metrics/health"
 CLEANRYLIE_FRONTEND="http://localhost:5173"
 WATCHDOG_API="http://localhost:8000/api/health"
 MINDSDB_API="http://localhost:47334/api/health"
+VIN_AGENT_API="http://localhost:5000/health"
 
 # Initialize service status
 declare -A SERVICE_STATUS
@@ -39,6 +40,7 @@ SERVICE_STATUS["cleanrylie-api"]="pending"
 SERVICE_STATUS["cleanrylie-frontend"]="pending"
 SERVICE_STATUS["watchdog-api"]="pending"
 SERVICE_STATUS["mindsdb"]="pending"
+SERVICE_STATUS["vin-agent"]="pending"
 
 # Function to check PostgreSQL
 check_postgres() {
@@ -153,6 +155,14 @@ main() {
       if check_http $MINDSDB_API; then
         SERVICE_STATUS["mindsdb"]="healthy"
         echo -e "${GREEN}✓ MindsDB is healthy (${SECONDS}s)${NC}"
+      fi
+    fi
+    
+    # Check vin-agent
+    if [ "${SERVICE_STATUS[vin-agent]}" == "pending" ]; then
+      if check_http $VIN_AGENT_API; then
+        SERVICE_STATUS["vin-agent"]="healthy"
+        echo -e "${GREEN}✓ VIN Agent is healthy (${SECONDS}s)${NC}"
       fi
     fi
     
