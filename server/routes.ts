@@ -4,9 +4,9 @@ import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import { Pool } from 'pg';
 import csrf from 'csurf';
-import logger from '../utils/logger';
-import { db } from '../db';
-import { sql } from 'drizzle-orm'; // Added missing import
+import logger from './utils/logger';
+import { db } from './db';
+import { featureFlagsService } from './services/feature-flags-service'; // Import feature flags service
 
 // Import route modules
 import promptRoutes from './routes/prompt-testing-routes';
@@ -19,17 +19,17 @@ import leadManagementRoutes from './routes/lead-management-routes';
 import userManagementRoutes from './routes/user-management-routes';
 import customerInsightsRoutes from './routes/customer-insights-routes';
 import inventoryRoutes from './routes/inventory-routes';
-import performanceRoutes from './routes/performance-routes'; // H6 KPI Query Caching related
-import kpiRoutes from './routes/kpi-routes'; // H6 KPI Query Caching related
-import monitoringRoutes from './routes/monitoring-routes'; // General monitoring and metrics
-
+import performanceRoutes from './routes/performance-routes';
+import kpiRoutes from './routes/kpi-routes';
+import sandboxRoutes from './routes/sandbox-routes'; // Import sandbox routes
 import { tenantContextMiddleware } from './middleware/tenant-context';
 import WebSocketChatServer from './ws-server';
+import { sql } from 'drizzle-orm';
 
 // Check database connection
 async function checkDatabaseConnection() {
   try {
-    await db.execute(sql`SELECT NOW()`); // Use Drizzle's sql template tag
+    await db.execute(sql`SELECT NOW()`);
     console.log('PostgreSQL connection test successful');
     return true;
   } catch (error) {
@@ -46,6 +46,16 @@ export async function registerRoutes(app: Express) {
     // Don't exit - allow server to start for frontend testing
   }
 
+  // Initialize Feature Flags Service
+  try {
+    await featureFlagsService.initialize();
+    logger.info('Feature Flags Service initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize Feature Flags Service:', error);
+    // Depending on requirements, you might want to handle this more gracefully
+    // or prevent server startup if feature flags are critical.
+  }
+
   // Configure session store
   const connectionString = process.env.DATABASE_URL;
   const isSupabase = connectionString?.includes('supabase.co');
@@ -57,8 +67,8 @@ export async function registerRoutes(app: Express) {
       const pgPool = new Pool({
         connectionString: connectionString,
         ssl: (process.env.NODE_ENV === 'production' || isSupabase) ? { rejectUnauthorized: false } : false,
-        max: 20, // Consistent with INT-002
-        idleTimeoutMillis: 30000, // Consistent with INT-002
+        max: 20,
+        idleTimeoutMillis: 30000,
       });
 
       const PgSessionStore = connectPgSimple(session);
@@ -81,7 +91,7 @@ export async function registerRoutes(app: Express) {
   }
 
   // Configure session middleware
-  const sessionConfig: session.SessionOptions = { // Explicitly type sessionConfig
+  const sessionConfig: any = {
     secret: process.env.SESSION_SECRET || 'rylie-secure-secret',
     resave: false,
     saveUninitialized: false,
@@ -100,31 +110,22 @@ export async function registerRoutes(app: Express) {
   app.use(session(sessionConfig));
 
   // Add CSRF protection
-  const csrfProtection = csrf({ cookie: false }); // Cookie: false as we send it via an endpoint
+  const csrfProtection = csrf({ cookie: false });
 
   // Apply CSRF protection to all routes except those that need to be exempt
   app.use((req, res, next) => {
     // List of routes that should be exempt from CSRF protection
     const exemptRoutes = [
-      '/api/magic-link/verify', // Existing
-      '/api/inbound',           // Existing (likely for webhooks)
-      '/api/webhook',           // Existing (likely for webhooks)
-      '/api/metrics',           // Existing (Prometheus metrics) - general metrics, might be deprecated by /api/monitoring/metrics
-      '/api/health',            // Existing (Health check) - general health, might be deprecated by /api/monitoring/health
-      '/api/login',             // Existing
-      '/api/logout',            // Existing
-      '/api/user',              // Existing
-      '/api/prompt-test',       // Existing
-
-      // New exemptions for H6 KPI Caching and related programmatic endpoints
-      '/api/kpi/cache/invalidate/', // Prefix match for /tag/:tag and /pattern/:pattern
-      '/api/kpi/etl/event',         // For ETL triggered cache invalidation
-
-      // Exemptions for monitoring endpoints (if scraped or called programmatically)
-      '/api/monitoring/health',
-      '/api/monitoring/metrics',
-      '/api/monitoring/cache/clear', // If used programmatically for cache management
-      '/api/performance/cache/clear', // If used programmatically for cache management
+      '/api/magic-link/verify',
+      '/api/inbound',
+      '/api/webhook',
+      '/api/metrics',
+      '/api/health',
+      '/api/login',
+      '/api/logout',
+      '/api/user',
+      '/api/prompt-test',
+      '/api/sandbox', // Exempt sandbox routes if they handle external webhooks or non-browser clients
     ];
 
     // Check if the current route should be exempt
@@ -137,7 +138,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add CSRF token endpoint (should be after CSRF middleware is configured but before it's strictly enforced on this route)
+  // Add CSRF token endpoint
   app.get('/api/csrf-token', csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
   });
@@ -147,7 +148,7 @@ export async function registerRoutes(app: Express) {
 
   // Register route modules
   app.use('/api/prompt-testing', promptRoutes);
-  app.use('/api/prompt-test', promptRoutes); // Alias or specific sub-routes
+  app.use('/api/prompt-test', promptRoutes);
 
   // Authentication routes
   app.use('/api', localAuthRoutes);
@@ -155,20 +156,17 @@ export async function registerRoutes(app: Express) {
 
   // Admin routes
   app.use('/api/admin', adminRoutes);
-  app.use('/api/admin', adminUserRoutes); // Ensure this doesn't conflict if paths overlap, or merge them
+  app.use('/api/admin', adminUserRoutes);
 
-  // Core feature routes
+  // New feature routes
   app.use('/api', escalationRoutes);
   app.use('/api', leadManagementRoutes);
   app.use('/api', userManagementRoutes);
   app.use('/api', customerInsightsRoutes);
   app.use('/api', inventoryRoutes);
-
-  // New H6 KPI Caching and related routes
-  app.use('/api/kpi', kpiRoutes);
   app.use('/api/performance', performanceRoutes);
-  app.use('/api/monitoring', monitoringRoutes);
-
+  app.use('/api/kpi', kpiRoutes);
+  app.use('/api/sandbox', sandboxRoutes); // Register sandbox routes
 
   // Create and return HTTP server
   const server = createServer(app);
@@ -176,7 +174,7 @@ export async function registerRoutes(app: Express) {
   // Initialize WebSocket server
   try {
     const wsServer = new WebSocketChatServer();
-    wsServer.initialize(server); // Assuming initialize takes the http.Server instance
+    wsServer.initialize(server); // WebSocket service might use feature flags
     logger.info('WebSocket chat server initialized successfully');
   } catch (error) {
     logger.error('Failed to initialize WebSocket server:', error);

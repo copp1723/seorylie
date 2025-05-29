@@ -1,587 +1,901 @@
-import express from 'express';
-import { db } from '../db';
-import { sandboxes, sandboxSessions, tokenUsageLogs } from '../../shared/schema';
-import { z } from 'zod';
-import { auth } from '../middleware/auth';
-import { logger } from '../utils/logger';
+import express, { Request, Response, NextFunction } from 'express';
+import { Redis } from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
-import { eq, and, desc, sql, gte } from 'drizzle-orm';
+import { z } from 'zod';
+import logger from '../utils/logger';
+import { AppError, ErrorCode, ResponseHelper, asyncHandler } from '../utils/error-codes';
+import { authenticateJWT } from '../middleware/auth-middleware';
+import { validateRequest } from '../middleware/validation-middleware';
+import { rateLimiter } from '../middleware/rate-limiter';
+import { featureFlagsService, FeatureFlagNames, FlagContext } from '../services/feature-flags-service';
+import { monitoringService } from '../services/monitoring';
 
-// Validation schemas
-const createSandboxSchema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
-  token_limit_per_hour: z.number().int().positive().default(10000),
-  token_limit_per_day: z.number().int().positive().default(50000),
-  is_active: z.boolean().default(true)
+// Redis client for storing sandbox state
+const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: 3,
+  enableOfflineQueue: true,
+  connectTimeout: 10000,
+  keyPrefix: 'sandbox:'
 });
 
-const updateSandboxSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  description: z.string().max(500).optional(),
-  token_limit_per_hour: z.number().int().positive().optional(),
-  token_limit_per_day: z.number().int().positive().optional(),
-  is_active: z.boolean().optional()
+// Sandbox state enum
+export enum SandboxState {
+  ACTIVE = 'active',
+  PAUSED = 'paused',
+  ERROR = 'error',
+  TERMINATED = 'terminated',
+  INITIALIZING = 'initializing'
+}
+
+// Sandbox metadata interface
+export interface SandboxMetadata {
+  id: string;
+  name: string;
+  userId: number;
+  dealershipId: number;
+  createdAt: string;
+  lastActivityAt: string;
+  state: SandboxState;
+  pausedAt?: string;
+  pausedBy?: string;
+  pauseReason?: string;
+  resumedAt?: string;
+  resumedBy?: string;
+  errorDetails?: string;
+  autoPauseSettings?: {
+    enabled: boolean;
+    idleTimeoutMinutes: number;
+    maxExecutionTimeMinutes: number;
+    maxMemoryUsageMB: number;
+  };
+}
+
+// Pause history entry interface
+export interface PauseHistoryEntry {
+  id: string;
+  sandboxId: string;
+  action: 'pause' | 'resume';
+  timestamp: string;
+  userId: number;
+  userName: string;
+  reason?: string;
+  metadata?: Record<string, any>;
+}
+
+// Sandbox pause settings validation schema
+const pauseSettingsSchema = z.object({
+  autoPauseEnabled: z.boolean().optional(),
+  idleTimeoutMinutes: z.number().min(1).max(1440).optional(), // 1 min to 24 hours
+  maxExecutionTimeMinutes: z.number().min(1).max(1440).optional(),
+  maxMemoryUsageMB: z.number().min(128).max(8192).optional() // 128MB to 8GB
 });
 
-const createSessionSchema = z.object({
-  userId: z.number().int().positive(),
-  metadata: z.record(z.any()).optional()
+// Bulk operation validation schema
+const bulkOperationSchema = z.object({
+  sandboxIds: z.array(z.string().min(1)).min(1).max(50),
+  reason: z.string().optional()
 });
 
-// Initialize router
+// Tool execution validation schema
+const toolExecutionSchema = z.object({
+  toolId: z.string().min(1),
+  parameters: z.record(z.any()).optional(),
+  timeout: z.number().min(1000).max(300000).optional() // 1s to 5min
+});
+
+// Create router
 const router = express.Router();
 
+// Register metrics
+monitoringService.registerCounter(
+  'sandbox_operations_total',
+  'Total number of sandbox operations',
+  ['operation', 'status']
+);
+
+monitoringService.registerGauge(
+  'sandbox_state_count',
+  'Number of sandboxes in each state',
+  ['state']
+);
+
+monitoringService.registerHistogram(
+  'sandbox_operation_duration_seconds',
+  'Duration of sandbox operations in seconds',
+  ['operation'],
+  [0.01, 0.05, 0.1, 0.5, 1, 5]
+);
+
 /**
- * @route   GET /api/sandboxes
- * @desc    Get all sandboxes for the authenticated user
- * @access  Private
+ * Middleware to check if sandbox pause/resume feature is enabled
  */
-router.get('/', auth, async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'User not authenticated' });
-    }
-    
-    // Get all sandboxes for this user
-    const userSandboxes = await db.select({
-      id: sandboxes.id,
-      name: sandboxes.name,
-      description: sandboxes.description,
-      token_limit_per_hour: sandboxes.tokenLimitPerHour,
-      token_limit_per_day: sandboxes.tokenLimitPerDay,
-      current_hourly_usage: sandboxes.currentHourlyUsage,
-      current_daily_usage: sandboxes.currentDailyUsage,
-      is_active: sandboxes.isActive,
-      created_at: sandboxes.createdAt,
-      updated_at: sandboxes.updatedAt
-    })
-    .from(sandboxes)
-    .where(eq(sandboxes.userId, userId))
-    .orderBy(desc(sandboxes.createdAt));
-    
-    return res.status(200).json({
-      success: true,
-      sandboxes: userSandboxes
-    });
-  } catch (error) {
-    logger.error('Error fetching sandboxes:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to fetch sandboxes'
-    });
+const checkFeatureEnabled = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const context: FlagContext = {
+    userId: req.user?.id,
+    dealershipId: req.user?.dealershipId,
+    environment: process.env.NODE_ENV || 'development'
+  };
+
+  const isEnabled = await featureFlagsService.isEnabled(
+    FeatureFlagNames.SANDBOX_PAUSE_RESUME,
+    context
+  );
+
+  if (!isEnabled) {
+    throw new AppError(
+      ErrorCode.NOT_IMPLEMENTED,
+      'Sandbox pause/resume feature is not enabled',
+      501
+    );
   }
+
+  next();
 });
 
 /**
- * @route   POST /api/sandboxes
- * @desc    Create a new sandbox
- * @access  Private
+ * Middleware to check if sandbox exists and user has access
  */
-router.post('/', auth, async (req, res) => {
+const checkSandboxAccess = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const sandboxId = req.params.id;
+  
+  if (!sandboxId) {
+    throw new AppError(
+      ErrorCode.VALIDATION_ERROR,
+      'Sandbox ID is required',
+      400
+    );
+  }
+
+  const sandboxData = await getSandboxMetadata(sandboxId);
+  
+  if (!sandboxData) {
+    throw new AppError(
+      ErrorCode.RECORD_NOT_FOUND,
+      `Sandbox with ID ${sandboxId} not found`,
+      404
+    );
+  }
+
+  // Check if user has access to this sandbox
+  if (req.user?.dealershipId !== sandboxData.dealershipId && !req.user?.isAdmin) {
+    throw new AppError(
+      ErrorCode.INSUFFICIENT_PERMISSIONS,
+      'You do not have permission to access this sandbox',
+      403
+    );
+  }
+
+  // Add sandbox data to request for handlers to use
+  req.sandbox = sandboxData;
+  next();
+});
+
+/**
+ * Get sandbox metadata from Redis
+ */
+async function getSandboxMetadata(sandboxId: string): Promise<SandboxMetadata | null> {
   try {
-    const userId = req.user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'User not authenticated' });
-    }
-    
-    // Validate request body
-    const validationResult = createSandboxSchema.safeParse(req.body);
-    
-    if (!validationResult.success) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid request data',
-        details: validationResult.error.format()
-      });
-    }
-    
-    const { name, description, token_limit_per_hour, token_limit_per_day, is_active } = validationResult.data;
-    
-    // Create new sandbox
-    const [newSandbox] = await db.insert(sandboxes)
-      .values({
-        name,
-        description,
-        userId,
-        tokenLimitPerHour: token_limit_per_hour,
-        tokenLimitPerDay: token_limit_per_day,
-        currentHourlyUsage: 0,
-        currentDailyUsage: 0,
-        isActive: is_active,
-        createdAt: new Date(),
-        updatedAt: new Date()
+    const data = await redisClient.get(`metadata:${sandboxId}`);
+    if (!data) return null;
+    return JSON.parse(data) as SandboxMetadata;
+  } catch (error) {
+    logger.error('Error retrieving sandbox metadata', { sandboxId, error });
+    return null;
+  }
+}
+
+/**
+ * Save sandbox metadata to Redis
+ */
+async function saveSandboxMetadata(metadata: SandboxMetadata): Promise<boolean> {
+  try {
+    await redisClient.set(
+      `metadata:${metadata.id}`,
+      JSON.stringify(metadata),
+      'EX',
+      60 * 60 * 24 * 7 // 7 days expiry
+    );
+    return true;
+  } catch (error) {
+    logger.error('Error saving sandbox metadata', { sandboxId: metadata.id, error });
+    return false;
+  }
+}
+
+/**
+ * Add entry to sandbox pause history
+ */
+async function addToPauseHistory(entry: PauseHistoryEntry): Promise<boolean> {
+  try {
+    const historyKey = `history:${entry.sandboxId}`;
+    await redisClient.lpush(historyKey, JSON.stringify(entry));
+    await redisClient.ltrim(historyKey, 0, 99); // Keep last 100 entries
+    await redisClient.expire(historyKey, 60 * 60 * 24 * 30); // 30 days expiry
+    return true;
+  } catch (error) {
+    logger.error('Error adding to pause history', { sandboxId: entry.sandboxId, error });
+    return false;
+  }
+}
+
+/**
+ * Update sandbox state metrics
+ */
+async function updateStateMetrics(): Promise<void> {
+  try {
+    // Get counts of sandboxes in each state
+    const keys = await redisClient.keys('metadata:*');
+    const sandboxes = await Promise.all(
+      keys.map(async (key) => {
+        const data = await redisClient.get(key);
+        return data ? JSON.parse(data) as SandboxMetadata : null;
       })
-      .returning({
-        id: sandboxes.id,
-        name: sandboxes.name,
-        description: sandboxes.description,
-        token_limit_per_hour: sandboxes.tokenLimitPerHour,
-        token_limit_per_day: sandboxes.tokenLimitPerDay,
-        current_hourly_usage: sandboxes.currentHourlyUsage,
-        current_daily_usage: sandboxes.currentDailyUsage,
-        is_active: sandboxes.isActive,
-        created_at: sandboxes.createdAt,
-        updated_at: sandboxes.updatedAt
-      });
-    
-    return res.status(201).json({
-      success: true,
-      sandbox: newSandbox
+    );
+
+    // Count sandboxes by state
+    const stateCounts = sandboxes.reduce((counts, sandbox) => {
+      if (sandbox) {
+        counts[sandbox.state] = (counts[sandbox.state] || 0) + 1;
+      }
+      return counts;
+    }, {} as Record<string, number>);
+
+    // Update metrics
+    Object.entries(SandboxState).forEach(([_, state]) => {
+      monitoringService.setGauge('sandbox_state_count', stateCounts[state] || 0, [state]);
     });
   } catch (error) {
-    logger.error('Error creating sandbox:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to create sandbox'
-    });
+    logger.error('Error updating sandbox state metrics', { error });
   }
-});
+}
+
+// Apply authentication to all routes
+router.use(authenticateJWT);
+
+// Apply feature flag check to all routes
+router.use(checkFeatureEnabled);
 
 /**
- * @route   GET /api/sandboxes/:id
- * @desc    Get sandbox details
- * @access  Private
+ * GET /api/sandbox
+ * List all sandboxes with their states
  */
-router.get('/:id', auth, async (req, res) => {
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  const startTime = process.hrtime();
+  
   try {
-    const userId = req.user?.id;
-    const sandboxId = parseInt(req.params.id);
+    // Apply filtering based on query parameters
+    const { state, dealershipId } = req.query;
     
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'User not authenticated' });
-    }
+    // Get all sandbox keys
+    const keys = await redisClient.keys('metadata:*');
     
-    if (isNaN(sandboxId)) {
-      return res.status(400).json({ success: false, error: 'Invalid sandbox ID' });
-    }
-    
-    // Get sandbox details
-    const [sandbox] = await db.select({
-      id: sandboxes.id,
-      name: sandboxes.name,
-      description: sandboxes.description,
-      token_limit_per_hour: sandboxes.tokenLimitPerHour,
-      token_limit_per_day: sandboxes.tokenLimitPerDay,
-      current_hourly_usage: sandboxes.currentHourlyUsage,
-      current_daily_usage: sandboxes.currentDailyUsage,
-      is_active: sandboxes.isActive,
-      created_at: sandboxes.createdAt,
-      updated_at: sandboxes.updatedAt
-    })
-    .from(sandboxes)
-    .where(
-      and(
-        eq(sandboxes.id, sandboxId),
-        eq(sandboxes.userId, userId)
-      )
+    // Get sandbox data
+    const sandboxesData = await Promise.all(
+      keys.map(async (key) => {
+        const data = await redisClient.get(key);
+        return data ? JSON.parse(data) as SandboxMetadata : null;
+      })
     );
     
-    if (!sandbox) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sandbox not found'
-      });
+    // Filter sandboxes
+    let sandboxes = sandboxesData.filter(Boolean) as SandboxMetadata[];
+    
+    // Filter by dealership if not admin
+    if (!req.user?.isAdmin) {
+      sandboxes = sandboxes.filter(s => s.dealershipId === req.user?.dealershipId);
+    } 
+    // Admin can filter by dealership
+    else if (dealershipId && !isNaN(Number(dealershipId))) {
+      sandboxes = sandboxes.filter(s => s.dealershipId === Number(dealershipId));
     }
     
-    return res.status(200).json({
-      success: true,
-      sandbox
-    });
+    // Filter by state if provided
+    if (state && Object.values(SandboxState).includes(state as SandboxState)) {
+      sandboxes = sandboxes.filter(s => s.state === state);
+    }
+    
+    // Record metrics
+    const [seconds, nanoseconds] = process.hrtime(startTime);
+    const duration = seconds + nanoseconds / 1e9;
+    monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['list']);
+    monitoringService.incrementCounter('sandbox_operations_total', 1, ['list', 'success']);
+    
+    return ResponseHelper.success(res, sandboxes, 'Sandboxes retrieved successfully');
   } catch (error) {
-    logger.error(`Error fetching sandbox ${req.params.id}:`, error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to fetch sandbox details'
-    });
+    const [seconds, nanoseconds] = process.hrtime(startTime);
+    const duration = seconds + nanoseconds / 1e9;
+    monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['list']);
+    monitoringService.incrementCounter('sandbox_operations_total', 1, ['list', 'error']);
+    
+    throw error;
   }
-});
+}));
 
 /**
- * @route   PUT /api/sandboxes/:id
- * @desc    Update sandbox
- * @access  Private
+ * GET /api/sandbox/:id/status
+ * Get sandbox state
  */
-router.put('/:id', auth, async (req, res) => {
+router.get('/:id/status', checkSandboxAccess, asyncHandler(async (req: Request, res: Response) => {
+  const startTime = process.hrtime();
+  const sandboxId = req.params.id;
+  
   try {
-    const userId = req.user?.id;
-    const sandboxId = parseInt(req.params.id);
+    const sandboxData = req.sandbox as SandboxMetadata;
     
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'User not authenticated' });
-    }
+    // Record metrics
+    const [seconds, nanoseconds] = process.hrtime(startTime);
+    const duration = seconds + nanoseconds / 1e9;
+    monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['status']);
+    monitoringService.incrementCounter('sandbox_operations_total', 1, ['status', 'success']);
     
-    if (isNaN(sandboxId)) {
-      return res.status(400).json({ success: false, error: 'Invalid sandbox ID' });
-    }
-    
-    // Validate request body
-    const validationResult = updateSandboxSchema.safeParse(req.body);
-    
-    if (!validationResult.success) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid request data',
-        details: validationResult.error.format()
-      });
-    }
-    
-    // Check if sandbox exists and belongs to user
-    const [existingSandbox] = await db.select({ id: sandboxes.id })
-      .from(sandboxes)
-      .where(
-        and(
-          eq(sandboxes.id, sandboxId),
-          eq(sandboxes.userId, userId)
-        )
-      );
-    
-    if (!existingSandbox) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sandbox not found'
-      });
-    }
-    
-    // Update sandbox
-    const updateData: any = {
-      updatedAt: new Date()
-    };
-    
-    if (validationResult.data.name !== undefined) {
-      updateData.name = validationResult.data.name;
-    }
-    
-    if (validationResult.data.description !== undefined) {
-      updateData.description = validationResult.data.description;
-    }
-    
-    if (validationResult.data.token_limit_per_hour !== undefined) {
-      updateData.tokenLimitPerHour = validationResult.data.token_limit_per_hour;
-    }
-    
-    if (validationResult.data.token_limit_per_day !== undefined) {
-      updateData.tokenLimitPerDay = validationResult.data.token_limit_per_day;
-    }
-    
-    if (validationResult.data.is_active !== undefined) {
-      updateData.isActive = validationResult.data.is_active;
-    }
-    
-    const [updatedSandbox] = await db.update(sandboxes)
-      .set(updateData)
-      .where(
-        and(
-          eq(sandboxes.id, sandboxId),
-          eq(sandboxes.userId, userId)
-        )
-      )
-      .returning({
-        id: sandboxes.id,
-        name: sandboxes.name,
-        description: sandboxes.description,
-        token_limit_per_hour: sandboxes.tokenLimitPerHour,
-        token_limit_per_day: sandboxes.tokenLimitPerDay,
-        current_hourly_usage: sandboxes.currentHourlyUsage,
-        current_daily_usage: sandboxes.currentDailyUsage,
-        is_active: sandboxes.isActive,
-        created_at: sandboxes.createdAt,
-        updated_at: sandboxes.updatedAt
-      });
-    
-    return res.status(200).json({
-      success: true,
-      sandbox: updatedSandbox
-    });
+    return ResponseHelper.success(res, sandboxData, 'Sandbox status retrieved successfully');
   } catch (error) {
-    logger.error(`Error updating sandbox ${req.params.id}:`, error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to update sandbox'
-    });
+    const [seconds, nanoseconds] = process.hrtime(startTime);
+    const duration = seconds + nanoseconds / 1e9;
+    monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['status']);
+    monitoringService.incrementCounter('sandbox_operations_total', 1, ['status', 'error']);
+    
+    throw error;
   }
-});
+}));
 
 /**
- * @route   DELETE /api/sandboxes/:id
- * @desc    Delete sandbox
- * @access  Private
+ * POST /api/sandbox/pause/:id
+ * Pause a sandbox
  */
-router.delete('/:id', auth, async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    const sandboxId = parseInt(req.params.id);
+router.post('/pause/:id', 
+  checkSandboxAccess, 
+  rateLimiter({ windowMs: 60000, max: 10 }), 
+  asyncHandler(async (req: Request, res: Response) => {
+    const startTime = process.hrtime();
+    const sandboxId = req.params.id;
+    const { reason } = req.body;
     
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'User not authenticated' });
-    }
-    
-    if (isNaN(sandboxId)) {
-      return res.status(400).json({ success: false, error: 'Invalid sandbox ID' });
-    }
-    
-    // Check if sandbox exists and belongs to user
-    const [existingSandbox] = await db.select({ id: sandboxes.id })
-      .from(sandboxes)
-      .where(
-        and(
-          eq(sandboxes.id, sandboxId),
-          eq(sandboxes.userId, userId)
-        )
-      );
-    
-    if (!existingSandbox) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sandbox not found'
-      });
-    }
-    
-    // Delete sandbox sessions first (cascade delete would be better in production)
-    await db.delete(sandboxSessions)
-      .where(eq(sandboxSessions.sandboxId, sandboxId));
-    
-    // Delete sandbox
-    await db.delete(sandboxes)
-      .where(
-        and(
-          eq(sandboxes.id, sandboxId),
-          eq(sandboxes.userId, userId)
-        )
-      );
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Sandbox deleted successfully'
-    });
-  } catch (error) {
-    logger.error(`Error deleting sandbox ${req.params.id}:`, error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to delete sandbox'
-    });
-  }
-});
-
-/**
- * @route   POST /api/sandboxes/:id/sessions
- * @desc    Create sandbox session
- * @access  Private
- */
-router.post('/:id/sessions', auth, async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    const sandboxId = parseInt(req.params.id);
-    
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'User not authenticated' });
-    }
-    
-    if (isNaN(sandboxId)) {
-      return res.status(400).json({ success: false, error: 'Invalid sandbox ID' });
-    }
-    
-    // Validate request body
-    const validationResult = createSessionSchema.safeParse(req.body);
-    
-    if (!validationResult.success) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid request data',
-        details: validationResult.error.format()
-      });
-    }
-    
-    // Check if sandbox exists and belongs to user
-    const [existingSandbox] = await db.select({
-      id: sandboxes.id,
-      isActive: sandboxes.isActive
-    })
-    .from(sandboxes)
-    .where(
-      and(
-        eq(sandboxes.id, sandboxId),
-        eq(sandboxes.userId, userId)
-      )
-    );
-    
-    if (!existingSandbox) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sandbox not found'
-      });
-    }
-    
-    if (!existingSandbox.isActive) {
-      return res.status(400).json({
-        success: false,
-        error: 'Sandbox is inactive'
-      });
-    }
-    
-    // Generate session ID and WebSocket channel
-    const sessionId = `sess_${uuidv4()}`;
-    const websocketChannel = `/ws/sandbox/${sandboxId}/${sessionId}`;
-    
-    // Create new session
-    const [newSession] = await db.insert(sandboxSessions)
-      .values({
+    try {
+      const sandboxData = req.sandbox as SandboxMetadata;
+      
+      // Check if already paused
+      if (sandboxData.state === SandboxState.PAUSED) {
+        return ResponseHelper.success(res, sandboxData, 'Sandbox is already paused');
+      }
+      
+      // Update sandbox state
+      const updatedSandbox: SandboxMetadata = {
+        ...sandboxData,
+        state: SandboxState.PAUSED,
+        pausedAt: new Date().toISOString(),
+        pausedBy: req.user?.id.toString(),
+        pauseReason: reason || 'Manual pause by user',
+        lastActivityAt: new Date().toISOString()
+      };
+      
+      // Save updated state
+      await saveSandboxMetadata(updatedSandbox);
+      
+      // Add to history
+      await addToPauseHistory({
+        id: uuidv4(),
         sandboxId,
-        sessionId,
-        userId: validationResult.data.userId,
-        metadata: validationResult.data.metadata || {},
-        websocketChannel,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning({
-        id: sandboxSessions.id,
-        sandboxId: sandboxSessions.sandboxId,
-        sessionId: sandboxSessions.sessionId,
-        userId: sandboxSessions.userId,
-        websocketChannel: sandboxSessions.websocketChannel,
-        isActive: sandboxSessions.isActive,
-        createdAt: sandboxSessions.createdAt
+        action: 'pause',
+        timestamp: updatedSandbox.pausedAt,
+        userId: req.user?.id || 0,
+        userName: req.user?.name || 'Unknown',
+        reason: reason || 'Manual pause by user'
       });
-    
-    return res.status(201).json({
-      success: true,
-      session: {
-        sandboxId: newSession.sandboxId,
-        sessionId: newSession.sessionId,
-        websocketChannel: newSession.websocketChannel
-      }
-    });
-  } catch (error) {
-    logger.error(`Error creating sandbox session for sandbox ${req.params.id}:`, error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to create sandbox session'
-    });
-  }
-});
+      
+      // Update metrics
+      updateStateMetrics();
+      
+      // Record operation metrics
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['pause']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['pause', 'success']);
+      
+      logger.info('Sandbox paused', { 
+        sandboxId, 
+        userId: req.user?.id, 
+        reason: reason || 'Manual pause by user' 
+      });
+      
+      return ResponseHelper.success(res, updatedSandbox, 'Sandbox paused successfully');
+    } catch (error) {
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['pause']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['pause', 'error']);
+      
+      throw error;
+    }
+  })
+);
 
 /**
- * @route   GET /api/sandboxes/:id/usage
- * @desc    Get sandbox usage statistics
- * @access  Private
+ * POST /api/sandbox/resume/:id
+ * Resume a paused sandbox
  */
-router.get('/:id/usage', auth, async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    const sandboxId = parseInt(req.params.id);
+router.post('/resume/:id', 
+  checkSandboxAccess, 
+  rateLimiter({ windowMs: 60000, max: 10 }), 
+  asyncHandler(async (req: Request, res: Response) => {
+    const startTime = process.hrtime();
+    const sandboxId = req.params.id;
     
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'User not authenticated' });
-    }
-    
-    if (isNaN(sandboxId)) {
-      return res.status(400).json({ success: false, error: 'Invalid sandbox ID' });
-    }
-    
-    // Check if sandbox exists and belongs to user
-    const [existingSandbox] = await db.select({
-      id: sandboxes.id,
-      current_hourly_usage: sandboxes.currentHourlyUsage,
-      current_daily_usage: sandboxes.currentDailyUsage,
-      token_limit_per_hour: sandboxes.tokenLimitPerHour,
-      token_limit_per_day: sandboxes.tokenLimitPerDay
-    })
-    .from(sandboxes)
-    .where(
-      and(
-        eq(sandboxes.id, sandboxId),
-        eq(sandboxes.userId, userId)
-      )
-    );
-    
-    if (!existingSandbox) {
-      return res.status(404).json({
-        success: false,
-        error: 'Sandbox not found'
-      });
-    }
-    
-    // Get hourly usage for the past 24 hours
-    const hourlyUsage = await db.execute(sql`
-      SELECT 
-        date_trunc('hour', created_at) as hour,
-        SUM(tokens_used) as tokens
-      FROM ${tokenUsageLogs}
-      WHERE 
-        sandbox_id = ${sandboxId} AND
-        created_at >= NOW() - INTERVAL '24 hours'
-      GROUP BY date_trunc('hour', created_at)
-      ORDER BY hour DESC
-    `);
-    
-    // Get daily usage for the past 7 days
-    const dailyUsage = await db.execute(sql`
-      SELECT 
-        date_trunc('day', created_at) as day,
-        SUM(tokens_used) as tokens
-      FROM ${tokenUsageLogs}
-      WHERE 
-        sandbox_id = ${sandboxId} AND
-        created_at >= NOW() - INTERVAL '7 days'
-      GROUP BY date_trunc('day', created_at)
-      ORDER BY day DESC
-    `);
-    
-    // Get usage by operation type
-    const usageByOperation = await db.execute(sql`
-      SELECT 
-        operation_type,
-        SUM(tokens_used) as tokens
-      FROM ${tokenUsageLogs}
-      WHERE 
-        sandbox_id = ${sandboxId} AND
-        created_at >= NOW() - INTERVAL '7 days'
-      GROUP BY operation_type
-      ORDER BY tokens DESC
-    `);
-    
-    // Get recent usage logs
-    const recentLogs = await db.select({
-      id: tokenUsageLogs.id,
-      operation_type: tokenUsageLogs.operationType,
-      tokens_used: tokenUsageLogs.tokensUsed,
-      session_id: tokenUsageLogs.sessionId,
-      created_at: tokenUsageLogs.createdAt
-    })
-    .from(tokenUsageLogs)
-    .where(eq(tokenUsageLogs.sandboxId, sandboxId))
-    .orderBy(desc(tokenUsageLogs.createdAt))
-    .limit(20);
-    
-    return res.status(200).json({
-      success: true,
-      usage: {
-        current: {
-          hourly: existingSandbox.current_hourly_usage,
-          daily: existingSandbox.current_daily_usage
-        },
-        limits: {
-          hourly: existingSandbox.token_limit_per_hour,
-          daily: existingSandbox.token_limit_per_day
-        },
-        hourly_usage: hourlyUsage,
-        daily_usage: dailyUsage,
-        usage_by_operation: usageByOperation,
-        recent_logs: recentLogs
+    try {
+      const sandboxData = req.sandbox as SandboxMetadata;
+      
+      // Check if not paused
+      if (sandboxData.state !== SandboxState.PAUSED) {
+        return ResponseHelper.success(res, sandboxData, 'Sandbox is not paused');
       }
-    });
-  } catch (error) {
-    logger.error(`Error fetching sandbox usage for sandbox ${req.params.id}:`, error);
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to fetch sandbox usage statistics'
-    });
+      
+      // Update sandbox state
+      const updatedSandbox: SandboxMetadata = {
+        ...sandboxData,
+        state: SandboxState.ACTIVE,
+        resumedAt: new Date().toISOString(),
+        resumedBy: req.user?.id.toString(),
+        lastActivityAt: new Date().toISOString()
+      };
+      
+      // Save updated state
+      await saveSandboxMetadata(updatedSandbox);
+      
+      // Add to history
+      await addToPauseHistory({
+        id: uuidv4(),
+        sandboxId,
+        action: 'resume',
+        timestamp: updatedSandbox.resumedAt,
+        userId: req.user?.id || 0,
+        userName: req.user?.name || 'Unknown'
+      });
+      
+      // Update metrics
+      updateStateMetrics();
+      
+      // Record operation metrics
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['resume']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['resume', 'success']);
+      
+      logger.info('Sandbox resumed', { 
+        sandboxId, 
+        userId: req.user?.id
+      });
+      
+      return ResponseHelper.success(res, updatedSandbox, 'Sandbox resumed successfully');
+    } catch (error) {
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['resume']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['resume', 'error']);
+      
+      throw error;
+    }
+  })
+);
+
+/**
+ * POST /api/sandbox/bulk/pause
+ * Pause multiple sandboxes
+ */
+router.post('/bulk/pause', 
+  validateRequest({ body: bulkOperationSchema }),
+  rateLimiter({ windowMs: 60000, max: 5 }), 
+  asyncHandler(async (req: Request, res: Response) => {
+    const startTime = process.hrtime();
+    const { sandboxIds, reason } = req.body;
+    
+    try {
+      const results: Record<string, { success: boolean; message: string }> = {};
+      
+      // Process each sandbox
+      for (const sandboxId of sandboxIds) {
+        try {
+          // Get sandbox data
+          const sandboxData = await getSandboxMetadata(sandboxId);
+          
+          if (!sandboxData) {
+            results[sandboxId] = { 
+              success: false, 
+              message: 'Sandbox not found' 
+            };
+            continue;
+          }
+          
+          // Check access
+          if (req.user?.dealershipId !== sandboxData.dealershipId && !req.user?.isAdmin) {
+            results[sandboxId] = { 
+              success: false, 
+              message: 'Insufficient permissions' 
+            };
+            continue;
+          }
+          
+          // Check if already paused
+          if (sandboxData.state === SandboxState.PAUSED) {
+            results[sandboxId] = { 
+              success: true, 
+              message: 'Sandbox already paused' 
+            };
+            continue;
+          }
+          
+          // Update sandbox state
+          const updatedSandbox: SandboxMetadata = {
+            ...sandboxData,
+            state: SandboxState.PAUSED,
+            pausedAt: new Date().toISOString(),
+            pausedBy: req.user?.id.toString(),
+            pauseReason: reason || 'Bulk pause operation',
+            lastActivityAt: new Date().toISOString()
+          };
+          
+          // Save updated state
+          await saveSandboxMetadata(updatedSandbox);
+          
+          // Add to history
+          await addToPauseHistory({
+            id: uuidv4(),
+            sandboxId,
+            action: 'pause',
+            timestamp: updatedSandbox.pausedAt,
+            userId: req.user?.id || 0,
+            userName: req.user?.name || 'Unknown',
+            reason: reason || 'Bulk pause operation',
+            metadata: { bulkOperation: true }
+          });
+          
+          results[sandboxId] = { 
+            success: true, 
+            message: 'Sandbox paused successfully' 
+          };
+        } catch (error) {
+          logger.error('Error in bulk pause operation', { sandboxId, error });
+          results[sandboxId] = { 
+            success: false, 
+            message: 'Internal error' 
+          };
+        }
+      }
+      
+      // Update metrics
+      updateStateMetrics();
+      
+      // Record operation metrics
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['bulk_pause']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['bulk_pause', 'success']);
+      
+      const successCount = Object.values(results).filter(r => r.success).length;
+      logger.info('Bulk sandbox pause completed', { 
+        totalCount: sandboxIds.length,
+        successCount,
+        userId: req.user?.id
+      });
+      
+      return ResponseHelper.success(res, results, `Paused ${successCount} of ${sandboxIds.length} sandboxes`);
+    } catch (error) {
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['bulk_pause']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['bulk_pause', 'error']);
+      
+      throw error;
+    }
+  })
+);
+
+/**
+ * POST /api/sandbox/bulk/resume
+ * Resume multiple sandboxes
+ */
+router.post('/bulk/resume', 
+  validateRequest({ body: bulkOperationSchema }),
+  rateLimiter({ windowMs: 60000, max: 5 }), 
+  asyncHandler(async (req: Request, res: Response) => {
+    const startTime = process.hrtime();
+    const { sandboxIds } = req.body;
+    
+    try {
+      const results: Record<string, { success: boolean; message: string }> = {};
+      
+      // Process each sandbox
+      for (const sandboxId of sandboxIds) {
+        try {
+          // Get sandbox data
+          const sandboxData = await getSandboxMetadata(sandboxId);
+          
+          if (!sandboxData) {
+            results[sandboxId] = { 
+              success: false, 
+              message: 'Sandbox not found' 
+            };
+            continue;
+          }
+          
+          // Check access
+          if (req.user?.dealershipId !== sandboxData.dealershipId && !req.user?.isAdmin) {
+            results[sandboxId] = { 
+              success: false, 
+              message: 'Insufficient permissions' 
+            };
+            continue;
+          }
+          
+          // Check if not paused
+          if (sandboxData.state !== SandboxState.PAUSED) {
+            results[sandboxId] = { 
+              success: true, 
+              message: 'Sandbox not paused' 
+            };
+            continue;
+          }
+          
+          // Update sandbox state
+          const updatedSandbox: SandboxMetadata = {
+            ...sandboxData,
+            state: SandboxState.ACTIVE,
+            resumedAt: new Date().toISOString(),
+            resumedBy: req.user?.id.toString(),
+            lastActivityAt: new Date().toISOString()
+          };
+          
+          // Save updated state
+          await saveSandboxMetadata(updatedSandbox);
+          
+          // Add to history
+          await addToPauseHistory({
+            id: uuidv4(),
+            sandboxId,
+            action: 'resume',
+            timestamp: updatedSandbox.resumedAt,
+            userId: req.user?.id || 0,
+            userName: req.user?.name || 'Unknown',
+            metadata: { bulkOperation: true }
+          });
+          
+          results[sandboxId] = { 
+            success: true, 
+            message: 'Sandbox resumed successfully' 
+          };
+        } catch (error) {
+          logger.error('Error in bulk resume operation', { sandboxId, error });
+          results[sandboxId] = { 
+            success: false, 
+            message: 'Internal error' 
+          };
+        }
+      }
+      
+      // Update metrics
+      updateStateMetrics();
+      
+      // Record operation metrics
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['bulk_resume']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['bulk_resume', 'success']);
+      
+      const successCount = Object.values(results).filter(r => r.success).length;
+      logger.info('Bulk sandbox resume completed', { 
+        totalCount: sandboxIds.length,
+        successCount,
+        userId: req.user?.id
+      });
+      
+      return ResponseHelper.success(res, results, `Resumed ${successCount} of ${sandboxIds.length} sandboxes`);
+    } catch (error) {
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['bulk_resume']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['bulk_resume', 'error']);
+      
+      throw error;
+    }
+  })
+);
+
+/**
+ * POST /api/sandbox/:id/tools/execute
+ * Execute a tool in the sandbox (returns 423 when paused)
+ */
+router.post('/:id/tools/execute', 
+  checkSandboxAccess,
+  validateRequest({ body: toolExecutionSchema }),
+  rateLimiter({ windowMs: 60000, max: 20 }), 
+  asyncHandler(async (req: Request, res: Response) => {
+    const startTime = process.hrtime();
+    const sandboxId = req.params.id;
+    const { toolId, parameters, timeout } = req.body;
+    
+    try {
+      const sandboxData = req.sandbox as SandboxMetadata;
+      
+      // Check if sandbox is paused - return 423 Locked
+      if (sandboxData.state === SandboxState.PAUSED) {
+        // Record operation metrics
+        const [seconds, nanoseconds] = process.hrtime(startTime);
+        const duration = seconds + nanoseconds / 1e9;
+        monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['tool_execute']);
+        monitoringService.incrementCounter('sandbox_operations_total', 1, ['tool_execute', 'locked']);
+        
+        logger.info('Tool execution blocked - sandbox paused', { 
+          sandboxId, 
+          toolId,
+          userId: req.user?.id
+        });
+        
+        // Return 423 Locked with details
+        return res.status(423).json({
+          success: false,
+          error: {
+            code: ErrorCode.RESOURCE_LOCKED,
+            message: 'Sandbox is paused. Resume the sandbox to execute tools.',
+            details: {
+              sandboxId,
+              state: SandboxState.PAUSED,
+              pausedAt: sandboxData.pausedAt,
+              pauseReason: sandboxData.pauseReason
+            }
+          }
+        });
+      }
+      
+      // Update last activity
+      sandboxData.lastActivityAt = new Date().toISOString();
+      await saveSandboxMetadata(sandboxData);
+      
+      // Record operation metrics
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['tool_execute']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['tool_execute', 'success']);
+      
+      // In a real implementation, we would execute the tool here
+      // For now, just return a success response
+      return ResponseHelper.success(res, {
+        executionId: uuidv4(),
+        toolId,
+        status: 'completed',
+        result: { message: 'Tool execution simulated successfully' }
+      }, 'Tool executed successfully');
+    } catch (error) {
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['tool_execute']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['tool_execute', 'error']);
+      
+      throw error;
+    }
+  })
+);
+
+/**
+ * GET /api/sandbox/:id/pause-history
+ * Get pause/resume history for a sandbox
+ */
+router.get('/:id/pause-history', 
+  checkSandboxAccess, 
+  asyncHandler(async (req: Request, res: Response) => {
+    const startTime = process.hrtime();
+    const sandboxId = req.params.id;
+    const { limit = '50', offset = '0' } = req.query;
+    
+    try {
+      const historyKey = `history:${sandboxId}`;
+      
+      // Get history entries with pagination
+      const start = parseInt(offset as string, 10);
+      const end = start + parseInt(limit as string, 10) - 1;
+      
+      const entries = await redisClient.lrange(historyKey, start, end);
+      const history = entries.map(entry => JSON.parse(entry) as PauseHistoryEntry);
+      
+      // Get total count
+      const totalCount = await redisClient.llen(historyKey);
+      
+      // Record operation metrics
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['history']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['history', 'success']);
+      
+      return ResponseHelper.success(res, {
+        history,
+        pagination: {
+          total: totalCount,
+          limit: parseInt(limit as string, 10),
+          offset: start,
+          hasMore: totalCount > (start + history.length)
+        }
+      }, 'Pause history retrieved successfully');
+    } catch (error) {
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['history']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['history', 'error']);
+      
+      throw error;
+    }
+  })
+);
+
+/**
+ * PUT /api/sandbox/:id/pause-settings
+ * Configure auto-pause settings
+ */
+router.put('/:id/pause-settings', 
+  checkSandboxAccess,
+  validateRequest({ body: pauseSettingsSchema }),
+  asyncHandler(async (req: Request, res: Response) => {
+    const startTime = process.hrtime();
+    const sandboxId = req.params.id;
+    const { 
+      autoPauseEnabled, 
+      idleTimeoutMinutes, 
+      maxExecutionTimeMinutes,
+      maxMemoryUsageMB
+    } = req.body;
+    
+    try {
+      const sandboxData = req.sandbox as SandboxMetadata;
+      
+      // Update auto-pause settings
+      const updatedSandbox: SandboxMetadata = {
+        ...sandboxData,
+        autoPauseSettings: {
+          enabled: autoPauseEnabled ?? sandboxData.autoPauseSettings?.enabled ?? false,
+          idleTimeoutMinutes: idleTimeoutMinutes ?? sandboxData.autoPauseSettings?.idleTimeoutMinutes ?? 30,
+          maxExecutionTimeMinutes: maxExecutionTimeMinutes ?? sandboxData.autoPauseSettings?.maxExecutionTimeMinutes ?? 60,
+          maxMemoryUsageMB: maxMemoryUsageMB ?? sandboxData.autoPauseSettings?.maxMemoryUsageMB ?? 1024
+        },
+        lastActivityAt: new Date().toISOString()
+      };
+      
+      // Save updated settings
+      await saveSandboxMetadata(updatedSandbox);
+      
+      // Record operation metrics
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['update_settings']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['update_settings', 'success']);
+      
+      logger.info('Sandbox auto-pause settings updated', { 
+        sandboxId, 
+        settings: updatedSandbox.autoPauseSettings,
+        userId: req.user?.id
+      });
+      
+      return ResponseHelper.success(res, updatedSandbox, 'Auto-pause settings updated successfully');
+    } catch (error) {
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds + nanoseconds / 1e9;
+      monitoringService.observeHistogram('sandbox_operation_duration_seconds', duration, ['update_settings']);
+      monitoringService.incrementCounter('sandbox_operations_total', 1, ['update_settings', 'error']);
+      
+      throw error;
+    }
+  })
+);
+
+// Add type declaration for Request to include sandbox
+declare global {
+  namespace Express {
+    interface Request {
+      sandbox?: SandboxMetadata;
+      user?: {
+        id: number;
+        name: string;
+        dealershipId: number;
+        isAdmin: boolean;
+      };
+    }
   }
-});
+}
 
 export default router;
