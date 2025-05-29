@@ -18,6 +18,7 @@ import leadManagementRoutes from './routes/lead-management-routes';
 import userManagementRoutes from './routes/user-management-routes';
 import customerInsightsRoutes from './routes/customer-insights-routes';
 import inventoryRoutes from './routes/inventory-routes';
+import predictionRoutes from './routes/prediction-routes';
 import { tenantContextMiddleware } from './middleware/tenant-context';
 import WebSocketChatServer from './ws-server';
 
@@ -148,6 +149,7 @@ export async function registerRoutes(app: Express) {
   app.use('/api', userManagementRoutes);
   app.use('/api', customerInsightsRoutes);
   app.use('/api', inventoryRoutes);
+  app.use('/api/predictions', predictionRoutes);
 
   // Create and return HTTP server
   const server = createServer(app);
