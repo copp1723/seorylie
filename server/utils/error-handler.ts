@@ -35,31 +35,62 @@ export enum ErrorCodes {
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED'
 }
 
+// Action type for error remediation
+export interface ErrorAction {
+  label: string;
+  url?: string;
+  type?: 'retry' | 'navigate' | 'contact' | 'refresh';
+}
+
+// Enhanced error interface with user-friendly messaging
 export interface AppError extends Error {
   code: ErrorCodes;
   statusCode: number;
   requestId?: string;
+  traceId?: string;
   context?: Record<string, any>;
+  userMessage?: string;
+  docsUrl?: string;
+  action?: ErrorAction;
 }
 
 export class CustomError extends Error implements AppError {
   public code: ErrorCodes;
   public statusCode: number;
   public requestId?: string;
+  public traceId?: string;
   public context?: Record<string, any>;
+  public userMessage?: string;
+  public docsUrl?: string;
+  public action?: ErrorAction;
 
   constructor(
     message: string,
     code: ErrorCodes,
     statusCode: number = 500,
-    context?: Record<string, any>
+    options?: {
+      context?: Record<string, any>;
+      userMessage?: string;
+      docsUrl?: string;
+      action?: ErrorAction;
+    }
   ) {
     super(message);
     this.name = 'CustomError';
     this.code = code;
     this.statusCode = statusCode;
-    this.context = context;
-    this.requestId = uuidv4();
+    
+    // Generate trace ID for tracking
+    this.traceId = uuidv4();
+    this.requestId = this.traceId; // For backward compatibility
+    
+    // Set additional error context and user-friendly info
+    if (options) {
+      this.context = options.context;
+      this.userMessage = options.userMessage;
+      this.docsUrl = options.docsUrl;
+      this.action = options.action;
+    }
 
     // Ensure the stack trace points to where the error was thrown
     Error.captureStackTrace(this, CustomError);
@@ -85,13 +116,20 @@ export class ResponseHelper {
     const isAppError = error instanceof CustomError;
     const statusCode = isAppError ? error.statusCode : 500;
     const code = isAppError ? error.code : ErrorCodes.INTERNAL_SERVER_ERROR;
+    const traceId = isAppError ? error.traceId : requestId || uuidv4();
+    
+    // Include trace ID in response headers
+    res.setHeader('X-Trace-Id', traceId);
 
     const errorResponse = {
       success: false,
       error: {
         message: error.message,
         code,
-        requestId: isAppError ? error.requestId : requestId || uuidv4(),
+        traceId,
+        ...(isAppError && error.userMessage && { userMessage: error.userMessage }),
+        ...(isAppError && error.docsUrl && { docsUrl: error.docsUrl }),
+        ...(isAppError && error.action && { action: error.action }),
         ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
       },
       timestamp: new Date().toISOString()
@@ -99,9 +137,10 @@ export class ResponseHelper {
 
     // Log the error with context
     logger.error('API Error Response', {
-      requestId: errorResponse.error.requestId,
+      requestId: traceId,
       code,
       message: error.message,
+      userMessage: isAppError ? error.userMessage : undefined,
       statusCode,
       stack: error.stack,
       ...(isAppError && error.context ? { context: error.context } : {})
@@ -110,38 +149,94 @@ export class ResponseHelper {
     return res.status(statusCode).json(errorResponse);
   }
 
-  static notFound(res: Response, resource: string = 'Resource'): Response {
+  static notFound(
+    res: Response, 
+    resource: string = 'Resource',
+    options?: {
+      userMessage?: string;
+      docsUrl?: string;
+      action?: ErrorAction;
+    }
+  ): Response {
     const error = new CustomError(
       `${resource} not found`,
       ErrorCodes.RESOURCE_NOT_FOUND,
-      404
+      404,
+      {
+        userMessage: options?.userMessage || `The requested ${resource.toLowerCase()} could not be found.`,
+        docsUrl: options?.docsUrl,
+        action: options?.action
+      }
     );
     return ResponseHelper.error(res, error);
   }
 
-  static badRequest(res: Response, message: string = 'Bad request'): Response {
+  static badRequest(
+    res: Response, 
+    message: string = 'Bad request',
+    options?: {
+      userMessage?: string;
+      docsUrl?: string;
+      action?: ErrorAction;
+    }
+  ): Response {
     const error = new CustomError(
       message,
       ErrorCodes.INVALID_INPUT,
-      400
+      400,
+      {
+        userMessage: options?.userMessage || 'Please check your input and try again.',
+        docsUrl: options?.docsUrl,
+        action: options?.action
+      }
     );
     return ResponseHelper.error(res, error);
   }
 
-  static unauthorized(res: Response, message: string = 'Unauthorized'): Response {
+  static unauthorized(
+    res: Response, 
+    message: string = 'Unauthorized',
+    options?: {
+      userMessage?: string;
+      docsUrl?: string;
+      action?: ErrorAction;
+    }
+  ): Response {
     const error = new CustomError(
       message,
       ErrorCodes.AUTHENTICATION_FAILED,
-      401
+      401,
+      {
+        userMessage: options?.userMessage || 'Please log in to continue.',
+        docsUrl: options?.docsUrl,
+        action: options?.action || {
+          label: 'Log In',
+          type: 'navigate',
+          url: '/auth'
+        }
+      }
     );
     return ResponseHelper.error(res, error);
   }
 
-  static forbidden(res: Response, message: string = 'Forbidden'): Response {
+  static forbidden(
+    res: Response, 
+    message: string = 'Forbidden',
+    options?: {
+      userMessage?: string;
+      docsUrl?: string;
+      action?: ErrorAction;
+    }
+  ): Response {
     const error = new CustomError(
       message,
       ErrorCodes.AUTHORIZATION_FAILED,
-      403
+      403,
+      {
+        userMessage: options?.userMessage || 'You don\'t have permission to perform this action.',
+        docsUrl: options?.docsUrl,
+        action: options?.action
+      }
     );
     return ResponseHelper.error(res, error);
   }
@@ -182,8 +277,15 @@ export async function dbOperation<T>(
           ErrorCodes.DATABASE_QUERY_ERROR,
           500,
           {
-            originalError: lastError.message,
-            attempts: retries
+            context: {
+              originalError: lastError.message,
+              attempts: retries
+            },
+            userMessage: 'We encountered a problem accessing the database. Please try again later.',
+            action: {
+              label: 'Retry',
+              type: 'retry'
+            }
           }
         );
       }
@@ -217,22 +319,43 @@ export function errorHandler(
 
   // Add request ID for tracking
   const requestId = req.headers['x-request-id'] as string || uuidv4();
+  const traceId = requestId; // Use request ID as trace ID for consistency
+  
+  // Set trace ID in response headers
+  res.setHeader('X-Trace-Id', traceId);
+  res.setHeader('X-Request-ID', requestId);
 
   // Handle different types of errors
   if (error instanceof CustomError) {
+    // For custom errors, use the trace ID already set
     ResponseHelper.error(res, error, requestId);
   } else if (error.name === 'ValidationError') {
     const customError = new CustomError(
       error.message,
       ErrorCodes.VALIDATION_ERROR,
-      400
+      400,
+      {
+        userMessage: 'Please check the form for errors and try again.',
+        action: {
+          label: 'Review Form',
+          type: 'refresh'
+        }
+      }
     );
     ResponseHelper.error(res, customError, requestId);
   } else if (error.name === 'CastError') {
     const customError = new CustomError(
       'Invalid ID format',
       ErrorCodes.INVALID_INPUT,
-      400
+      400,
+      {
+        userMessage: 'The ID format provided is invalid.',
+        action: {
+          label: 'Go Back',
+          type: 'navigate',
+          url: req.headers.referer || '/'
+        }
+      }
     );
     ResponseHelper.error(res, customError, requestId);
   } else {
@@ -241,6 +364,7 @@ export function errorHandler(
       error: error.message,
       stack: error.stack,
       requestId,
+      traceId,
       url: req.url,
       method: req.method
     });
@@ -248,7 +372,14 @@ export function errorHandler(
     const customError = new CustomError(
       'An unexpected error occurred',
       ErrorCodes.INTERNAL_SERVER_ERROR,
-      500
+      500,
+      {
+        userMessage: 'Something went wrong on our end. Please try again later.',
+        action: {
+          label: 'Retry',
+          type: 'retry'
+        }
+      }
     );
     ResponseHelper.error(res, customError, requestId);
   }
@@ -263,5 +394,6 @@ export function requestIdMiddleware(
   const requestId = req.headers['x-request-id'] as string || uuidv4();
   req.headers['x-request-id'] = requestId;
   res.setHeader('X-Request-ID', requestId);
+  res.setHeader('X-Trace-Id', requestId); // Use the same ID for trace ID
   next();
 }
