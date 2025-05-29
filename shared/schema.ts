@@ -128,7 +128,7 @@ export const users = pgTable('users', {
   last_login: timestamp('last_login'),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
-}, (table: any) => ({
+}, table => ({
   dealershipIdx: index('user_dealership_idx').on(table.dealership_id),
   emailIdx: index('user_email_idx').on(table.email),
 }));
@@ -168,6 +168,9 @@ export const vehicles = pgTable('vehicles', {
   bodyStyle: varchar('body_style', { length: 100 }),
   extColor: varchar('ext_color', { length: 100 }),
   intColor: varchar('int_color', { length: 100 }),
+  exteriorColor: varchar('exterior_color', { length: 100 }), // Alternative naming
+  condition: varchar('condition', { length: 50 }).default('New'),
+  price: integer('price'), // Current price (can be different from salePrice)
   mileage: integer('mileage'),
   engine: varchar('engine', { length: 255 }),
   transmission: varchar('transmission', { length: 100 }),
@@ -176,10 +179,6 @@ export const vehicles = pgTable('vehicles', {
   fuelEconomy: integer('fuel_economy'),
   msrp: integer('msrp'),
   salePrice: integer('sale_price'),
-  price: integer('price'), // Current price
-  condition: varchar('condition', { length: 50 }).default('new'), // new, used, certified
-  exteriorColor: varchar('exterior_color', { length: 100 }),
-  interiorColor: varchar('interior_color', { length: 100 }),
   status: varchar('status', { length: 50 }).default('Available'),
   certified: boolean('certified').default(false),
   description: text('description'),
@@ -191,7 +190,7 @@ export const vehicles = pgTable('vehicles', {
   lastSeen: timestamp('last_seen').defaultNow(),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
-}, (table: any) => ({
+}, table => ({
   uniqueVin: unique('unique_vin').on(table.dealershipId, table.vin),
   dealershipIdx: index('vehicle_dealership_idx').on(table.dealershipId),
 }));
@@ -208,7 +207,7 @@ export const magicLinkInvitations = pgTable('magic_link_invitations', {
   invitedBy: integer('invited_by').references(() => users.id),
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
-}, (table: any) => ({
+}, table => ({
   dealershipIdx: index('invitation_dealership_idx').on(table.dealershipId),
 }));
 
@@ -226,112 +225,58 @@ export const reportSchedules = pgTable('report_schedules', {
   updated_at: timestamp('updated_at').defaultNow(),
 });
 
-// A/B Testing Tables
-export const promptExperiments = pgTable('prompt_experiments', {
+// Tools table - registry of available tools for agents
+export const tools = pgTable('tools', {
   id: serial('id').primaryKey(),
-  dealershipId: integer('dealership_id').notNull().references(() => dealerships.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
+  name: varchar('name', { length: 255 }).notNull().unique(),
+  service: varchar('service', { length: 255 }).notNull(),
+  endpoint: varchar('endpoint', { length: 255 }).notNull(),
+  method: varchar('method', { length: 50 }).default('POST').notNull(),
+  input_schema: json('input_schema'),
+  output_schema: json('output_schema'),
   description: text('description'),
-  startDate: timestamp('start_date').notNull(),
-  endDate: timestamp('end_date').notNull(),
-  trafficPercentage: integer('traffic_percentage').notNull().default(50),
-  status: text('status').notNull().default('draft'),
-  primaryMetric: text('primary_metric').notNull(),
-  secondaryMetrics: json('secondary_metrics').$type<string[]>().default([]),
-  isActive: boolean('is_active').default(false),
-  created_at: timestamp('created_at').defaultNow(),
-  updated_at: timestamp('updated_at').defaultNow(),
-});
+  category: varchar('category', { length: 100 }),
+  is_active: boolean('is_active').default(true).notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+}, table => ({
+  serviceIdx: index('idx_tools_service').on(table.service),
+  categoryIdx: index('idx_tools_category').on(table.category),
+}));
 
-export const promptVariants = pgTable('prompt_variants', {
+// Agent tools table - maps agents to their available tools
+export const agent_tools = pgTable('agent_tools', {
   id: serial('id').primaryKey(),
-  experimentId: integer('experiment_id').notNull().references(() => promptExperiments.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 255 }).notNull(),
-  promptTemplate: text('prompt_template').notNull(),
-  isControl: boolean('is_control').notNull().default(false),
-  trafficAllocation: integer('traffic_allocation').notNull().default(50),
-  created_at: timestamp('created_at').defaultNow(),
-});
-
-export const experimentVariants = pgTable('experiment_variants', {
-  id: serial('id').primaryKey(),
-  experimentId: integer('experiment_id').notNull().references(() => promptExperiments.id, { onDelete: 'cascade' }),
-  personaId: integer('persona_id').notNull().references(() => personas.id, { onDelete: 'cascade' }),
-  isControl: boolean('is_control').notNull().default(false),
-  trafficPercentage: integer('traffic_percentage').notNull().default(50),
-  created_at: timestamp('created_at').defaultNow(),
-});
-
-export const promptMetrics = pgTable('prompt_metrics', {
-  id: serial('id').primaryKey(),
-  conversationId: integer('conversation_id').notNull(),
-  messageId: integer('message_id').notNull(),
-  experimentId: integer('experiment_id').notNull().references(() => promptExperiments.id, { onDelete: 'cascade' }),
-  variantId: integer('variant_id').notNull().references(() => promptVariants.id, { onDelete: 'cascade' }),
-  metricName: text('metric_name').notNull(),
-  metricValue: integer('metric_value').notNull(),
-  created_at: timestamp('created_at').defaultNow(),
-});
+  agent_id: varchar('agent_id', { length: 255 }).notNull(),
+  tool_id: integer('tool_id').notNull().references(() => tools.id, { onDelete: 'cascade' }),
+  permissions: json('permissions'),
+  config_override: json('config_override'),
+  is_enabled: boolean('is_enabled').default(true).notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull(),
+}, table => ({
+  agentIdx: index('idx_agent_tools_agent_id').on(table.agent_id),
+  uniqueAgentTool: unique('idx_agent_tools_unique').on(table.agent_id, table.tool_id),
+}));
 
 // ===== Relations =====
 
-export const dealershipsRelations = relations(dealerships, ({ many }: { many: any }) => ({
+export const dealershipsRelations = relations(dealerships, ({ many }) => ({
   users: many(users),
   vehicles: many(vehicles),
   personas: many(personas),
   apiKeys: many(apiKeys),
   magicLinkInvitations: many(magicLinkInvitations),
-  promptExperiments: many(promptExperiments),
 }));
 
-export const promptExperimentsRelations = relations(promptExperiments, ({ one, many }) => ({
-  dealership: one(dealerships, {
-    fields: [promptExperiments.dealershipId],
-    references: [dealerships.id],
-  }),
-  variants: many(promptVariants),
-  experimentVariants: many(experimentVariants),
-  metrics: many(promptMetrics),
-}));
-
-export const promptVariantsRelations = relations(promptVariants, ({ one, many }) => ({
-  experiment: one(promptExperiments, {
-    fields: [promptVariants.experimentId],
-    references: [promptExperiments.id],
-  }),
-  metrics: many(promptMetrics),
-}));
-
-export const experimentVariantsRelations = relations(experimentVariants, ({ one }) => ({
-  experiment: one(promptExperiments, {
-    fields: [experimentVariants.experimentId],
-    references: [promptExperiments.id],
-  }),
-  persona: one(personas, {
-    fields: [experimentVariants.personaId],
-    references: [personas.id],
-  }),
-}));
-
-export const promptMetricsRelations = relations(promptMetrics, ({ one }) => ({
-  experiment: one(promptExperiments, {
-    fields: [promptMetrics.experimentId],
-    references: [promptExperiments.id],
-  }),
-  variant: one(promptVariants, {
-    fields: [promptMetrics.variantId],
-    references: [promptVariants.id],
-  }),
-}));
-
-export const usersRelations = relations(users, ({ one }: { one: any }) => ({
+export const usersRelations = relations(users, ({ one }) => ({
   dealership: one(dealerships, {
     fields: [users.dealership_id],
     references: [dealerships.id],
   }),
 }));
 
-export const magicLinkInvitationsRelations = relations(magicLinkInvitations, ({ one }: { one: any }) => ({
+export const magicLinkInvitationsRelations = relations(magicLinkInvitations, ({ one }) => ({
   dealership: one(dealerships, {
     fields: [magicLinkInvitations.dealershipId],
     references: [dealerships.id],
@@ -339,6 +284,17 @@ export const magicLinkInvitationsRelations = relations(magicLinkInvitations, ({ 
   invitedByUser: one(users, {
     fields: [magicLinkInvitations.invitedBy],
     references: [users.id],
+  }),
+}));
+
+export const toolsRelations = relations(tools, ({ many }) => ({
+  agent_tools: many(agent_tools),
+}));
+
+export const agentToolsRelations = relations(agent_tools, ({ one }) => ({
+  tool: one(tools, {
+    fields: [agent_tools.tool_id],
+    references: [tools.id],
   }),
 }));
 
@@ -350,12 +306,8 @@ export const insertVehicleSchema = createInsertSchema(vehicles).omit({ id: true,
 export const insertPersonaSchema = createInsertSchema(personas).omit({ id: true, created_at: true, updated_at: true });
 export const insertApiKeySchema = createInsertSchema(apiKeys).omit({ id: true, created_at: true });
 export const insertMagicLinkInvitationSchema = createInsertSchema(magicLinkInvitations).omit({ id: true, createdAt: true });
-
-// A/B Testing insert schemas
-export const insertPromptExperimentSchema = createInsertSchema(promptExperiments).omit({ id: true, created_at: true, updated_at: true });
-export const insertPromptVariantSchema = createInsertSchema(promptVariants).omit({ id: true, created_at: true });
-export const insertExperimentVariantSchema = createInsertSchema(experimentVariants).omit({ id: true, created_at: true });
-export const insertPromptMetricSchema = createInsertSchema(promptMetrics).omit({ id: true, created_at: true });
+export const insertToolSchema = createInsertSchema(tools).omit({ id: true, created_at: true, updated_at: true });
+export const insertAgentToolSchema = createInsertSchema(agent_tools).omit({ id: true, created_at: true, updated_at: true });
 
 // Types
 export type Dealership = typeof dealerships.$inferSelect;
@@ -376,40 +328,21 @@ export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
 export type MagicLinkInvitation = typeof magicLinkInvitations.$inferSelect;
 export type InsertMagicLinkInvitation = z.infer<typeof insertMagicLinkInvitationSchema>;
 
-// A/B Testing types
-export type PromptExperiment = typeof promptExperiments.$inferSelect;
-export type InsertPromptExperiment = z.infer<typeof insertPromptExperimentSchema>;
+export type Tool = typeof tools.$inferSelect;
+export type InsertTool = z.infer<typeof insertToolSchema>;
 
-export type PromptVariant = typeof promptVariants.$inferSelect;
-export type InsertPromptVariant = z.infer<typeof insertPromptVariantSchema>;
+export type AgentTool = typeof agent_tools.$inferSelect;
+export type InsertAgentTool = z.infer<typeof insertAgentToolSchema>;
 
-export type ExperimentVariant = typeof experimentVariants.$inferSelect;
-export type InsertExperimentVariant = z.infer<typeof insertExperimentVariantSchema>;
+// Type exports
+export type { DealershipMode, CommunicationChannel, UserRole };
 
-export type PromptMetric = typeof promptMetrics.$inferSelect;
-export type InsertPromptMetric = z.infer<typeof insertPromptMetricSchema>;
-
-// Dealership variables table for custom configuration
-export const dealershipVariables = pgTable('dealership_variables', {
-  id: serial('id').primaryKey(),
-  dealershipId: integer('dealership_id').notNull().references(() => dealerships.id, { onDelete: 'cascade' }),
-  key: varchar('key', { length: 255 }).notNull(),
-  value: text('value'),
-  description: text('description'),
-  isActive: boolean('is_active').default(true),
-  created_at: timestamp('created_at').defaultNow(),
-  updated_at: timestamp('updated_at').defaultNow(),
-}, (table: any) => ({
-  dealershipIdx: index('variable_dealership_idx').on(table.dealershipId),
-  uniqueKey: unique('unique_dealership_variable').on(table.dealershipId, table.key),
-}));
-
-// Add dealership variables insert schema
-export const insertDealershipVariableSchema = createInsertSchema(dealershipVariables).omit({ id: true, created_at: true, updated_at: true });
-
-// Add dealership variables types
-export type DealershipVariable = typeof dealershipVariables.$inferSelect;
-export type InsertDealershipVariable = z.infer<typeof insertDealershipVariableSchema>;
-
-// Re-export types from schema-extensions for convenience
-export type { CustomerInsight, ResponseSuggestion } from './schema-extensions';
+// Re-export prompt experiment types
+export { 
+  type PromptExperiment, 
+  type PromptVariant, 
+  type ExperimentVariant,
+  type CustomerInsight,
+  type ResponseSuggestion,
+  type PromptExperimentData
+} from './prompt-experiment-schema';

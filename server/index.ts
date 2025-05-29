@@ -14,7 +14,10 @@ import escalationRoutes from './routes/escalation-routes';
 import leadManagementRoutes from './routes/lead-management-routes';
 import userManagementRoutes from './routes/user-management-routes';
 import customerInsightsRoutes from './routes/customer-insights-routes';
+import agentOrchestrationRoutes from './routes/agent-orchestration-routes';
 import { initializeFollowUpScheduler } from './services/follow-up-scheduler';
+import { getWebSocketService } from './services/websocket-service';
+import { toolRegistry } from './services/tool-registry';
 
 // Enable Redis fallback when Redis connection details aren't provided
 if (!process.env.REDIS_HOST) {
@@ -103,14 +106,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Add monitoring routes before other routes
-app.use('/api/metrics', monitoringRoutes);
-
 // Add new feature routes
 app.use('/api', escalationRoutes);
 app.use('/api', leadManagementRoutes);
 app.use('/api', userManagementRoutes);
 app.use('/api', customerInsightsRoutes);
+app.use('/api/agents', agentOrchestrationRoutes);
+
+// Add monitoring routes before other routes
+app.use('/api/metrics', monitoringRoutes);
 
 // Track all requests
 app.use((req, res, next) => {
@@ -149,7 +153,18 @@ app.use((req, res, next) => {
     logger.warn('Failed to initialize follow-up scheduler', error);
   }
 
+  // Register routes and get the HTTP server
   const server = await registerRoutes(app);
+  
+  // Initialize WebSocket service
+  const wsService = getWebSocketService();
+  wsService.initialize(server);
+  logger.info('WebSocket service initialized');
+  
+  // Initialize Tool Registry with WebSocket service
+  // The toolRegistry is already created as a singleton, so we don't need to initialize it again
+  // It will automatically use the WebSocket service when needed
+  logger.info('Tool Registry service ready');
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
