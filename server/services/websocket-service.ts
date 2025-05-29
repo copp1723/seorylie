@@ -1,8 +1,10 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
-import logger from '../utils/logger';
+import { URL } from 'url';
+import { logger } from '../utils/logger';
 import { dealershipConfigService } from './dealership-config-service';
 import { DealershipMode } from '../../shared/schema';
+import { orchestrator } from './orchestrator';
 
 // Message types for our WebSocket communication
 export enum MessageType {
@@ -14,11 +16,12 @@ export enum MessageType {
   MODE_CHANGE = 'mode_change',
   AVAILABILITY = 'availability',
   TOOL_STREAM = 'tool_stream',
+  SANDBOX_MESSAGE = 'sandbox_message',
   ERROR = 'error'
 }
 
 // Interface for our WebSocket messages
-interface WebSocketMessage {
+export interface WebSocketMessage {
   type: MessageType | string;
   dealershipId?: number;
   userId?: number;
@@ -33,116 +36,291 @@ interface WebSocketMessage {
   data?: any;
   error?: any;
   status?: string;
+  // Sandbox specific fields
+  sandboxId?: number;
+  sessionId?: string;
+  payload?: any;
 }
 
-class WebSocketService {
+// Connection types
+enum ConnectionType {
+  STANDARD = 'standard',
+  SANDBOX = 'sandbox'
+}
+
+// Client information
+interface ClientInfo {
+  ws: WebSocket;
+  userId?: number;
+  dealershipId?: number;
+  userType?: 'customer' | 'agent';
+  sessionId?: string;
+  connectionType: ConnectionType;
+  sandboxId?: number;
+  sandboxSessionId?: string;
+}
+
+export class WebSocketService {
   private wss: WebSocketServer | null = null;
-  private clients: Map<string, {
-    ws: WebSocket;
-    userId?: number;
-    dealershipId?: number;
-    userType?: 'customer' | 'agent';
-    sessionId?: string;
-  }> = new Map();
+  private clients: Map<string, ClientInfo> = new Map();
 
   // Session to client ID mapping for quick lookups
   private sessions: Map<string, string> = new Map();
+  
+  // Sandbox channel mappings
+  private sandboxChannels: Map<number, Set<string>> = new Map();
+  private sandboxSessions: Map<string, string> = new Map();
 
   /**
    * Initialize the WebSocket server
    */
   initialize(server: Server) {
-    // Create WebSocket server with a specific path
-    this.wss = new WebSocketServer({ server, path: '/ws' });
+    // Create WebSocket server with a path prefix
+    this.wss = new WebSocketServer({ 
+      server, 
+      path: undefined, // Handle all WebSocket connections
+      verifyClient: (info, callback) => {
+        // Allow all connections, we'll parse the path later
+        callback(true);
+      }
+    });
 
     this.wss.on('connection', (ws, request) => {
-      // Generate a unique client ID
-      const clientId = this.generateClientId();
-      
-      // Store client connection
-      this.clients.set(clientId, { ws });
-      
-      logger.info('New WebSocket connection established', { clientId });
-      
-      // Send initial welcome message
-      this.sendToClient(ws, {
-        type: MessageType.CONNECT,
-        message: 'Connected to chat server',
-        timestamp: new Date().toISOString(),
-        metadata: { clientId }
-      });
-      
-      // Handle messages from clients
-      ws.on('message', async (rawData) => {
-        try {
-          const data: WebSocketMessage = JSON.parse(rawData.toString());
+      try {
+        // Parse the URL to determine the connection type
+        const url = new URL(request.url || '', `http://${request.headers.host}`);
+        const pathname = url.pathname;
+        
+        // Generate a unique client ID
+        const clientId = this.generateClientId();
+        
+        // Determine connection type and extract relevant IDs
+        let connectionType = ConnectionType.STANDARD;
+        let sandboxId: number | undefined;
+        let sandboxSessionId: string | undefined;
+        
+        // Check if this is a sandbox connection
+        const sandboxMatch = pathname.match(/^\/ws\/sandbox\/(\d+)\/([^\/]+)$/);
+        if (sandboxMatch) {
+          connectionType = ConnectionType.SANDBOX;
+          sandboxId = parseInt(sandboxMatch[1], 10);
+          sandboxSessionId = sandboxMatch[2];
           
-          // Update client information if provided
-          if (data.userId && data.dealershipId) {
-            const client = this.clients.get(clientId);
-            if (client) {
-              client.userId = data.userId;
-              client.dealershipId = data.dealershipId;
-              this.clients.set(clientId, client);
-            }
+          // Add to sandbox channel
+          if (!this.sandboxChannels.has(sandboxId)) {
+            this.sandboxChannels.set(sandboxId, new Set());
           }
+          this.sandboxChannels.get(sandboxId)?.add(clientId);
           
-          // Store session ID if provided
-          if (data.metadata?.sessionId) {
-            const client = this.clients.get(clientId);
-            if (client) {
-              client.sessionId = data.metadata.sessionId;
-              this.clients.set(clientId, client);
-              this.sessions.set(data.metadata.sessionId, clientId);
-              
-              logger.debug('Session ID registered for client', { 
-                clientId, 
-                sessionId: data.metadata.sessionId 
-              });
-            }
-          }
+          // Map sandbox session to client ID
+          this.sandboxSessions.set(sandboxSessionId, clientId);
           
-          // Process message based on type
-          await this.handleMessage(clientId, data);
-          
-        } catch (error) {
-          logger.error('Error processing WebSocket message', { error });
-          this.sendToClient(ws, {
-            type: MessageType.ERROR,
-            message: 'Error processing message',
-            timestamp: new Date().toISOString()
+          logger.info('New sandbox WebSocket connection established', { 
+            clientId, 
+            sandboxId, 
+            sandboxSessionId 
           });
-        }
-      });
-      
-      // Handle disconnection
-      ws.on('close', () => {
-        logger.info('WebSocket connection closed', { clientId });
-        
-        // Remove session mapping if exists
-        const client = this.clients.get(clientId);
-        if (client?.sessionId) {
-          this.sessions.delete(client.sessionId);
+        } else if (pathname.startsWith('/ws')) {
+          // Standard connection
+          logger.info('New standard WebSocket connection established', { clientId });
+        } else {
+          // Invalid path
+          logger.warn('Invalid WebSocket connection path', { pathname });
+          ws.close(1003, 'Invalid WebSocket path');
+          return;
         }
         
-        this.clients.delete(clientId);
-      });
-      
-      // Handle errors
-      ws.on('error', (error) => {
-        logger.error('WebSocket error', { error, clientId });
+        // Store client connection
+        this.clients.set(clientId, { 
+          ws, 
+          connectionType,
+          sandboxId,
+          sandboxSessionId
+        });
         
-        // Remove session mapping if exists
-        const client = this.clients.get(clientId);
-        if (client?.sessionId) {
-          this.sessions.delete(client.sessionId);
-        }
+        // Send initial welcome message
+        this.sendToClient(ws, {
+          type: MessageType.CONNECT,
+          message: 'Connected to WebSocket server',
+          timestamp: new Date().toISOString(),
+          metadata: { 
+            clientId,
+            connectionType,
+            sandboxId,
+            sandboxSessionId
+          }
+        });
         
-        this.clients.delete(clientId);
-      });
+        // Handle messages from clients
+        ws.on('message', async (rawData) => {
+          try {
+            const data: WebSocketMessage = JSON.parse(rawData.toString());
+            
+            // Handle message based on connection type
+            if (connectionType === ConnectionType.SANDBOX) {
+              // Handle sandbox message
+              await this.handleSandboxMessage(clientId, sandboxId!, sandboxSessionId!, data);
+            } else {
+              // Update client information if provided
+              if (data.userId && data.dealershipId) {
+                const client = this.clients.get(clientId);
+                if (client) {
+                  client.userId = data.userId;
+                  client.dealershipId = data.dealershipId;
+                  this.clients.set(clientId, client);
+                }
+              }
+              
+              // Store session ID if provided
+              if (data.metadata?.sessionId) {
+                const client = this.clients.get(clientId);
+                if (client) {
+                  client.sessionId = data.metadata.sessionId;
+                  this.clients.set(clientId, client);
+                  this.sessions.set(data.metadata.sessionId, clientId);
+                  
+                  logger.debug('Session ID registered for client', { 
+                    clientId, 
+                    sessionId: data.metadata.sessionId 
+                  });
+                }
+              }
+              
+              // Process standard message
+              await this.handleMessage(clientId, data);
+            }
+          } catch (error) {
+            logger.error('Error processing WebSocket message', { 
+              error: error instanceof Error ? error.message : String(error),
+              clientId 
+            });
+            
+            this.sendToClient(ws, {
+              type: MessageType.ERROR,
+              message: 'Error processing message',
+              timestamp: new Date().toISOString(),
+              error: {
+                message: error instanceof Error ? error.message : String(error)
+              }
+            });
+          }
+        });
+        
+        // Handle disconnection
+        ws.on('close', () => {
+          logger.info('WebSocket connection closed', { clientId });
+          
+          const client = this.clients.get(clientId);
+          if (client) {
+            // Clean up session mapping if exists
+            if (client.sessionId) {
+              this.sessions.delete(client.sessionId);
+            }
+            
+            // Clean up sandbox mappings if this is a sandbox connection
+            if (client.connectionType === ConnectionType.SANDBOX && client.sandboxId && client.sandboxSessionId) {
+              // Remove from sandbox channel
+              this.sandboxChannels.get(client.sandboxId)?.delete(clientId);
+              if (this.sandboxChannels.get(client.sandboxId)?.size === 0) {
+                this.sandboxChannels.delete(client.sandboxId);
+              }
+              
+              // Remove sandbox session mapping
+              this.sandboxSessions.delete(client.sandboxSessionId);
+            }
+          }
+          
+          this.clients.delete(clientId);
+        });
+        
+        // Handle errors
+        ws.on('error', (error) => {
+          logger.error('WebSocket error', { error, clientId });
+          
+          const client = this.clients.get(clientId);
+          if (client) {
+            // Clean up session mapping if exists
+            if (client.sessionId) {
+              this.sessions.delete(client.sessionId);
+            }
+            
+            // Clean up sandbox mappings if this is a sandbox connection
+            if (client.connectionType === ConnectionType.SANDBOX && client.sandboxId && client.sandboxSessionId) {
+              // Remove from sandbox channel
+              this.sandboxChannels.get(client.sandboxId)?.delete(clientId);
+              if (this.sandboxChannels.get(client.sandboxId)?.size === 0) {
+                this.sandboxChannels.delete(client.sandboxId);
+              }
+              
+              // Remove sandbox session mapping
+              this.sandboxSessions.delete(client.sandboxSessionId);
+            }
+          }
+          
+          this.clients.delete(clientId);
+        });
+      } catch (error) {
+        logger.error('Error handling WebSocket connection', {
+          error: error instanceof Error ? error.message : String(error),
+          url: request.url
+        });
+        
+        ws.close(1011, 'Internal server error');
+      }
     });
     
     logger.info('WebSocket server initialized');
+  }
+  
+  /**
+   * Handle sandbox messages
+   */
+  private async handleSandboxMessage(
+    clientId: string, 
+    sandboxId: number, 
+    sessionId: string, 
+    data: WebSocketMessage
+  ): Promise<void> {
+    try {
+      // Log the message
+      logger.debug('Received sandbox message', {
+        clientId,
+        sandboxId,
+        sessionId,
+        messageType: data.type
+      });
+      
+      // Forward the message to the orchestrator
+      await orchestrator.handleSandboxMessage(sandboxId, sessionId, {
+        ...data,
+        sandboxId,
+        sessionId
+      });
+    } catch (error) {
+      logger.error('Error handling sandbox message', {
+        error: error instanceof Error ? error.message : String(error),
+        clientId,
+        sandboxId,
+        sessionId
+      });
+      
+      // Send error back to client
+      const client = this.clients.get(clientId);
+      if (client && client.ws.readyState === WebSocket.OPEN) {
+        this.sendToClient(client.ws, {
+          type: MessageType.ERROR,
+          message: 'Error processing sandbox message',
+          timestamp: new Date().toISOString(),
+          error: {
+            message: error instanceof Error ? error.message : String(error)
+          },
+          metadata: {
+            sandboxId,
+            sessionId
+          }
+        });
+      }
+    }
   }
   
   /**
@@ -345,6 +523,39 @@ class WebSocketService {
   }
   
   /**
+   * Broadcast a message to all clients in a sandbox
+   */
+  broadcastToSandbox(sandboxId: number, message: WebSocketMessage) {
+    const clientIds = this.sandboxChannels.get(sandboxId);
+    if (!clientIds) {
+      logger.warn(`No clients found for sandbox ${sandboxId}`);
+      return;
+    }
+    
+    // Add sandbox metadata
+    const sandboxMessage = {
+      ...message,
+      metadata: {
+        ...(message.metadata || {}),
+        sandboxId,
+        channelType: 'sandbox'
+      }
+    };
+    
+    // Send to all clients in the sandbox
+    let sentCount = 0;
+    for (const clientId of clientIds) {
+      const client = this.clients.get(clientId);
+      if (client && client.ws.readyState === WebSocket.OPEN) {
+        this.sendToClient(client.ws, sandboxMessage);
+        sentCount++;
+      }
+    }
+    
+    logger.debug(`Broadcast to sandbox ${sandboxId}: sent to ${sentCount} clients`);
+  }
+  
+  /**
    * Send a message to a specific client
    */
   private sendToClient(ws: WebSocket, message: WebSocketMessage) {
@@ -361,7 +572,38 @@ class WebSocketService {
    */
   sendToSession(sessionId: string, message: WebSocketMessage): boolean {
     try {
-      // Find client ID for this session
+      // Check if this is a sandbox session
+      if (this.sandboxSessions.has(sessionId)) {
+        const clientId = this.sandboxSessions.get(sessionId);
+        if (!clientId) {
+          logger.warn('Sandbox session not found for message', { sessionId });
+          return false;
+        }
+        
+        // Get client
+        const client = this.clients.get(clientId);
+        if (!client || client.ws.readyState !== WebSocket.OPEN) {
+          logger.warn('Sandbox client not found or not connected for session', { sessionId, clientId });
+          return false;
+        }
+        
+        // Add sandbox metadata
+        const sandboxMessage = {
+          ...message,
+          metadata: {
+            ...(message.metadata || {}),
+            sandboxId: client.sandboxId,
+            sessionId,
+            channelType: 'sandbox'
+          }
+        };
+        
+        // Send the message
+        this.sendToClient(client.ws, sandboxMessage);
+        return true;
+      }
+      
+      // Regular session
       const clientId = this.sessions.get(sessionId);
       if (!clientId) {
         logger.warn('Session not found for message', { sessionId });
@@ -425,6 +667,59 @@ class WebSocketService {
   }
   
   /**
+   * Send a message to a sandbox session
+   */
+  sendToSandboxSession(sandboxId: number, sessionId: string, message: WebSocketMessage): boolean {
+    try {
+      // Get the client ID for this sandbox session
+      const clientId = this.sandboxSessions.get(sessionId);
+      if (!clientId) {
+        logger.warn('Sandbox session not found', { sandboxId, sessionId });
+        return false;
+      }
+      
+      // Get the client
+      const client = this.clients.get(clientId);
+      if (!client || client.ws.readyState !== WebSocket.OPEN) {
+        logger.warn('Sandbox client not found or not connected', { sandboxId, sessionId, clientId });
+        return false;
+      }
+      
+      // Ensure this client belongs to the specified sandbox
+      if (client.sandboxId !== sandboxId) {
+        logger.warn('Client sandbox ID mismatch', { 
+          sandboxId, 
+          clientSandboxId: client.sandboxId,
+          sessionId 
+        });
+        return false;
+      }
+      
+      // Add sandbox metadata
+      const sandboxMessage = {
+        ...message,
+        metadata: {
+          ...(message.metadata || {}),
+          sandboxId,
+          sessionId,
+          channelType: 'sandbox'
+        }
+      };
+      
+      // Send the message
+      this.sendToClient(client.ws, sandboxMessage);
+      return true;
+    } catch (error) {
+      logger.error('Error sending message to sandbox session', {
+        error: error instanceof Error ? error.message : String(error),
+        sandboxId,
+        sessionId
+      });
+      return false;
+    }
+  }
+  
+  /**
    * Generate a unique client ID for WebSocket connections
    */
   private generateClientId(): string {
@@ -436,6 +731,34 @@ class WebSocketService {
    */
   private generateMessageId(): string {
     return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  }
+  
+  /**
+   * Get active sandbox connections count
+   */
+  getSandboxConnectionsCount(sandboxId: number): number {
+    const clientIds = this.sandboxChannels.get(sandboxId);
+    return clientIds ? clientIds.size : 0;
+  }
+  
+  /**
+   * Get all active sandbox IDs
+   */
+  getActiveSandboxIds(): number[] {
+    return Array.from(this.sandboxChannels.keys());
+  }
+  
+  /**
+   * Check if a sandbox session is connected
+   */
+  isSandboxSessionConnected(sandboxId: number, sessionId: string): boolean {
+    const clientId = this.sandboxSessions.get(sessionId);
+    if (!clientId) return false;
+    
+    const client = this.clients.get(clientId);
+    return !!(client && 
+              client.ws.readyState === WebSocket.OPEN && 
+              client.sandboxId === sandboxId);
   }
 }
 

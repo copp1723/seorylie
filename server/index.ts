@@ -18,6 +18,7 @@ import agentOrchestrationRoutes from './routes/agent-orchestration-routes';
 import { initializeFollowUpScheduler } from './services/follow-up-scheduler';
 import { getWebSocketService } from './services/websocket-service';
 import { toolRegistry } from './services/tool-registry';
+import { orchestrator } from './services/orchestrator';
 
 // Enable Redis fallback when Redis connection details aren't provided
 if (!process.env.REDIS_HOST) {
@@ -156,7 +157,7 @@ app.use((req, res, next) => {
   // Register routes and get the HTTP server
   const server = await registerRoutes(app);
   
-  // Initialize WebSocket service
+  // Initialize WebSocket service first
   const wsService = getWebSocketService();
   wsService.initialize(server);
   logger.info('WebSocket service initialized');
@@ -165,6 +166,11 @@ app.use((req, res, next) => {
   // The toolRegistry is already created as a singleton, so we don't need to initialize it again
   // It will automatically use the WebSocket service when needed
   logger.info('Tool Registry service ready');
+  
+  // Initialize Orchestrator service (depends on WebSocket and Tool Registry)
+  // The orchestrator is already created as a singleton, so we don't need to initialize it again
+  // It will automatically use the WebSocket service and Tool Registry when needed
+  logger.info('Orchestrator service (v2) ready with sandbox and rate-limiting capabilities');
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
