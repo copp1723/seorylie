@@ -109,11 +109,19 @@ services:
       timeout: 5s
       retries: 3
 
+<<<<<<< HEAD
   # vin-agent automation service
   vin-agent:
     build:
       context: /Users/copp1723/vin-agent
       dockerfile: vin-agent-Dockerfile
+=======
+  # vin-agent service
+  vin-agent:
+    build:
+      context: /Users/copp1723/vin-agent
+      dockerfile: Dockerfile
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
     depends_on:
       postgres:
         condition: service_healthy
@@ -125,18 +133,33 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PORT: 5000
+<<<<<<< HEAD
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       CORS_ORIGIN: http://localhost:5173,http://localhost:3000
+=======
+      JWT_SECRET: ${JWT_SECRET:-76fc7f19f08433ab29ecb559c592b3671515693659f3fc6d636a5a42fe8f0233}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-32charencryptionkeyfordealership}
+      VINSOLUTIONS_USERNAME: ${VINSOLUTIONS_USERNAME:-}
+      VINSOLUTIONS_PASSWORD: ${VINSOLUTIONS_PASSWORD:-}
+      FORCE_SCHEMA_SYNC: "true"
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
     ports:
       - "5000:5000"
     volumes:
       - /Users/copp1723/vin-agent:/app
       - /app/node_modules
+<<<<<<< HEAD
       - vin_agent_logs:/app/logs
       - vin_agent_data:/app/data
       - vin_agent_screenshots:/app/screenshots
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+=======
+    working_dir: /app
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
       interval: 10s
       timeout: 5s
       retries: 3
@@ -269,9 +292,12 @@ volumes:
   postgres_data:
   redis_data:
   mindsdb_data:
+<<<<<<< HEAD
   vin_agent_logs:
   vin_agent_data:
   vin_agent_screenshots:
+=======
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
 
 networks:
   default:

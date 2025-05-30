@@ -1,0 +1,38 @@
+# ETL Worker Dependencies
+
+# Google Ads API Client
+google-ads>=16.0.0
+google-auth>=2.16.0
+
+# Database
+psycopg2-binary>=2.9.5
+
+# Security
+cryptography>=38.0.4
+
+# HTTP & API
+requests>=2.28.1
+
+# Data Processing
+pandas>=1.5.2
+numpy>=1.23.5
+python-dateutil>=2.8.2
+pytz>=2022.7
+
+# Job Scheduling
+schedule>=1.1.0
+
+# API & Health Checks
+flask>=2.2.2
+waitress>=2.1.2
+
+# Metrics & Monitoring
+prometheus-client>=0.16.0
+
+# Configuration & Utilities
+pyyaml>=6.0
+tenacity>=8.1.0
+python-dotenv>=0.21.0
+
+# Logging Enhancements
+structlog>=22.3.0
