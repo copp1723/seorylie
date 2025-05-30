@@ -152,11 +152,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Handle incoming WebSocket messages
   const handleWebSocketMessage = useCallback(
     (data: WebSocketMessage) => {
-      setLastActivity(new Date());
-
       switch (data.type) {
         case "connection_established":
-          setConnectionId(data.connectionId || null);
 
           // If we have history, load it
           if (data.messageHistory && Array.isArray(data.messageHistory)) {

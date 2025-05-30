@@ -5,13 +5,11 @@ import { FormField, FormValidation, validators, composeValidators, FormErrors } 
 import { useNotifications } from "@/hooks/useNotifications";
 import { useToast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { useApiClient } from "@/lib/api-client";
-import { Separator } from "@/components/ui/separator";
+import apiClient from "@/lib/api-client";
 
 export default function NotificationTestPage() {
   const notifications = useNotifications();
-  const { toast, success, error, warning, info, loading } = useToast();
-  const apiClient = useApiClient();
+  const { success, error, warning, info, loading } = useToast();
 
   // Form state for testing validation
   const [formData, setFormData] = useState({
