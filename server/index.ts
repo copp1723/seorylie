@@ -16,6 +16,7 @@ import userManagementRoutes from './routes/user-management-routes';
 import apiV1Routes from './routes/api-v1';
 import customerInsightsRoutes from './routes/customer-insights-routes';
 import { initializeFollowUpScheduler } from './services/follow-up-scheduler';
+import { validateProductionSafety } from './utils/production-safety-checks';
 
 // Enable Redis fallback when Redis connection details aren't provided
 if (!process.env.REDIS_HOST) {
@@ -126,6 +127,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Run production safety checks before starting any services
+  try {
+    logger.info('Running production safety checks...');
+    await validateProductionSafety();
+    logger.info('Production safety checks passed successfully');
+  } catch (error) {
+    logger.error('Production safety checks failed - application startup aborted', error);
+    process.exit(1);
+  }
+  
   // Initialize queue consumers with in-memory fallback
   try {
     const { initializeQueueConsumers } = await import('./services/queue-consumers');
