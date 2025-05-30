@@ -1,486 +1,511 @@
-import { eq, and, desc } from 'drizzle-orm';
-import db from '../db';
-import {
-  handovers,
-  conversations,
-  leads,
-  leadActivities,
-  type InsertHandover,
-  type Handover,
-  type HandoverReason,
-  type HandoverStatus,
-  type LeadPriority
-} from '../../shared/lead-management-schema';
-import { users } from '../../shared/schema';
+import { EventEmitter } from 'events';
 import logger from '../utils/logger';
+import { db } from '../db';
+import { adfLeads } from '@shared/adf-schema';
+import { eq } from 'drizzle-orm';
+import { EmailService } from './email-service';
+import { prometheusMetrics } from './prometheus-metrics';
 
-export interface HandoverRequest {
-  conversationId: string;
-  reason: HandoverReason;
-  description: string;
-  toUserId?: number;
-  urgency?: LeadPriority;
-  context?: Record<string, any>;
+export interface HandoverOptions {
+  emailService?: EmailService;
+  notificationEmails?: string[];
+  defaultSubject?: string;
+  defaultTemplate?: string;
+  enableSms?: boolean;
 }
+
+export interface HandoverData {
+  leadId: number;
+  customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  dealershipId: number;
+  dealershipName?: string;
+  sourceProvider?: string;
+  vehicleInfo?: string;
+  comments?: string;
+  reason: HandoverReason;
+  escalationLevel?: 'normal' | 'urgent' | 'critical';
+  additionalData?: Record<string, any>;
+}
+
+export type HandoverReason = 
+  | 'explicit_request' 
+  | 'complex_question' 
+  | 'pricing_negotiation' 
+  | 'financing_request'
+  | 'test_drive_request'
+  | 'trade_in_appraisal'
+  | 'negative_sentiment'
+  | 'high_value_opportunity'
+  | 'multiple_failed_responses'
+  | 'scheduled_followup'
+  | 'manual_trigger'
+  | 'other';
 
 export interface HandoverResult {
   success: boolean;
   handoverId?: string;
-  conversationId?: string;
-  status?: string;
-  estimatedResponseTime?: string;
-  errors: string[];
-  conversationNotFound?: boolean;
+  notificationSent?: boolean;
+  errors?: string[];
+  recipientEmails?: string[];
 }
 
-export interface HandoverUpdateData {
-  status: HandoverStatus;
-  userId?: number;
-  notes?: string;
-  customerSatisfaction?: number;
-}
-
-export interface HandoverUpdateResult {
-  success: boolean;
-  handover?: Handover;
-  errors: string[];
-  handoverNotFound?: boolean;
-}
-
-export interface ConversationContext {
-  customerName: string;
-  relevantVehicles?: Array<{
-    year: number;
-    make: string;
-    model: string;
-    trim?: string;
-    price: number;
-  }>;
-  previousMessages: Array<{
-    content: string;
-    isFromCustomer: boolean;
-  }>;
-}
-
-export class HandoverService {
+/**
+ * Handover Service - Manages lead handovers to human agents
+ */
+export class HandoverService extends EventEmitter {
+  private emailService: EmailService;
+  private notificationEmails: string[];
+  private defaultSubject: string;
+  private defaultTemplate: string;
+  private enableSms: boolean;
+  
+  constructor(options: HandoverOptions = {}) {
+    super();
+    
+    this.emailService = options.emailService || new EmailService();
+    this.notificationEmails = options.notificationEmails || [];
+    this.defaultSubject = options.defaultSubject || 'Lead Handover Notification';
+    this.defaultTemplate = options.defaultTemplate || 'default-handover';
+    this.enableSms = options.enableSms || false;
+    
+    logger.info('Handover Service initialized', {
+      notificationEmailsConfigured: this.notificationEmails.length > 0,
+      enableSms: this.enableSms
+    });
+  }
+  
   /**
-   * Create a new handover request
+   * Trigger a lead handover
    */
-  async createHandover(
-    dealershipId: number,
-    handoverData: HandoverRequest
-  ): Promise<HandoverResult> {
-    const errors: string[] = [];
-
+  async triggerHandover(data: HandoverData): Promise<HandoverResult> {
+    const startTime = Date.now();
+    const handoverId = `ho_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    
+    logger.info('Handover triggered', {
+      handoverId,
+      leadId: data.leadId,
+      customerName: data.customerName,
+      reason: data.reason,
+      dealershipId: data.dealershipId
+    });
+    
     try {
-      logger.info('Creating handover request', {
-        dealershipId,
-        conversationId: handoverData.conversationId,
-        reason: handoverData.reason
+      // Record handover initiation in metrics
+      prometheusMetrics.incrementHandoverTriggers({
+        dealership_id: data.dealershipId,
+        source_provider: data.sourceProvider || 'unknown',
+        reason: data.reason,
+        status: 'initiated'
       });
-
-      // Verify conversation exists and get lead information
-      const conversationResults = await db
-        .select({
-          conversation: conversations,
-          lead: leads
-        })
-        .from(conversations)
-        .leftJoin(leads, eq(conversations.leadId, leads.id))
-        .where(and(
-          eq(conversations.id, handoverData.conversationId),
-          eq(conversations.dealershipId, dealershipId)
-        ))
-        .limit(1);
-
-      if (conversationResults.length === 0) {
+      
+      // Update lead status in database
+      await this.updateLeadStatus(data.leadId, 'handover_initiated');
+      
+      // Emit handover event
+      this.emit('handover:initiated', {
+        handoverId,
+        leadId: data.leadId,
+        reason: data.reason,
+        timestamp: new Date()
+      });
+      
+      // Get recipient emails (fallback to default if none configured for dealership)
+      const recipientEmails = await this.getRecipientEmails(data.dealershipId);
+      
+      if (recipientEmails.length === 0) {
+        const error = 'No recipient emails configured for handover';
+        logger.warn(error, { handoverId, dealershipId: data.dealershipId });
+        
+        // Record failed handover in metrics
+        prometheusMetrics.incrementHandoverTriggers({
+          dealership_id: data.dealershipId,
+          source_provider: data.sourceProvider || 'unknown',
+          reason: data.reason,
+          status: 'failed'
+        });
+        
         return {
           success: false,
-          errors: ['Conversation not found'],
-          conversationNotFound: true
+          handoverId,
+          errors: [error]
         };
       }
-
-      const { conversation, lead } = conversationResults[0];
-
-      if (!lead) {
-        errors.push('Associated lead not found');
-        return { success: false, errors };
-      }
-
-      // Check if there's already a pending handover for this conversation
-      const existingHandovers = await db
-        .select()
-        .from(handovers)
-        .where(and(
-          eq(handovers.conversationId, handoverData.conversationId),
-          eq(handovers.status, 'pending')
-        ))
-        .limit(1);
-
-      if (existingHandovers.length > 0) {
+      
+      // Send handover notification
+      const notificationResult = await this.sendHandoverNotification(handoverId, data, recipientEmails);
+      
+      if (!notificationResult.success) {
+        // Record failed handover in metrics
+        prometheusMetrics.incrementHandoverTriggers({
+          dealership_id: data.dealershipId,
+          source_provider: data.sourceProvider || 'unknown',
+          reason: data.reason,
+          status: 'failed'
+        });
+        
         return {
           success: false,
-          errors: ['There is already a pending handover for this conversation'],
-          handoverId: existingHandovers[0].id
+          handoverId,
+          notificationSent: false,
+          errors: notificationResult.errors
         };
       }
-
-      // Find available agent if not specified
-      let assignedUserId = handoverData.toUserId;
-      if (!assignedUserId) {
-        assignedUserId = await this.findAvailableAgent(dealershipId, handoverData.urgency);
+      
+      // Send SMS notification if enabled and phone number available
+      if (this.enableSms && data.customerPhone) {
+        await this.sendSmsNotification(data);
       }
-
-      // Create handover record
-      const handoverRecord: InsertHandover = {
-        conversationId: handoverData.conversationId,
-        leadId: lead.id,
-        reason: handoverData.reason,
-        description: handoverData.description,
-        status: 'pending',
-        toUserId: assignedUserId,
-        urgency: handoverData.urgency || 'medium',
-        context: handoverData.context || {},
-        requestedAt: new Date()
-      };
-
-      const [newHandover] = await db
-        .insert(handovers)
-        .values(handoverRecord)
-        .returning();
-
-      // Update conversation status to escalated
-      await db
-        .update(conversations)
-        .set({
-          status: 'escalated',
-          updatedAt: new Date()
-        })
-        .where(eq(conversations.id, handoverData.conversationId));
-
-      // Log activity
-      await db.insert(leadActivities).values({
-        leadId: lead.id,
-        type: 'handover_requested',
-        description: `Handover requested: ${handoverData.reason} - ${handoverData.description}`,
-        handoverId: newHandover.id
+      
+      // Update lead status to handover_completed
+      await this.updateLeadStatus(data.leadId, 'handover_completed');
+      
+      // Record successful handover completion in metrics
+      prometheusMetrics.incrementHandoverTriggers({
+        dealership_id: data.dealershipId,
+        source_provider: data.sourceProvider || 'unknown',
+        reason: data.reason,
+        status: 'completed'
       });
-
-      // Calculate estimated response time based on urgency
-      const estimatedResponseTime = this.calculateEstimatedResponseTime(handoverData.urgency || 'medium');
-
-      logger.info('Handover created successfully', {
-        handoverId: newHandover.id,
-        conversationId: handoverData.conversationId,
-        assignedUserId
+      
+      // Emit handover completed event
+      this.emit('handover:completed', {
+        handoverId,
+        leadId: data.leadId,
+        reason: data.reason,
+        recipientEmails,
+        processingTime: Date.now() - startTime
       });
-
+      
+      logger.info('Handover completed successfully', {
+        handoverId,
+        leadId: data.leadId,
+        recipientCount: recipientEmails.length,
+        processingTime: Date.now() - startTime
+      });
+      
       return {
         success: true,
-        handoverId: newHandover.id,
-        conversationId: handoverData.conversationId,
-        status: 'pending',
-        estimatedResponseTime,
-        errors
+        handoverId,
+        notificationSent: true,
+        recipientEmails
       };
-
+      
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Handover creation failed', {
-        error: err.message,
-        dealershipId,
-        conversationId: handoverData.conversationId
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Handover failed', {
+        handoverId,
+        leadId: data.leadId,
+        error: errorMessage
       });
-
-      errors.push(`Failed to create handover: ${err.message}`);
-
+      
+      // Record failed handover in metrics
+      prometheusMetrics.incrementHandoverTriggers({
+        dealership_id: data.dealershipId,
+        source_provider: data.sourceProvider || 'unknown',
+        reason: data.reason,
+        status: 'failed'
+      });
+      
+      // Emit handover failed event
+      this.emit('handover:failed', {
+        handoverId,
+        leadId: data.leadId,
+        reason: data.reason,
+        error: errorMessage
+      });
+      
       return {
         success: false,
-        errors
+        handoverId,
+        errors: [errorMessage]
       };
     }
   }
-
+  
   /**
-   * Update handover status
+   * Get recipient emails for a dealership
    */
-  async updateHandover(
-    dealershipId: number,
-    handoverId: string,
-    updateData: HandoverUpdateData
-  ): Promise<HandoverUpdateResult> {
-    const errors: string[] = [];
-
+  private async getRecipientEmails(dealershipId: number): Promise<string[]> {
     try {
-      logger.info('Updating handover', {
-        dealershipId,
-        handoverId,
-        status: updateData.status
-      });
-
-      // Get existing handover with conversation info
-      const handoverResults = await db
-        .select({
-          handover: handovers,
-          conversation: conversations
-        })
-        .from(handovers)
-        .leftJoin(conversations, eq(handovers.conversationId, conversations.id))
-        .where(and(
-          eq(handovers.id, handoverId),
-          eq(conversations.dealershipId, dealershipId)
-        ))
-        .limit(1);
-
-      if (handoverResults.length === 0) {
-        return {
-          success: false,
-          errors: ['Handover not found'],
-          handoverNotFound: true
-        };
+      // TODO: Implement dealership-specific email fetching from database
+      // For now, return the default notification emails
+      
+      if (this.notificationEmails.length > 0) {
+        return this.notificationEmails;
       }
-
-      const { handover, conversation } = handoverResults[0];
-
-      if (!conversation) {
-        errors.push('Associated conversation not found');
-        return { success: false, errors };
+      
+      // Fallback to admin email if configured
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        return [adminEmail];
       }
-
-      // Prepare update data
-      const updateFields: Partial<Handover> = {
-        status: updateData.status,
-        updatedAt: new Date()
-      };
-
-      // Set timestamps based on status
-      if (updateData.status === 'accepted' && !handover.acceptedAt) {
-        updateFields.acceptedAt = new Date();
-      }
-
-      if (updateData.status === 'resolved' || updateData.status === 'rejected') {
-        updateFields.completedAt = new Date();
-        updateFields.resolutionNotes = updateData.notes;
-        updateFields.customerSatisfaction = updateData.customerSatisfaction;
-      }
-
-      // Update handover
-      const [updatedHandover] = await db
-        .update(handovers)
-        .set(updateFields)
-        .where(eq(handovers.id, handoverId))
-        .returning();
-
-      // Update conversation status based on handover status
-      let conversationStatus = conversation.status;
-      if (updateData.status === 'accepted' || updateData.status === 'in_progress') {
-        conversationStatus = 'active';
-      } else if (updateData.status === 'resolved') {
-        conversationStatus = 'resolved';
-      } else if (updateData.status === 'rejected') {
-        conversationStatus = 'active'; // Return to AI
-      }
-
-      await db
-        .update(conversations)
-        .set({
-          status: conversationStatus as any,
-          assignedUserId: updateData.userId,
-          updatedAt: new Date()
-        })
-        .where(eq(conversations.id, conversation.id));
-
-      // Log activity
-      await db.insert(leadActivities).values({
-        leadId: handover.leadId,
-        userId: updateData.userId,
-        type: 'handover_updated',
-        description: `Handover ${updateData.status}: ${updateData.notes || ''}`,
-        handoverId: handover.id
-      });
-
-      logger.info('Handover updated successfully', {
-        handoverId,
-        status: updateData.status,
-        userId: updateData.userId
-      });
-
-      return {
-        success: true,
-        handover: updatedHandover,
-        errors
-      };
-
+      
+      return [];
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Handover update failed', {
-        error: err.message,
+      logger.error('Error getting recipient emails', {
         dealershipId,
-        handoverId
+        error: error instanceof Error ? error.message : String(error)
       });
-
-      errors.push(`Failed to update handover: ${err.message}`);
-
-      return {
-        success: false,
-        errors
-      };
-    }
-  }
-
-  /**
-   * Get handovers for a dealership
-   */
-  async getHandovers(
-    dealershipId: number,
-    options: {
-      limit?: number;
-      offset?: number;
-      status?: HandoverStatus;
-      userId?: number;
-      urgency?: LeadPriority;
-    } = {}
-  ): Promise<Handover[]> {
-    try {
-      const { limit = 50, offset = 0, status, userId, urgency } = options;
-
-      // Join with conversations to filter by dealership
-      let query = db
-        .select({ handover: handovers })
-        .from(handovers)
-        .leftJoin(conversations, eq(handovers.conversationId, conversations.id))
-        .where(eq(conversations.dealershipId, dealershipId));
-
-      if (status) {
-        query = query.where(and(
-          eq(conversations.dealershipId, dealershipId),
-          eq(handovers.status, status)
-        ));
-      }
-
-      if (userId) {
-        query = query.where(and(
-          eq(conversations.dealershipId, dealershipId),
-          eq(handovers.toUserId, userId)
-        ));
-      }
-
-      if (urgency) {
-        query = query.where(and(
-          eq(conversations.dealershipId, dealershipId),
-          eq(handovers.urgency, urgency)
-        ));
-      }
-
-      const results = await query
-        .orderBy(desc(handovers.requestedAt))
-        .limit(limit)
-        .offset(offset);
-
-      return results.map(r => r.handover);
-
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Get handovers failed', {
-        error: err.message,
-        dealershipId
-      });
-
       return [];
     }
   }
-
+  
   /**
-   * Get handover by ID
+   * Send handover notification email
    */
-  async getHandoverById(
-    dealershipId: number,
-    handoverId: string
-  ): Promise<Handover | null> {
+  private async sendHandoverNotification(
+    handoverId: string,
+    data: HandoverData,
+    recipientEmails: string[]
+  ): Promise<{ success: boolean; errors?: string[] }> {
     try {
-      const results = await db
-        .select({ handover: handovers })
-        .from(handovers)
-        .leftJoin(conversations, eq(handovers.conversationId, conversations.id))
-        .where(and(
-          eq(handovers.id, handoverId),
-          eq(conversations.dealershipId, dealershipId)
-        ))
-        .limit(1);
-
-      return results[0]?.handover || null;
-
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Get handover by ID failed', {
-        error: err.message,
-        dealershipId,
-        handoverId
+      // Prepare email subject based on reason and escalation level
+      let subject = this.defaultSubject;
+      
+      if (data.escalationLevel === 'urgent') {
+        subject = `URGENT: ${subject}`;
+      } else if (data.escalationLevel === 'critical') {
+        subject = `CRITICAL: ${subject}`;
+      }
+      
+      // Add customer name and reason to subject
+      subject = `${subject} - ${data.customerName} - ${this.formatHandoverReason(data.reason)}`;
+      
+      // Prepare email template data
+      const templateData = {
+        handoverId,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail || 'Not provided',
+        customerPhone: data.customerPhone || 'Not provided',
+        dealershipName: data.dealershipName || `Dealership ID: ${data.dealershipId}`,
+        reason: this.formatHandoverReason(data.reason),
+        vehicleInfo: data.vehicleInfo || 'Not specified',
+        comments: data.comments || 'No additional comments',
+        escalationLevel: data.escalationLevel || 'normal',
+        timestamp: new Date().toLocaleString(),
+        sourceProvider: data.sourceProvider || 'Unknown source',
+        ...data.additionalData
+      };
+      
+      // Send email
+      const emailResult = await this.emailService.sendTemplateEmail({
+        to: recipientEmails,
+        subject,
+        template: this.defaultTemplate,
+        data: templateData
       });
-
-      return null;
-    }
-  }
-
-  /**
-   * Find available agent for handover
-   */
-  private async findAvailableAgent(
-    dealershipId: number,
-    urgency?: LeadPriority
-  ): Promise<number | undefined> {
-    try {
-      // Simple round-robin assignment for now
-      // In a more sophisticated system, this would consider:
-      // - Agent availability/working hours
-      // - Current workload
-      // - Skill matching
-      // - Priority queues
-
-      const availableAgents = await db
-        .select()
-        .from(users)
-        .where(and(
-          eq(users.dealership_id, dealershipId),
-          eq(users.role, 'user') // or other agent roles
-        ))
-        .limit(10);
-
-      if (availableAgents.length === 0) {
-        return undefined;
+      
+      if (!emailResult.success) {
+        return {
+          success: false,
+          errors: emailResult.errors || ['Unknown email sending error']
+        };
       }
-
-      // For urgent requests, try to find agents with fewer active handovers
-      if (urgency === 'urgent' || urgency === 'high') {
-        // This would require a more complex query to count active handovers per agent
-        // For now, just return the first available agent
-      }
-
-      // Return first available agent
-      return availableAgents[0].id;
-
+      
+      return { success: true };
+      
     } catch (error) {
-      logger.error('Find available agent failed', { error, dealershipId, urgency });
-      return undefined;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Error sending handover notification', {
+        handoverId,
+        leadId: data.leadId,
+        error: errorMessage
+      });
+      
+      return {
+        success: false,
+        errors: [errorMessage]
+      };
     }
   }
-
+  
   /**
-   * Calculate estimated response time based on urgency
+   * Send SMS notification for handover
    */
-  private calculateEstimatedResponseTime(urgency: LeadPriority): string {
-    switch (urgency) {
-      case 'urgent':
-        return '5 minutes';
-      case 'high':
-        return '15 minutes';
-      case 'medium':
-        return '1 hour';
-      case 'low':
-        return '4 hours';
-      default:
-        return '1 hour';
+  private async sendSmsNotification(data: HandoverData): Promise<void> {
+    // This is a placeholder for SMS notification functionality
+    // Will be implemented when Twilio integration is complete
+    logger.info('SMS notification would be sent (not implemented)', {
+      customerPhone: data.customerPhone,
+      reason: data.reason
+    });
+  }
+  
+  /**
+   * Update lead status in database
+   */
+  private async updateLeadStatus(leadId: number, status: string): Promise<void> {
+    try {
+      await db.update(adfLeads)
+        .set({
+          leadStatus: status as any,
+          updatedAt: new Date()
+        })
+        .where(eq(adfLeads.id, leadId));
+      
+      logger.debug('Lead status updated', { leadId, status });
+    } catch (error) {
+      logger.error('Failed to update lead status', {
+        leadId,
+        status,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      // Don't throw the error, just log it
+    }
+  }
+  
+  /**
+   * Format handover reason for human readability
+   */
+  private formatHandoverReason(reason: HandoverReason): string {
+    const reasonMap: Record<HandoverReason, string> = {
+      'explicit_request': 'Customer Requested Agent',
+      'complex_question': 'Complex Question',
+      'pricing_negotiation': 'Pricing Negotiation',
+      'financing_request': 'Financing Request',
+      'test_drive_request': 'Test Drive Request',
+      'trade_in_appraisal': 'Trade-in Appraisal',
+      'negative_sentiment': 'Negative Sentiment Detected',
+      'high_value_opportunity': 'High Value Opportunity',
+      'multiple_failed_responses': 'Multiple Failed Responses',
+      'scheduled_followup': 'Scheduled Follow-up',
+      'manual_trigger': 'Manually Triggered',
+      'other': 'Other Reason'
+    };
+    
+    return reasonMap[reason] || String(reason);
+  }
+  
+  /**
+   * Check if a lead should be handed over based on intent and content
+   */
+  async shouldHandover(
+    leadId: number,
+    dealershipId: number,
+    content: string,
+    intents?: string[]
+  ): Promise<{ shouldHandover: boolean; reason?: HandoverReason }> {
+    // Check for explicit handover intents
+    if (intents && intents.length > 0) {
+      if (intents.includes('request_human') || intents.includes('talk_to_agent')) {
+        return { shouldHandover: true, reason: 'explicit_request' };
+      }
+      
+      if (intents.includes('test_drive')) {
+        return { shouldHandover: true, reason: 'test_drive_request' };
+      }
+      
+      if (intents.includes('financing') || intents.includes('loan')) {
+        return { shouldHandover: true, reason: 'financing_request' };
+      }
+      
+      if (intents.includes('trade_in') || intents.includes('appraisal')) {
+        return { shouldHandover: true, reason: 'trade_in_appraisal' };
+      }
+      
+      if (intents.includes('negotiate') || intents.includes('discount')) {
+        return { shouldHandover: true, reason: 'pricing_negotiation' };
+      }
+    }
+    
+    // Check content for keywords suggesting handover
+    const lowerContent = content.toLowerCase();
+    
+    if (lowerContent.includes('speak to a human') || 
+        lowerContent.includes('talk to a person') || 
+        lowerContent.includes('real person')) {
+      return { shouldHandover: true, reason: 'explicit_request' };
+    }
+    
+    if (lowerContent.includes('test drive') || lowerContent.includes('drive it')) {
+      return { shouldHandover: true, reason: 'test_drive_request' };
+    }
+    
+    if (lowerContent.includes('finance') || lowerContent.includes('loan') || 
+        lowerContent.includes('credit')) {
+      return { shouldHandover: true, reason: 'financing_request' };
+    }
+    
+    // Track this check in metrics even if we don't handover
+    prometheusMetrics.incrementHandoverTriggers({
+      dealership_id: dealershipId,
+      source_provider: 'unknown', // Would need to be passed in
+      reason: 'content_check',
+      status: 'initiated'
+    });
+    
+    // Default - no handover needed
+    return { shouldHandover: false };
+  }
+  
+  /**
+   * Process a batch of pending handovers
+   */
+  async processPendingHandovers(): Promise<number> {
+    try {
+      // Find leads with handover_initiated status
+      const pendingLeads = await db.query.adfLeads.findMany({
+        where: eq(adfLeads.leadStatus, 'handover_initiated' as any),
+        limit: 50
+      });
+      
+      logger.info(`Processing ${pendingLeads.length} pending handovers`);
+      
+      let successCount = 0;
+      
+      for (const lead of pendingLeads) {
+        try {
+          // Prepare handover data
+          const handoverData: HandoverData = {
+            leadId: lead.id,
+            customerName: lead.customerFullName,
+            customerEmail: lead.customerEmail || undefined,
+            customerPhone: lead.customerPhone || undefined,
+            dealershipId: lead.dealershipId || 0,
+            sourceProvider: lead.providerService || 'unknown',
+            vehicleInfo: lead.vehicleMake && lead.vehicleModel 
+              ? `${lead.vehicleYear || ''} ${lead.vehicleMake} ${lead.vehicleModel}` 
+              : undefined,
+            comments: lead.comments || undefined,
+            reason: 'scheduled_followup' // Default reason for batch processing
+          };
+          
+          // Trigger handover
+          const result = await this.triggerHandover(handoverData);
+          
+          if (result.success) {
+            successCount++;
+          }
+          
+        } catch (error) {
+          logger.error('Error processing pending handover', {
+            leadId: lead.id,
+            error: error instanceof Error ? error.message : String(error)
+          });
+          
+          // Record failed handover in metrics
+          prometheusMetrics.incrementHandoverTriggers({
+            dealership_id: lead.dealershipId || 0,
+            source_provider: lead.providerService || 'unknown',
+            reason: 'batch_processing',
+            status: 'failed'
+          });
+        }
+      }
+      
+      return successCount;
+      
+    } catch (error) {
+      logger.error('Error processing pending handovers batch', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return 0;
     }
   }
 }
+
+// Export default instance
+export const handoverService = new HandoverService();
+export default handoverService;
