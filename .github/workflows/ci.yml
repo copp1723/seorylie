@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: |
           echo "📦 Installing dependencies..."
-          npm ci
+          npm install
           echo "✅ Dependencies installed successfully"
 
       - name: Security audit
@@ -70,7 +70,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run ESLint
         run: |
@@ -100,7 +100,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run unit tests
         run: |
@@ -156,7 +156,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Wait for services
         run: |
@@ -219,7 +219,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
@@ -293,7 +293,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Validate OTEL configuration
         run: |
