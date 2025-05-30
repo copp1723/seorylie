@@ -53,3 +53,33 @@ WORKDIR /app
 
 # Start client using Vite directly
 CMD ["npx", "vite", "--host", "0.0.0.0", "client"]
+
+# Testing stage for mock services and CI testing
+FROM base AS testing
+WORKDIR /app
+
+# Install all dependencies including dev dependencies
+RUN npm ci
+
+# Copy all source code and test files
+COPY --chown=appuser:appgroup server ./server
+COPY --chown=appuser:appgroup shared ./shared
+COPY --chown=appuser:appgroup client ./client
+COPY --chown=appuser:appgroup test ./test
+COPY --chown=appuser:appgroup scripts ./scripts
+COPY --chown=appuser:appgroup migrations ./migrations
+COPY --chown=appuser:appgroup drizzle.config.ts ./
+COPY --chown=appuser:appgroup tsconfig.json ./
+COPY --chown=appuser:appgroup jest.config.js ./
+COPY --chown=appuser:appgroup .env.test ./.env
+
+# Create directories for test results and artifacts
+RUN mkdir -p test-results/jest test-results/fixtures test-results/adf-e2e
+
+# Set environment variables for testing
+ENV NODE_ENV=test
+ENV USE_MOCKS=true
+ENV TEST_MODE=true
+
+# Default command runs all tests with mocks
+CMD ["npm", "run", "test:ci"]
