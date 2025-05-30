@@ -12,7 +12,6 @@ import Login from './pages/login';
 import AuthPage from './pages/auth-page';
 import VerifyMagicLink from './pages/verify-magic-link';
 import SimplePromptTestPage from './pages/SimplePromptTestPage';
-import ProtectedPromptTesting from './pages/protected-prompt-testing';
 import EnhancedPromptTesting from './pages/enhanced-prompt-testing';
 import Conversations from './pages/conversations';
 import Analytics from './pages/analytics';
@@ -43,7 +42,7 @@ function App() {
                 <Route path="/dashboard" component={Dashboard} />
                 <Route path="/prompt-testing">
                   <ProtectedRoute>
-                    <ProtectedPromptTesting />
+                    <SimplePromptTestPage />
                   </ProtectedRoute>
                 </Route>
                 <Route path="/enhanced-prompt-testing">

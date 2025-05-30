@@ -105,14 +105,10 @@ export default function NotificationTestPage() {
             "Import Failed",
             "Unable to process inventory file. Please check the format and try again.",
             {
-              action: (
-                <ToastAction 
-                  altText="Retry Import" 
-                  onClick={() => notifications.info("Retry Triggered", "Retrying import...")}
-                >
-                  Retry Import
-                </ToastAction>
-              )
+              action: {
+                label: "Retry Import",
+                onClick: () => notifications.info("Retry Triggered", "Retrying import...")
+              }
             }
           ),
         },
@@ -137,14 +133,10 @@ export default function NotificationTestPage() {
             "Network Error",
             "Unable to connect to the server. Please check your internet connection.",
             {
-              action: (
-                <ToastAction 
-                  altText="Retry" 
-                  onClick={() => notifications.info("Retrying", "Attempting to reconnect...")}
-                >
-                  Retry
-                </ToastAction>
-              )
+              action: {
+                label: "Retry",
+                onClick: () => notifications.info("Retrying", "Attempting to reconnect...")
+              }
             }
           ),
         },
@@ -236,10 +228,7 @@ export default function NotificationTestPage() {
           name: "Test 401 Unauthorized",
           action: async () => {
             try {
-              await apiClient.request('/test-401', {
-                showErrorToast: true,
-                errorMessage: "Authentication required. Please log in."
-              });
+              await apiClient.get('/test-401');
             } catch (error) {
               console.log("Expected 401 error caught:", error);
             }
@@ -249,10 +238,7 @@ export default function NotificationTestPage() {
           name: "Test 404 Not Found",
           action: async () => {
             try {
-              await apiClient.request('/test-404', {
-                showErrorToast: true,
-                errorMessage: "The requested resource was not found."
-              });
+              await apiClient.get('/test-404');
             } catch (error) {
               console.log("Expected 404 error caught:", error);
             }
@@ -262,9 +248,7 @@ export default function NotificationTestPage() {
           name: "Test Network Error",
           action: async () => {
             try {
-              await apiClient.request('/invalid-endpoint-12345', {
-                showErrorToast: true
-              });
+              await apiClient.get('/invalid-endpoint-12345');
             } catch (error) {
               console.log("Expected network error caught:", error);
             }
