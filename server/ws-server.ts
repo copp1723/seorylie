@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
 import logger from './utils/logger';
 import { v4 as uuidv4 } from 'uuid';
-import db from './db';
+import { db } from './db';
 import { sql } from 'drizzle-orm';
 
 interface Client {

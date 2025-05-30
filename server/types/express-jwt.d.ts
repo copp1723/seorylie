@@ -1,5 +1,7 @@
 // Express request augmentation for JWT authentication
 
+import { User } from "@shared/schema";
+
 export interface JWTPayload {
   userId: string;
   dealershipId: number;
@@ -13,7 +15,7 @@ export interface JWTPayload {
 declare global {
   namespace Express {
     interface Request {
-      user?: JWTPayload;
+      user?: JWTPayload | User;
       token?: string;
       dealershipContext?: {
         dealershipId: number;

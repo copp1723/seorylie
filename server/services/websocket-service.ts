@@ -4,11 +4,11 @@ import { Redis } from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
 import { dealershipConfigService } from './dealership-config-service';
-import { DealershipMode } from '../../shared/schema';
-import { featureFlagsService, FeatureFlagNames, FlagContext } from '../services/feature-flags-service';
-import { monitoringService } from '../services/monitoring';
-import { AppError, ErrorCode } from '../utils/error-codes';
-import { generateTraceId, withTraceId } from '../utils/error-handler';
+// import { DealershipMode } from '../../shared/schema';
+import { featureFlagsService, FeatureFlagNames } from '../services/feature-flags-service';
+// import { monitoringService } from '../services/monitoring';
+// import { AppError, ErrorCode } from '../utils/error-codes';
+// import { generateTraceId } from '../utils/error-handler';
 
 // Message types for our WebSocket communication
 export enum MessageType {
@@ -99,12 +99,12 @@ class WebSocketService {
   private instanceId: string = uuidv4();
   private isRedisEnabled: boolean = false;
   private isShuttingDown: boolean = false;
-  
+
   // Redis clients
   private redisPublisher: Redis | null = null;
   private redisSubscriber: Redis | null = null;
   private redisClient: Redis | null = null;
-  
+
   // Monitoring metrics
   private metrics = {
     connections: {
@@ -132,33 +132,33 @@ class WebSocketService {
     try {
       // Register metrics
       this.registerMetrics();
-      
+
       // Generate trace ID for initialization
       const traceId = generateTraceId();
-      
+
       // Initialize Redis if feature flag is enabled
       await this.initializeRedis(traceId);
-      
+
       // Create WebSocket server with a specific path
       this.wss = new WebSocketServer({ server, path: '/ws' });
-      
+
       logger.info('WebSocket server created', { instanceId: this.instanceId, traceId });
-      
+
       // Set up connection handler
       this.wss.on('connection', (ws, request) => this.handleNewConnection(ws, request));
-      
+
       // Set up health check interval
       setInterval(() => this.performHealthCheck(), CONFIG.HEALTH_CHECK_INTERVAL);
-      
+
       // Register shutdown handlers
       this.registerShutdownHandlers();
-      
-      logger.info('WebSocket server initialized successfully', { 
+
+      logger.info('WebSocket server initialized successfully', {
         instanceId: this.instanceId,
         redisEnabled: this.isRedisEnabled,
         traceId
       });
-      
+
       // Register this instance in Redis if enabled
       if (this.isRedisEnabled && this.redisClient) {
         await this.redisClient.hset(
@@ -170,33 +170,33 @@ class WebSocketService {
             port: process.env.PORT || '3000'
           })
         );
-        
+
         // Set expiry to auto-cleanup stale instances
         await this.redisClient.expire(REDIS_KEYS.INSTANCE_REGISTRY, 3600); // 1 hour
       }
     } catch (error) {
       const traceId = generateTraceId();
-      logger.error('Failed to initialize WebSocket server', { 
-        error, 
+      logger.error('Failed to initialize WebSocket server', {
+        error,
         instanceId: this.instanceId,
         traceId
       });
-      
+
       // Attempt to initialize without Redis as fallback
       if (this.isRedisEnabled && !this.wss) {
         logger.warn('Falling back to non-Redis WebSocket mode', { traceId });
         this.isRedisEnabled = false;
-        
+
         // Create WebSocket server
         this.wss = new WebSocketServer({ server, path: '/ws' });
-        
+
         // Set up connection handler
         this.wss.on('connection', (ws, request) => this.handleNewConnection(ws, request));
-        
+
         // Set up health check interval
         setInterval(() => this.performHealthCheck(), CONFIG.HEALTH_CHECK_INTERVAL);
-        
-        logger.info('WebSocket server initialized in fallback mode', { 
+
+        logger.info('WebSocket server initialized in fallback mode', {
           instanceId: this.instanceId,
           traceId
         });
@@ -214,15 +214,15 @@ class WebSocketService {
         FeatureFlagNames.REDIS_WEBSOCKET_SCALING,
         { environment: process.env.NODE_ENV || 'development' }
       );
-      
+
       if (!isEnabled) {
         logger.info('Redis WebSocket scaling is disabled by feature flag', { traceId });
         this.isRedisEnabled = false;
         return;
       }
-      
+
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      
+
       // Initialize Redis clients
       this.redisPublisher = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
@@ -230,68 +230,68 @@ class WebSocketService {
         connectTimeout: 10000,
         retryStrategy: (times) => {
           if (times > CONFIG.REDIS_RECONNECT.MAX_ATTEMPTS) {
-            logger.error('Redis publisher max reconnect attempts reached', { 
-              times, 
+            logger.error('Redis publisher max reconnect attempts reached', {
+              times,
               traceId
             });
             return null; // Stop retrying
           }
-          
+
           const delay = CONFIG.REDIS_RECONNECT.RETRY_DELAY * Math.min(times, 10);
           logger.warn('Redis publisher reconnecting', { times, delay, traceId });
-          
+
           this.metrics.redis.reconnectAttempts = times;
           this.metrics.redis.lastReconnect = Date.now();
-          
+
           return delay;
         }
       });
-      
+
       this.redisSubscriber = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         enableOfflineQueue: false,
         connectTimeout: 10000,
         retryStrategy: (times) => {
           if (times > CONFIG.REDIS_RECONNECT.MAX_ATTEMPTS) {
-            logger.error('Redis subscriber max reconnect attempts reached', { 
-              times, 
+            logger.error('Redis subscriber max reconnect attempts reached', {
+              times,
               traceId
             });
             return null; // Stop retrying
           }
-          
+
           const delay = CONFIG.REDIS_RECONNECT.RETRY_DELAY * Math.min(times, 10);
           logger.warn('Redis subscriber reconnecting', { times, delay, traceId });
-          
+
           return delay;
         }
       });
-      
+
       this.redisClient = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         enableOfflineQueue: true,
         connectTimeout: 10000
       });
-      
+
       // Set up event handlers
       this.redisPublisher.on('connect', () => {
         logger.info('Redis publisher connected', { traceId });
         this.metrics.redis.connected = true;
       });
-      
+
       this.redisPublisher.on('error', (error) => {
         logger.error('Redis publisher error', { error, traceId });
         this.metrics.redis.connected = false;
       });
-      
+
       this.redisSubscriber.on('connect', () => {
         logger.info('Redis subscriber connected', { traceId });
       });
-      
+
       this.redisSubscriber.on('error', (error) => {
         logger.error('Redis subscriber error', { error, traceId });
       });
-      
+
       // Subscribe to channels
       await this.redisSubscriber.subscribe(
         REDIS_CHANNELS.BROADCAST,
@@ -299,43 +299,43 @@ class WebSocketService {
         REDIS_CHANNELS.HEALTH_CHECK,
         REDIS_CHANNELS.MIGRATION
       );
-      
+
       // Set up message handler
       this.redisSubscriber.on('message', (channel, message) => {
         this.handleRedisMessage(channel, message);
       });
-      
+
       // Ping Redis to verify connection
       await this.redisClient.ping();
-      
-      logger.info('Redis initialized successfully for WebSocket scaling', { 
+
+      logger.info('Redis initialized successfully for WebSocket scaling', {
         instanceId: this.instanceId,
         traceId
       });
-      
+
       this.isRedisEnabled = true;
     } catch (error) {
-      logger.error('Failed to initialize Redis for WebSocket scaling', { 
-        error, 
+      logger.error('Failed to initialize Redis for WebSocket scaling', {
+        error,
         traceId
       });
-      
+
       // Cleanup any partially initialized Redis clients
       if (this.redisPublisher) {
         this.redisPublisher.disconnect();
         this.redisPublisher = null;
       }
-      
+
       if (this.redisSubscriber) {
         this.redisSubscriber.disconnect();
         this.redisSubscriber = null;
       }
-      
+
       if (this.redisClient) {
         this.redisClient.disconnect();
         this.redisClient = null;
       }
-      
+
       this.isRedisEnabled = false;
     }
   }
@@ -350,26 +350,26 @@ class WebSocketService {
       'Total number of WebSocket connections',
       ['state']
     );
-    
+
     monitoringService.registerGauge(
       'websocket_connections_by_dealership',
       'Number of WebSocket connections by dealership',
       ['dealership_id']
     );
-    
+
     // Message metrics
     monitoringService.registerCounter(
       'websocket_messages_total',
       'Total number of WebSocket messages',
       ['type', 'direction']
     );
-    
+
     monitoringService.registerCounter(
       'websocket_errors_total',
       'Total number of WebSocket errors',
       ['type']
     );
-    
+
     // Performance metrics
     monitoringService.registerHistogram(
       'websocket_message_delivery_seconds',
@@ -377,26 +377,26 @@ class WebSocketService {
       ['type'],
       [0.001, 0.01, 0.1, 0.5, 1, 3, 5, 10]
     );
-    
+
     // Redis metrics
     monitoringService.registerGauge(
       'websocket_redis_connected',
       'Whether Redis is connected for WebSocket scaling',
       []
     );
-    
+
     monitoringService.registerGauge(
       'websocket_redis_reconnect_attempts',
       'Number of Redis reconnection attempts',
       []
     );
-    
+
     monitoringService.registerGauge(
       'websocket_queued_messages',
       'Number of queued messages for offline clients',
       []
     );
-    
+
     // Rate limiting metrics
     monitoringService.registerCounter(
       'websocket_rate_limited_total',
@@ -413,12 +413,12 @@ class WebSocketService {
       // Update connection metrics
       monitoringService.setGauge('websocket_connections_total', this.metrics.connections.total, ['total']);
       monitoringService.setGauge('websocket_connections_total', this.metrics.connections.active, ['active']);
-      
+
       // Update dealership metrics
       this.metrics.connections.byDealership.forEach((count, dealershipId) => {
         monitoringService.setGauge('websocket_connections_by_dealership', count, [dealershipId.toString()]);
       });
-      
+
       // Update Redis metrics
       monitoringService.setGauge('websocket_redis_connected', this.metrics.redis.connected ? 1 : 0, []);
       monitoringService.setGauge('websocket_redis_reconnect_attempts', this.metrics.redis.reconnectAttempts, []);
@@ -436,7 +436,7 @@ class WebSocketService {
       // Generate a unique client ID and trace ID
       const clientId = this.generateClientId();
       const traceId = generateTraceId();
-      
+
       // Store client connection
       const client: ClientConnection = {
         ws,
@@ -452,20 +452,20 @@ class WebSocketService {
           blocked: false
         }
       };
-      
+
       this.clients.set(clientId, client);
-      
+
       // Update metrics
       this.metrics.connections.total++;
       this.metrics.connections.active++;
       this.updateMetrics();
-      
-      logger.info('New WebSocket connection established', { 
-        clientId, 
+
+      logger.info('New WebSocket connection established', {
+        clientId,
         traceId,
         ip: request.socket.remoteAddress
       });
-      
+
       // Register connection in Redis if enabled
       if (this.isRedisEnabled && this.redisClient) {
         this.redisClient.hset(
@@ -474,39 +474,39 @@ class WebSocketService {
           'createdAt', client.createdAt.toString(),
           'traceId', traceId
         ).catch(error => {
-          logger.error('Failed to register connection in Redis', { 
-            error, 
-            clientId, 
+          logger.error('Failed to register connection in Redis', {
+            error,
+            clientId,
             traceId
           });
         });
-        
+
         // Set expiry to auto-cleanup stale connections
         this.redisClient.expire(
           REDIS_KEYS.CONNECTION_PREFIX + clientId,
           3600 // 1 hour
         ).catch(error => {
-          logger.warn('Failed to set expiry for connection in Redis', { 
-            error, 
-            clientId, 
+          logger.warn('Failed to set expiry for connection in Redis', {
+            error,
+            clientId,
             traceId
           });
         });
       }
-      
+
       // Send initial welcome message
       this.sendToClient(ws, {
         type: MessageType.CONNECT,
         message: 'Connected to chat server',
         timestamp: new Date().toISOString(),
-        metadata: { 
+        metadata: {
           clientId,
           instanceId: this.instanceId,
           redisEnabled: this.isRedisEnabled
         },
         traceId
       });
-      
+
       // Set up ping for connection health monitoring
       ws.on('pong', () => {
         const client = this.clients.get(clientId);
@@ -515,7 +515,7 @@ class WebSocketService {
           client.lastActivity = Date.now();
         }
       });
-      
+
       // Handle messages from clients
       ws.on('message', async (rawData) => {
         try {
@@ -525,7 +525,7 @@ class WebSocketService {
               type: MessageType.ERROR,
               message: 'Rate limit exceeded',
               timestamp: new Date().toISOString(),
-              metadata: { 
+              metadata: {
                 reason: 'RATE_LIMIT_EXCEEDED',
                 resetTime: this.clients.get(clientId)?.rateLimit.resetTime
               },
@@ -533,21 +533,21 @@ class WebSocketService {
             });
             return;
           }
-          
+
           const data: WebSocketMessage = JSON.parse(rawData.toString());
-          
+
           // Add trace ID if not present
           if (!data.traceId) {
             data.traceId = traceId;
           }
-          
+
           // Update client information if provided
           if (data.userId && data.dealershipId) {
             const client = this.clients.get(clientId);
             if (client) {
               client.userId = data.userId;
               client.dealershipId = data.dealershipId;
-              
+
               // Update dealership metrics
               if (!this.metrics.connections.byDealership.has(data.dealershipId)) {
                 this.metrics.connections.byDealership.set(data.dealershipId, 0);
@@ -556,7 +556,7 @@ class WebSocketService {
                 data.dealershipId,
                 (this.metrics.connections.byDealership.get(data.dealershipId) || 0) + 1
               );
-              
+
               // Update Redis if enabled
               if (this.isRedisEnabled && this.redisClient) {
                 this.redisClient.hset(
@@ -564,25 +564,25 @@ class WebSocketService {
                   'userId', data.userId.toString(),
                   'dealershipId', data.dealershipId.toString()
                 ).catch(error => {
-                  logger.warn('Failed to update connection in Redis', { 
-                    error, 
-                    clientId, 
+                  logger.warn('Failed to update connection in Redis', {
+                    error,
+                    clientId,
                     traceId
                   });
                 });
               }
             }
           }
-          
+
           // Update activity timestamp and message count
           const client = this.clients.get(clientId);
           if (client) {
             client.lastActivity = Date.now();
             client.messageCount++;
-            
+
             // Update rate limit counter
             client.rateLimit.count++;
-            
+
             // Reset rate limit if window has passed
             if (Date.now() > client.rateLimit.resetTime) {
               client.rateLimit.count = 1;
@@ -590,7 +590,7 @@ class WebSocketService {
               client.rateLimit.blocked = false;
             }
           }
-          
+
           // Update metrics
           this.metrics.messages.received++;
           monitoringService.incrementCounter(
@@ -598,20 +598,20 @@ class WebSocketService {
             1,
             [data.type || 'unknown', 'received']
           );
-          
+
           // Process message based on type
           await this.handleMessage(clientId, data);
         } catch (error) {
-          logger.error('Error processing WebSocket message', { 
-            error, 
-            clientId, 
+          logger.error('Error processing WebSocket message', {
+            error,
+            clientId,
             traceId
           });
-          
+
           // Update error metrics
           this.metrics.messages.errors++;
           monitoringService.incrementCounter('websocket_errors_total', 1, ['processing']);
-          
+
           this.sendToClient(ws, {
             type: MessageType.ERROR,
             message: 'Error processing message',
@@ -620,41 +620,41 @@ class WebSocketService {
           });
         }
       });
-      
+
       // Handle disconnection
       ws.on('close', () => {
         this.handleDisconnection(clientId);
       });
-      
+
       // Handle errors
       ws.on('error', (error) => {
-        logger.error('WebSocket error', { 
-          error, 
-          clientId, 
+        logger.error('WebSocket error', {
+          error,
+          clientId,
           traceId
         });
-        
+
         // Update error metrics
         monitoringService.incrementCounter('websocket_errors_total', 1, ['connection']);
-        
+
         this.handleDisconnection(clientId);
       });
     } catch (error) {
       const traceId = generateTraceId();
-      logger.error('Error handling new WebSocket connection', { 
-        error, 
+      logger.error('Error handling new WebSocket connection', {
+        error,
         traceId
       });
-      
+
       // Update error metrics
       monitoringService.incrementCounter('websocket_errors_total', 1, ['connection']);
-      
+
       // Close connection with error
       try {
         ws.close(1011, 'Internal server error');
       } catch (closeError) {
-        logger.error('Error closing WebSocket connection', { 
-          error: closeError, 
+        logger.error('Error closing WebSocket connection', {
+          error: closeError,
           traceId
         });
       }
@@ -668,15 +668,15 @@ class WebSocketService {
     try {
       const client = this.clients.get(clientId);
       if (!client) return;
-      
+
       const { dealershipId, traceId } = client;
-      
-      logger.info('WebSocket connection closed', { 
-        clientId, 
-        dealershipId, 
+
+      logger.info('WebSocket connection closed', {
+        clientId,
+        dealershipId,
         traceId
       });
-      
+
       // Update metrics
       this.metrics.connections.active--;
       if (dealershipId && this.metrics.connections.byDealership.has(dealershipId)) {
@@ -686,24 +686,24 @@ class WebSocketService {
         }
       }
       this.updateMetrics();
-      
+
       // Remove from clients map
       this.clients.delete(clientId);
-      
+
       // Remove from Redis if enabled
       if (this.isRedisEnabled && this.redisClient) {
         this.redisClient.del(REDIS_KEYS.CONNECTION_PREFIX + clientId)
           .catch(error => {
-            logger.warn('Failed to remove connection from Redis', { 
-              error, 
-              clientId, 
+            logger.warn('Failed to remove connection from Redis', {
+              error,
+              clientId,
               traceId
             });
           });
       }
     } catch (error) {
-      logger.error('Error handling WebSocket disconnection', { 
-        error, 
+      logger.error('Error handling WebSocket disconnection', {
+        error,
         clientId
       });
     }
@@ -715,16 +715,16 @@ class WebSocketService {
   private isRateLimited(clientId: string): boolean {
     const client = this.clients.get(clientId);
     if (!client) return false;
-    
+
     // If already blocked
     if (client.rateLimit.blocked) {
       return true;
     }
-    
+
     // Check if over limit
     if (client.rateLimit.count > CONFIG.RATE_LIMIT.MAX_MESSAGES) {
       client.rateLimit.blocked = true;
-      
+
       // Schedule unblock
       setTimeout(() => {
         const client = this.clients.get(clientId);
@@ -734,7 +734,7 @@ class WebSocketService {
           client.rateLimit.resetTime = Date.now() + CONFIG.RATE_LIMIT.WINDOW_MS;
         }
       }, CONFIG.RATE_LIMIT.BLOCK_DURATION);
-      
+
       // Log rate limiting
       logger.warn('WebSocket client rate limited', {
         clientId,
@@ -743,7 +743,7 @@ class WebSocketService {
         dealershipId: client.dealershipId,
         traceId: client.traceId
       });
-      
+
       // Update metrics
       if (client.dealershipId) {
         monitoringService.incrementCounter(
@@ -752,10 +752,10 @@ class WebSocketService {
           [client.dealershipId.toString()]
         );
       }
-      
+
       return true;
     }
-    
+
     return false;
   }
 
@@ -766,19 +766,19 @@ class WebSocketService {
     try {
       const data = JSON.parse(message);
       const { type, clientId, messageData, sourceInstanceId } = data;
-      
+
       // Skip messages from this instance
       if (sourceInstanceId === this.instanceId) {
         return;
       }
-      
+
       // Handle different channel types
       switch (channel) {
         case REDIS_CHANNELS.BROADCAST:
           // Broadcast to all clients
           this.handleBroadcastMessage(messageData);
           break;
-          
+
         case REDIS_CHANNELS.DIRECT + ':' + this.instanceId:
           // Direct message to a specific client on this instance
           if (clientId && this.clients.has(clientId)) {
@@ -788,7 +788,7 @@ class WebSocketService {
             }
           }
           break;
-          
+
         case REDIS_CHANNELS.HEALTH_CHECK:
           // Health check request - respond with instance status
           if (this.redisPublisher) {
@@ -804,7 +804,7 @@ class WebSocketService {
             );
           }
           break;
-          
+
         case REDIS_CHANNELS.MIGRATION:
           // Handle migration request
           if (type === 'prepare' && this.redisPublisher) {
@@ -817,8 +817,8 @@ class WebSocketService {
           break;
       }
     } catch (error) {
-      logger.error('Error handling Redis message', { 
-        error, 
+      logger.error('Error handling Redis message', {
+        error,
         channel
       });
     }
@@ -848,7 +848,7 @@ class WebSocketService {
         });
       }
     } catch (error) {
-      logger.error('Error handling broadcast message', { 
+      logger.error('Error handling broadcast message', {
         error,
         messageType: messageData.type
       });
@@ -861,15 +861,15 @@ class WebSocketService {
   private prepareForMigration(): void {
     try {
       if (!this.redisClient || !this.redisPublisher) return;
-      
-      logger.info('Preparing for WebSocket migration', { 
+
+      logger.info('Preparing for WebSocket migration', {
         instanceId: this.instanceId,
         connectionCount: this.clients.size
       });
-      
+
       // Collect client data for migration
       const migrationData: Record<string, any> = {};
-      
+
       this.clients.forEach((client, clientId) => {
         migrationData[clientId] = {
           userId: client.userId,
@@ -879,20 +879,20 @@ class WebSocketService {
           messageCount: client.messageCount,
           traceId: client.traceId
         };
-        
+
         // Notify client about migration
         this.sendToClient(client.ws, {
           type: MessageType.MIGRATION,
           message: 'Server migration in progress',
           timestamp: new Date().toISOString(),
-          metadata: { 
+          metadata: {
             reconnect: true,
             delay: 1000
           },
           traceId: client.traceId
         });
       });
-      
+
       // Publish migration data
       this.redisPublisher.publish(
         REDIS_CHANNELS.MIGRATION,
@@ -903,8 +903,8 @@ class WebSocketService {
           migrationData
         })
       );
-      
-      logger.info('WebSocket migration data published', { 
+
+      logger.info('WebSocket migration data published', {
         instanceId: this.instanceId,
         clientCount: Object.keys(migrationData).length
       });
@@ -918,11 +918,11 @@ class WebSocketService {
    */
   private completeMigration(migrationData: Record<string, any>): void {
     try {
-      logger.info('Completing WebSocket migration', { 
+      logger.info('Completing WebSocket migration', {
         instanceId: this.instanceId,
         clientCount: Object.keys(migrationData).length
       });
-      
+
       // Migration is handled by clients reconnecting
       // This method is for future enhancements
     } catch (error) {
@@ -937,82 +937,82 @@ class WebSocketService {
     try {
       const now = Date.now();
       const staleClients: string[] = [];
-      
+
       // Check all clients
       this.clients.forEach((client, clientId) => {
         // Mark as requiring a pong response
         client.isAlive = false;
-        
+
         // Send ping
         try {
           if (client.ws.readyState === WebSocket.OPEN) {
             client.ws.ping();
           }
         } catch (error) {
-          logger.warn('Error sending ping to client', { 
-            error, 
-            clientId, 
+          logger.warn('Error sending ping to client', {
+            error,
+            clientId,
             traceId: client.traceId
           });
         }
-        
+
         // Check for stale connections
         if (now - client.lastActivity > CONFIG.CONNECTION_TIMEOUT) {
           staleClients.push(clientId);
         }
       });
-      
+
       // Clean up stale clients
       staleClients.forEach(clientId => {
         const client = this.clients.get(clientId);
         if (client) {
-          logger.info('Closing stale WebSocket connection', { 
-            clientId, 
+          logger.info('Closing stale WebSocket connection', {
+            clientId,
             inactiveMs: Date.now() - client.lastActivity,
             traceId: client.traceId
           });
-          
+
           try {
             client.ws.close(1000, 'Connection timeout');
           } catch (error) {
-            logger.warn('Error closing stale connection', { 
-              error, 
-              clientId, 
+            logger.warn('Error closing stale connection', {
+              error,
+              clientId,
               traceId: client.traceId
             });
           }
-          
+
           this.handleDisconnection(clientId);
         }
       });
-      
+
       // Terminate connections that didn't respond to ping
       setTimeout(() => {
         this.clients.forEach((client, clientId) => {
           if (!client.isAlive) {
-            logger.info('Terminating unresponsive WebSocket connection', { 
-              clientId, 
+            logger.info('Terminating unresponsive WebSocket connection', {
+              clientId,
               traceId: client.traceId
             });
-            
+
             try {
               client.ws.terminate();
             } catch (error) {
-              logger.warn('Error terminating unresponsive connection', { 
-                error, 
-                clientId, 
+              logger.warn('Error terminating unresponsive connection', {
+                error,
+                clientId,
                 traceId: client.traceId
               });
             }
-            
+
             this.handleDisconnection(clientId);
           }
         });
       }, 5000); // Wait 5 seconds for pong responses
-      
+
       // Update metrics
       this.updateMetrics();
-      
+
       // Publish health status to Redis if enabled
       if (this.isRedisEnabled && this.redisPublisher) {
         this.redisPublisher.publish(
@@ -1028,7 +1028,7 @@ class WebSocketService {
             uptime: process.uptime()
           })
         );
-        
+
         // Update instance registry TTL
         if (this.redisClient) {
           this.redisClient.expire(REDIS_KEYS.INSTANCE_REGISTRY, 3600); // 1 hour
@@ -1047,30 +1047,30 @@ class WebSocketService {
     const handleShutdown = async () => {
       if (this.isShuttingDown) return;
       this.isShuttingDown = true;
-      
-      logger.info('WebSocket service shutting down', { 
+
+      logger.info('WebSocket service shutting down', {
         instanceId: this.instanceId,
         connectionCount: this.clients.size
       });
-      
+
       // Prepare for migration if Redis is enabled
       if (this.isRedisEnabled) {
         this.prepareForMigration();
       }
-      
+
       // Close all connections
       this.clients.forEach((client, clientId) => {
         try {
           client.ws.close(1001, 'Server shutting down');
         } catch (error) {
-          logger.warn('Error closing connection during shutdown', { 
-            error, 
-            clientId, 
+          logger.warn('Error closing connection during shutdown', {
+            error,
+            clientId,
             traceId: client.traceId
           });
         }
       });
-      
+
       // Close WebSocket server
       if (this.wss) {
         this.wss.close((error) => {
@@ -1081,7 +1081,7 @@ class WebSocketService {
           }
         });
       }
-      
+
       // Close Redis connections
       if (this.redisPublisher) {
         try {
@@ -1090,7 +1090,7 @@ class WebSocketService {
           logger.warn('Error closing Redis publisher', { error });
         }
       }
-      
+
       if (this.redisSubscriber) {
         try {
           await this.redisSubscriber.quit();
@@ -1098,7 +1098,7 @@ class WebSocketService {
           logger.warn('Error closing Redis subscriber', { error });
         }
       }
-      
+
       if (this.redisClient) {
         try {
           // Remove instance from registry
@@ -1108,12 +1108,12 @@ class WebSocketService {
           logger.warn('Error closing Redis client', { error });
         }
       }
-      
-      logger.info('WebSocket service shutdown complete', { 
+
+      logger.info('WebSocket service shutdown complete', {
         instanceId: this.instanceId
       });
     };
-    
+
     // Register handlers
     process.on('SIGTERM', handleShutdown);
     process.on('SIGINT', handleShutdown);
@@ -1125,62 +1125,62 @@ class WebSocketService {
   private async handleMessage(clientId: string, data: WebSocketMessage) {
     const client = this.clients.get(clientId);
     if (!client) return;
-    
+
     const startTime = process.hrtime();
-    
+
     try {
       switch(data.type) {
         case MessageType.CHAT_MESSAGE:
           await this.handleChatMessage(clientId, data);
           break;
-          
+
         case MessageType.TYPING:
           await this.broadcastTypingStatus(data);
           break;
-          
+
         case MessageType.READ_RECEIPT:
           await this.broadcastReadReceipt(data);
           break;
-          
+
         case MessageType.HEALTH_CHECK:
           // Respond to health check
           this.sendToClient(client.ws, {
             type: MessageType.HEALTH_CHECK,
             message: 'Health check response',
             timestamp: new Date().toISOString(),
-            metadata: { 
+            metadata: {
               status: 'healthy',
               connectionTime: Date.now() - client.createdAt
             },
             traceId: data.traceId
           });
           break;
-          
+
         default:
-          logger.warn('Unknown message type', { 
-            type: data.type, 
+          logger.warn('Unknown message type', {
+            type: data.type,
             clientId,
             traceId: data.traceId
           });
       }
-      
+
       // Record message processing time
       const [seconds, nanoseconds] = process.hrtime(startTime);
       const duration = seconds + nanoseconds / 1e9;
-      
+
       monitoringService.observeHistogram(
         'websocket_message_delivery_seconds',
         duration,
         [data.type]
       );
     } catch (error) {
-      logger.error('Error handling WebSocket message', { 
-        error, 
-        messageType: data.type, 
+      logger.error('Error handling WebSocket message', {
+        error,
+        messageType: data.type,
         clientId,
         traceId: data.traceId
       });
-      
+
       // Update error metrics
       this.metrics.messages.errors++;
       monitoringService.incrementCounter('websocket_errors_total', 1, ['handling']);
@@ -1193,11 +1193,11 @@ class WebSocketService {
   private async handleChatMessage(clientId: string, data: WebSocketMessage) {
     const client = this.clients.get(clientId);
     if (!client || !data.dealershipId) return;
-    
+
     try {
       // Get dealership mode to determine message handling
       const mode = await dealershipConfigService.getDealershipMode(data.dealershipId);
-      
+
       // Handle differently based on mode
       if (mode === 'rylie_ai') {
         await this.handleRylieAiMessage(clientId, data);
@@ -1205,13 +1205,13 @@ class WebSocketService {
         await this.handleDirectAgentMessage(clientId, data);
       }
     } catch (error) {
-      logger.error('Error determining dealership mode', { 
-        error, 
+      logger.error('Error determining dealership mode', {
+        error,
         dealershipId: data.dealershipId,
         clientId,
         traceId: data.traceId
       });
-      
+
       // Send error to client
       this.sendToClient(client.ws, {
         type: MessageType.ERROR,
@@ -1228,11 +1228,11 @@ class WebSocketService {
   private async handleRylieAiMessage(clientId: string, data: WebSocketMessage) {
     const client = this.clients.get(clientId);
     if (!client || !data.dealershipId) return;
-    
+
     try {
       // Store message in database
       // TODO: Implement message storage
-      
+
       // Acknowledge receipt to sender
       this.sendToClient(client.ws, {
         type: MessageType.CHAT_MESSAGE,
@@ -1244,7 +1244,7 @@ class WebSocketService {
         metadata: { status: 'received', messageId: this.generateMessageId() },
         traceId: data.traceId
       });
-      
+
       // TODO: Send to AI service for processing
       // For now, just send a mock AI response after a delay
       setTimeout((): void => {
@@ -1261,9 +1261,9 @@ class WebSocketService {
         });
       }, 1500);
     } catch (error) {
-      logger.error('Error handling Rylie AI message', { 
-        error, 
-        clientId, 
+      logger.error('Error handling Rylie AI message', {
+        error,
+        clientId,
         traceId: data.traceId
       });
     }
@@ -1275,14 +1275,14 @@ class WebSocketService {
   private async handleDirectAgentMessage(clientId: string, data: WebSocketMessage) {
     const client = this.clients.get(clientId);
     if (!client || !data.dealershipId || !data.conversationId) return;
-    
+
     try {
       // Check if dealership is within working hours
       const isWithinWorkingHours = await dealershipConfigService.isWithinWorkingHours(data.dealershipId);
-      
+
       // Store message in database
       // TODO: Implement message storage
-      
+
       // Acknowledge receipt to sender
       this.sendToClient(client.ws, {
         type: MessageType.CHAT_MESSAGE,
@@ -1294,12 +1294,12 @@ class WebSocketService {
         metadata: { status: 'received', messageId: this.generateMessageId() },
         traceId: data.traceId
       });
-      
+
       // If outside working hours, send automated response
       if (!isWithinWorkingHours) {
         // Get away message template
         const templates = await dealershipConfigService.getTemplateMessages(data.dealershipId);
-        
+
         setTimeout(() => {
           this.sendToClient(client.ws, {
             type: MessageType.CHAT_MESSAGE,
@@ -1315,13 +1315,13 @@ class WebSocketService {
         }, 1000);
         return;
       }
-      
+
       // Broadcast message to all agents for the dealership
       this.broadcastToDealershipAgents(data.dealershipId, data);
     } catch (error) {
-      logger.error('Error handling Direct Agent message', { 
-        error, 
-        clientId, 
+      logger.error('Error handling Direct Agent message', {
+        error,
+        clientId,
         traceId: data.traceId
       });
     }
@@ -1332,7 +1332,7 @@ class WebSocketService {
    */
   private async broadcastTypingStatus(data: WebSocketMessage) {
     if (!data.dealershipId || !data.conversationId) return;
-    
+
     // Broadcast to agents if from customer, or to specific customer if from agent
     this.broadcastToDealershipAgents(data.dealershipId, {
       type: MessageType.TYPING,
@@ -1350,7 +1350,7 @@ class WebSocketService {
    */
   private async broadcastReadReceipt(data: WebSocketMessage) {
     if (!data.dealershipId || !data.conversationId) return;
-    
+
     // Broadcast to agents if from customer, or to specific customer if from agent
     this.broadcastToDealershipAgents(data.dealershipId, {
       type: MessageType.READ_RECEIPT,
@@ -1370,14 +1370,14 @@ class WebSocketService {
       // Local broadcast to clients on this instance
       this.clients.forEach((client, clientId) => {
         if (
-          client.dealershipId === dealershipId && 
-          client.userType === 'agent' && 
+          client.dealershipId === dealershipId &&
+          client.userType === 'agent' &&
           client.ws.readyState === WebSocket.OPEN
         ) {
           this.sendToClient(client.ws, message);
         }
       });
-      
+
       // Broadcast via Redis if enabled
       if (this.isRedisEnabled && this.redisPublisher) {
         this.redisPublisher.publish(
@@ -1396,8 +1396,8 @@ class WebSocketService {
         );
       }
     } catch (error) {
-      logger.error('Error broadcasting to dealership agents', { 
-        error, 
+      logger.error('Error broadcasting to dealership agents', {
+        error,
         dealershipId,
         messageType: message.type,
         traceId: message.traceId
@@ -1419,17 +1419,17 @@ class WebSocketService {
         metadata: { mode },
         traceId
       };
-      
+
       // Local broadcast to clients on this instance
       this.clients.forEach((client, clientId) => {
         if (
-          client.dealershipId === dealershipId && 
+          client.dealershipId === dealershipId &&
           client.ws.readyState === WebSocket.OPEN
         ) {
           this.sendToClient(client.ws, message);
         }
       });
-      
+
       // Broadcast via Redis if enabled
       if (this.isRedisEnabled && this.redisPublisher) {
         this.redisPublisher.publish(
@@ -1448,8 +1448,8 @@ class WebSocketService {
         );
       }
     } catch (error) {
-      logger.error('Error broadcasting mode change', { 
-        error, 
+      logger.error('Error broadcasting mode change', {
+        error,
         dealershipId,
         mode
       });
@@ -1466,9 +1466,9 @@ class WebSocketService {
         if (!message.traceId) {
           message.traceId = generateTraceId();
         }
-        
+
         ws.send(JSON.stringify(message));
-        
+
         // Update metrics
         this.metrics.messages.sent++;
         monitoringService.incrementCounter(
@@ -1478,12 +1478,12 @@ class WebSocketService {
         );
       }
     } catch (error) {
-      logger.error('Error sending message to client', { 
-        error, 
+      logger.error('Error sending message to client', {
+        error,
         messageType: message.type,
         traceId: message.traceId
       });
-      
+
       // Update error metrics
       this.metrics.messages.errors++;
       monitoringService.incrementCounter('websocket_errors_total', 1, ['send']);
@@ -1502,39 +1502,39 @@ class WebSocketService {
     if (!this.isRedisEnabled || !this.redisClient) {
       return false;
     }
-    
+
     try {
       const queueKey = `${REDIS_KEYS.MESSAGE_QUEUE_PREFIX}${dealershipId}:${userId}`;
-      
+
       // Add message to queue
       await this.redisClient.lpush(queueKey, JSON.stringify(message));
-      
+
       // Trim queue to max size
       await this.redisClient.ltrim(queueKey, 0, CONFIG.MESSAGE_QUEUE.MAX_SIZE - 1);
-      
+
       // Set TTL
       await this.redisClient.expire(queueKey, CONFIG.MESSAGE_QUEUE.TTL);
-      
+
       // Update metrics
       this.metrics.messages.queued++;
-      
-      logger.debug('Message queued for offline client', { 
+
+      logger.debug('Message queued for offline client', {
         dealershipId,
         userId,
         messageType: message.type,
         traceId: message.traceId
       });
-      
+
       return true;
     } catch (error) {
-      logger.error('Error queuing message for offline client', { 
-        error, 
+      logger.error('Error queuing message for offline client', {
+        error,
         dealershipId,
         userId,
         messageType: message.type,
         traceId: message.traceId
       });
-      
+
       return false;
     }
   }
@@ -1550,29 +1550,29 @@ class WebSocketService {
     if (!this.isRedisEnabled || !this.redisClient) {
       return 0;
     }
-    
+
     try {
       const client = this.clients.get(clientId);
       if (!client || client.ws.readyState !== WebSocket.OPEN) {
         return 0;
       }
-      
+
       const queueKey = `${REDIS_KEYS.MESSAGE_QUEUE_PREFIX}${dealershipId}:${userId}`;
-      
+
       // Get all queued messages
       const messages = await this.redisClient.lrange(queueKey, 0, -1);
-      
+
       if (messages.length === 0) {
         return 0;
       }
-      
+
       // Deliver messages
       let deliveredCount = 0;
-      
+
       for (const messageJson of messages) {
         try {
           const message = JSON.parse(messageJson) as WebSocketMessage;
-          
+
           // Add metadata about queued delivery
           message.metadata = {
             ...(message.metadata || {}),
@@ -1580,40 +1580,40 @@ class WebSocketService {
             queuedAt: message.timestamp,
             deliveredAt: new Date().toISOString()
           };
-          
+
           // Send to client
           this.sendToClient(client.ws, message);
           deliveredCount++;
         } catch (error) {
-          logger.error('Error delivering queued message', { 
-            error, 
+          logger.error('Error delivering queued message', {
+            error,
             clientId,
             traceId: client.traceId
           });
         }
       }
-      
+
       // Clear queue
       await this.redisClient.del(queueKey);
-      
+
       // Update metrics
       this.metrics.messages.queued -= deliveredCount;
-      
-      logger.info('Delivered queued messages to client', { 
+
+      logger.info('Delivered queued messages to client', {
         clientId,
         deliveredCount,
         traceId: client.traceId
       });
-      
+
       return deliveredCount;
     } catch (error) {
-      logger.error('Error delivering queued messages', { 
-        error, 
+      logger.error('Error delivering queued messages', {
+        error,
         clientId,
         dealershipId,
         userId
       });
-      
+
       return 0;
     }
   }

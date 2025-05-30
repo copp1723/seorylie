@@ -13,6 +13,7 @@ import {
   text,
   timestamp,
   unique,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
@@ -799,6 +800,276 @@ export const dailySpendLogs = pgTable(
   }
 );
 
+// Magic Link Invitations
+export const magicLinkInvitations = pgTable(
+  "magic_link_invitations",
+  {
+    id: serial("id").primaryKey(),
+    dealershipId: integer("dealership_id"),
+    email: varchar("email", { length: 255 }).notNull(),
+    role: varchar("role", { length: 50 }).default("user").notNull(),
+    token: varchar("token", { length: 255 }).notNull(),
+    used: boolean("used").default(false).notNull(),
+    usedAt: timestamp("used_at"),
+    invitedBy: integer("invited_by"),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      dealershipIdIdx: index("magic_link_dealership_id_idx").on(table.dealershipId),
+      tokenIdx: index("magic_link_token_idx").on(table.token),
+      emailIdx: index("magic_link_email_idx").on(table.email),
+    };
+  }
+);
+
+// Sessions
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid", { length: 255 }).primaryKey(),
+    sess: json("sess").$type<Record<string, any>>().notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => {
+    return {
+      expireIdx: index("sessions_expire_idx").on(table.expire),
+    };
+  }
+);
+
+// Report Schedules
+export const reportSchedules = pgTable(
+  "report_schedules",
+  {
+    id: serial("id").primaryKey(),
+    active: boolean("active").default(true).notNull(),
+  }
+);
+
+// User Roles
+export const userRoles = pgTable(
+  "user_roles",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 50 }).notNull(),
+    description: text("description"),
+    permissions: json("permissions").$type<string[]>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  }
+);
+
+// Dealership Variables
+export const dealershipVariables = pgTable(
+  "dealership_variables",
+  {
+    id: serial("id").primaryKey(),
+    dealershipId: integer("dealership_id").notNull(),
+    key: varchar("key", { length: 100 }).notNull(),
+    value: text("value"),
+    type: varchar("type", { length: 50 }).default("string").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      dealershipIdIdx: index("dealership_variables_dealership_id_idx").on(table.dealershipId),
+      keyIdx: index("dealership_variables_key_idx").on(table.key),
+    };
+  }
+);
+
+// A/B Testing Tables
+export const promptExperiments = pgTable(
+  "prompt_experiments",
+  {
+    id: serial("id").primaryKey(),
+    dealershipId: integer("dealership_id").notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    hypothesis: text("hypothesis"),
+    startDate: timestamp("start_date").notNull(),
+    endDate: timestamp("end_date").notNull(),
+    trafficPercentage: integer("traffic_percentage").default(50).notNull(),
+    status: varchar("status", { length: 20 }).default("draft").notNull(),
+    primaryMetric: varchar("primary_metric", { length: 100 }).notNull(),
+    secondaryMetrics: json("secondary_metrics").$type<string[]>(),
+    confidenceLevel: decimal("confidence_level", { precision: 3, scale: 2 }).default("0.95"),
+    minimumSampleSize: integer("minimum_sample_size").default(100),
+    results: json("results").$type<Record<string, any>>(),
+    winnerVariantId: integer("winner_variant_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      dealershipIdIdx: index("prompt_experiments_dealership_id_idx").on(table.dealershipId),
+      statusIdx: index("prompt_experiments_status_idx").on(table.status),
+    };
+  }
+);
+
+export const promptVariants = pgTable(
+  "prompt_variants",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    promptTemplate: text("prompt_template").notNull(),
+    systemPrompt: text("system_prompt"),
+    dealershipId: integer("dealership_id"),
+    isActive: boolean("is_active").default(true).notNull(),
+    metadata: json("metadata").$type<Record<string, any>>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      nameIdx: index("prompt_variants_name_idx").on(table.name),
+      dealershipIdIdx: index("prompt_variants_dealership_id_idx").on(table.dealershipId),
+    };
+  }
+);
+
+export const experimentVariants = pgTable(
+  "experiment_variants",
+  {
+    id: serial("id").primaryKey(),
+    experimentId: integer("experiment_id").notNull(),
+    personaId: integer("persona_id").notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    isControl: boolean("is_control").default(false).notNull(),
+    trafficPercentage: integer("traffic_percentage").default(50).notNull(),
+    totalConversations: integer("total_conversations").default(0).notNull(),
+    totalMessages: integer("total_messages").default(0).notNull(),
+    avgResponseTimeMs: integer("avg_response_time_ms"),
+    handoverRate: decimal("handover_rate", { precision: 5, scale: 4 }),
+    customerSatisfaction: decimal("customer_satisfaction", { precision: 3, scale: 2 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      experimentIdIdx: index("experiment_variants_experiment_id_idx").on(table.experimentId),
+      personaIdIdx: index("experiment_variants_persona_id_idx").on(table.personaId),
+    };
+  }
+);
+
+export const promptMetrics = pgTable(
+  "prompt_metrics",
+  {
+    id: serial("id").primaryKey(),
+    variantId: integer("variant_id").notNull(),
+    metricName: varchar("metric_name", { length: 100 }).notNull(),
+    metricValue: decimal("metric_value", { precision: 10, scale: 4 }).notNull(),
+    timestamp: timestamp("timestamp").defaultNow().notNull(),
+    metadata: json("metadata").$type<Record<string, any>>(),
+  },
+  (table) => {
+    return {
+      variantIdIdx: index("prompt_metrics_variant_id_idx").on(table.variantId),
+      metricNameIdx: index("prompt_metrics_metric_name_idx").on(table.metricName),
+      timestampIdx: index("prompt_metrics_timestamp_idx").on(table.timestamp),
+    };
+  }
+);
+
+// Webhook and Monitoring Tables
+export const webhookDeliveryLogs = pgTable(
+  "webhook_delivery_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    webhookId: uuid("webhook_id").notNull(),
+    eventId: uuid("event_id").notNull(),
+    direction: varchar("direction", { length: 20 }).notNull(),
+    status: varchar("status", { length: 20 }).notNull(),
+    requestUrl: varchar("request_url", { length: 500 }),
+    requestMethod: varchar("request_method", { length: 10 }),
+    requestHeaders: json("request_headers").$type<Record<string, string>>(),
+    requestBody: json("request_body").$type<any>(),
+    responseStatus: integer("response_status"),
+    responseHeaders: json("response_headers").$type<Record<string, string>>(),
+    responseBody: json("response_body").$type<any>(),
+    error: text("error"),
+    retryCount: integer("retry_count").default(0).notNull(),
+    processingTimeMs: integer("processing_time_ms"),
+    timestamp: timestamp("timestamp").defaultNow().notNull(),
+    metadata: json("metadata").$type<Record<string, any>>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      webhookIdIdx: index("webhook_delivery_logs_webhook_id_idx").on(table.webhookId),
+      eventIdIdx: index("webhook_delivery_logs_event_id_idx").on(table.eventId),
+      statusIdx: index("webhook_delivery_logs_status_idx").on(table.status),
+      timestampIdx: index("webhook_delivery_logs_timestamp_idx").on(table.timestamp),
+    };
+  }
+);
+
+export const webhookEvents = pgTable(
+  "webhook_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    type: varchar("type", { length: 100 }).notNull(),
+    source: varchar("source", { length: 100 }).notNull(),
+    data: json("data").$type<any>().notNull(),
+    metadata: json("metadata").$type<Record<string, any>>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      typeIdx: index("webhook_events_type_idx").on(table.type),
+      sourceIdx: index("webhook_events_source_idx").on(table.source),
+      createdAtIdx: index("webhook_events_created_at_idx").on(table.createdAt),
+    };
+  }
+);
+
+export const adsSpendLogs = pgTable(
+  "ads_spend_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: varchar("account_id", { length: 100 }).notNull(),
+    date: date("date").notNull(),
+    spend: decimal("spend", { precision: 10, scale: 2 }).notNull(),
+    metrics: json("metrics").$type<Record<string, any>>(),
+    source: varchar("source", { length: 50 }).notNull(),
+    webhookEventId: uuid("webhook_event_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      accountIdIdx: index("ads_spend_logs_account_id_idx").on(table.accountId),
+      dateIdx: index("ads_spend_logs_date_idx").on(table.date),
+      sourceIdx: index("ads_spend_logs_source_idx").on(table.source),
+    };
+  }
+);
+
+export const systemDiagnostics = pgTable(
+  "system_diagnostics",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    component: varchar("component", { length: 100 }).notNull(),
+    status: varchar("status", { length: 20 }).notNull(),
+    metrics: json("metrics").$type<Record<string, any>>(),
+    error: text("error"),
+    timestamp: timestamp("timestamp").defaultNow().notNull(),
+    metadata: json("metadata").$type<Record<string, any>>(),
+  },
+  (table) => {
+    return {
+      componentIdx: index("system_diagnostics_component_idx").on(table.component),
+      statusIdx: index("system_diagnostics_status_idx").on(table.status),
+      timestampIdx: index("system_diagnostics_timestamp_idx").on(table.timestamp),
+    };
+  }
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   dealership: one(dealerships, {
@@ -1124,6 +1395,43 @@ export const dailySpendLogsRelations = relations(dailySpendLogs, ({ one }) => ({
   }),
 }));
 
+// A/B Testing Relations
+export const promptExperimentsRelations = relations(promptExperiments, ({ one, many }) => ({
+  dealership: one(dealerships, {
+    fields: [promptExperiments.dealershipId],
+    references: [dealerships.id],
+  }),
+  variants: many(experimentVariants),
+}));
+
+export const promptVariantsRelations = relations(promptVariants, ({ one, many }) => ({
+  dealership: one(dealerships, {
+    fields: [promptVariants.dealershipId],
+    references: [dealerships.id],
+  }),
+  experimentVariants: many(experimentVariants),
+  metrics: many(promptMetrics),
+}));
+
+export const experimentVariantsRelations = relations(experimentVariants, ({ one, many }) => ({
+  experiment: one(promptExperiments, {
+    fields: [experimentVariants.experimentId],
+    references: [promptExperiments.id],
+  }),
+  persona: one(personas, {
+    fields: [experimentVariants.personaId],
+    references: [personas.id],
+  }),
+  metrics: many(promptMetrics),
+}));
+
+export const promptMetricsRelations = relations(promptMetrics, ({ one }) => ({
+  variant: one(promptVariants, {
+    fields: [promptMetrics.variantId],
+    references: [promptVariants.id],
+  }),
+}));
+
 // Zod Schemas
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
@@ -1212,6 +1520,45 @@ export const selectGadsCampaignSchema = createSelectSchema(gadsCampaigns);
 
 export const insertDailySpendLogSchema = createInsertSchema(dailySpendLogs);
 export const selectDailySpendLogSchema = createSelectSchema(dailySpendLogs);
+
+export const insertMagicLinkInvitationSchema = createInsertSchema(magicLinkInvitations);
+export const selectMagicLinkInvitationSchema = createSelectSchema(magicLinkInvitations);
+
+export const insertSessionSchema = createInsertSchema(sessions);
+export const selectSessionSchema = createSelectSchema(sessions);
+
+export const insertReportScheduleSchema = createInsertSchema(reportSchedules);
+export const selectReportScheduleSchema = createSelectSchema(reportSchedules);
+
+export const insertUserRoleSchema = createInsertSchema(userRoles);
+export const selectUserRoleSchema = createSelectSchema(userRoles);
+
+export const insertDealershipVariableSchema = createInsertSchema(dealershipVariables);
+export const selectDealershipVariableSchema = createSelectSchema(dealershipVariables);
+
+export const insertPromptExperimentSchema = createInsertSchema(promptExperiments);
+export const selectPromptExperimentSchema = createSelectSchema(promptExperiments);
+
+export const insertPromptVariantSchema = createInsertSchema(promptVariants);
+export const selectPromptVariantSchema = createSelectSchema(promptVariants);
+
+export const insertExperimentVariantSchema = createInsertSchema(experimentVariants);
+export const selectExperimentVariantSchema = createSelectSchema(experimentVariants);
+
+export const insertPromptMetricSchema = createInsertSchema(promptMetrics);
+export const selectPromptMetricSchema = createSelectSchema(promptMetrics);
+
+export const insertWebhookDeliveryLogSchema = createInsertSchema(webhookDeliveryLogs);
+export const selectWebhookDeliveryLogSchema = createSelectSchema(webhookDeliveryLogs);
+
+export const insertWebhookEventSchema = createInsertSchema(webhookEvents);
+export const selectWebhookEventSchema = createSelectSchema(webhookEvents);
+
+export const insertAdsSpendLogSchema = createInsertSchema(adsSpendLogs);
+export const selectAdsSpendLogSchema = createSelectSchema(adsSpendLogs);
+
+export const insertSystemDiagnosticSchema = createInsertSchema(systemDiagnostics);
+export const selectSystemDiagnosticSchema = createSelectSchema(systemDiagnostics);
 
 // Custom Zod Schemas
 export const userSchema = z.object({
@@ -1610,6 +1957,158 @@ export const dailySpendLogSchema = z.object({
   updatedAt: z.date(),
 });
 
+export const magicLinkInvitationSchema = z.object({
+  id: z.number(),
+  dealershipId: z.number().nullable(),
+  email: z.string().email(),
+  role: z.string(),
+  token: z.string(),
+  used: z.boolean(),
+  usedAt: z.date().nullable(),
+  invitedBy: z.number().nullable(),
+  expiresAt: z.date(),
+  createdAt: z.date(),
+});
+
+export const sessionSchema = z.object({
+  sid: z.string(),
+  sess: z.record(z.any()),
+  expire: z.date(),
+});
+
+export const reportScheduleSchema = z.object({
+  id: z.number(),
+  active: z.boolean(),
+});
+
+export const userRoleSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().nullable(),
+  permissions: z.array(z.string()).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const dealershipVariableSchema = z.object({
+  id: z.number(),
+  dealershipId: z.number(),
+  key: z.string(),
+  value: z.string().nullable(),
+  type: z.string(),
+  description: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const promptExperimentSchema = z.object({
+  id: z.number(),
+  dealershipId: z.number(),
+  name: z.string(),
+  description: z.string().nullable(),
+  hypothesis: z.string().nullable(),
+  startDate: z.date(),
+  endDate: z.date(),
+  trafficPercentage: z.number(),
+  status: z.string(),
+  primaryMetric: z.string(),
+  secondaryMetrics: z.array(z.string()).nullable(),
+  confidenceLevel: z.number(),
+  minimumSampleSize: z.number(),
+  results: z.record(z.any()).nullable(),
+  winnerVariantId: z.number().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const promptVariantSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().nullable(),
+  promptTemplate: z.string(),
+  systemPrompt: z.string().nullable(),
+  dealershipId: z.number().nullable(),
+  isActive: z.boolean(),
+  metadata: z.record(z.any()).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const experimentVariantSchema = z.object({
+  id: z.number(),
+  experimentId: z.number(),
+  personaId: z.number(),
+  name: z.string(),
+  isControl: z.boolean(),
+  trafficPercentage: z.number(),
+  totalConversations: z.number(),
+  totalMessages: z.number(),
+  avgResponseTimeMs: z.number().nullable(),
+  handoverRate: z.number().nullable(),
+  customerSatisfaction: z.number().nullable(),
+  createdAt: z.date(),
+});
+
+export const promptMetricSchema = z.object({
+  id: z.number(),
+  variantId: z.number(),
+  metricName: z.string(),
+  metricValue: z.number(),
+  timestamp: z.date(),
+  metadata: z.record(z.any()).nullable(),
+});
+
+export const webhookDeliveryLogSchema = z.object({
+  id: z.string().uuid(),
+  webhookId: z.string().uuid(),
+  eventId: z.string().uuid(),
+  direction: z.string(),
+  status: z.string(),
+  requestUrl: z.string().nullable(),
+  requestMethod: z.string().nullable(),
+  requestHeaders: z.record(z.string()).nullable(),
+  requestBody: z.any().nullable(),
+  responseStatus: z.number().nullable(),
+  responseHeaders: z.record(z.string()).nullable(),
+  responseBody: z.any().nullable(),
+  error: z.string().nullable(),
+  retryCount: z.number(),
+  processingTimeMs: z.number().nullable(),
+  timestamp: z.date(),
+  metadata: z.record(z.any()).nullable(),
+  createdAt: z.date(),
+});
+
+export const webhookEventSchema = z.object({
+  id: z.string().uuid(),
+  type: z.string(),
+  source: z.string(),
+  data: z.any(),
+  metadata: z.record(z.any()).nullable(),
+  createdAt: z.date(),
+});
+
+export const adsSpendLogSchema = z.object({
+  id: z.string().uuid(),
+  accountId: z.string(),
+  date: z.date(),
+  spend: z.number(),
+  metrics: z.record(z.any()).nullable(),
+  source: z.string(),
+  webhookEventId: z.string().uuid().nullable(),
+  createdAt: z.date(),
+});
+
+export const systemDiagnosticSchema = z.object({
+  id: z.string().uuid(),
+  component: z.string(),
+  status: z.string(),
+  metrics: z.record(z.any()).nullable(),
+  error: z.string().nullable(),
+  timestamp: z.date(),
+  metadata: z.record(z.any()).nullable(),
+});
+
 // Types
 export type User = z.infer<typeof userSchema>;
 export type Dealership = z.infer<typeof dealershipSchema>;
@@ -1641,6 +2140,19 @@ export type AgentTool = z.infer<typeof agentToolSchema>;
 export type GadsAccount = z.infer<typeof gadsAccountSchema>;
 export type GadsCampaign = z.infer<typeof gadsCampaignSchema>;
 export type DailySpendLog = z.infer<typeof dailySpendLogSchema>;
+export type MagicLinkInvitation = z.infer<typeof magicLinkInvitationSchema>;
+export type Session = z.infer<typeof sessionSchema>;
+export type ReportSchedule = z.infer<typeof reportScheduleSchema>;
+export type UserRole = z.infer<typeof userRoleSchema>;
+export type DealershipVariable = z.infer<typeof dealershipVariableSchema>;
+export type PromptExperiment = z.infer<typeof promptExperimentSchema>;
+export type PromptVariant = z.infer<typeof promptVariantSchema>;
+export type ExperimentVariant = z.infer<typeof experimentVariantSchema>;
+export type PromptMetric = z.infer<typeof promptMetricSchema>;
+export type WebhookDeliveryLog = z.infer<typeof webhookDeliveryLogSchema>;
+export type WebhookEvent = z.infer<typeof webhookEventSchema>;
+export type AdsSpendLog = z.infer<typeof adsSpendLogSchema>;
+export type SystemDiagnostic = z.infer<typeof systemDiagnosticSchema>;
 
 // New User
 export type NewUser = z.infer<typeof insertUserSchema>;
@@ -1673,3 +2185,29 @@ export type NewAgentTool = z.infer<typeof insertAgentToolSchema>;
 export type NewGadsAccount = z.infer<typeof insertGadsAccountSchema>;
 export type NewGadsCampaign = z.infer<typeof insertGadsCampaignSchema>;
 export type NewDailySpendLog = z.infer<typeof insertDailySpendLogSchema>;
+export type NewMagicLinkInvitation = z.infer<typeof insertMagicLinkInvitationSchema>;
+export type NewSession = z.infer<typeof insertSessionSchema>;
+export type NewReportSchedule = z.infer<typeof insertReportScheduleSchema>;
+export type NewUserRole = z.infer<typeof insertUserRoleSchema>;
+export type NewDealershipVariable = z.infer<typeof insertDealershipVariableSchema>;
+export type NewPromptExperiment = z.infer<typeof insertPromptExperimentSchema>;
+export type NewPromptVariant = z.infer<typeof insertPromptVariantSchema>;
+export type NewExperimentVariant = z.infer<typeof insertExperimentVariantSchema>;
+export type NewPromptMetric = z.infer<typeof insertPromptMetricSchema>;
+export type NewWebhookDeliveryLog = z.infer<typeof insertWebhookDeliveryLogSchema>;
+export type NewWebhookEvent = z.infer<typeof insertWebhookEventSchema>;
+export type NewAdsSpendLog = z.infer<typeof insertAdsSpendLogSchema>;
+export type NewSystemDiagnostic = z.infer<typeof insertSystemDiagnosticSchema>;
+
+// Insert types (aliases for compatibility)
+export type InsertDealership = NewDealership;
+export type InsertUser = NewUser;
+export type InsertVehicle = NewVehicle;
+export type InsertPersona = NewPersona;
+export type InsertApiKey = NewApiKey;
+export type InsertMagicLinkInvitation = NewMagicLinkInvitation;
+export type InsertDealershipVariable = NewDealershipVariable;
+export type InsertPromptExperiment = NewPromptExperiment;
+export type InsertPromptVariant = NewPromptVariant;
+export type InsertExperimentVariant = NewExperimentVariant;
+export type InsertPromptMetric = NewPromptMetric;
