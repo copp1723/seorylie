@@ -1,6 +1,6 @@
 import { AgentSquad, OpenAIAgent, OpenAIClassifier, InMemoryChatStorage } from 'agent-squad';
 import type { ConversationMessage } from 'agent-squad';
-import logger from '../../utils/logger';
+import logger from '../utils/logger';
 import {
   searchInventory,
   getVehicleDetails,
