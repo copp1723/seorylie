@@ -156,6 +156,7 @@
     "mockdate": "^3.0.5",
     "nock": "^13.3.3",
     "postcss": "^8.4.27",
+    "prettyjson": "^1.2.5",
     "supertest": "^6.3.3",
     "tailwindcss": "^3.3.3",
     "ts-jest": "^29.1.0",

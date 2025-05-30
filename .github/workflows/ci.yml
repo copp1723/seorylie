@@ -36,6 +36,20 @@ jobs:
           cache: 'npm'
           cache-dependency-path: '**/package-lock.json'
 
+      - name: Clean npm cache and fix dependencies
+        run: |
+          npm cache clean --force
+          # Remove json_pp if it exists in any package files
+          if grep -q '"json_pp"' package.json 2>/dev/null; then
+            echo "Removing json_pp dependency"
+            npm uninstall json_pp --no-save 2>/dev/null || true
+          fi
+          # Ensure prettyjson is available as replacement
+          if ! npm list prettyjson 2>/dev/null; then
+            echo "Installing prettyjson as json_pp replacement"
+            npm install --no-save prettyjson@^1.2.5 2>/dev/null || true
+          fi
+
       - name: Install dependencies
         run: npm ci
 
