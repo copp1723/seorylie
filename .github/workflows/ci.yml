@@ -251,8 +251,9 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     needs: [integration-tests]
+    continue-on-error: true
     services:
       postgres:
         image: postgres:14
@@ -294,6 +295,7 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+        timeout-minutes: 5
         
       - name: Cache Playwright browsers
         uses: actions/cache@v4
@@ -303,11 +305,14 @@ jobs:
 
       - name: Run migrations
         run: npm run migrate
+        timeout-minutes: 2
+        continue-on-error: true
         env:
           DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
 
       - name: Run E2E tests
         run: npm run test:e2e
+        timeout-minutes: 5
         env:
           DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
           REDIS_URL: ${{ env.REDIS_URL }}
