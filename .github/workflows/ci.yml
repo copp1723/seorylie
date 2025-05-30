@@ -337,7 +337,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [api, frontend, ads-service, etl-worker]
+        service: [api, frontend, ads-service]
         include:
           - service: api
             dockerfile: ./Dockerfile
@@ -351,9 +351,6 @@ jobs:
             dockerfile: ./Dockerfile
             target: server
             image: cleanrylie-ads-service
-          - service: etl-worker
-            dockerfile: ./etl/Dockerfile
-            image: cleanrylie-etl-worker
 
     steps:
       - name: Checkout code
