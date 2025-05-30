@@ -394,12 +394,20 @@ jobs:
           file: ${{ matrix.dockerfile }}
           target: ${{ matrix.target }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ matrix.image }}:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           build-args: |
             NODE_ENV=production
+
+      - name: Validate Docker image exists
+        run: |
+          echo "Checking for image: ${{ matrix.image }}:latest"
+          docker images | grep "${{ matrix.image }}" || { echo "Image not found"; exit 1; }
+        if: github.event_name == 'pull_request'
 
       - name: Install Trivy
         run: |
