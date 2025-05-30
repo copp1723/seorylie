@@ -13,7 +13,8 @@ import { monitoring } from './services/monitoring';
 import escalationRoutes from './routes/escalation-routes';
 import leadManagementRoutes from './routes/lead-management-routes';
 import userManagementRoutes from './routes/user-management-routes';
-import apiV1Routes from ./routes/api-v1;import customerInsightsRoutes from './routes/customer-insights-routes';
+import apiV1Routes from './routes/api-v1';
+import customerInsightsRoutes from './routes/customer-insights-routes';
 import { initializeFollowUpScheduler } from './services/follow-up-scheduler';
 
 // Enable Redis fallback when Redis connection details aren't provided
@@ -114,7 +115,7 @@ app.use('/api', customerInsightsRoutes);
 
 
 // Add external API v1 routes
-app.use(/api/v1, apiV1Routes);// Track all requests
+app.use('/api/v1', apiV1Routes);// Track all requests
 app.use((req, res, next) => {
   const start = performance.now();
   res.on('finish', () => {
@@ -230,15 +231,3 @@ app.use((req, res, next) => {
   // Setup signal handlers for graceful shutdown
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);
-
-  // Add cache statistics to health endpoint
-  app.get('/api/health/cache', async (req, res) => {
-    const { getCacheStats } = await import('./utils/cache');
-    res.json(getCacheStats());
-  });
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  server.listen(port, host, () => {
-    log(`serving on ${host}:${port}`);
-  });
-})();
