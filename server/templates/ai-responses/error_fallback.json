@@ -1,0 +1,6 @@
+{
+  "id": "error_fallback",
+  "intent": "error_fallback",
+  "template": "Dear {{customer.firstName}},\n\nThank you for your interest in the {{vehicle.year}} {{vehicle.make}} {{vehicle.model}}{{#if vehicle.trim}} {{vehicle.trim}}{{/if}}. We appreciate you reaching out to {{dealership.name}}.\n\nWe've received your inquiry and want to ensure you get the most accurate and personalized information about this vehicle. One of our product specialists is reviewing your request and will contact you shortly with detailed information tailored to your specific needs.\n\n{{#if vehicle.stockNumber}}We currently have this {{vehicle.make}} {{vehicle.model}} (Stock #{{vehicle.stockNumber}}) available in our inventory. {{/if}}If you'd prefer immediate assistance, please feel free to call our sales department directly at {{dealership.phone}} during our business hours.\n\nThank you for considering {{dealership.name}}. We look forward to helping you find the perfect vehicle.\n\nBest regards,\n\nSales Team\n{{dealership.name}}\n{{dealership.phone}}\n{{dealership.website}}\n{{dealership.address}}",
+  "fallbackToAI": false
+}
