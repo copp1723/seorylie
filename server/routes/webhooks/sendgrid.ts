@@ -123,13 +123,12 @@ async function updateEmailDeliveryStatus(
       })
       .where(eq(emailDeliveryTracking.id, record.id));
     
-    // Track metrics
-    prometheusMetrics.incrementLeadsProcessed({
-      dealership_id: record.adfLeadId.toString(),
-      source_provider: 'sendgrid',
-      lead_type: 'email',
-      status: `email_${deliveryStatus}`
-    });
+    // Track metrics using updated API
+    prometheusMetrics.recordEmailDelivery(
+      record.adfLeadId.toString(),
+      'sendgrid',
+      deliveryStatus as 'sent' | 'delivered' | 'failed' | 'bounced'
+    );
     
     logger.info('Email delivery status updated', {
       messageId,
@@ -233,13 +232,13 @@ async function updateHandoverEmailStatus(
       });
     }
     
-    // Track metrics for handover emails
+    // Track metrics for handover emails using the new API
     const dealershipId = handover.context?.dealershipId || '0';
-    prometheusMetrics.incrementHandoverEmailSent({
-      dealership_id: dealershipId,
-      status: status === 'delivered' ? 'delivered' : 'failed',
-      template: 'handover-dossier'
-    });
+    prometheusMetrics.recordHandoverEmailSent(
+      dealershipId,
+      status === 'delivered' ? 'sent' : 'failed',
+      'handover-dossier'
+    );
     
   } catch (error) {
     logger.error('Failed to update handover email status', {

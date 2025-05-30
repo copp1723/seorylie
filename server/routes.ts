@@ -1,165 +1,174 @@
-import express, { Express } from 'express';
-import { createServer } from 'http';
-import session from 'express-session';
-import connectPgSimple from 'connect-pg-simple';
-import { Pool } from 'pg';
-import csrf from 'csurf';
-import logger from './utils/logger';
-import { db } from './db';
-
-// Import route modules
-import promptRoutes from './routes/prompt-testing-routes';
-import localAuthRoutes from './routes/local-auth-routes';
-import magicLinkRoutes from './routes/magic-link';
-import adminRoutes from './routes/admin-routes';
-import adminUserRoutes from './routes/admin-user-routes';
-import escalationRoutes from './routes/escalation-routes';
-import leadManagementRoutes from './routes/lead-management-routes';
-import userManagementRoutes from './routes/user-management-routes';
-import customerInsightsRoutes from './routes/customer-insights-routes';
-import inventoryRoutes from './routes/inventory-routes';
-import { tenantContextMiddleware } from './middleware/tenant-context';
-import WebSocketChatServer from './ws-server';
-
-// Check database connection
-async function checkDatabaseConnection() {
-  try {
-    await db.execute('SELECT NOW()');
-    console.log('PostgreSQL connection test successful');
-    return true;
-  } catch (error) {
-    console.error('PostgreSQL connection test failed:', error);
-    return false;
+{
+  "name": "cleanrylie",
+  "version": "1.0.0",
+  "description": "ADF Lead Processing System",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/server/index.js",
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "vite",
+    "dev:server": "ts-node-dev --respawn --transpile-only server/index.ts",
+    "dev:queue": "ts-node-dev --respawn --transpile-only server/queue-dashboard.ts",
+    "build": "tsc && vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testMatch=\"**/test/unit/**/*.test.ts\" --config=jest.config.js",
+    "test:integration": "jest --testMatch=\"**/test/integration/**/*.test.ts\" --config=jest.config.js",
+    "test:e2e": "jest --testMatch=\"**/test/e2e/**/*.test.ts\" --config=jest.config.js",
+    "test:ci": "jest --ci --coverage --reporters=default --reporters=jest-junit",
+    "test:metrics": "ts-node scripts/test-prometheus-metrics.ts",
+    "test:adf-email": "ts-node scripts/test-adf-email-response.ts",
+    "test:adf-handover": "tsx scripts/test-adf-handover.ts",
+    "test:adf-e2e": "tsx scripts/test-adf-e2e.ts",
+    "test:ai-cost-control": "tsx scripts/test-ai-cost-control.ts",
+    "test:data-privacy": "tsx scripts/test-data-privacy.ts",
+    "test:mock-services": "jest --testMatch=\"**/test/mocks/**/*.test.ts\" --config=jest.config.js",
+    "test:ci-framework": "tsx scripts/test-ci-framework.ts",
+    "test:mocks": "jest --testMatch=\"**/test/mocks/**/*.test.ts\" --config=jest.config.js",
+    "test:integration-mocks": "jest --testMatch=\"**/test/integration/**/*.test.ts\" --setupFiles=\"./test/setup/mock-services.ts\" --config=jest.config.js",
+    "test:adf-mocks": "tsx scripts/test-adf-with-mocks.ts",
+    "test:fixtures": "tsx test/fixtures/validate-fixtures.ts",
+    "db:migrate": "ts-node server/cli/migrate.ts",
+    "db:seed": "ts-node scripts/seed-database.ts",
+    "db:setup": "ts-node scripts/setup-database.ts",
+    "db:auth:setup": "ts-node scripts/setup-auth-database.ts",
+    "typecheck": "tsc --noEmit",
+    "check-env": "ts-node scripts/check-env.ts",
+    "validate-env": "ts-node scripts/validate-environment.ts",
+    "purge-old-leads": "tsx scripts/purge-old-leads.ts",
+    "health": "curl -s http://localhost:3000/health | json_pp",
+    "adf:health": "curl -s http://localhost:3000/api/health/email | json_pp",
+    "adf:orchestrator": "ts-node scripts/test-adf-orchestrator.ts",
+    "test:adf-orchestrator": "npm run adf:orchestrator",
+    "test:adf": "npm run test:unit -- test/unit/adf-*.test.ts",
+    "queue:ui": "bull-board",
+    "create-admin": "ts-node create-super-admin.ts",
+    "setup-sessions": "node scripts/setup-sessions-table.js",
+    "optimize-db": "node scripts/optimize-db.js",
+    "test:api": "ts-node scripts/test-api.ts",
+    "test:email": "ts-node scripts/test-email-functionality.ts",
+    "test:email:comprehensive": "ts-node scripts/test-email-comprehensive.ts",
+    "test:email:mock": "ts-node scripts/test-email-mock.ts",
+    "test:conversation": "ts-node scripts/test-conversation.ts",
+    "test:handover": "ts-node scripts/test-conversation-to-handover.ts",
+    "test:rylie": "ts-node scripts/test-rylie.ts",
+    "test:enhanced-rylie": "ts-node scripts/test-enhanced-rylie.ts",
+    "test:setup": "ts-node scripts/test-setup.ts",
+    "test:performance": "ts-node test/performance/run-performance-tests.ts",
+    "test:load": "node test/load/load-test-suite.js"
+  },
+  "dependencies": {
+    "@bull-board/api": "^5.8.0",
+    "@bull-board/express": "^5.8.0",
+    "@sendgrid/mail": "^7.7.0",
+    "@trpc/client": "^10.37.1",
+    "@trpc/react-query": "^10.37.1",
+    "@trpc/server": "^10.37.1",
+    "axios": "^1.5.0",
+    "bcrypt": "^5.1.1",
+    "bottleneck": "^2.19.5",
+    "bull": "^4.11.3",
+    "bullmq": "^4.11.4",
+    "colors": "^1.4.0",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "csv-writer": "^1.6.0",
+    "date-fns": "^2.30.0",
+    "dotenv": "^16.3.1",
+    "drizzle-orm": "^0.28.6",
+    "drizzle-zod": "^0.5.1",
+    "express": "^4.18.2",
+    "express-jwt": "^8.4.1",
+    "express-rate-limit": "^7.0.1",
+    "express-session": "^1.17.3",
+    "express-validator": "^7.0.1",
+    "fast-xml-parser": "^4.2.7",
+    "handlebars": "^4.7.8",
+    "helmet": "^7.0.0",
+    "imap": "^0.8.19",
+    "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
+    "mailparser": "^3.6.5",
+    "morgan": "^1.10.0",
+    "nodemailer": "^6.9.5",
+    "openai": "^4.0.0",
+    "p-retry": "^5.1.2",
+    "pg": "^8.11.3",
+    "pino": "^8.15.1",
+    "pino-pretty": "^10.2.0",
+    "prom-client": "^14.2.0",
+    "redis": "^4.6.8",
+    "twilio": "^4.17.0",
+    "uuid": "^9.0.0",
+    "winston": "^3.10.0",
+    "ws": "^8.13.0",
+    "xml-parser": "^1.2.1",
+    "xml2js": "^0.6.2",
+    "zod": "^3.22.2"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.5.0",
+    "@playwright/test": "^1.38.0",
+    "@types/bcrypt": "^5.0.0",
+    "@types/compression": "^1.7.3",
+    "@types/cookie-parser": "^1.4.4",
+    "@types/cors": "^2.8.14",
+    "@types/express": "^4.17.17",
+    "@types/express-session": "^1.17.7",
+    "@types/imap": "^0.8.37",
+    "@types/jest": "^29.5.0",
+    "@types/jsonwebtoken": "^9.0.3",
+    "@types/lodash": "^4.14.195",
+    "@types/mailparser": "^3.4.0",
+    "@types/node": "^20.6.3",
+    "@types/nodemailer": "^6.4.10",
+    "@types/pg": "^8.10.2",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@types/supertest": "^2.0.12",
+    "@types/uuid": "^9.0.2",
+    "@types/ws": "^8.5.5",
+    "@types/xml-parser": "^1.2.30",
+    "@types/xml2js": "^0.4.12",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "autoprefixer": "^10.4.14",
+    "concurrently": "^8.2.1",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "jest": "^29.5.0",
+    "jest-html-reporter": "^3.10.0",
+    "jest-junit": "^16.0.0",
+    "jest-mock-extended": "^3.0.5",
+    "jest-sonar-reporter": "^2.0.0",
+    "json_pp": "^1.0.0",
+    "mock-fs": "^5.2.0",
+    "mock-req-res": "^1.2.1",
+    "mockdate": "^3.0.5",
+    "nock": "^13.3.3",
+    "postcss": "^8.4.27",
+    "supertest": "^6.3.3",
+    "tailwindcss": "^3.3.3",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^3.12.7",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vitest": "^0.34.4"
+  },
+  "jest-junit": {
+    "outputDirectory": "test-results/jest",
+    "outputName": "junit.xml",
+    "classNameTemplate": "{classname}",
+    "titleTemplate": "{title}",
+    "ancestorSeparator": " › ",
+    "usePathForSuiteName": "true"
   }
-}
-
-export async function registerRoutes(app: Express) {
-  // Check database connection before proceeding
-  const dbConnected = await checkDatabaseConnection();
-  if (!dbConnected) {
-    logger.warn('Database connection failed - some features may not work properly');
-    // Don't exit - allow server to start for frontend testing
-  }
-
-  // Configure session store
-  const connectionString = process.env.DATABASE_URL;
-  const isSupabase = connectionString?.includes('supabase.co');
-
-  let sessionStore;
-
-  if (dbConnected) {
-    try {
-      const pgPool = new Pool({
-        connectionString: connectionString,
-        ssl: (process.env.NODE_ENV === 'production' || isSupabase) ? { rejectUnauthorized: false } : false,
-        max: 20,
-        idleTimeoutMillis: 30000,
-      });
-
-      const PgSessionStore = connectPgSimple(session);
-      logger.info('Initializing PostgreSQL session store');
-
-      sessionStore = new PgSessionStore({
-        pool: pgPool,
-        tableName: 'sessions',
-        createTableIfMissing: true,
-      });
-
-      logger.info('PostgreSQL session store initialized successfully');
-    } catch (error) {
-      logger.warn('Failed to initialize PostgreSQL session store, using memory store', error);
-      sessionStore = undefined; // Will use default memory store
-    }
-  } else {
-    logger.info('Using memory session store due to database connection issues');
-    sessionStore = undefined; // Will use default memory store
-  }
-
-  // Configure session middleware
-  const sessionConfig: any = {
-    secret: process.env.SESSION_SECRET || 'rylie-secure-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      sameSite: 'lax',
-    },
-  };
-
-  if (sessionStore) {
-    sessionConfig.store = sessionStore;
-  }
-
-  app.use(session(sessionConfig));
-
-  // Add CSRF protection
-  const csrfProtection = csrf({ cookie: false });
-
-  // Apply CSRF protection to all routes except those that need to be exempt
-  app.use((req, res, next) => {
-    // List of routes that should be exempt from CSRF protection
-    const exemptRoutes = [
-      '/api/magic-link/verify',
-      '/api/inbound',
-      '/api/webhook',
-      '/api/metrics',
-      '/api/health',
-      '/api/login',
-      '/api/logout',
-      '/api/user',
-      '/api/prompt-test',
-    ];
-
-    // Check if the current route should be exempt
-    const isExempt = exemptRoutes.some(route => req.path.startsWith(route));
-
-    if (isExempt) {
-      next();
-    } else {
-      csrfProtection(req, res, next);
-    }
-  });
-
-  // Add CSRF token endpoint
-  app.get('/api/csrf-token', csrfProtection, (req, res) => {
-    res.json({ csrfToken: req.csrfToken() });
-  });
-
-  // Add tenant context middleware for multi-tenancy
-  app.use(tenantContextMiddleware);
-
-  // Register route modules
-  app.use('/api/prompt-testing', promptRoutes);
-  app.use('/api/prompt-test', promptRoutes);
-
-  // Authentication routes
-  app.use('/api', localAuthRoutes);
-  app.use('/api/magic-link', magicLinkRoutes);
-
-  // Admin routes
-  app.use('/api/admin', adminRoutes);
-  app.use('/api/admin', adminUserRoutes);
-
-  // New feature routes
-  app.use('/api', escalationRoutes);
-  app.use('/api', leadManagementRoutes);
-  app.use('/api', userManagementRoutes);
-  app.use('/api', customerInsightsRoutes);
-  app.use('/api', inventoryRoutes);
-
-  // Create and return HTTP server
-  const server = createServer(app);
-
-  // Initialize WebSocket server
-  try {
-    const wsServer = new WebSocketChatServer();
-    wsServer.initialize(server);
-    logger.info('WebSocket chat server initialized successfully');
-  } catch (error) {
-    logger.error('Failed to initialize WebSocket server:', error);
-  }
-
-  return server;
 }
