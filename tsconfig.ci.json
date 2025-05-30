@@ -26,7 +26,9 @@
     "resolveJsonModule": true
   },
   "include": [
-    "client/src/components/error-boundary.ci.tsx"
+    "client/src/**/*",
+    "server/**/*",
+    "shared/**/*"
   ],
   "exclude": [
     "node_modules",
