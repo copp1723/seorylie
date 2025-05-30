@@ -27,10 +27,12 @@
     "resolveJsonModule": true
   },
   "include": [
-    "client/src/components/error-boundary.ci.tsx"
+    "client/src/components/error-boundary.tsx",
+    "client/src/components/ui/actionable-toast.tsx", 
+    "client/src/components/ui/tooltip.tsx"
   ],
   "exclude": [
     "node_modules",
-    "client/src/components/ui/**/*"
+    "test/**/*"
   ]
 }
