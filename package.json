@@ -62,7 +62,8 @@
     "clean:deps": "rm -rf node_modules package-lock.json && npm install",
     "setup": "npm install && npm run env:validate && npm run db:push",
     "health": "curl -s http://localhost:3000/health | npx prettyjson",
-    "adf:health": "curl -s http://localhost:3000/api/health/email | npx prettyjson"
+    "adf:health": "curl -s http://localhost:3000/api/health/email | npx prettyjson",
+    "test:data-privacy": "tsx scripts/test-data-privacy.ts"
   },
   "dependencies": {
     "@bull-board/api": "^5.8.0",
