@@ -1,14 +1,7 @@
-<<<<<<< HEAD
 import * as React from "react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 
 import { cn } from "@/lib/utils";
-=======
-import * as React from "react"
-import * as SliderPrimitive from "@radix-ui/react-slider"
-
-import { cn } from "@/lib/utils"
->>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
 
 const Slider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
@@ -22,12 +15,13 @@ const Slider = React.forwardRef<
     )}
     {...props}
   >
-<<<<<<< HEAD
     <SliderPrimitive.Track
       className="relative h-2 w-full grow overflow-hidden rounded-full bg-secondary"
     >
       <SliderPrimitive.Range className="absolute h-full bg-primary" />
     </SliderPrimitive.Track>
+    {/* If props.defaultValue is an array (e.g., for a range slider), map over it to create multiple thumbs.
+        If it's a single value array (for a single value slider), it creates one thumb. */}
     {props.defaultValue?.map((_, i) => (
       <SliderPrimitive.Thumb
         key={i}
@@ -39,14 +33,3 @@ const Slider = React.forwardRef<
 Slider.displayName = SliderPrimitive.Root.displayName;
 
 export { Slider };
-=======
-    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-secondary">
-      <SliderPrimitive.Range className="absolute h-full bg-primary" />
-    </SliderPrimitive.Track>
-    <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
-  </SliderPrimitive.Root>
-))
-Slider.displayName = SliderPrimitive.Root.displayName
-
-export { Slider }
->>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
