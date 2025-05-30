@@ -1,6 +1,6 @@
 import { AgentSquad, OpenAIAgent, OpenAIClassifier, InMemoryChatStorage } from 'agent-squad';
 import type { ConversationMessage } from 'agent-squad';
-import logger from '../../utils/logger';
+import logger from '../utils/logger';
 import {
   searchInventory,
   getVehicleDetails,
@@ -8,6 +8,11 @@ import {
   inventoryFunctionDefinitions
 } from './inventory-functions';
 import { createRylieRetriever, type RylieRetrieverOptions } from './rylie-retriever';
+import { 
+  mindsdbFunctionDefinitions, 
+  mindsdbFunctionHandlers, 
+  initializeMindsDBService 
+} from './mindsdb-functions';
 
 interface RylieAgentSquadConfig {
   openaiApiKey: string;
@@ -35,6 +40,19 @@ export class RylieAgentSquad {
 
     // Initialize automotive-specific agents with enhanced capabilities
     this.initializeAgents(config);
+
+    // Initialize MindsDB service
+    initializeMindsDBService()
+      .then(success => {
+        if (success) {
+          logger.info('MindsDB service initialized successfully');
+        } else {
+          logger.warn('MindsDB service initialization failed, predictions may not be available');
+        }
+      })
+      .catch(error => {
+        logger.error('Error initializing MindsDB service', { error });
+      });
 
     logger.info('RylieAgentSquad initialized with enhanced automotive agents');
   }
@@ -70,12 +88,22 @@ export class RylieAgentSquad {
         userMessage: "Hi there, just browsing",
         agentName: "general-agent",
         reason: "General inquiry or greeting without specific intent"
+      },
+      {
+        userMessage: "What's this car worth?",
+        agentName: "prediction-agent",
+        reason: "Customer asking for value prediction or price estimation"
+      },
+      {
+        userMessage: "Can you predict the price of this VIN?",
+        agentName: "prediction-agent",
+        reason: "Customer explicitly asking for price prediction"
       }
     ];
   }
 
   private initializeAgents(config: RylieAgentSquadConfig) {
-    // Create function handlers for inventory operations
+    // Create function handlers for inventory operations and predictions
     const functionHandlers = this.createFunctionHandlers();
 
     // General Sales Assistant - Primary entry point
@@ -104,18 +132,60 @@ export class RylieAgentSquad {
       - Search inventory using searchInventory() function based on customer criteria
       - Get detailed vehicle information using getVehicleDetails() function
       - Provide inventory overview using getInventorySummary() function
+      - Predict vehicle prices using predictVINPrice() function for any VIN
 
       GUIDELINES:
       - Always use functions to provide accurate, up-to-date information
       - Ask clarifying questions to refine search criteria
       - Present vehicle options clearly with key details (price, mileage, features)
+      - Use predictVINPrice() when customers ask about market value of specific vehicles
       - Suggest similar alternatives when exact matches aren't available
       - Encourage test drives and schedule visits when customers show interest
       - Be specific about availability and mention stock numbers when provided`,
       apiKey: config.openaiApiKey,
       model: 'gpt-4o',
-      functions: inventoryFunctionDefinitions,
-      functionHandlers: functionHandlers
+      functions: [
+        ...inventoryFunctionDefinitions, 
+        mindsdbFunctionDefinitions[0] // Add predictVINPrice function
+      ],
+      functionHandlers: {
+        ...functionHandlers,
+        predictVINPrice: mindsdbFunctionHandlers.predictVINPrice
+      }
+    });
+
+    // Prediction Specialist - AI predictions and data analysis
+    const predictionAgent = new OpenAIAgent({
+      name: 'prediction-agent',
+      description: 'Specialist in AI predictions and data analysis using MindsDB',
+      instructions: `You are an AI prediction specialist focused on automotive data analysis and predictions.
+
+      CAPABILITIES:
+      - Predict vehicle prices based on VIN using predictVINPrice()
+      - Make custom predictions using predictWithMindsDB()
+      - Run batch predictions with batchPredictWithMindsDB()
+      - Access inventory data when needed for context
+
+      GUIDELINES:
+      - Always use the appropriate prediction function based on the customer's needs
+      - For VIN price predictions, ask for the VIN and optionally mileage and condition
+      - Explain prediction results clearly, including confidence levels when available
+      - When discussing prices, clarify that these are estimates based on market data
+      - If prediction fails, gracefully explain and offer alternatives
+      - Maintain a helpful, educational tone when explaining predictions
+      - Use getVehicleDetails() when additional context about a vehicle is needed`,
+      apiKey: config.openaiApiKey,
+      model: 'gpt-4o',
+      functions: [
+        ...mindsdbFunctionDefinitions,
+        inventoryFunctionDefinitions[1] // getVehicleDetails for context
+      ],
+      functionHandlers: {
+        predictVINPrice: mindsdbFunctionHandlers.predictVINPrice,
+        predictWithMindsDB: mindsdbFunctionHandlers.predictWithMindsDB,
+        batchPredictWithMindsDB: mindsdbFunctionHandlers.batchPredictWithMindsDB,
+        getVehicleDetails: functionHandlers.getVehicleDetails
+      }
     });
 
     // Finance Specialist - Loans, leases, payments
@@ -154,9 +224,15 @@ export class RylieAgentSquad {
       - Factors affecting trade-in value (condition, mileage, market demand)
       - Required documentation for trade-in process
       - How trade-ins work with financing
-      Always recommend an in-person appraisal for accurate valuation.`,
+      Always recommend an in-person appraisal for accurate valuation.
+      
+      You can also use predictVINPrice() to provide estimated market values based on VIN.`,
       apiKey: config.openaiApiKey,
-      model: 'gpt-4o'
+      model: 'gpt-4o',
+      functions: [mindsdbFunctionDefinitions[0]], // Add predictVINPrice for trade-in estimation
+      functionHandlers: {
+        predictVINPrice: mindsdbFunctionHandlers.predictVINPrice
+      }
     });
 
     // Sales Specialist - Test drives and closing
@@ -180,11 +256,12 @@ export class RylieAgentSquad {
     this.orchestrator.addAgent(serviceAgent);
     this.orchestrator.addAgent(tradeAgent);
     this.orchestrator.addAgent(salesAgent);
+    this.orchestrator.addAgent(predictionAgent); // Add the new prediction agent
 
     // Set classifier
     this.orchestrator.setClassifier(this.classifier);
 
-    logger.info('Initialized 6 automotive specialist agents with enhanced capabilities');
+    logger.info('Initialized 7 automotive specialist agents with enhanced capabilities');
   }
 
   /**
@@ -254,7 +331,10 @@ export class RylieAgentSquad {
             error: 'Unable to get inventory summary at this time'
           });
         }
-      }
+      },
+
+      // MindsDB function handlers are imported and used directly from mindsdb-functions.ts
+      ...mindsdbFunctionHandlers
     };
   }
 

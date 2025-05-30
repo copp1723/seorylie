@@ -23,6 +23,7 @@ import { Loader2, Copy, Plus, Minus, AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ResponseAnalysis } from "@/components/ResponseAnalysis";
+import { apiRequest } from "@/lib/api-client";
 
 const DEFAULT_SYSTEM_PROMPT = `System Prompt for Automotive Sales Agent AI
 You are an automotive sales agent named [ARG-Agent Name], working for [ARG-Employer Name], a dealership committed to exceptional customer service and top-quality vehicles ([ARG-Information About Employer]). Your job is to connect with customers, understand their needs, and guide them toward purchasing a vehicle from our inventory ([ARG-Products]) that perfectly fits their lifestyle. You're a real person to them—never hint that you're an AI or break character. Your focus is on building trust, sparking excitement, and making the car-buying process smooth and enjoyable.
@@ -93,7 +94,7 @@ Urgent: "Let's move quick—what's your next step?"
 Action-Oriented: End every response with a simple, direct question like "Would you like me to have someone reach out to you directly?" or "Want me to put you in touch with our shipping expert?"—make it sound like you're connecting them with a friend, not "arranging an appointment."
 
 Formatting for Clarity:
-Add a line break after the initial greeting ("Rylie AI") to separate it from the main message.
+Add a line break after the initial greeting (\"Rylie AI\") to separate it from the main message.
 Use a line break between distinct ideas or sentences to create clear paragraphs (e.g., one sentence per paragraph for readability).
 Ensure links are on the same line as their description but followed by a line break.
 
@@ -168,6 +169,13 @@ interface CustomerInfo {
   conversationId?: number;
   phone?: string;
   email?: string;
+}
+
+interface ApiResponse {
+  aiResponse?: string;
+  response?: string;
+  analysis?: any;
+  handoverDossier?: any;
 }
 
 export default function AdvancedPromptTesting() {
@@ -324,19 +332,10 @@ export default function AdvancedPromptTesting() {
     };
 
     try {
-      const result = await fetch("/api/prompt-test/test", {
+      const data = await apiRequest<ApiResponse>("/prompt-test/test", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: payload
       });
-
-      if (!result.ok) {
-        throw new Error(`Error: ${result.status}`);
-      }
-
-      const data = await result.json();
 
       // Store the complete test result
       setLastTestResult(data);
@@ -355,7 +354,7 @@ export default function AdvancedPromptTesting() {
 
       const newAssistantMessage = {
         role: "assistant",
-        content: data.aiResponse || data.response,
+        content: data.aiResponse || data.response || "",
         timestamp: new Date(),
       };
 
@@ -367,7 +366,7 @@ export default function AdvancedPromptTesting() {
       ]);
 
       // Update the response display
-      setResponse(showJson ? JSON.stringify(data, null, 2) : (data.aiResponse || data.response));
+      setResponse(showJson ? JSON.stringify(data, null, 2) : (data.aiResponse || data.response || ""));
 
       // Clear the customer message input for the next message
       setCustomerMessage("");
@@ -403,22 +402,13 @@ export default function AdvancedPromptTesting() {
         content: msg.content
       }));
 
-      const result = await fetch("/api/prompt-test/generate-handover", {
+      const data = await apiRequest<ApiResponse>("/prompt-test/generate-handover", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+        body: {
           conversationHistory: formattedHistory,
           customerScenario: customerMessage || "Customer interaction for handover"
-        }),
+        }
       });
-
-      if (!result.ok) {
-        throw new Error(`Error: ${result.status}`);
-      }
-
-      const data = await result.json();
       
       if (data.handoverDossier) {
         setHandoverDossier(data.handoverDossier);
@@ -703,14 +693,14 @@ export default function AdvancedPromptTesting() {
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
                                   {handoverDossier.customerInsights.map(
-                                    (insight, idx) => (
+                                    (insight: any, idx: number) => (
                                       <div
                                         key={idx}
                                         className="bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm border border-gray-100 dark:border-gray-700"
                                       >
                                         <div className="flex justify-between items-center">
                                           <span className="font-medium text-gray-700 dark:text-gray-300">
-                                            {insight.key}
+                                            {insight.insightType}
                                           </span>
                                           <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
                                             {Math.round(
@@ -737,7 +727,7 @@ export default function AdvancedPromptTesting() {
                                 </p>
                                 <div className="space-y-3 mt-2">
                                   {handoverDossier.vehicleInterests.map(
-                                    (vehicle, idx) => (
+                                    (vehicle: any, idx: number) => (
                                       <div
                                         key={idx}
                                         className="bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-100 dark:border-gray-700 p-3"
@@ -848,7 +838,7 @@ export default function AdvancedPromptTesting() {
                                   </h4>
                                   <ul className="space-y-2">
                                     {handoverDossier.nextSteps.map(
-                                      (item, idx) => (
+                                      (item: string, idx: number) => (
                                         <li
                                           key={`next-${idx}`}
                                           className="flex items-start gap-2"
@@ -873,7 +863,7 @@ export default function AdvancedPromptTesting() {
                                   </h4>
                                   <ul className="space-y-2">
                                     {handoverDossier.actionItems.map(
-                                      (item, idx) => (
+                                      (item: string, idx: number) => (
                                         <li
                                           key={`action-${idx}`}
                                           className="flex items-start gap-2"
