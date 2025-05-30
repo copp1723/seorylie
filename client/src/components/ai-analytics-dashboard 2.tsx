@@ -35,8 +35,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
   PieChart as RechartsPieChart,
   Cell,
 } from "recharts";
@@ -393,10 +391,11 @@ export function AIAnalyticsDashboard() {
                       {metrics?.customerSatisfaction.toFixed(1)}/5.0
                     </span>
                   </div>
-                  <Progress
-                    value={(metrics?.customerSatisfaction || 0) * 20}
-                    className="w-full"
-                  />
+                  <div className="w-full">
+                    <Progress
+                      value={(metrics?.customerSatisfaction || 0) * 20}
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -408,10 +407,11 @@ export function AIAnalyticsDashboard() {
                       {metrics?.inventoryContextUsage}%
                     </span>
                   </div>
-                  <Progress
-                    value={metrics?.inventoryContextUsage || 0}
-                    className="w-full"
-                  />
+                  <div className="w-full">
+                    <Progress
+                      value={metrics?.inventoryContextUsage || 0}
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -423,10 +423,11 @@ export function AIAnalyticsDashboard() {
                       {metrics?.personalizedResponses}%
                     </span>
                   </div>
-                  <Progress
-                    value={metrics?.personalizedResponses || 0}
-                    className="w-full"
-                  />
+                  <div className="w-full">
+                    <Progress
+                      value={metrics?.personalizedResponses || 0}
+                    />
+                  </div>
                 </div>
 
                 <div>

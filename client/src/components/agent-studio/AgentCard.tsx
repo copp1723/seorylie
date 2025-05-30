@@ -255,10 +255,11 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="ml-2 flex-1">
-                          <Progress 
-                            value={(agent.tokenUsage.current / agent.tokenUsage.limit) * 100} 
-                            className="h-1" 
-                          />
+                          <div className="h-1">
+                            <Progress 
+                              value={(agent.tokenUsage.current / agent.tokenUsage.limit) * 100} 
+                            />
+                          </div>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
