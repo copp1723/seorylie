@@ -1302,4 +1302,3 @@ export function createCacheKey(...parts: (string | number | object)[]): string {
 export const cacheService = new UnifiedCacheService();
 export type { UnifiedCacheService }
 export type { CacheOptions, CacheStats }
-export { CacheEventType }

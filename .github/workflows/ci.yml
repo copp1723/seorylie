@@ -400,13 +400,14 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          load: true
           build-args: |
             NODE_ENV=production
 
       - name: Validate Docker image exists
         run: |
           echo "Checking for image: ${{ matrix.image }}:latest"
-          docker images | grep "${{ matrix.image }}" || { echo "Image not found"; exit 1; }
+          docker images | grep "${{ matrix.image }}" || { echo "Image ${{ matrix.image }}:latest not found"; docker images; exit 1; }
         if: github.event_name == 'pull_request'
 
       - name: Install Trivy
@@ -417,11 +418,15 @@ jobs:
 
       - name: Scan Docker image with Trivy
         run: |
-          trivy image --exit-code 1 --severity CRITICAL --no-progress ${{ steps.meta.outputs.tags }}
+          # Get the first tag from the metadata for pushed images
+          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+          echo "Scanning image: $IMAGE_TAG"
+          trivy image --exit-code 1 --severity CRITICAL --no-progress "$IMAGE_TAG"
         if: github.event_name != 'pull_request'
 
       - name: Scan Docker image with Trivy (PR)
         run: |
+          echo "Scanning local image: ${{ matrix.image }}:latest"
           docker save ${{ matrix.image }}:latest -o /tmp/${{ matrix.image }}.tar
           trivy image --input /tmp/${{ matrix.image }}.tar --exit-code 1 --severity CRITICAL --no-progress
         if: github.event_name == 'pull_request'
