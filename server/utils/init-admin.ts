@@ -28,21 +28,22 @@ export async function initializeDefaultUser() {
       const newDealership = await db.insert(dealerships).values({
         name: 'Default Dealership',
         subdomain: 'default',
-        contact_email: 'contact@defaultdealership.com',
-        contact_phone: '555-0123',
+        contactEmail: 'contact@defaultdealership.com',
+        contactPhone: '555-0123',
         address: '123 Main St',
         city: 'Default City',
         state: 'CA',
         zip: '12345',
-        website: 'https://defaultdealership.com',
-        created_at: new Date(),
-        updated_at: new Date(),
       }).returning();
 
-      dealershipId = newDealership[0].id;
+      dealershipId = newDealership[0]?.id;
       logger.info(`Created default dealership with ID: ${dealershipId}`);
     } else {
-      dealershipId = existingDealerships[0].id;
+      dealershipId = existingDealerships[0]?.id;
+    }
+
+    if (!dealershipId) {
+      throw new Error('Failed to create or find dealership');
     }
 
     // Hash the default password
@@ -54,12 +55,9 @@ export async function initializeDefaultUser() {
       username: 'admin',
       email: 'admin@rylie.ai',
       password: hashedPassword,
-      name: 'Default Admin',
       role: 'super_admin',
-      dealership_id: dealershipId,
-      is_verified: true,
-      created_at: new Date(),
-      updated_at: new Date(),
+      dealershipId: dealershipId,
+      isActive: true,
     });
 
     logger.info('Default admin user created successfully!');

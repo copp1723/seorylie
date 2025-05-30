@@ -3,7 +3,7 @@
  * This provides basic database operations for the services that need them
  */
 
-import db from './db';
+import { db } from './db';
 import { dealerships, vehicles } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 

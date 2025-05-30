@@ -12,6 +12,7 @@ import {
   Building2,
   Paintbrush,
   MessageSquare,
+  GitMerge,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -89,6 +90,11 @@ export default function Sidebar() {
       icon: <BarChart3 className="h-4 w-4" />,
       label: "Analytics",
       href: "/analytics",
+    },
+    {
+      icon: <GitMerge className="h-4 w-4" />,
+      label: "Integration",
+      href: "/integration",
     },
     {
       icon: <Settings className="h-4 w-4" />,

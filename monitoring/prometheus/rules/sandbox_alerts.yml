@@ -1,0 +1,194 @@
+groups:
+  # Sandbox Cost Alerts
+  - name: sandbox_cost_alerts
+    rules:
+      - alert: SandboxDailyCostExceeded
+        expr: sum by(sandbox_id) (increase(openai_cost_usd_total{sandbox_id!=""}[24h])) > 5
+        for: 5m
+        labels:
+          severity: critical
+          category: cost
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "Sandbox {{ $labels.sandbox_id }} has exceeded $5 cost threshold"
+          description: "Sandbox {{ $labels.sandbox_id }} has spent ${{ $value | printf \"%.2f\" }} in the last 24 hours, exceeding the $5 threshold."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/sandbox-cost-exceeded"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}"
+      
+      - alert: SandboxDailyCostWarning
+        expr: sum by(sandbox_id) (increase(openai_cost_usd_total{sandbox_id!=""}[24h])) > 3.5
+        for: 5m
+        labels:
+          severity: warning
+          category: cost
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "Sandbox {{ $labels.sandbox_id }} is approaching cost threshold"
+          description: "Sandbox {{ $labels.sandbox_id }} has spent ${{ $value | printf \"%.2f\" }} in the last 24 hours, approaching the $5 threshold."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/sandbox-cost-warning"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}"
+      
+      - alert: InactiveSandboxHighCost
+        expr: sum by(sandbox_id) (increase(openai_cost_usd_total{sandbox_id!=""}[24h])) > 2 and sum by(sandbox_id) (active_sessions_current{sandbox_id!=""}) == 0
+        for: 30m
+        labels:
+          severity: warning
+          category: cost
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "Inactive sandbox {{ $labels.sandbox_id }} has high cost"
+          description: "Sandbox {{ $labels.sandbox_id }} has spent ${{ $value | printf \"%.2f\" }} in the last 24 hours but currently has no active sessions."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/inactive-sandbox-cost"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}"
+  
+  # Token Usage Alerts
+  - name: token_usage_alerts
+    rules:
+      - alert: SandboxHourlyTokenLimitNearlyReached
+        expr: (sum by(sandbox_id) (sandbox_token_usage_current{sandbox_id!="", period="hourly"}) / on(sandbox_id) group_left() max by(sandbox_id) (sandbox_token_usage_limit{period="hourly"})) > 0.85
+        for: 2m
+        labels:
+          severity: warning
+          category: rate_limit
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "Sandbox {{ $labels.sandbox_id }} approaching hourly token limit"
+          description: "Sandbox {{ $labels.sandbox_id }} has used {{ $value | printf \"%.1f\" }}% of its hourly token limit."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/token-limit-approaching"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}"
+      
+      - alert: SandboxDailyTokenLimitNearlyReached
+        expr: (sum by(sandbox_id) (sandbox_token_usage_current{sandbox_id!="", period="daily"}) / on(sandbox_id) group_left() max by(sandbox_id) (sandbox_token_usage_limit{period="daily"})) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          category: rate_limit
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "Sandbox {{ $labels.sandbox_id }} approaching daily token limit"
+          description: "Sandbox {{ $labels.sandbox_id }} has used {{ $value | printf \"%.1f\" }}% of its daily token limit."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/token-limit-approaching"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}"
+      
+      - alert: FrequentRateLimitHits
+        expr: sum by(sandbox_id) (increase(rate_limit_hits_total{sandbox_id!=""}[1h])) > 5
+        for: 10m
+        labels:
+          severity: warning
+          category: rate_limit
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "Sandbox {{ $labels.sandbox_id }} hitting rate limits frequently"
+          description: "Sandbox {{ $labels.sandbox_id }} has hit rate limits {{ $value }} times in the last hour."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/frequent-rate-limits"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}"
+  
+  # Latency Alerts
+  - name: latency_alerts
+    rules:
+      - alert: HighToolExecutionLatency
+        expr: histogram_quantile(0.95, sum by(le, tool_name, sandbox_id) (rate(tool_execution_duration_seconds_bucket{status="success"}[5m]))) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "High P95 latency for tool {{ $labels.tool_name }} in sandbox {{ $labels.sandbox_id }}"
+          description: "P95 latency for tool {{ $labels.tool_name }} in sandbox {{ $labels.sandbox_id }} is {{ $value | printf \"%.2f\" }}s, exceeding 5s threshold."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/high-tool-latency"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}&var-tool={{ $labels.tool_name }}"
+      
+      - alert: CriticalToolExecutionLatency
+        expr: histogram_quantile(0.95, sum by(le, tool_name, sandbox_id) (rate(tool_execution_duration_seconds_bucket{status="success"}[5m]))) > 10
+        for: 5m
+        labels:
+          severity: critical
+          category: performance
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "Critical P95 latency for tool {{ $labels.tool_name }} in sandbox {{ $labels.sandbox_id }}"
+          description: "P95 latency for tool {{ $labels.tool_name }} in sandbox {{ $labels.sandbox_id }} is {{ $value | printf \"%.2f\" }}s, exceeding 10s threshold."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/critical-tool-latency"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}&var-tool={{ $labels.tool_name }}"
+      
+      - alert: HighAgentExecutionLatency
+        expr: histogram_quantile(0.95, sum by(le, agent_type, sandbox_id) (rate(agent_execution_duration_seconds_bucket{status="success"}[5m]))) > 15
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "High P95 latency for agent {{ $labels.agent_type }} in sandbox {{ $labels.sandbox_id }}"
+          description: "P95 latency for agent {{ $labels.agent_type }} in sandbox {{ $labels.sandbox_id }} is {{ $value | printf \"%.2f\" }}s, exceeding 15s threshold."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/high-agent-latency"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}&var-agent={{ $labels.agent_type }}"
+  
+  # Error Rate Alerts
+  - name: error_alerts
+    rules:
+      - alert: HighToolErrorRate
+        expr: sum by(tool_name, sandbox_id) (rate(tool_executions_total{status="error"}[5m])) / sum by(tool_name, sandbox_id) (rate(tool_executions_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: errors
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "High error rate for tool {{ $labels.tool_name }} in sandbox {{ $labels.sandbox_id }}"
+          description: "Error rate for tool {{ $labels.tool_name }} in sandbox {{ $labels.sandbox_id }} is {{ $value | printf \"%.1f\" }}%, exceeding 10% threshold."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/high-tool-error-rate"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}&var-tool={{ $labels.tool_name }}"
+      
+      - alert: CriticalToolErrorRate
+        expr: sum by(tool_name, sandbox_id) (rate(tool_executions_total{status="error"}[5m])) / sum by(tool_name, sandbox_id) (rate(tool_executions_total[5m])) > 0.25
+        for: 5m
+        labels:
+          severity: critical
+          category: errors
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "Critical error rate for tool {{ $labels.tool_name }} in sandbox {{ $labels.sandbox_id }}"
+          description: "Error rate for tool {{ $labels.tool_name }} in sandbox {{ $labels.sandbox_id }} is {{ $value | printf \"%.1f\" }}%, exceeding 25% threshold."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/critical-tool-error-rate"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}&var-tool={{ $labels.tool_name }}"
+      
+      - alert: HighErrorCount
+        expr: sum by(sandbox_id, error_type) (increase(errors_total{sandbox_id!=""}[15m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+          category: errors
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "High error count in sandbox {{ $labels.sandbox_id }}"
+          description: "Sandbox {{ $labels.sandbox_id }} has encountered {{ $value }} errors of type {{ $labels.error_type }} in the last 15 minutes."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/high-error-count"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}"
+      
+      - alert: ConsistentRateLimitErrors
+        expr: sum by(sandbox_id) (increase(errors_total{error_type="rate_limit_exceeded", sandbox_id!=""}[30m])) > 10
+        for: 10m
+        labels:
+          severity: warning
+          category: rate_limit
+          channel: slack
+          team: ai-platform
+        annotations:
+          summary: "Consistent rate limit errors in sandbox {{ $labels.sandbox_id }}"
+          description: "Sandbox {{ $labels.sandbox_id }} has hit {{ $value }} rate limit errors in the last 30 minutes."
+          runbook_url: "https://wiki.internal/ai-platform/alerts/consistent-rate-limits"
+          dashboard_url: "https://grafana:3000/d/sandbox-overview?var-sandbox={{ $labels.sandbox_id }}"

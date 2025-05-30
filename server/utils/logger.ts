@@ -70,8 +70,9 @@ export default {
   error: (message: string, error?: unknown, context?: unknown) => {
     if (error) {
       const err = error instanceof Error ? error : new Error(String(error));
+      const sanitizedContext = context ? sanitizeObjectForLogging(context) : {};
       logger.error(`${message}: ${err.message}`, {
-        ...(context ? sanitizeObjectForLogging(context) : {}),
+        ...(typeof sanitizedContext === 'object' && sanitizedContext !== null ? sanitizedContext : {}),
         stack: err.stack
       });
     } else {
