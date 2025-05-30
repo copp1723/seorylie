@@ -22,13 +22,8 @@ import {
   TrendingDown,
   MessageCircle,
   Clock,
-  Users,
   CheckCircle,
   AlertTriangle,
-  BarChart3,
-  PieChart,
-  Activity,
-  Zap,
   Target,
   RefreshCw,
 } from "lucide-react";
