@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/api-client"; // Changed from @/lib/queryClient to @/lib/api-client for clarity if they are different
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -58,10 +58,13 @@ import {
 import {
   PromptExperiment,
   PromptVariant,
-  ExperimentVariant,
+  ExperimentVariant, // Assuming this is used or defined elsewhere if needed by PromptExperiment
   Vehicle,
   CustomerInsight,
   ResponseSuggestion,
+  dealerships, // Assuming this is for type reference if needed
+  promptExperiments, // For type reference
+  promptVariants, // For type reference
 } from "@shared/schema";
 
 // Sample dealership data (replace with actual data from your API)
@@ -85,8 +88,8 @@ interface TestResult {
   responseJson?: any;
   responseTime?: number;
   customerInsights?: CustomerInsight[];
-  vehicleRecommendations?: Vehicle[];
-  responseSuggestions?: ResponseSuggestion[];
+  vehicleRecommendations?: Vehicle[]; // Assuming Vehicle type from schema
+  responseSuggestions?: ResponseSuggestion[]; // Assuming ResponseSuggestion type from schema
   handoverRecommended?: boolean;
   handoverDossier?: any;
   variantId?: number;
@@ -100,10 +103,11 @@ interface PromptExperimentData {
   isActive: boolean;
   startDate: string | null;
   endDate: string | null;
+  // Simplified variant info for experiment display
   variants: {
     variantId: number;
     name: string;
-    content: string; // Frontend uses content, but backend uses promptTemplate
+    promptTemplate: string; // Changed from content to promptTemplate for consistency with PromptVariant
     isControl: boolean;
     trafficAllocation: number;
   }[];
@@ -164,29 +168,29 @@ Every reply must follow this structure, with the answer field reflecting the for
   "empathetic_response": "Emotional connection plan",
   "engagement_check": "How to keep them hooked",
   "sales_readiness": "low, medium, high",
-  "answer": "Rylie AI\\n\\nYour tailored response with proper spacing and line breaks.",
+  "answer": "Rylie AI\\\\n\\\\nYour tailored response with proper spacing and line breaks.",
   "retrieve_inventory_data": true or false,
-  "research_queries": ["Specific inventory questions"],
+  "research_queries": [\"Specific inventory questions\"],
   "reply_required": true or false
 }`;
 
 export default function PromptExperimentInterface() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const dealershipId = DEFAULT_DEALERSHIP_ID;
+  const dealershipId = DEFAULT_DEALERSHIP_ID; // Used for context, not directly on PromptVariant
 
   // State for tab management
   const [activeTab, setActiveTab] = useState("testing");
   const [activeSubTab, setActiveSubTab] = useState("single");
 
   // State for experiment management
-  const [experiments, setExperiments] = useState<PromptExperimentData[]>([]);
+  const [experiments, setExperiments] = useState<PromptExperimentData[]>([]); // Using PromptExperimentData for fetched experiments
   const [selectedExperiment, setSelectedExperiment] = useState<number | null>(
     null,
   );
 
   // State for variant management
-  const [variants, setVariants] = useState<PromptVariant[]>([]);
+  const [variants, setVariants] = useState<PromptVariant[]>([]); // Full PromptVariant for variant list
   const [selectedVariants, setSelectedVariants] = useState<number[]>([]);
   const [editingVariant, setEditingVariant] = useState<PromptVariant | null>(
     null,
@@ -216,7 +220,7 @@ export default function PromptExperimentInterface() {
 
   // Dealership context
   const [dealershipContext, setDealershipContext] = useState({
-    dealershipId: 1,
+    dealershipId: DEFAULT_DEALERSHIP_ID,
     dealershipName: "OnekeeL Automotive",
     brandTypes: "new and used vehicles from various manufacturers",
     dealershipLocation: "123 Auto Drive, Springfield, IL",
@@ -224,13 +228,14 @@ export default function PromptExperimentInterface() {
   });
 
   // Conversation history
-  const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>(
+  const [conversationHistory, setConversationHistory] = useState<ChatMessage[]> (
     [],
   );
   const [includeHistory, setIncludeHistory] = useState(false);
 
   // Vehicle inventory
   const [vehicles, setVehicles] = useState<Vehicle[]>([
+    // Initial sample vehicle, ensure it matches the Vehicle schema
     {
       id: 1,
       dealershipId: DEFAULT_DEALERSHIP_ID,
@@ -241,32 +246,31 @@ export default function PromptExperimentInterface() {
       year: 2023,
       trim: "Sport",
       bodyStyle: "Sedan",
-      extColor: "Crystal Black Pearl",
-      intColor: "Black Leather",
+      extColor: "Crystal Black Pearl", // Changed from exteriorColor
+      intColor: "Black Leather", // Changed from interiorColor
       mileage: 5000,
-      engine: "1.5L Turbo",
+      engine: "1.5L Turbo I4",
       transmission: "CVT",
       drivetrain: "FWD",
       fuelType: "Gasoline",
-      fuelEconomy: 32,
+      fuelEconomyCity: 29, // Example value
+      fuelEconomyHighway: 37, // Example value
       msrp: 31000,
       salePrice: 28995,
-      price: 28995,
-      condition: "used",
-      exteriorColor: "Crystal Black Pearl",
-      interiorColor: "Black Leather",
-      status: "Available",
+      price: 28995, // Assuming price is the final sale price
+      condition: "Used", // Matched schema: 'new' | 'used' | 'cpo'
+      status: "Available", // Matched schema: 'available' | 'sold' | 'pending'
       certified: false,
-      description: "Well-maintained Honda Accord Sport with low mileage",
+      description: "Well-maintained Honda Accord Sport with low mileage. Features Bluetooth, Backup Camera, Lane Departure Warning, Heated Seats.",
       features: [
         "Bluetooth",
         "Backup Camera",
         "Lane Departure Warning",
         "Heated Seats",
       ],
-      categoryTags: ["Sedan", "Family Car"],
-      images: [],
-      videoUrl: "https://example.com/vehicles/honda-accord-2023",
+      categoryTags: ["Sedan", "Family Car", "Fuel Efficient"],
+      images: [{ url: "https://example.com/honda-accord-1.jpg", isPrimary: true }],
+      videoUrl: "https://example.com/vehicles/honda-accord-2023-video",
       isActive: true,
       lastSeen: new Date(),
       created_at: new Date(),
@@ -304,54 +308,60 @@ export default function PromptExperimentInterface() {
   });
 
   // Fetch experiments
-  const { data: experimentsData, isLoading: isExperimentsLoading } = useQuery({
-    queryKey: ["/api/prompt-experiments", dealershipId],
+  const { data: fetchedExperimentsData, isLoading: isExperimentsLoading } = useQuery<PromptExperimentData[]>({ // Explicitly type the query data
+    queryKey: ["prompt-experiments", dealershipId], // Changed API path to be more conventional
+    queryFn: () => apiRequest(`/api/prompt-experiments?dealershipId=${dealershipId}`),
     enabled: activeTab === "experiments",
   });
 
   // Fetch variants
-  const { data: variantsData, isLoading: isVariantsLoading } = useQuery({
-    queryKey: ["/api/prompt-variants", dealershipId],
+  const { data: fetchedVariantsData, isLoading: isVariantsLoading } = useQuery<PromptVariant[]>({ // Explicitly type the query data
+    queryKey: ["prompt-variants", dealershipId], // Changed API path
+    queryFn: () => apiRequest(`/api/prompt-variants?dealershipId=${dealershipId}`),
     enabled: activeTab === "variants",
   });
 
   useEffect(() => {
-    if (experimentsData) {
-      setExperiments(experimentsData);
+    if (fetchedExperimentsData) {
+      setExperiments(fetchedExperimentsData);
     }
-  }, [experimentsData]);
+  }, [fetchedExperimentsData]);
 
   useEffect(() => {
-    if (variantsData) {
-      setVariants(variantsData);
+    if (fetchedVariantsData) {
+      setVariants(fetchedVariantsData);
     }
-  }, [variantsData]);
+  }, [fetchedVariantsData]);
 
   // Save variant mutation
-  const saveVariantMutation = useMutation({
-    mutationFn: async (variant: Partial<PromptVariant>) => {
-      return apiRequest(
-        variant.id
-          ? `/api/prompt-variants/${variant.id}`
-          : "/api/prompt-variants",
-        variant.id ? "PATCH" : "POST",
-        variant,
-      );
+  const saveVariantMutation = useMutation<
+    PromptVariant, // Expected success response type
+    Error, // Error type
+    Partial<Omit<PromptVariant, 'dealershipId'>> // Variables type for mutationFn
+  >({
+    mutationFn: async (variantInput) => {
+      const apiPath = variantInput.id
+        ? `/api/prompt-variants/${variantInput.id}`
+        : "/api/prompt-variants";
+      const method = variantInput.id ? "PATCH" : "POST";
+      // Ensure dealershipId is not part of the variantInput payload directly if schema doesn't support it
+      // The backend should associate it based on the authenticated user or experiment context
+      return apiRequest(apiPath, { method, body: variantInput });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompt-variants"] });
+    onSuccess: (savedVariant) => {
+      queryClient.invalidateQueries({ queryKey: ["prompt-variants", dealershipId] });
       toast({
         title: "Success",
-        description: editingVariant?.id
-          ? "Prompt variant updated successfully"
-          : "New prompt variant created",
+        description: editingVariant?.id // Check editingVariant to determine if it was an update
+          ? `Prompt variant "${savedVariant.name}" updated successfully`
+          : `New prompt variant "${savedVariant.name}" created`,
       });
       resetVariantEditor();
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to save prompt variant",
+        description: `Failed to save prompt variant: ${error.message}`,
         variant: "destructive",
       });
       console.error("Error saving variant:", error);
@@ -359,21 +369,28 @@ export default function PromptExperimentInterface() {
   });
 
   // Create experiment mutation
-  const createExperimentMutation = useMutation({
-    mutationFn: async (experiment: Partial<PromptExperiment>) => {
-      return apiRequest("/api/prompt-experiments", "POST", experiment);
+  const createExperimentMutation = useMutation<
+    PromptExperiment, // Expected success response type
+    Error, // Error type
+    Partial<PromptExperiment> // Variables type
+  >({
+    mutationFn: async (experimentInput) => {
+      // Ensure dealershipId is part of the experimentInput if required by the API
+      const payload = { ...experimentInput, dealershipId };
+      return apiRequest("/api/prompt-experiments", { method: "POST", body: payload });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/prompt-experiments"] });
+    onSuccess: (newExperiment) => {
+      queryClient.invalidateQueries({ queryKey: ["prompt-experiments", dealershipId] });
       toast({
         title: "Success",
-        description: "New experiment created successfully",
+        description: `New experiment "${newExperiment.name}" created successfully`,
       });
+      // Optionally reset any form related to experiment creation here
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create experiment",
+        description: `Failed to create experiment: ${error.message}`,
         variant: "destructive",
       });
       console.error("Error creating experiment:", error);
@@ -384,7 +401,7 @@ export default function PromptExperimentInterface() {
   const addHistoryItem = () => {
     setConversationHistory([
       ...conversationHistory,
-      { role: "customer", content: "" },
+      { role: "customer", content: "", timestamp: new Date() }, // Added timestamp
     ]);
   };
 
@@ -398,17 +415,18 @@ export default function PromptExperimentInterface() {
     fieldName: "role" | "content",
   ) => {
     const updatedHistory = [...conversationHistory];
+    const currentItem = updatedHistory[index];
     if (
       fieldName === "role" &&
       (value === "customer" || value === "assistant")
     ) {
       updatedHistory[index] = {
-        ...updatedHistory[index],
+        ...currentItem,
         role: value,
       };
     } else if (fieldName === "content") {
       updatedHistory[index] = {
-        ...updatedHistory[index],
+        ...currentItem,
         content: value,
       };
     }
@@ -418,26 +436,39 @@ export default function PromptExperimentInterface() {
   // Vehicle inventory management
   const addVehicle = () => {
     const newVehicle: Vehicle = {
-      id: vehicles.length + 1,
+      id: vehicles.length + Date.now(), // More unique ID for client-side
+      dealershipId: dealershipId,
       vin: "",
+      stockNumber: `STK${Date.now().toString().slice(-6)}`, // Auto-generate a unique stock number
       make: "",
       model: "",
-      year: 2023,
+      year: new Date().getFullYear(),
       trim: "",
-      exteriorColor: "",
-      interiorColor: "",
+      bodyStyle: "Sedan", // Default
+      extColor: "",
+      intColor: "",
       mileage: 0,
-      price: 0,
+      engine: "",
+      transmission: "Automatic", // Default
+      drivetrain: "FWD", // Default
+      fuelType: "Gasoline", // Default
+      fuelEconomyCity: null,
+      fuelEconomyHighway: null,
+      msrp: null,
+      salePrice: null,
+      price: 0, // Default or null
       condition: "New",
+      status: "Available",
+      certified: false,
       description: "",
       features: [],
-      dealershipId: dealershipId,
+      categoryTags: [],
+      images: [],
+      videoUrl: null,
+      isActive: true,
+      lastSeen: new Date(),
       created_at: new Date(),
       updated_at: new Date(),
-      categoryTags: [],
-      status: "available",
-      images: [],
-      videoUrl: "",
     };
     setVehicles([...vehicles, newVehicle]);
   };
@@ -448,22 +479,23 @@ export default function PromptExperimentInterface() {
 
   const updateVehicle = (index: number, field: keyof Vehicle, value: any) => {
     const updatedVehicles = [...vehicles];
+    const vehicleToUpdate = { ...updatedVehicles[index] };
+
     if (field === "features" && typeof value === "string") {
-      updatedVehicles[index] = {
-        ...updatedVehicles[index],
-        features: value.split(",").map((f) => f.trim()),
-      };
+      (vehicleToUpdate[field] as string[]) = value.split(",").map((f) => f.trim());
     } else if (field === "categoryTags" && typeof value === "string") {
-      updatedVehicles[index] = {
-        ...updatedVehicles[index],
-        categoryTags: value.split(",").map((f) => f.trim()),
-      };
-    } else {
-      updatedVehicles[index] = {
-        ...updatedVehicles[index],
-        [field]: value,
-      };
+      (vehicleToUpdate[field] as string[]) = value.split(",").map((f) => f.trim());
+    } else if (field === "images" && typeof value === "string") { // Basic handling for comma-separated image URLs
+        (vehicleToUpdate[field] as { url: string; isPrimary?: boolean }[]) = value.split(",").map((url, i) => ({ url: url.trim(), isPrimary: i === 0 }));
+    } else if (typeof vehicleToUpdate[field] === 'number' && (field === 'year' || field === 'mileage' || field === 'price' || field === 'msrp' || field === 'salePrice' || field === 'fuelEconomyCity' || field === 'fuelEconomyHighway')) {
+        (vehicleToUpdate[field] as number | null) = value === '' ? null : parseInt(value, 10);
+    } else if (typeof vehicleToUpdate[field] === 'boolean' && (field === 'certified' || field === 'isActive')) {
+        (vehicleToUpdate[field] as boolean) = Boolean(value);
     }
+    else {
+      (vehicleToUpdate[field] as any) = value;
+    }
+    updatedVehicles[index] = vehicleToUpdate;
     setVehicles(updatedVehicles);
   };
 
@@ -472,7 +504,7 @@ export default function PromptExperimentInterface() {
     if (variant) {
       setEditingVariant(variant);
       setNewVariantName(variant.name);
-      setNewVariantContent(variant.promptTemplate);
+      setNewVariantContent(variant.promptTemplate); // Use promptTemplate from schema
     } else {
       setEditingVariant(null);
       setNewVariantName("");
@@ -498,16 +530,16 @@ export default function PromptExperimentInterface() {
       return;
     }
 
-    const variant: Partial<PromptVariant> = {
+    const variantPayload: Partial<Omit<PromptVariant, 'dealershipId'>> = {
       ...(editingVariant?.id ? { id: editingVariant.id } : {}),
-      dealershipId,
       name: newVariantName.trim(),
-      promptTemplate: newVariantContent,
-      isActive: true,
+      promptTemplate: newVariantContent, // Use promptTemplate for saving
+      isActive: editingVariant?.isActive !== undefined ? editingVariant.isActive : true, // Preserve isActive or default to true
       isControl: editingVariant?.isControl || false,
+      // dealershipId is not part of PromptVariant schema, removed from here
     };
 
-    saveVariantMutation.mutate(variant);
+    saveVariantMutation.mutate(variantPayload);
   };
 
   // Test a single prompt variant
@@ -515,48 +547,33 @@ export default function PromptExperimentInterface() {
     setIsLoading(true);
     setError("");
 
-    // Prepare the request payload
     const payload = {
       customerMessage,
-      variantId, // Optional - if not provided, will use the system prompt
-      systemPrompt: !variantId ? newVariantContent : undefined, // Only used if variantId is not provided
+      variantId,
+      systemPrompt: !variantId ? newVariantContent : undefined,
       channel,
       customerInfo,
       dealershipContext,
-      conversationHistory: includeHistory ? conversationHistory : [],
+      conversationHistory: includeHistory ? conversationHistory.map(msg => ({ // Ensure correct mapping if backend expects user/assistant
+        role: msg.role === "customer" ? "user" : "assistant",
+        content: msg.content
+      })) : [],
       relevantVehicles: includeVehicles ? vehicles : [],
       formatOptions,
     };
 
     try {
-      const result = await fetch("/api/prompt-test/test", {
+      // Using apiRequest for consistency
+      const data: TestResult = await apiRequest("/api/prompt-test/test", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: payload,
       });
 
-      if (!result.ok) {
-        throw new Error(`Error: ${result.status}`);
-      }
-
-      const data = await result.json();
-
-      // Update the response display
       setTestResponse({
-        response: data.response,
-        responseJson: data.responseJson,
-        responseTime: data.responseTime,
-        customerInsights: data.customerInsights,
-        vehicleRecommendations: data.vehicleRecommendations,
-        responseSuggestions: data.responseSuggestions,
-        handoverRecommended: data.handoverRecommended,
-        handoverDossier: data.handoverDossier,
-        variantId: variantId,
+        ...data,
+        variantId: variantId, // Ensure variantId is part of the TestResult
       });
 
-      // Update conversation history with this exchange
       const newCustomerMessage: ChatMessage = {
         role: "customer",
         content: customerMessage,
@@ -565,7 +582,7 @@ export default function PromptExperimentInterface() {
 
       const newAssistantMessage: ChatMessage = {
         role: "assistant",
-        content: data.response,
+        content: data.response, // Assuming data.response is the main text response
         timestamp: new Date(),
       };
 
@@ -574,14 +591,12 @@ export default function PromptExperimentInterface() {
         newCustomerMessage,
         newAssistantMessage,
       ]);
-
-      // Clear the customer message input for the next message
       setCustomerMessage("");
-    } catch (error) {
-      console.error("Error testing prompt:", error);
-      setError(
-        error instanceof Error ? error.message : "An unknown error occurred",
-      );
+    } catch (err) {
+      console.error("Error testing prompt:", err);
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+      setError(errorMessage);
+      toast({ title: "Test Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -607,58 +622,52 @@ export default function PromptExperimentInterface() {
       channel,
       customerInfo,
       dealershipContext,
-      conversationHistory: includeHistory ? conversationHistory : [],
+      conversationHistory: includeHistory ? conversationHistory.map(msg => ({
+        role: msg.role === "customer" ? "user" : "assistant",
+        content: msg.content
+      })) : [],
       relevantVehicles: includeVehicles ? vehicles : [],
       formatOptions,
     };
 
     try {
-      const results = [];
-
-      // Test each selected variant sequentially
-      for (const variantId of selectedVariants) {
+      const resultsPromises = selectedVariants.map(async (variantId) => {
         const variant = variants.find((v) => v.id === variantId);
-        if (!variant) continue;
+        if (!variant) return null;
 
-        const payload = {
-          ...basePayload,
-          variantId,
-        };
-
-        const result = await fetch("/api/prompt-test/test", {
+        const payload = { ...basePayload, variantId };
+        const data: TestResult = await apiRequest("/api/prompt-test/test", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
+          body: payload,
         });
-
-        if (!result.ok) {
-          throw new Error(
-            `Error with variant ${variant.name}: ${result.status}`,
-          );
-        }
-
-        const data = await result.json();
-
-        results.push({
+        return {
           variantId,
           variantName: variant.name,
           response: data.response,
           responseJson: data.responseJson,
           responseTime: data.responseTime,
-        });
+        };
+      });
+
+      const settledResults = await Promise.allSettled(resultsPromises);
+      const successfulResults = settledResults
+        .filter(r => r.status === 'fulfilled' && r.value !== null)
+        .map(r => (r as PromiseFulfilledResult<any>).value);
+      
+      const failedResults = settledResults.filter(r => r.status === 'rejected');
+      if (failedResults.length > 0) {
+        console.error("Some variants failed to test:", failedResults);
+        toast({ title: "Comparison Error", description: `${failedResults.length} variant(s) failed to test. Check console.`, variant: "warning"});
       }
 
-      setComparisonResults(results);
-
-      // Clear the customer message input for the next message
+      setComparisonResults(successfulResults);
       setCustomerMessage("");
-    } catch (error) {
-      console.error("Error comparing prompts:", error);
-      setError(
-        error instanceof Error ? error.message : "An unknown error occurred",
-      );
+
+    } catch (err) {
+      console.error("Error comparing prompts:", err);
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+      setError(errorMessage);
+      toast({ title: "Comparison Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -683,8 +692,6 @@ export default function PromptExperimentInterface() {
       });
       return;
     }
-
-    // Open a modal to collect experiment name and details
     setAlertMessage({
       title: "Create New A/B Test Experiment",
       message: "Please enter a name and details for the new experiment.",
@@ -692,29 +699,39 @@ export default function PromptExperimentInterface() {
     setIsAlertOpen(true);
   };
 
-  // Initialize a new experiment with the selected variants
   const handleCreateExperiment = (name: string, description: string) => {
-    // Allocate equal traffic to all variants
-    const trafficPerVariant = 100 / selectedVariants.length;
+    const trafficPerVariant = parseFloat((100 / selectedVariants.length).toFixed(2));
+    let accumulatedTraffic = 0;
 
-    // For simplicity, make the first selected variant the control
-    const controlVariantId = selectedVariants[0];
+    const controlVariantId = selectedVariants[0]; // First selected is control by default
 
-    const newExperiment: Partial<PromptExperiment> = {
+    const newExperimentPayload: Partial<PromptExperiment> = {
       name,
-      description,
-      dealershipId,
+      description: description || null,
+      dealershipId, // dealershipId is part of PromptExperiment schema
       isActive: true,
-      startDate: new Date().toISOString(),
-      // Include variant allocations
-      experimentVariants: selectedVariants.map((variantId) => ({
-        variantId,
-        trafficAllocation: trafficPerVariant,
-        isControl: variantId === controlVariantId,
-      })),
+      startDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format often preferred for dates
+      endDate: null, // No end date by default
+      // experimentVariants should be an array of objects linking to PromptVariant by ID
+      // The actual structure depends on how the backend expects this.
+      // Assuming backend expects an array of ExperimentVariant-like structures or variant IDs with allocations
+      experimentVariants: selectedVariants.map((variantId, index) => {
+        let allocation = trafficPerVariant;
+        if (index === selectedVariants.length - 1) { // Adjust last to sum to 100
+            allocation = parseFloat((100 - accumulatedTraffic).toFixed(2));
+        } else {
+            accumulatedTraffic += allocation;
+        }
+        return {
+          variantId, // ID of the PromptVariant
+          trafficAllocation: allocation,
+          isControl: variantId === controlVariantId,
+          // name is not part of ExperimentVariant schema, it's on PromptVariant
+        };
+      }) as unknown as ExperimentVariant[], // Cast if backend expects full ExperimentVariant structure
     };
-
-    createExperimentMutation.mutate(newExperiment);
+    createExperimentMutation.mutate(newExperimentPayload);
+    setIsAlertOpen(false); // Close dialog after attempting creation
   };
 
   return (
@@ -773,16 +790,21 @@ export default function PromptExperimentInterface() {
                         <div>
                           <Label>Prompt Variant</Label>
                           <Select
-                            value={testResponse?.variantId?.toString() || ""}
-                            onValueChange={(val) =>
-                              testPromptVariant(val ? parseInt(val) : undefined)
-                            }
+                            // Use a string for value as SelectItem values are strings
+                            value={testResponse?.variantId?.toString() ?? ""}
+                            onValueChange={(val) => {
+                                // If "Custom Prompt" is selected (empty string), variantId should be undefined
+                                const variantId = val ? parseInt(val) : undefined;
+                                // Update testResponse or a dedicated state for selected variant for test
+                                setTestResponse(prev => prev ? {...prev, variantId} : { response: "", variantId });
+                                // No need to call testPromptVariant here, it's called on button click
+                            }}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select a variant to test" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Custom Prompt</SelectItem>
+                              <SelectItem value="">Custom Prompt (uses editor content)</SelectItem>
                               {variants.map((variant) => (
                                 <SelectItem
                                   key={variant.id}
@@ -810,7 +832,7 @@ export default function PromptExperimentInterface() {
                       <div className="flex items-center gap-2">
                         <Button
                           onClick={() =>
-                            testPromptVariant(testResponse?.variantId)
+                            testPromptVariant(testResponse?.variantId) // Pass the currently selected variantId
                           }
                           disabled={isLoading || !customerMessage}
                         >
@@ -828,8 +850,10 @@ export default function PromptExperimentInterface() {
                           variant="outline"
                           onClick={() => {
                             setIsVariantEditor(!isVariantEditor);
-                            if (!isVariantEditor) {
-                              setNewVariantContent(DEFAULT_SYSTEM_PROMPT);
+                            if (!isVariantEditor) { // When opening editor
+                              setNewVariantContent(DEFAULT_SYSTEM_PROMPT); // Reset to default or selected variant's content
+                              setNewVariantName(""); // Clear name for new custom prompt
+                              setTestResponse(prev => prev ? {...prev, variantId: undefined} : {response: "", variantId: undefined}); // Deselect variant
                             }
                           }}
                         >
@@ -875,7 +899,7 @@ export default function PromptExperimentInterface() {
                           size="sm"
                           onClick={() =>
                             copyToClipboard(
-                              showJson
+                              showJson && testResponse.responseJson
                                 ? JSON.stringify(
                                     testResponse.responseJson,
                                     null,
@@ -899,7 +923,7 @@ export default function PromptExperimentInterface() {
                           </div>
                         ) : (
                           <pre className="bg-muted rounded-md p-4 text-xs overflow-auto max-h-[600px]">
-                            {JSON.stringify(testResponse.responseJson, null, 2)}
+                            {JSON.stringify(testResponse.responseJson ?? testResponse.response, null, 2)}
                           </pre>
                         )}
 
@@ -928,7 +952,7 @@ export default function PromptExperimentInterface() {
                                           className="flex justify-between text-sm"
                                         >
                                           <span>
-                                            {insight.key}: {insight.value}
+                                            {insight.insightType}: {insight.value} {/* Changed insight.key to insight.insightType */}
                                           </span>
                                           <Badge
                                             variant={
@@ -996,12 +1020,12 @@ export default function PromptExperimentInterface() {
                                           className="bg-muted rounded-md p-2 text-sm"
                                         >
                                           <div className="flex justify-between mb-1">
-                                            <Badge>{suggestion.category}</Badge>
+                                            <Badge>{suggestion.suggestionType}</Badge> {/* Changed suggestion.category to suggestion.suggestionType */}
                                             <Badge variant="outline">
-                                              Priority: {suggestion.priority}
+                                              Priority: {suggestion.priority ?? 'N/A'}
                                             </Badge>
                                           </div>
-                                          <p>{suggestion.text}</p>
+                                          <p>{suggestion.content}</p> {/* Changed suggestion.text to suggestion.content */}
                                         </div>
                                       ),
                                     )}
@@ -1028,17 +1052,17 @@ export default function PromptExperimentInterface() {
                   <CardHeader>
                     <CardTitle>Custom Prompt Editor</CardTitle>
                     <CardDescription>
-                      Edit your system prompt template
+                      Edit your system prompt template. This will be used if "Custom Prompt" is selected.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div>
-                        <Label>Prompt Name</Label>
+                        <Label>Prompt Name (for saving as new variant)</Label>
                         <Input
                           value={newVariantName}
                           onChange={(e) => setNewVariantName(e.target.value)}
-                          placeholder="Enter a name for this prompt variant"
+                          placeholder="Enter a name if saving as new variant"
                         />
                       </div>
 
@@ -1052,11 +1076,11 @@ export default function PromptExperimentInterface() {
                       </div>
 
                       <div className="flex gap-2">
-                        <Button onClick={handleSaveVariant}>
+                        <Button onClick={handleSaveVariant} disabled={!newVariantName.trim()}>
                           Save as New Variant
                         </Button>
                         <Button variant="outline" onClick={resetVariantEditor}>
-                          Cancel
+                          Cancel Editing
                         </Button>
                       </div>
                     </div>
@@ -1092,29 +1116,24 @@ export default function PromptExperimentInterface() {
                     </div>
 
                     <div>
-                      <Label>Select Variants to Compare</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
+                      <Label>Select Variants to Compare (must select at least 2)</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-2 max-h-60 overflow-y-auto border p-2 rounded-md">
                         {variants.map((variant) => (
                           <div
                             key={variant.id}
-                            className={`border rounded-md p-2 cursor-pointer ${
+                            className={`border rounded-md p-2 cursor-pointer transition-colors ${
                               selectedVariants.includes(variant.id)
-                                ? "bg-primary/10 border-primary"
-                                : ""
+                                ? "bg-primary/20 border-primary ring-2 ring-primary"
+                                : "hover:bg-muted/50"
                             }`}
                             onClick={() => {
-                              if (selectedVariants.includes(variant.id)) {
-                                setSelectedVariants(
-                                  selectedVariants.filter(
-                                    (id) => id !== variant.id,
-                                  ),
-                                );
-                              } else {
-                                setSelectedVariants([
-                                  ...selectedVariants,
-                                  variant.id,
-                                ]);
-                              }
+                              setSelectedVariants((prevSelected) =>
+                                prevSelected.includes(variant.id)
+                                  ? prevSelected.filter(
+                                      (id) => id !== variant.id,
+                                    )
+                                  : [...prevSelected, variant.id],
+                              );
                             }}
                           >
                             <div className="flex items-center justify-between">
@@ -1125,6 +1144,7 @@ export default function PromptExperimentInterface() {
                             </div>
                           </div>
                         ))}
+                         {variants.length === 0 && <p className="text-muted-foreground col-span-full text-center py-4">No variants available. Create variants in the "Prompt Variants" tab.</p>}
                       </div>
                     </div>
 
@@ -1162,7 +1182,7 @@ export default function PromptExperimentInterface() {
                         onClick={createNewExperiment}
                         disabled={selectedVariants.length < 2}
                       >
-                        Create A/B Test
+                        Create A/B Test from Selected
                       </Button>
                     </div>
 
@@ -1174,7 +1194,7 @@ export default function PromptExperimentInterface() {
               </Card>
 
               {comparisonResults.length > 0 && (
-                <div className="grid grid-cols-1 gap-6 mt-6">
+                <div className="grid grid-cols-1 gap-6 mt-6 md:grid-cols-2"> {/* Layout for comparison */}
                   {comparisonResults.map((result, index) => (
                     <Card key={index}>
                       <CardHeader>
@@ -1186,7 +1206,7 @@ export default function PromptExperimentInterface() {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="whitespace-pre-wrap bg-muted rounded-md p-4">
+                        <div className="whitespace-pre-wrap bg-muted rounded-md p-4 max-h-96 overflow-y-auto">
                           {result.response}
                         </div>
                       </CardContent>
@@ -1222,7 +1242,7 @@ export default function PromptExperimentInterface() {
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : variants.length === 0 ? (
+          ) : variants.length === 0 && !isVariantEditor ? ( // Hide if editor is open for creation
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
@@ -1237,6 +1257,7 @@ export default function PromptExperimentInterface() {
               </CardContent>
             </Card>
           ) : (
+           !isVariantEditor && variants.length > 0 && ( // Only show list if editor is not open for creation
             <div className="grid grid-cols-1 gap-4">
               {variants.map((variant) => (
                 <Card key={variant.id}>
@@ -1257,13 +1278,13 @@ export default function PromptExperimentInterface() {
                         <AccordionTrigger>View Prompt Content</AccordionTrigger>
                         <AccordionContent>
                           <div className="bg-muted rounded-md p-3 max-h-96 overflow-y-auto whitespace-pre-wrap text-sm">
-                            {variant.content}
+                            {variant.promptTemplate} {/* Use promptTemplate here */}
                           </div>
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
                   </CardContent>
-                  <CardFooter className="flex justify-between">
+                  <CardFooter className="flex justify-between flex-wrap gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1275,7 +1296,11 @@ export default function PromptExperimentInterface() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => testPromptVariant(variant.id)}
+                        onClick={() => {
+                            setTestResponse({response: "", variantId: variant.id}); // Set for single test
+                            setActiveTab("testing");
+                            setActiveSubTab("single");
+                        }}
                       >
                         Test Variant
                       </Button>
@@ -1283,20 +1308,14 @@ export default function PromptExperimentInterface() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          if (selectedVariants.includes(variant.id)) {
-                            setSelectedVariants(
-                              selectedVariants.filter(
-                                (id) => id !== variant.id,
-                              ),
-                            );
-                          } else {
-                            setSelectedVariants([
-                              ...selectedVariants,
-                              variant.id,
-                            ]);
-                          }
-                          setActiveTab("testing");
-                          setActiveSubTab("compare");
+                          setSelectedVariants((prev) =>
+                            prev.includes(variant.id)
+                              ? prev.filter((id) => id !== variant.id)
+                              : [...prev, variant.id],
+                          );
+                          // Optionally switch to compare tab if not already there
+                          // setActiveTab("testing");
+                          // setActiveSubTab("compare");
                         }}
                       >
                         {selectedVariants.includes(variant.id)
@@ -1308,9 +1327,10 @@ export default function PromptExperimentInterface() {
                 </Card>
               ))}
             </div>
+           )
           )}
 
-          {isVariantEditor && (
+          {isVariantEditor && ( // Variant editor form
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle>
@@ -1318,15 +1338,16 @@ export default function PromptExperimentInterface() {
                 </CardTitle>
                 <CardDescription>
                   {editingVariant
-                    ? "Modify this prompt variant"
+                    ? `Modify the prompt variant "${editingVariant.name}"`
                     : "Define a new prompt variant for testing"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <Label>Variant Name</Label>
+                    <Label htmlFor="variant-name-editor">Variant Name</Label>
                     <Input
+                      id="variant-name-editor"
                       value={newVariantName}
                       onChange={(e) => setNewVariantName(e.target.value)}
                       placeholder="Enter a descriptive name for this variant"
@@ -1334,17 +1355,39 @@ export default function PromptExperimentInterface() {
                   </div>
 
                   <div>
-                    <Label>Prompt Content</Label>
+                    <Label htmlFor="variant-content-editor">Prompt Content (Template)</Label>
                     <Textarea
+                      id="variant-content-editor"
                       value={newVariantContent}
                       onChange={(e) => setNewVariantContent(e.target.value)}
                       className="min-h-[400px] font-mono text-sm"
                     />
                   </div>
+                   {editingVariant && ( // Allow toggling isControl and isActive only when editing
+                    <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                        <Switch
+                            id="variant-isControl"
+                            checked={editingVariant.isControl}
+                            onCheckedChange={(checked) => setEditingVariant(v => v ? {...v, isControl: checked} : null)}
+                        />
+                        <Label htmlFor="variant-isControl">Is Control</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                        <Switch
+                            id="variant-isActive"
+                            checked={editingVariant.isActive}
+                            onCheckedChange={(checked) => setEditingVariant(v => v ? {...v, isActive: checked} : null)}
+                        />
+                        <Label htmlFor="variant-isActive">Is Active</Label>
+                        </div>
+                    </div>
+                    )}
+
 
                   <div className="flex gap-2">
-                    <Button onClick={handleSaveVariant}>
-                      {editingVariant ? "Update Variant" : "Save New Variant"}
+                    <Button onClick={handleSaveVariant} disabled={saveVariantMutation.isPending || !newVariantName.trim()}>
+                      {saveVariantMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (editingVariant ? "Update Variant" : "Save New Variant")}
                     </Button>
                     <Button variant="outline" onClick={resetVariantEditor}>
                       Cancel
@@ -1363,9 +1406,10 @@ export default function PromptExperimentInterface() {
             <Button
               onClick={createNewExperiment}
               disabled={selectedVariants.length < 2}
+              title={selectedVariants.length < 2 ? "Select at least 2 variants from 'Prompt Variants' tab to create an experiment" : ""}
             >
               <Plus className="h-4 w-4 mr-2" />
-              New Experiment
+              New Experiment from Selected
             </Button>
           </div>
 
@@ -1382,19 +1426,19 @@ export default function PromptExperimentInterface() {
                 </h3>
                 <p className="text-muted-foreground mb-4 text-center max-w-md">
                   Create your first experiment to start comparing prompt
-                  variants with real customers
+                  variants. Select variants from the "Prompt Variants" tab first.
                 </p>
                 <Button
                   onClick={() => {
                     setActiveTab("variants");
                   }}
                 >
-                  Select Variants to Compare
+                  Go to Prompt Variants
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {experiments.map((experiment) => (
                 <Card key={experiment.id}>
                   <CardHeader className="pb-2">
@@ -1402,43 +1446,46 @@ export default function PromptExperimentInterface() {
                       <CardTitle>{experiment.name}</CardTitle>
                       <div className="flex gap-1">
                         {experiment.isActive && (
-                          <Badge variant="outline">Active</Badge>
+                          <Badge variant="default" className="bg-green-500 text-white">Active</Badge>
                         )}
                         {!experiment.isActive && (
-                          <Badge variant="outline" className="bg-muted">
-                            Inactive
-                          </Badge>
+                          <Badge variant="outline">Inactive</Badge>
                         )}
                       </div>
                     </div>
-                    <CardDescription>{experiment.description}</CardDescription>
+                    <CardDescription>{experiment.description || "No description"}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Accordion type="single" collapsible>
-                      <AccordionItem value="variants">
+                      <AccordionItem value={`exp-variants-${experiment.id}`}>
                         <AccordionTrigger>
                           Variants ({experiment.variants?.length || 0})
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-2">
-                            {experiment.variants?.map((variant) => (
-                              <div
-                                key={variant.variantId}
-                                className="flex justify-between items-center bg-muted p-2 rounded-md"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">
-                                    {variant.name}
-                                  </span>
-                                  {variant.isControl && (
-                                    <Badge variant="secondary">Control</Badge>
-                                  )}
+                            {experiment.variants?.map((expVariantLink) => {
+                              // Find the full variant details from the main variants list
+                              const fullVariant = variants.find(v => v.id === expVariantLink.variantId);
+                              return (
+                                <div
+                                  key={expVariantLink.variantId}
+                                  className="flex justify-between items-center bg-muted p-2 rounded-md"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">
+                                      {fullVariant?.name || `Variant ID: ${expVariantLink.variantId}`}
+                                    </span>
+                                    {expVariantLink.isControl && (
+                                      <Badge variant="secondary">Control</Badge>
+                                    )}
+                                  </div>
+                                  <Badge variant="outline">
+                                    {expVariantLink.trafficAllocation}% Traffic
+                                  </Badge>
                                 </div>
-                                <Badge variant="outline">
-                                  {variant.trafficAllocation}% Traffic
-                                </Badge>
-                              </div>
-                            ))}
+                              );
+                            })}
+                             {(!experiment.variants || experiment.variants.length === 0) && <p className="text-sm text-muted-foreground">No variants linked to this experiment.</p>}
                           </div>
                         </AccordionContent>
                       </AccordionItem>
@@ -1450,24 +1497,24 @@ export default function PromptExperimentInterface() {
                           Start:{" "}
                           {experiment.startDate
                             ? new Date(
-                                experiment.startDate,
+                                experiment.startDate + "T00:00:00" // Ensure parsing as local date
                               ).toLocaleDateString()
                             : "Not started"}
                         </span>
                         <span>
                           End:{" "}
                           {experiment.endDate
-                            ? new Date(experiment.endDate).toLocaleDateString()
+                            ? new Date(experiment.endDate + "T00:00:00").toLocaleDateString()
                             : "Ongoing"}
                         </span>
                       </div>
                     </div>
                   </CardContent>
                   <CardFooter className="flex justify-between">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" disabled> {/* Placeholder */}
                       View Results
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" disabled> {/* Placeholder */}
                       {experiment.isActive
                         ? "Stop Experiment"
                         : "Resume Experiment"}
@@ -1491,30 +1538,33 @@ export default function PromptExperimentInterface() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2">
+                  <div className="grid grid-cols-1 gap-4"> {/* Simplified to single column for better readability */}
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="include-history" className="flex-grow">
+                        Include Conversation History
+                      </Label>
                       <Switch
                         id="include-history"
                         checked={includeHistory}
                         onCheckedChange={setIncludeHistory}
                       />
-                      <Label htmlFor="include-history">
-                        Include Conversation History
-                      </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="include-vehicles" className="flex-grow">
+                        Include Vehicle Inventory
+                      </Label>
                       <Switch
                         id="include-vehicles"
                         checked={includeVehicles}
                         onCheckedChange={setIncludeVehicles}
                       />
-                      <Label htmlFor="include-vehicles">
-                        Include Vehicle Inventory
-                      </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="json-response" className="flex-grow">
+                        Enable JSON Response in Test Output
+                      </Label>
                       <Switch
                         id="json-response"
                         checked={formatOptions.enableJsonResponse}
@@ -1525,13 +1575,13 @@ export default function PromptExperimentInterface() {
                           })
                         }
                       />
-                      <Label htmlFor="json-response">
-                        Enable JSON Response
-                      </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Switch
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="vehicle-recommendations" className="flex-grow">
+                        Include Vehicle Recommendations in AI Response
+                      </Label>
+                       <Switch
                         id="vehicle-recommendations"
                         checked={formatOptions.includeVehicleRecommendations}
                         onCheckedChange={(checked) =>
@@ -1541,12 +1591,12 @@ export default function PromptExperimentInterface() {
                           })
                         }
                       />
-                      <Label htmlFor="vehicle-recommendations">
-                        Vehicle Recommendations
-                      </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-between">
+                       <Label htmlFor="consider-handover" className="flex-grow">
+                        Enable Handover Detection Logic
+                      </Label>
                       <Switch
                         id="consider-handover"
                         checked={formatOptions.considerHandover}
@@ -1557,12 +1607,12 @@ export default function PromptExperimentInterface() {
                           })
                         }
                       />
-                      <Label htmlFor="consider-handover">
-                        Consider Handover
-                      </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="generate-dossier" className="flex-grow">
+                        Generate Handover Dossier if Handover Detected
+                      </Label>
                       <Switch
                         id="generate-dossier"
                         checked={formatOptions.generateHandoverDossier}
@@ -1573,12 +1623,12 @@ export default function PromptExperimentInterface() {
                           })
                         }
                       />
-                      <Label htmlFor="generate-dossier">
-                        Generate Handover Dossier
-                      </Label>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="detect-insights" className="flex-grow">
+                        Detect Customer Insights from Message
+                      </Label>
                       <Switch
                         id="detect-insights"
                         checked={formatOptions.detectCustomerInsights}
@@ -1589,9 +1639,6 @@ export default function PromptExperimentInterface() {
                           })
                         }
                       />
-                      <Label htmlFor="detect-insights">
-                        Detect Customer Insights
-                      </Label>
                     </div>
                   </div>
                 </div>
@@ -1608,8 +1655,9 @@ export default function PromptExperimentInterface() {
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <Label>Customer Name</Label>
+                    <Label htmlFor="cfg-customerName">Customer Name</Label>
                     <Input
+                      id="cfg-customerName"
                       value={customerInfo.name}
                       onChange={(e) =>
                         setCustomerInfo({
@@ -1620,11 +1668,26 @@ export default function PromptExperimentInterface() {
                       placeholder="Enter customer name"
                     />
                   </div>
-
-                  <div>
-                    <Label>Phone Number</Label>
+                   <div>
+                    <Label htmlFor="cfg-conversationId">Conversation ID (Optional)</Label>
                     <Input
-                      value={customerInfo.phone}
+                      id="cfg-conversationId"
+                      type="number"
+                      value={customerInfo.conversationId ?? ""}
+                      onChange={(e) =>
+                        setCustomerInfo({
+                          ...customerInfo,
+                          conversationId: e.target.value ? parseInt(e.target.value) : undefined,
+                        })
+                      }
+                      placeholder="Enter conversation ID"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cfg-customerPhone">Phone Number (Optional)</Label>
+                    <Input
+                      id="cfg-customerPhone"
+                      value={customerInfo.phone ?? ""}
                       onChange={(e) =>
                         setCustomerInfo({
                           ...customerInfo,
@@ -1636,9 +1699,11 @@ export default function PromptExperimentInterface() {
                   </div>
 
                   <div>
-                    <Label>Email</Label>
+                    <Label htmlFor="cfg-customerEmail">Email (Optional)</Label>
                     <Input
-                      value={customerInfo.email}
+                      id="cfg-customerEmail"
+                      type="email"
+                      value={customerInfo.email ?? ""}
                       onChange={(e) =>
                         setCustomerInfo({
                           ...customerInfo,
@@ -1662,8 +1727,9 @@ export default function PromptExperimentInterface() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Dealership Name</Label>
+                    <Label htmlFor="cfg-dealershipName">Dealership Name</Label>
                     <Input
+                      id="cfg-dealershipName"
                       value={dealershipContext.dealershipName}
                       onChange={(e) =>
                         setDealershipContext({
@@ -1676,8 +1742,9 @@ export default function PromptExperimentInterface() {
                   </div>
 
                   <div>
-                    <Label>Brand Types</Label>
+                    <Label htmlFor="cfg-brandTypes">Brand Types</Label>
                     <Input
+                      id="cfg-brandTypes"
                       value={dealershipContext.brandTypes}
                       onChange={(e) =>
                         setDealershipContext({
@@ -1685,13 +1752,14 @@ export default function PromptExperimentInterface() {
                           brandTypes: e.target.value,
                         })
                       }
-                      placeholder="Enter brand types"
+                      placeholder="e.g., Honda, Toyota, Ford"
                     />
                   </div>
 
                   <div>
-                    <Label>Location</Label>
+                    <Label htmlFor="cfg-dealershipLocation">Location</Label>
                     <Input
+                      id="cfg-dealershipLocation"
                       value={dealershipContext.dealershipLocation}
                       onChange={(e) =>
                         setDealershipContext({
@@ -1704,8 +1772,9 @@ export default function PromptExperimentInterface() {
                   </div>
 
                   <div>
-                    <Label>Business Hours</Label>
+                    <Label htmlFor="cfg-businessHours">Business Hours</Label>
                     <Input
+                      id="cfg-businessHours"
                       value={dealershipContext.businessHours}
                       onChange={(e) =>
                         setDealershipContext({
@@ -1713,7 +1782,7 @@ export default function PromptExperimentInterface() {
                           businessHours: e.target.value,
                         })
                       }
-                      placeholder="Enter business hours"
+                      placeholder="e.g., Mon-Fri 9am-8pm"
                     />
                   </div>
                 </div>
@@ -1735,7 +1804,7 @@ export default function PromptExperimentInterface() {
                     </Button>
                   </div>
                   <CardDescription>
-                    Add historical messages for context
+                    Add historical messages for context. Most recent messages have more impact.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1753,10 +1822,10 @@ export default function PromptExperimentInterface() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
                       {conversationHistory.map((message, index) => (
-                        <div key={index} className="flex gap-4 items-start">
-                          <div className="w-28">
+                        <div key={index} className="flex gap-4 items-start p-3 border rounded-md">
+                          <div className="w-32 flex-shrink-0">
                             <Select
                               value={message.role}
                               onValueChange={(value) =>
@@ -1790,12 +1859,14 @@ export default function PromptExperimentInterface() {
                               placeholder="Message content..."
                               className="min-h-[80px]"
                             />
+                             <p className="text-xs text-muted-foreground mt-1">Timestamp: {message.timestamp ? message.timestamp.toLocaleString() : 'Not set'}</p>
                           </div>
 
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => removeHistoryItem(index)}
+                            className="flex-shrink-0"
                           >
                             <Trash className="h-4 w-4" />
                           </Button>
@@ -1818,7 +1889,7 @@ export default function PromptExperimentInterface() {
                     </Button>
                   </div>
                   <CardDescription>
-                    Configure vehicle inventory for testing
+                    Configure vehicle inventory for testing. Provide a few relevant examples.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1836,12 +1907,12 @@ export default function PromptExperimentInterface() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-6 max-h-[800px] overflow-y-auto"> {/* Added max-height and overflow */}
                       {vehicles.map((vehicle, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
+                        <div key={vehicle.id || index} className="p-4 border rounded-lg"> {/* Use vehicle.id if available */}
                           <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-medium">
-                              {vehicle.year} {vehicle.make} {vehicle.model}{" "}
+                            <h3 className="font-medium text-lg">
+                              {vehicle.year || 'N/A'} {vehicle.make || 'N/A'} {vehicle.model || 'N/A'}{" "}
                               {vehicle.trim}
                             </h3>
                             <Button
@@ -1853,201 +1924,58 @@ export default function PromptExperimentInterface() {
                             </Button>
                           </div>
 
-                          <Accordion type="single" collapsible>
-                            <AccordionItem value="details">
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value={`vehicle-details-${index}`}>
                               <AccordionTrigger>
                                 Vehicle Details
                               </AccordionTrigger>
                               <AccordionContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div>
-                                    <Label>Make</Label>
-                                    <Input
-                                      value={vehicle.make}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "make",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Enter make"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>Model</Label>
-                                    <Input
-                                      value={vehicle.model}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "model",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Enter model"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>Year</Label>
-                                    <Input
-                                      type="number"
-                                      value={vehicle.year}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "year",
-                                          parseInt(e.target.value),
-                                        )
-                                      }
-                                      placeholder="Enter year"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>Trim</Label>
-                                    <Input
-                                      value={vehicle.trim || ""}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "trim",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Enter trim"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>VIN</Label>
-                                    <Input
-                                      value={vehicle.vin}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "vin",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Enter VIN"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>Condition</Label>
-                                    <Select
-                                      value={vehicle.condition || ""}
-                                      onValueChange={(value) =>
-                                        updateVehicle(index, "condition", value)
-                                      }
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select condition" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="New">New</SelectItem>
-                                        <SelectItem value="Used">
-                                          Used
-                                        </SelectItem>
-                                        <SelectItem value="Certified Pre-Owned">
-                                          Certified Pre-Owned
-                                        </SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-
-                                  <div>
-                                    <Label>Price</Label>
-                                    <Input
-                                      type="number"
-                                      value={vehicle.price || ""}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "price",
-                                          parseInt(e.target.value),
-                                        )
-                                      }
-                                      placeholder="Enter price"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>Mileage</Label>
-                                    <Input
-                                      type="number"
-                                      value={vehicle.mileage || ""}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "mileage",
-                                          parseInt(e.target.value),
-                                        )
-                                      }
-                                      placeholder="Enter mileage"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>Exterior Color</Label>
-                                    <Input
-                                      value={vehicle.exteriorColor || ""}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "exteriorColor",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Enter exterior color"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label>Interior Color</Label>
-                                    <Input
-                                      value={vehicle.interiorColor || ""}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "interiorColor",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Enter interior color"
-                                    />
-                                  </div>
-
-                                  <div className="md:col-span-2">
-                                    <Label>Description</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  {(Object.keys(vehicle) as Array<keyof Vehicle>)
+                                    .filter(key => !['id', 'dealershipId', 'created_at', 'updated_at', 'lastSeen', 'images', 'features', 'categoryTags'].includes(key)) // Exclude complex or managed fields from direct edit here
+                                    .map((key) => (
+                                    <div key={key}>
+                                      <Label htmlFor={`vehicle-${index}-${key}`} className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</Label>
+                                      <Input
+                                        id={`vehicle-${index}-${key}`}
+                                        type={typeof vehicle[key] === 'number' ? 'number' : 'text'}
+                                        value={vehicle[key] === null || vehicle[key] === undefined ? '' : String(vehicle[key])}
+                                        onChange={(e) =>
+                                          updateVehicle(
+                                            index,
+                                            key,
+                                            e.target.value,
+                                          )
+                                        }
+                                        placeholder={`Enter ${key}`}
+                                      />
+                                    </div>
+                                  ))}
+                                   <div>
+                                    <Label htmlFor={`vehicle-${index}-features`}>Features (comma-separated)</Label>
                                     <Textarea
-                                      value={vehicle.description || ""}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "description",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Enter vehicle description"
+                                      id={`vehicle-${index}-features`}
+                                      value={Array.isArray(vehicle.features) ? vehicle.features.join(", ") : ""}
+                                      onChange={(e) => updateVehicle(index, "features", e.target.value)}
+                                      placeholder="e.g., Sunroof, Navigation"
                                     />
                                   </div>
-
-                                  <div className="md:col-span-2">
-                                    <Label>Features (comma-separated)</Label>
+                                  <div>
+                                    <Label htmlFor={`vehicle-${index}-categoryTags`}>Category Tags (comma-separated)</Label>
                                     <Textarea
-                                      value={vehicle.features?.join(", ") || ""}
-                                      onChange={(e) =>
-                                        updateVehicle(
-                                          index,
-                                          "features",
-                                          e.target.value,
-                                        )
-                                      }
-                                      placeholder="Enter features separated by commas"
+                                      id={`vehicle-${index}-categoryTags`}
+                                      value={Array.isArray(vehicle.categoryTags) ? vehicle.categoryTags.join(", ") : ""}
+                                      onChange={(e) => updateVehicle(index, "categoryTags", e.target.value)}
+                                      placeholder="e.g., SUV, Family, Off-road"
+                                    />
+                                  </div>
+                                   <div>
+                                    <Label htmlFor={`vehicle-${index}-images`}>Image URLs (comma-separated)</Label>
+                                    <Textarea
+                                      id={`vehicle-${index}-images`}
+                                      value={Array.isArray(vehicle.images) ? vehicle.images.map(img => img.url).join(", ") : ""}
+                                      onChange={(e) => updateVehicle(index, "images", e.target.value)}
+                                      placeholder="e.g., https://example.com/img1.jpg, ..."
                                     />
                                   </div>
                                 </div>
@@ -2076,16 +2004,16 @@ export default function PromptExperimentInterface() {
           </AlertDialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="experiment-name">Experiment Name</Label>
-              <Input id="experiment-name" placeholder="Enter experiment name" />
+              <Label htmlFor="experiment-name-dialog">Experiment Name</Label>
+              <Input id="experiment-name-dialog" placeholder="Enter experiment name (e.g., Q3 Welcome Message Test)" />
             </div>
             <div>
-              <Label htmlFor="experiment-description">
+              <Label htmlFor="experiment-description-dialog">
                 Description (optional)
               </Label>
               <Textarea
-                id="experiment-description"
-                placeholder="Enter experiment description"
+                id="experiment-description-dialog"
+                placeholder="Briefly describe the goal of this experiment"
               />
             </div>
           </div>
@@ -2094,15 +2022,20 @@ export default function PromptExperimentInterface() {
             <AlertDialogAction
               onClick={() => {
                 const nameInput = document.getElementById(
-                  "experiment-name",
-                ) as HTMLInputElement;
+                  "experiment-name-dialog",
+                ) as HTMLInputElement | null;
                 const descInput = document.getElementById(
-                  "experiment-description",
-                ) as HTMLTextAreaElement;
-                handleCreateExperiment(
-                  nameInput.value || "Unnamed Experiment",
-                  descInput.value || "",
-                );
+                  "experiment-description-dialog",
+                ) as HTMLTextAreaElement | null;
+                
+                if (nameInput?.value.trim()) {
+                    handleCreateExperiment(
+                    nameInput.value.trim(),
+                    descInput?.value.trim() || "",
+                    );
+                } else {
+                    toast({title: "Validation Error", description: "Experiment name is required.", variant: "destructive"});
+                }
               }}
             >
               Create Experiment

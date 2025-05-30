@@ -152,12 +152,11 @@ export default function Personas() {
     data: personas = [],
     isLoading: personasLoading,
     isError,
-  } = useQuery({
+  } = useQuery<PersonaFormValues[]>({
     queryKey: ["/api/personas"],
     queryFn: async () => {
-      const response = await fetch("/api/personas");
-      if (!response.ok) throw new Error("Failed to fetch personas");
-      return response.json();
+      // Assuming apiRequest can be used for GET requests without a body
+      return apiRequest<PersonaFormValues[]>("/api/personas");
     },
     // Only fetch if user is authenticated
     enabled: isAuthenticated,
@@ -186,7 +185,7 @@ export default function Personas() {
     mutationFn: (data: PersonaFormValues) =>
       apiRequest("/api/personas", {
         method: "POST",
-        data: data,
+        body: data,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/personas"] });
@@ -197,7 +196,7 @@ export default function Personas() {
       setIsDialogOpen(false);
       form.reset();
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: "Failed to create persona: " + error.message,
@@ -212,7 +211,7 @@ export default function Personas() {
       if (!data.id) throw new Error("Cannot update without ID");
       return apiRequest(`/api/personas/${data.id}`, {
         method: "PATCH",
-        data: data,
+        body: data,
       });
     },
     onSuccess: () => {
@@ -224,7 +223,7 @@ export default function Personas() {
       setIsDialogOpen(false);
       form.reset();
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: "Failed to update persona: " + error.message,
@@ -246,7 +245,7 @@ export default function Personas() {
         description: "Persona deleted successfully",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: "Failed to delete persona: " + error.message,

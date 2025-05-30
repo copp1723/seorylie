@@ -13,8 +13,10 @@ import { monitoring } from './services/monitoring';
 import escalationRoutes from './routes/escalation-routes';
 import leadManagementRoutes from './routes/lead-management-routes';
 import userManagementRoutes from './routes/user-management-routes';
+import apiV1Routes from './routes/api-v1';
 import customerInsightsRoutes from './routes/customer-insights-routes';
 import { initializeFollowUpScheduler } from './services/follow-up-scheduler';
+import { validateProductionSafety } from './utils/production-safety-checks';
 
 // Enable Redis fallback when Redis connection details aren't provided
 if (!process.env.REDIS_HOST) {
@@ -112,7 +114,9 @@ app.use('/api', leadManagementRoutes);
 app.use('/api', userManagementRoutes);
 app.use('/api', customerInsightsRoutes);
 
-// Track all requests
+
+// Add external API v1 routes
+app.use('/api/v1', apiV1Routes);// Track all requests
 app.use((req, res, next) => {
   const start = performance.now();
   res.on('finish', () => {
@@ -123,6 +127,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Run production safety checks before starting any services
+  try {
+    logger.info('Running production safety checks...');
+    await validateProductionSafety();
+    logger.info('Production safety checks passed successfully');
+  } catch (error) {
+    logger.error('Production safety checks failed - application startup aborted', error);
+    process.exit(1);
+  }
+  
   // Initialize queue consumers with in-memory fallback
   try {
     const { initializeQueueConsumers } = await import('./services/queue-consumers');
@@ -228,15 +242,3 @@ app.use((req, res, next) => {
   // Setup signal handlers for graceful shutdown
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);
-
-  // Add cache statistics to health endpoint
-  app.get('/api/health/cache', async (req, res) => {
-    const { getCacheStats } = await import('./utils/cache');
-    res.json(getCacheStats());
-  });
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  server.listen(port, host, () => {
-    log(`serving on ${host}:${port}`);
-  });
-})();

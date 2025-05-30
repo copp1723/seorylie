@@ -43,6 +43,12 @@ interface Dealership {
   name: string;
 }
 
+interface InvitationsApiResponse {
+  invitations: Invitation[];
+  dealerships: Dealership[];
+  // Add any other properties expected from the API response
+}
+
 export default function InvitationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
@@ -50,10 +56,11 @@ export default function InvitationsPage() {
   const [, setLocation] = useLocation();
 
   // Fetch invitations
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["/api/magic-link/invitations"],
-    staleTime: 1000 * 60 * 10, // 10 minutes
-  });
+  const { data, isLoading, isError, error, refetch } =
+    useQuery<InvitationsApiResponse>({
+      queryKey: ["/api/magic-link/invitations"],
+      staleTime: 1000 * 60 * 10, // 10 minutes
+    });
 
   // Mutation for resending an invitation
   const resendMutation = useMutation({
@@ -109,7 +116,7 @@ export default function InvitationsPage() {
   };
 
   // Filter invitations based on search query
-  const filteredInvitations = data?.invitations?.filter(
+  const filteredInvitations = (data?.invitations ?? []).filter(
     (invitation: Invitation) => {
       if (!searchQuery) return true;
 
@@ -130,7 +137,7 @@ export default function InvitationsPage() {
   const getDealershipName = (dealershipId?: number) => {
     if (!dealershipId) return "N/A";
 
-    const dealership = data?.dealerships?.find(
+    const dealership = (data?.dealerships ?? []).find(
       (d: Dealership) => d.id === dealershipId,
     );
 

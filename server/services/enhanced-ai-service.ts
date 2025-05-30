@@ -1,339 +1,317 @@
-/**
- * Enhanced AI Service with Conversation Intelligence
- * 
- * Generates natural, contextual, and intelligent responses using
- * conversation memory, customer journey tracking, and dynamic prompts.
- */
-
-import { conversationIntelligence, ConversationContext } from './conversation-intelligence';
-import { generateAIResponse } from './openai';
+import { OpenAI } from 'openai';
 import logger from '../utils/logger';
+import { cacheService } from './unified-cache-service';
+import { prometheusMetrics } from './prometheus-metrics';
 
-export interface EnhancedMessage {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-  metadata?: {
-    intent?: string;
-    sentiment?: string;
-    entities?: Record<string, any>;
-  };
+export interface AIServiceOptions {
+  apiKey?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  cacheEnabled?: boolean;
+  cacheTtl?: number; // in seconds
 }
 
+export interface AIResponse {
+  text: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  latencyMs: number;
+}
+
+/**
+ * Enhanced AI Service with caching, error handling, and metrics
+ */
 export class EnhancedAIService {
+  private openai: OpenAI;
+  private defaultModel: string;
+  private defaultTemperature: number;
+  private defaultMaxTokens: number;
+  private cacheEnabled: boolean;
+  private cacheTtl: number;
+  
+  constructor(options: AIServiceOptions = {}) {
+    const apiKey = options.apiKey || process.env.OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('OpenAI API key is required');
+    }
+    
+    this.openai = new OpenAI({ apiKey });
+    this.defaultModel = options.model || 'gpt-3.5-turbo';
+    this.defaultTemperature = options.temperature !== undefined ? options.temperature : 0.7;
+    this.defaultMaxTokens = options.maxTokens || 1000;
+    this.cacheEnabled = options.cacheEnabled !== undefined ? options.cacheEnabled : true;
+    this.cacheTtl = options.cacheTtl || 3600; // 1 hour default
+    
+    logger.info('Enhanced AI Service initialized', {
+      model: this.defaultModel,
+      cacheEnabled: this.cacheEnabled
+    });
+  }
   
   /**
-   * Generate intelligent, contextual response
+   * Get completion for a prompt
    */
-  async generateResponse(
-    conversationId: string,
-    userMessage: string,
-    dealershipId: number,
-    recentMessages: EnhancedMessage[] = []
-  ): Promise<string> {
+  async getCompletion(
+    prompt: string,
+    options: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+      dealershipId?: string | number;
+      sourceProvider?: string;
+      promptType?: string;
+    } = {}
+  ): Promise<AIResponse> {
+    const startTime = Date.now();
+    const model = options.model || this.defaultModel;
+    const temperature = options.temperature !== undefined ? options.temperature : this.defaultTemperature;
+    const maxTokens = options.maxTokens || this.defaultMaxTokens;
+    const dealershipId = options.dealershipId || '0';
+    const sourceProvider = options.sourceProvider || 'unknown';
+    const promptType = options.promptType || 'standard';
+    
+    // Generate cache key
+    const cacheKey = this.generateCacheKey(prompt, model, temperature, maxTokens);
+    
+    // Try to get from cache
+    if (this.cacheEnabled) {
+      const cachedResponse = await cacheService.get(cacheKey);
+      if (cachedResponse) {
+        logger.debug('AI response retrieved from cache', { cacheKey });
+        
+        // Record cache hit latency in metrics
+        const latencyMs = Date.now() - startTime;
+        prometheusMetrics.recordAiResponseLatency(latencyMs, {
+          dealership_id: dealershipId,
+          source_provider: sourceProvider,
+          model: model,
+          prompt_type: `${promptType}_cached`
+        });
+        
+        return {
+          ...cachedResponse,
+          latencyMs
+        };
+      }
+    }
+    
     try {
-      // Analyze user message and update conversation context
-      const context = await conversationIntelligence.analyzeMessage(
-        conversationId, 
-        userMessage, 
-        true
-      );
-
-      // Generate context-aware system prompt
-      const systemPrompt = await this.generateContextualSystemPrompt(context, dealershipId);
-      
-      // Prepare conversation history with intelligent context
-      const conversationHistory = await this.prepareIntelligentHistory(context, recentMessages, userMessage);
-      
-      // Generate AI response with enhanced context
-      const response = await generateAIResponse(
-        userMessage,
-        systemPrompt,
-        dealershipId,
-        conversationHistory
-      );
-
-      // Analyze AI response to update context
-      await conversationIntelligence.analyzeMessage(conversationId, response, false);
-
-      logger.info('Generated enhanced AI response', {
-        conversationId,
-        stage: context.conversationStage,
-        intent: context.currentIntent?.primary,
-        sentiment: context.customerSentiment
+      // Call OpenAI API
+      const response = await this.openai.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature,
+        max_tokens: maxTokens
       });
-
-      return response;
-
+      
+      const latencyMs = Date.now() - startTime;
+      
+      // Extract response data
+      const result: AIResponse = {
+        text: response.choices[0]?.message?.content || '',
+        model: response.model,
+        promptTokens: response.usage?.prompt_tokens || 0,
+        completionTokens: response.usage?.completion_tokens || 0,
+        totalTokens: response.usage?.total_tokens || 0,
+        latencyMs
+      };
+      
+      // Cache the result
+      if (this.cacheEnabled) {
+        await cacheService.set(cacheKey, result, this.cacheTtl);
+      }
+      
+      // Record metrics for AI response latency
+      prometheusMetrics.recordAiResponseLatency(latencyMs, {
+        dealership_id: dealershipId,
+        source_provider: sourceProvider,
+        model: model,
+        prompt_type: promptType
+      });
+      
+      logger.debug('AI response generated', {
+        model,
+        tokens: result.totalTokens,
+        latencyMs
+      });
+      
+      return result;
+      
     } catch (error) {
-      logger.error('Enhanced AI service error:', error);
-      return this.getFallbackResponse();
-    }
-  }
-
-  /**
-   * Generate contextual system prompt based on conversation state
-   */
-  private async generateContextualSystemPrompt(
-    context: ConversationContext, 
-    dealershipId: number
-  ): Promise<string> {
-    
-    const contextSummary = await conversationIntelligence.generateContextSummary(context.conversationId);
-    
-    let prompt = `You are Rylie, an intelligent and helpful automotive assistant. You maintain context throughout conversations and provide personalized, natural responses.
-
-CURRENT CONVERSATION CONTEXT:
-${contextSummary}
-
-CONVERSATION GUIDELINES:
-
-1. MEMORY & CONTEXT:
-   - Remember everything discussed in this conversation
-   - Reference previous topics and customer preferences naturally
-   - Build upon what you've already learned about the customer
-   - Acknowledge their specific interests and needs
-
-2. COMMUNICATION STYLE:
-   - Be warm, genuine, and conversational
-   - Adapt your tone to match the customer's communication style
-   - Use their name when you know it
-   - Show you're listening by referencing what they've told you
-
-3. CONVERSATION STAGE AWARENESS:
-   Current Stage: ${context.conversationStage}
-   `;
-
-    // Stage-specific guidance
-    switch (context.conversationStage) {
-      case 'greeting':
-        prompt += `
-   - Welcome them warmly and start building rapport
-   - Ask open-ended questions to understand their needs
-   - Don't rush into product recommendations`;
-        break;
-        
-      case 'discovery':
-        prompt += `
-   - Ask thoughtful questions to understand their specific needs
-   - Listen for clues about their lifestyle, family, and preferences
-   - Help them clarify what they're really looking for`;
-        break;
-        
-      case 'exploration':
-        prompt += `
-   - Provide detailed information about vehicles they've shown interest in
-   - Compare options based on their stated preferences
-   - Share relevant features and benefits that match their needs`;
-        break;
-        
-      case 'evaluation':
-        prompt += `
-   - Help them weigh pros and cons of their options
-   - Address any concerns or questions they have
-   - Provide pricing and financing information when appropriate`;
-        break;
-        
-      case 'negotiation':
-        prompt += `
-   - Focus on value and how the vehicle meets their needs
-   - Be helpful with financing and pricing discussions
-   - Prepare for potential handoff to human sales team`;
-        break;
-    }
-
-    // Customer-specific adaptations
-    if (context.customerName) {
-      prompt += `\n   - Address them as ${context.customerName} naturally in conversation`;
-    }
-
-    if (context.previousInterests.length > 0) {
-      prompt += `\n   - Remember they've shown interest in: ${context.previousInterests.map(i => `${i.make} ${i.model || ''}`).join(', ')}`;
-    }
-
-    if (context.currentNeed) {
-      prompt += `\n   - They need a vehicle for: ${context.currentNeed.primary}`;
-      prompt += `\n   - Timeline: ${context.currentNeed.timeline}`;
-      if (context.currentNeed.financing !== 'undecided') {
-        prompt += `\n   - Financing preference: ${context.currentNeed.financing}`;
-      }
-    }
-
-    // Intent-specific guidance
-    if (context.currentIntent) {
-      switch (context.currentIntent.primary) {
-        case 'pricing':
-          prompt += `\n\n4. PRICING FOCUS:
-   - They're interested in pricing information
-   - Provide value-focused explanations
-   - Mention financing options and total cost of ownership
-   - Be transparent but emphasize value`;
-          break;
-          
-        case 'scheduling':
-          prompt += `\n\n4. SCHEDULING FOCUS:
-   - They want to schedule a test drive or appointment
-   - Gather their availability and preferences
-   - Confirm details and next steps
-   - Provide clear instructions`;
-          break;
-          
-        case 'financing':
-          prompt += `\n\n4. FINANCING FOCUS:
-   - They're interested in financing options
-   - Explain different financing vs leasing benefits
-   - Discuss payment options and terms
-   - Help them understand what works best for their situation`;
-          break;
-      }
-    }
-
-    // Sentiment-based adaptations
-    switch (context.customerSentiment) {
-      case 'positive':
-        prompt += `\n\n5. CUSTOMER IS POSITIVE: Match their enthusiasm and energy while staying helpful.`;
-        break;
-      case 'negative':
-        prompt += `\n\n5. CUSTOMER SEEMS FRUSTRATED: Be extra patient, empathetic, and solution-focused.`;
-        break;
-    }
-
-    // Urgency adaptations
-    if (context.urgencyLevel === 'high') {
-      prompt += `\n\n6. HIGH URGENCY: They need help quickly. Be efficient while still being thorough.`;
-    }
-
-    prompt += `\n\nIMPORTANT: 
-- Always respond in a natural, conversational way
-- Reference previous parts of the conversation
-- Show you understand their specific situation
-- Ask relevant follow-up questions
-- Be genuinely helpful, not just informative
-- If they ask about something specific, provide detailed and useful information
-
-Remember: You're having an ongoing conversation with a real person who has shared information with you. Use that context to be truly helpful and personalized.`;
-
-    return prompt;
-  }
-
-  /**
-   * Prepare intelligent conversation history with context compression
-   */
-  private async prepareIntelligentHistory(
-    context: ConversationContext,
-    recentMessages: EnhancedMessage[],
-    currentMessage: string
-  ): Promise<{ role: string; content: string }[]> {
-    
-    const history: { role: string; content: string }[] = [];
-    
-    // Add context summary as system message if conversation has history
-    if (context.totalMessages > 5) {
-      const contextSummary = await conversationIntelligence.generateContextSummary(context.conversationId);
-      history.push({
-        role: 'system',
-        content: `CONVERSATION CONTEXT SUMMARY:\n${contextSummary}`
-      });
-    }
-    
-    // Add recent messages (more intelligent selection)
-    const relevantMessages = this.selectRelevantMessages(recentMessages, context, currentMessage);
-    
-    relevantMessages.forEach(msg => {
-      history.push({
-        role: msg.role === 'user' ? 'user' : 'assistant',
-        content: msg.content
-      });
-    });
-    
-    return history;
-  }
-
-  /**
-   * Intelligently select most relevant recent messages
-   */
-  private selectRelevantMessages(
-    messages: EnhancedMessage[],
-    context: ConversationContext,
-    currentMessage: string
-  ): EnhancedMessage[] {
-    
-    // Always include the last few messages for immediate context
-    const recentCount = Math.min(8, messages.length);
-    let selectedMessages = messages.slice(-recentCount);
-    
-    // If conversation is longer, also include messages with high relevance
-    if (messages.length > recentCount) {
-      const relevantMessages = messages.slice(0, -recentCount).filter(msg => {
-        const content = msg.content.toLowerCase();
-        const currentLower = currentMessage.toLowerCase();
-        
-        // Include messages that mention similar topics
-        return context.previousInterests.some(interest => 
-          content.includes(interest.make?.toLowerCase() || '') ||
-          currentLower.includes(interest.make?.toLowerCase() || '')
-        );
+      const latencyMs = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      logger.error('AI service error', {
+        error: errorMessage,
+        model,
+        latencyMs
       });
       
-      // Add up to 3 most relevant historical messages
-      selectedMessages = [...relevantMessages.slice(-3), ...selectedMessages];
-    }
-    
-    return selectedMessages;
-  }
-
-  /**
-   * Get fallback response for error cases
-   */
-  private getFallbackResponse(): string {
-    const responses = [
-      "I apologize, but I'm having a technical issue right now. Could you please repeat your question? I want to make sure I give you the best help possible.",
-      "I'm experiencing a brief technical difficulty. Please bear with me for a moment - I want to make sure I address your question properly.",
-      "I'm sorry, I seem to be having a connection issue. Could you try asking your question again? I'm here to help you find the perfect vehicle."
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
-  }
-
-  /**
-   * Generate conversation starter based on context
-   */
-  async generateContextualGreeting(conversationId: string, dealershipId: number): Promise<string> {
-    const context = await conversationIntelligence.getConversationContext(conversationId, dealershipId);
-    
-    if (context.totalMessages === 0) {
-      return "Hi there! I'm Rylie, your automotive assistant. I'm here to help you find the perfect vehicle for your needs. What brings you in today?";
-    } else {
-      return "Welcome back! I remember our conversation. How can I continue helping you today?";
+      // Record metrics for failed AI response
+      prometheusMetrics.recordAiResponseLatency(latencyMs, {
+        dealership_id: dealershipId,
+        source_provider: sourceProvider,
+        model: model,
+        prompt_type: `${promptType}_error`
+      });
+      
+      throw new Error(`AI service error: ${errorMessage}`);
     }
   }
-
+  
   /**
-   * Check if conversation needs human handoff
+   * Generate a completion for a conversation
    */
-  async shouldHandoffToHuman(conversationId: string): Promise<{ shouldHandoff: boolean; reason?: string }> {
-    const context = conversationIntelligence['context'].get(conversationId);
-    if (!context) return { shouldHandoff: false };
-
-    // High urgency + negative sentiment = handoff
-    if (context.urgencyLevel === 'high' && context.customerSentiment === 'negative') {
-      return { shouldHandoff: true, reason: 'Customer needs immediate assistance and seems frustrated' };
+  async getChatCompletion(
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    options: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+      dealershipId?: string | number;
+      sourceProvider?: string;
+      promptType?: string;
+    } = {}
+  ): Promise<AIResponse> {
+    const startTime = Date.now();
+    const model = options.model || this.defaultModel;
+    const temperature = options.temperature !== undefined ? options.temperature : this.defaultTemperature;
+    const maxTokens = options.maxTokens || this.defaultMaxTokens;
+    const dealershipId = options.dealershipId || '0';
+    const sourceProvider = options.sourceProvider || 'unknown';
+    const promptType = options.promptType || 'chat';
+    
+    // Generate cache key - only cache if there are fewer than 5 messages
+    // This prevents the cache from growing too large with long conversations
+    const shouldCache = this.cacheEnabled && messages.length < 5;
+    const cacheKey = shouldCache ? this.generateChatCacheKey(messages, model, temperature, maxTokens) : '';
+    
+    // Try to get from cache
+    if (shouldCache) {
+      const cachedResponse = await cacheService.get(cacheKey);
+      if (cachedResponse) {
+        logger.debug('Chat response retrieved from cache', { cacheKey });
+        
+        // Record cache hit latency in metrics
+        const latencyMs = Date.now() - startTime;
+        prometheusMetrics.recordAiResponseLatency(latencyMs, {
+          dealership_id: dealershipId,
+          source_provider: sourceProvider,
+          model: model,
+          prompt_type: `${promptType}_cached`
+        });
+        
+        return {
+          ...cachedResponse,
+          latencyMs
+        };
+      }
     }
-
-    // Ready to schedule = handoff
-    if (context.currentIntent?.primary === 'scheduling' && context.conversationStage === 'negotiation') {
-      return { shouldHandoff: true, reason: 'Customer is ready to schedule and move forward' };
+    
+    try {
+      // Call OpenAI API
+      const response = await this.openai.chat.completions.create({
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens
+      });
+      
+      const latencyMs = Date.now() - startTime;
+      
+      // Extract response data
+      const result: AIResponse = {
+        text: response.choices[0]?.message?.content || '',
+        model: response.model,
+        promptTokens: response.usage?.prompt_tokens || 0,
+        completionTokens: response.usage?.completion_tokens || 0,
+        totalTokens: response.usage?.total_tokens || 0,
+        latencyMs
+      };
+      
+      // Cache the result if appropriate
+      if (shouldCache) {
+        await cacheService.set(cacheKey, result, this.cacheTtl);
+      }
+      
+      // Record metrics for AI response latency
+      prometheusMetrics.recordAiResponseLatency(latencyMs, {
+        dealership_id: dealershipId,
+        source_provider: sourceProvider,
+        model: model,
+        prompt_type: promptType
+      });
+      
+      logger.debug('Chat response generated', {
+        model,
+        tokens: result.totalTokens,
+        latencyMs,
+        messageCount: messages.length
+      });
+      
+      return result;
+      
+    } catch (error) {
+      const latencyMs = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      logger.error('Chat completion error', {
+        error: errorMessage,
+        model,
+        latencyMs,
+        messageCount: messages.length
+      });
+      
+      // Record metrics for failed AI response
+      prometheusMetrics.recordAiResponseLatency(latencyMs, {
+        dealership_id: dealershipId,
+        source_provider: sourceProvider,
+        model: model,
+        prompt_type: `${promptType}_error`
+      });
+      
+      throw new Error(`Chat completion error: ${errorMessage}`);
     }
-
-    // Complex financing discussion = handoff
-    if (context.currentIntent?.primary === 'financing' && context.totalMessages > 10) {
-      return { shouldHandoff: true, reason: 'Complex financing discussion needs human expertise' };
-    }
-
-    return { shouldHandoff: false };
+  }
+  
+  /**
+   * Generate a cache key for a prompt
+   */
+  private generateCacheKey(prompt: string, model: string, temperature: number, maxTokens: number): string {
+    // Create a deterministic hash of the prompt to use as cache key
+    const hash = require('crypto')
+      .createHash('md5')
+      .update(`${prompt}|${model}|${temperature}|${maxTokens}`)
+      .digest('hex');
+    
+    return `ai:completion:${hash}`;
+  }
+  
+  /**
+   * Generate a cache key for a chat conversation
+   */
+  private generateChatCacheKey(
+    messages: Array<{ role: string; content: string }>,
+    model: string,
+    temperature: number,
+    maxTokens: number
+  ): string {
+    // Create a deterministic hash of the messages to use as cache key
+    const messagesString = JSON.stringify(messages);
+    const hash = require('crypto')
+      .createHash('md5')
+      .update(`${messagesString}|${model}|${temperature}|${maxTokens}`)
+      .digest('hex');
+    
+    return `ai:chat:${hash}`;
   }
 }
 
-// Singleton instance
-export const enhancedAIService = new EnhancedAIService();
+// Export singleton instance with default configuration
+export const aiService = new EnhancedAIService();
+
+export default aiService;
