@@ -5,7 +5,50 @@ import logger from '../utils/logger';
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isTest = process.env.NODE_ENV === 'test';
-const allowAuthBypass = isDevelopment || isTest || process.env.ALLOW_AUTH_BYPASS === 'true';
+const isProduction = process.env.NODE_ENV === 'production';
+const isStaging = process.env.NODE_ENV === 'staging';
+
+// CRITICAL SECURITY CHECK: Prevent auth bypass in production/staging
+function validateAuthBypassSafety() {
+  const authBypassEnabled = process.env.ALLOW_AUTH_BYPASS === 'true';
+  
+  if (authBypassEnabled && (isProduction || isStaging)) {
+    const errorMsg = `
+      ⚠️ CRITICAL SECURITY ERROR ⚠️
+      Authentication bypass (ALLOW_AUTH_BYPASS) is enabled in ${process.env.NODE_ENV} environment!
+      This is a severe security vulnerability that would allow unrestricted access.
+      
+      To fix: Set ALLOW_AUTH_BYPASS=false in your environment variables or remove it entirely.
+      
+      Application startup aborted for security reasons.
+    `;
+    
+    // Log the error
+    logger.error('CRITICAL SECURITY VULNERABILITY: Auth bypass enabled in production', new Error(errorMsg));
+    
+    // Print to console for visibility
+    console.error('\x1b[41m\x1b[37m%s\x1b[0m', errorMsg);
+    
+    // Exit the process with error code
+    process.exit(1);
+  }
+}
+
+// Run validation immediately when this module is loaded
+validateAuthBypassSafety();
+
+// Auth bypass is only allowed in development/test with explicit warning
+const allowAuthBypass = (isDevelopment || isTest) && process.env.ALLOW_AUTH_BYPASS === 'true';
+
+// If auth bypass is enabled in dev/test, show warning
+if (allowAuthBypass) {
+  const warningMsg = `
+    ⚠️ WARNING: Authentication bypass enabled in ${process.env.NODE_ENV} environment.
+    This should NEVER be enabled in production or staging environments.
+  `;
+  logger.warn(warningMsg);
+  console.warn('\x1b[43m\x1b[30m%s\x1b[0m', warningMsg);
+}
 
 // Secure password hashing configuration
 const SALT_ROUNDS = 12;
