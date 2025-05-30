@@ -15,9 +15,9 @@ import { Skeleton } from '../components/ui/skeleton';
 import { AgentDesigner } from '../components/agent-studio/AgentDesigner';
 import { LiveConsole } from '../components/agent-studio/LiveConsole';
 import { AgentCard } from '../components/agent-studio/AgentCard';
-import { PageHeading } from '../components/page-heading';
+import PageHeading from '../components/page-heading';
 import { useAuth } from '../hooks/useAuth';
-import { AlertCircle, CheckCircle, Play, Save, Plus, RefreshCw, Settings, Tool, Database, Zap } from 'lucide-react';
+import { AlertCircle, CheckCircle, Play, Save, Plus, RefreshCw, Settings, Wrench, Database, Zap } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import JsonView from '@uiw/react-json-view';
 
@@ -850,7 +850,7 @@ const AgentStudio: React.FC = () => {
             <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
             <div className="grid grid-cols-2 gap-4">
               <Button variant="outline" className="h-auto py-4 justify-start">
-                <Tool className="mr-2 h-5 w-5" />
+                <Wrench className="mr-2 h-5 w-5" />
                 <div className="text-left">
                   <div className="font-medium">Add Custom Tool</div>
                   <div className="text-xs text-muted-foreground">Connect external tools and APIs</div>
