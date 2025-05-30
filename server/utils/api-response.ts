@@ -243,7 +243,7 @@ export function sendValidationError(
   const response: ErrorResponse = {
     success: false,
     error: message,
-    userMessage: ERROR_CONFIGS[ERROR_CODES.VALIDATION_ERROR].userMessage,
+    userMessage: ERROR_CONFIGS[ERROR_CODES.VALIDATION_ERROR]?.userMessage || 'Please check your input and try again',
     code: ERROR_CODES.VALIDATION_ERROR,
     details: {
       validation_errors: errors
@@ -286,7 +286,7 @@ export function sendUnauthorized(
     ERROR_CODES.UNAUTHORIZED,
     HttpStatus.UNAUTHORIZED,
     undefined,
-    { userMessage: message || ERROR_CONFIGS[ERROR_CODES.UNAUTHORIZED].userMessage }
+    { userMessage: message || ERROR_CONFIGS[ERROR_CODES.UNAUTHORIZED]?.userMessage || 'Authentication required' }
   );
 }
 
@@ -304,7 +304,7 @@ export function sendForbidden(
     ERROR_CODES.FORBIDDEN,
     HttpStatus.FORBIDDEN,
     undefined,
-    { userMessage: message || ERROR_CONFIGS[ERROR_CODES.FORBIDDEN].userMessage }
+    { userMessage: message || ERROR_CONFIGS[ERROR_CODES.FORBIDDEN]?.userMessage || 'Access denied' }
   );
 }
 

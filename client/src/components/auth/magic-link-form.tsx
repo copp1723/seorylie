@@ -116,3 +116,5 @@ export function MagicLinkForm() {
     </div>
   );
 }
+
+export default MagicLinkForm;

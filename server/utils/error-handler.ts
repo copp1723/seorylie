@@ -1,267 +1,159 @@
-import { Request, Response, NextFunction } from 'express';
-import logger from './logger';
-import { v4 as uuidv4 } from 'uuid';
+import { Request, Response, NextFunction } from "express";
+import { v4 as uuidv4 } from "uuid";
+import logger from "./logger"; // Assuming logger is in the same directory or adjust path
 
-// Enhanced error codes for better error tracking
-export enum ErrorCodes {
-  // Database errors
-  DATABASE_CONNECTION_ERROR = 'DB_CONNECTION_ERROR',
-  DATABASE_QUERY_ERROR = 'DB_QUERY_ERROR',
-  DATABASE_TRANSACTION_ERROR = 'DB_TRANSACTION_ERROR',
-
-  // Authentication errors
-  AUTHENTICATION_FAILED = 'AUTH_FAILED',
-  AUTHORIZATION_FAILED = 'AUTHZ_FAILED',
-  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
-  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
-
-  // Validation errors
-  VALIDATION_ERROR = 'VALIDATION_ERROR',
-  INVALID_INPUT = 'INVALID_INPUT',
-  MISSING_REQUIRED_FIELD = 'MISSING_FIELD',
-
-  // Business logic errors
-  RESOURCE_NOT_FOUND = 'NOT_FOUND',
-  RESOURCE_ALREADY_EXISTS = 'ALREADY_EXISTS',
-  OPERATION_NOT_ALLOWED = 'NOT_ALLOWED',
-
-  // External service errors
-  EMAIL_SERVICE_ERROR = 'EMAIL_ERROR',
-  CACHE_SERVICE_ERROR = 'CACHE_ERROR',
-
-  // System errors
-  INTERNAL_SERVER_ERROR = 'INTERNAL_ERROR',
-  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
-  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED'
-}
-
+// Interface for application errors
 export interface AppError extends Error {
-  code: ErrorCodes;
-  statusCode: number;
-  requestId?: string;
-  context?: Record<string, any>;
+  statusCode?: number;
+  isOperational?: boolean;
+  code?: string; // Application-specific error code
+  context?: Record<string, any>; // Additional context for logging
+  userMessage?: string; // User-friendly message
+  traceId?: string; // For tracking the error across services/logs
 }
 
+// Custom error class
 export class CustomError extends Error implements AppError {
-  public code: ErrorCodes;
   public statusCode: number;
-  public requestId?: string;
+  public isOperational: boolean;
+  public code?: string;
   public context?: Record<string, any>;
+  public userMessage?: string;
+  public traceId: string;
 
   constructor(
     message: string,
-    code: ErrorCodes,
     statusCode: number = 500,
-    context?: Record<string, any>
+    options?: {
+      isOperational?: boolean;
+      code?: string;
+      context?: Record<string, any>;
+      userMessage?: string;
+      traceId?: string;
+    }
   ) {
     super(message);
-    this.name = 'CustomError';
-    this.code = code;
     this.statusCode = statusCode;
-    this.context = context;
-    this.requestId = uuidv4();
+    this.isOperational = options?.isOperational ?? true; // Default to operational for known errors
+    this.code = options?.code;
+    this.context = options?.context;
+    this.userMessage = options?.userMessage;
+    this.traceId = options?.traceId || uuidv4();
 
-    // Ensure the stack trace points to where the error was thrown
-    Error.captureStackTrace(this, CustomError);
-  }
-}
-
-// Utility class for standardized API responses
-export class ResponseHelper {
-  static success<T>(res: Response, data: T, message: string = 'Success'): Response {
-    return res.json({
-      success: true,
-      message,
-      data,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  static error(
-    res: Response,
-    error: AppError | Error,
-    requestId?: string
-  ): Response {
-    const isAppError = error instanceof CustomError;
-    const statusCode = isAppError ? error.statusCode : 500;
-    const code = isAppError ? error.code : ErrorCodes.INTERNAL_SERVER_ERROR;
-
-    const errorResponse = {
-      success: false,
-      error: {
-        message: error.message,
-        code,
-        requestId: isAppError ? error.requestId : requestId || uuidv4(),
-        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    // Log the error with context
-    logger.error('API Error Response', {
-      requestId: errorResponse.error.requestId,
-      code,
-      message: error.message,
-      statusCode,
-      stack: error.stack,
-      ...(isAppError && error.context ? { context: error.context } : {})
-    });
-
-    return res.status(statusCode).json(errorResponse);
-  }
-
-  static notFound(res: Response, resource: string = 'Resource'): Response {
-    const error = new CustomError(
-      `${resource} not found`,
-      ErrorCodes.RESOURCE_NOT_FOUND,
-      404
-    );
-    return ResponseHelper.error(res, error);
-  }
-
-  static badRequest(res: Response, message: string = 'Bad request'): Response {
-    const error = new CustomError(
-      message,
-      ErrorCodes.INVALID_INPUT,
-      400
-    );
-    return ResponseHelper.error(res, error);
-  }
-
-  static unauthorized(res: Response, message: string = 'Unauthorized'): Response {
-    const error = new CustomError(
-      message,
-      ErrorCodes.AUTHENTICATION_FAILED,
-      401
-    );
-    return ResponseHelper.error(res, error);
-  }
-
-  static forbidden(res: Response, message: string = 'Forbidden'): Response {
-    const error = new CustomError(
-      message,
-      ErrorCodes.AUTHORIZATION_FAILED,
-      403
-    );
-    return ResponseHelper.error(res, error);
-  }
-}
-
-// Async handler wrapper to catch async errors
-export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
-): (req: Request, res: Response, next: NextFunction) => void {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
-
-// Database operation wrapper with retry logic
-export async function dbOperation<T>(
-  operation: () => Promise<T>,
-  errorMessage: string = 'Database operation failed',
-  retries: number = 3
-): Promise<T> {
-  let lastError: Error;
-
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
-      if (attempt === retries) {
-        logger.error(`Database operation failed after ${retries} attempts`, {
-          error: lastError.message,
-          stack: lastError.stack,
-          attempt
-        });
-
-        throw new CustomError(
-          errorMessage,
-          ErrorCodes.DATABASE_QUERY_ERROR,
-          500,
-          {
-            originalError: lastError.message,
-            attempts: retries
-          }
-        );
-      }
-
-      // Wait before retrying (exponential backoff)
-      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-      await new Promise<void>((resolve: () => void) => setTimeout(resolve, delay));
-
-      logger.warn(`Database operation failed, retrying...`, {
-        error: lastError.message,
-        attempt,
-        retryAfter: delay
-      });
+    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, CustomError);
     }
-  }
 
-  throw lastError!;
-}
-
-// Global error handler middleware
-export function errorHandler(
-  error: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  // If response already sent, delegate to default Express error handler
-  if (res.headersSent) {
-    return next(error);
-  }
-
-  // Add request ID for tracking
-  const requestId = req.headers['x-request-id'] as string || uuidv4();
-
-  // Handle different types of errors
-  if (error instanceof CustomError) {
-    ResponseHelper.error(res, error, requestId);
-  } else if (error.name === 'ValidationError') {
-    const customError = new CustomError(
-      error.message,
-      ErrorCodes.VALIDATION_ERROR,
-      400
-    );
-    ResponseHelper.error(res, customError, requestId);
-  } else if (error.name === 'CastError') {
-    const customError = new CustomError(
-      'Invalid ID format',
-      ErrorCodes.INVALID_INPUT,
-      400
-    );
-    ResponseHelper.error(res, customError, requestId);
-  } else {
-    // Unknown error - log it and return generic error
-    logger.error('Unhandled error', {
-      error: error.message,
-      stack: error.stack,
-      requestId,
-      url: req.url,
-      method: req.method
-    });
-
-    const customError = new CustomError(
-      'An unexpected error occurred',
-      ErrorCodes.INTERNAL_SERVER_ERROR,
-      500
-    );
-    ResponseHelper.error(res, customError, requestId);
+    // Set the name of the error class
+    this.name = this.constructor.name;
   }
 }
 
-// Request ID middleware
+// Middleware to add request ID and trace ID
 export function requestIdMiddleware(
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
-  const requestId = req.headers['x-request-id'] as string || uuidv4();
-  req.headers['x-request-id'] = requestId;
-  res.setHeader('X-Request-ID', requestId);
+  const requestId = (req.headers["x-request-id"] as string) || uuidv4();
+  const traceId = (req.headers["x-trace-id"] as string) || requestId; // Use requestId if traceId not present
+
+  req.headers["x-request-id"] = requestId;
+  req.headers["x-trace-id"] = traceId;
+
+  res.setHeader("X-Request-ID", requestId);
+  res.setHeader("X-Trace-Id", traceId);
   next();
+}
+
+// Global error handler middleware
+export function errorHandler(
+  err: AppError | Error, // Can be CustomError or any other Error
+  req: Request,
+  res: Response,
+  next: NextFunction // eslint-disable-line @typescript-eslint/no-unused-vars
+): void {
+  const customErr = err as AppError; // Type assertion to access custom properties
+
+  const statusCode = customErr.statusCode || 500;
+  const message = customErr.userMessage || customErr.message || "Internal ServerError";
+  const traceId = customErr.traceId || (req.headers["x-trace-id"] as string) || uuidv4();
+  const code = customErr.code;
+  const context = customErr.context;
+
+  // Log the error
+  logger.error("Error handled:", {
+    traceId,
+    requestId: req.headers["x-request-id"] as string,
+    statusCode,
+    message: err.message, // Log the original, more specific error message
+    code,
+    userMessage: customErr.userMessage,
+    isOperational: customErr.isOperational,
+    method: req.method,
+    url: req.originalUrl,
+    ip: req.ip,
+    context,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined, // Log stack in dev
+  });
+
+  // Set trace ID in response header if not already set by requestIdMiddleware
+  if (!res.getHeader("X-Trace-Id")) {
+    res.setHeader("X-Trace-Id", traceId);
+  }
+
+  const errorResponse: {
+    message: string;
+    code?: string;
+    traceId: string;
+    userMessage?: string;
+    stack?: string;
+  } = {
+    message: message, // Send user-friendly message or original message
+    traceId: traceId,
+  };
+
+  if (code) {
+    errorResponse.code = code;
+  }
+
+  if (customErr.userMessage && customErr.userMessage !== message) {
+    errorResponse.userMessage = customErr.userMessage;
+  }
+
+  if (process.env.NODE_ENV === "development" && err.stack) {
+    errorResponse.stack = err.stack;
+  }
+
+  res.status(statusCode).json({
+    error: errorResponse,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+// Wrapper for async route handlers to catch errors
+export function asyncHandler<
+  P = any, // ParamsDictionary
+  ResBody = any, // ResponseBody
+  ReqBody = any, // RequestBody
+  ReqQuery = any // Query
+>(
+  fn: (
+    req: Request<P, ResBody, ReqBody, ReqQuery>,
+    res: Response<ResBody>,
+    next: NextFunction
+  ) => Promise<any>
+): (
+  req: Request<P, ResBody, ReqBody, ReqQuery>,
+  res: Response<ResBody>,
+  next: NextFunction
+) => void {
+  return (
+    req: Request<P, ResBody, ReqBody, ReqQuery>,
+    res: Response<ResBody>,
+    next: NextFunction
+  ): void => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
 }

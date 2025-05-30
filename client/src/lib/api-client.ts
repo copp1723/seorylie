@@ -1,322 +1,122 @@
-/**
- * Enhanced API client with automatic error handling and notifications
- */
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
-import { useNotifications } from "@/hooks/useNotifications";
-import { toastSuccess, toastError, toastWarning, toast } from "@/components/ui/use-toast";
-
-// API response types matching backend
-export interface ApiSuccessResponse<T = any> {
-  success: true;
-  data: T;
-  message?: string;
-  pagination?: {
-    limit: number;
-    offset: number;
-    total: number;
-  };
-}
-
+// Define a custom error type for API errors
 export interface ApiErrorResponse {
-  success: false;
-  error: string;
-  message?: string;
-  userMessage?: string;
-  details?: any;
-  code?: string;
-  field?: string;
-  action?: {
-    label: string;
-    url?: string;
-    type?: 'retry' | 'navigate' | 'contact' | 'refresh';
-  };
+  message: string;
+  status?: number;
+  data?: any;
 }
 
-export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
-
-// Custom error class for API errors
 export class ApiError extends Error {
-  constructor(
-    public response: ApiErrorResponse,
-    public status: number
-  ) {
-    super(response.error);
+  status?: number;
+  data?: any;
+
+  constructor(message: string, status?: number, data?: any) {
+    super(message);
     this.name = 'ApiError';
-  }
-
-  get userMessage(): string {
-    return this.response.userMessage || this.response.error;
-  }
-
-  get code(): string | undefined {
-    return this.response.code;
-  }
-
-  get action(): ApiErrorResponse['action'] {
-    return this.response.action;
+    this.status = status;
+    this.data = data;
+    Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
 
-// Request options
-export interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  body?: any;
-  headers?: Record<string, string>;
-  showSuccessToast?: boolean;
-  showErrorToast?: boolean;
-  loadingMessage?: string;
-  successMessage?: string;
-  errorMessage?: string;
-}
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// Enhanced fetch wrapper with automatic error handling
-class ApiClient {
-  private baseUrl: string;
-  private defaultHeaders: Record<string, string>;
+const apiClient: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true, // Important for session cookies
+});
 
-  constructor(baseUrl = '/api') {
-    this.baseUrl = baseUrl;
-    this.defaultHeaders = {
-      'Content-Type': 'application/json',
-    };
+// Request interceptor to add auth token or other headers
+apiClient.interceptors.request.use(
+  (config) => {
+    // Example: Add a token if available (e.g., from localStorage or a state manager)
+    // const token = localStorage.getItem('authToken');
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`;
+    // }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
+);
 
-  /**
-   * Make an API request with automatic error handling and notifications
-   */
-  async request<T = any>(
-    endpoint: string,
-    options: RequestOptions = {}
-  ): Promise<T> {
-    const {
-      method = 'GET',
-      body,
-      headers = {},
-      showSuccessToast = false,
-      showErrorToast = true,
-      loadingMessage,
-      successMessage,
-      errorMessage,
-    } = options;
-
-    const url = `${this.baseUrl}${endpoint}`;
-    let loadingToastId: string | undefined;
-
-    try {
-      // Show loading toast if requested
-      if (loadingMessage) {
-        loadingToastId = toast({
-          title: loadingMessage,
-          variant: "loading",
-          duration: 0, // Persistent until dismissed
-        }).id;
-      }
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          ...this.defaultHeaders,
-          ...headers,
-        },
-        credentials: 'include',
-        body: body ? JSON.stringify(body) : undefined,
-      });
-
-      // Dismiss loading toast
-      if (loadingToastId) {
-        toast.dismiss(loadingToastId);
-      }
-
-      // Parse response
-      const data: ApiResponse<T> = await response.json();
-
-      if (!response.ok || !data.success) {
-        const apiError = new ApiError(data as ApiErrorResponse, response.status);
-
-        // Show error toast if requested
-        if (showErrorToast) {
-          this.showErrorToast(apiError, errorMessage);
-        }
-
-        throw apiError;
-      }
-
-      // Show success toast if requested
-      if (showSuccessToast) {
-        const message = successMessage || data.message || 'Operation completed successfully';
-        toastSuccess({
-          title: 'Success',
-          description: message,
-        });
-      }
-
-      return data.data;
-    } catch (error) {
-      // Dismiss loading toast on error
-      if (loadingToastId) {
-        toast.dismiss(loadingToastId);
-      }
-
-      // Handle network errors
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        const networkError = new ApiError({
-          success: false,
-          error: 'Network error',
-          userMessage: 'Unable to connect to the server. Please check your internet connection.',
-          code: 'NETWORK_ERROR',
-          action: { label: 'Retry', type: 'retry' }
-        }, 0);
-
-        if (showErrorToast) {
-          this.showErrorToast(networkError, errorMessage);
-        }
-
-        throw networkError;
-      }
-
-      // Re-throw if already an ApiError
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      // Handle other errors
-      const unknownError = new ApiError({
-        success: false,
-        error: 'Unknown error occurred',
-        userMessage: 'An unexpected error occurred. Please try again.',
-        code: 'UNKNOWN_ERROR'
-      }, 500);
-
-      if (showErrorToast) {
-        this.showErrorToast(unknownError, errorMessage);
-      }
-
-      throw unknownError;
+// Response interceptor for global error handling
+apiClient.interceptors.response.use(
+  (response: AxiosResponse) => response.data, // Return data directly
+  (error: AxiosError<ApiErrorResponse>) => {
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      const { data, status } = error.response;
+      const message = data?.message || error.message || 'An unexpected error occurred';
+      return Promise.reject(new ApiError(message, status, data));
+    } else if (error.request) {
+      // The request was made but no response was received
+      return Promise.reject(new ApiError('No response received from server.', undefined, error.request));
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      return Promise.reject(new ApiError(error.message || 'Error setting up request.'));
     }
   }
+);
 
-  /**
-   * Show error toast with action button if available
-   */
-  private showErrorToast(error: ApiError, customMessage?: string) {
-    const message = customMessage || error.userMessage;
-    
-    toastError({
-      title: 'Error',
-      description: message,
-      action: error.action ? {
-        label: error.action.label,
-        onClick: () => this.handleErrorAction(error.action!),
-      } : undefined,
-    });
-  }
-
-  /**
-   * Handle error action clicks
-   */
-  private handleErrorAction(action: NonNullable<ApiErrorResponse['action']>) {
-    switch (action.type) {
-      case 'navigate':
-        if (action.url) {
-          window.location.href = action.url;
-        }
-        break;
-      case 'refresh':
-        window.location.reload();
-        break;
-      case 'retry':
-        // This would need to be implemented based on context
-        console.log('Retry action triggered');
-        break;
-      case 'contact':
-        // Could open a contact modal or navigate to support
-        console.log('Contact support action triggered');
-        break;
-    }
-  }
-
-  // Convenience methods for common HTTP verbs
-  async get<T>(endpoint: string, options?: Omit<RequestOptions, 'method'>) {
-    return this.request<T>(endpoint, { ...options, method: 'GET' });
-  }
-
-  async post<T>(endpoint: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) {
-    return this.request<T>(endpoint, { ...options, method: 'POST', body });
-  }
-
-  async put<T>(endpoint: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) {
-    return this.request<T>(endpoint, { ...options, method: 'PUT', body });
-  }
-
-  async patch<T>(endpoint: string, body?: any, options?: Omit<RequestOptions, 'method' | 'body'>) {
-    return this.request<T>(endpoint, { ...options, method: 'PATCH', body });
-  }
-
-  async delete<T>(endpoint: string, options?: Omit<RequestOptions, 'method'>) {
-    return this.request<T>(endpoint, { ...options, method: 'DELETE' });
-  }
-}
-
-// Create and export singleton instance
-export const apiClient = new ApiClient();
-
-// Hook for using the API client with notifications context
-export function useApiClient() {
-  const notifications = useNotifications();
-
-  // Enhanced request method that uses the notification context
-  const requestWithNotifications = async <T = any>(
-    endpoint: string,
-    options: RequestOptions & {
-      useNotifications?: boolean;
-    } = {}
-  ): Promise<T> => {
-    const { useNotifications: useNotifs = true, ...requestOptions } = options;
-
-    try {
-      const result = await apiClient.request<T>(endpoint, requestOptions);
-      
-      // Use notification system if available and requested
-      if (useNotifs && options.showSuccessToast) {
-        const message = options.successMessage || 'Operation completed successfully';
-        notifications.success('Success', message);
-      }
-
-      return result;
-    } catch (error) {
-      if (error instanceof ApiError && useNotifs && options.showErrorToast !== false) {
-        const message = options.errorMessage || error.userMessage;
-        notifications.error('Error', message, {
-          action: error.action ? {
-            label: error.action.label,
-            onClick: () => {
-              // Handle action based on type
-              switch (error.action?.type) {
-                case 'navigate':
-                  if (error.action.url) {
-                    window.location.href = error.action.url;
-                  }
-                  break;
-                case 'refresh':
-                  window.location.reload();
-                  break;
-                default:
-                  console.log('Action triggered:', error.action);
-              }
-            }
-          } : undefined
-        });
-      }
+// Generic request function
+async function request<T>(config: AxiosRequestConfig): Promise<T> {
+  try {
+    const response: T = await apiClient.request<T, T>(config);
+    return response;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      // Re-throw ApiError to be caught by the caller
       throw error;
     }
-  };
-
-  return {
-    ...apiClient,
-    request: requestWithNotifications,
-    notifications,
-  };
+    // Catch any other unexpected errors and wrap them
+    throw new ApiError('An unexpected network error occurred.', undefined, error);
+  }
 }
 
-// Export error types for use in components
-export type { ApiSuccessResponse, ApiErrorResponse };
+// HTTP methods
+export const http = {
+  get: <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
+    request<T>({ ...config, method: 'GET', url }),
+
+  post: <T, D = any>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T> =>
+    request<T>({ ...config, method: 'POST', url, data }),
+
+  put: <T, D = any>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T> =>
+    request<T>({ ...config, method: 'PUT', url, data }),
+
+  patch: <T, D = any>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T> =>
+    request<T>({ ...config, method: 'PATCH', url, data }),
+
+  delete: <T>(url: string, config?: AxiosRequestConfig): Promise<T> =>
+    request<T>({ ...config, method: 'DELETE', url }),
+};
+
+export default http;
+
+// Example usage (can be removed or kept for reference):
+/*
+interface User {
+  id: number;
+  name: string;
+}
+
+async function fetchUsers() {
+  try {
+    const users = await http.get<User[]>('/users');
+    console.log(users);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      console.error('API Error:', error.message, error.status, error.data);
+    } else {
+      console.error('Unknown error:', error);
+    }
+  }
+}
+*/

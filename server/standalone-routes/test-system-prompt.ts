@@ -29,8 +29,8 @@ router.post('/api/test-system-prompt', async (req, res) => {
   try {
     if (!openai) {
       logger.error('OpenAI not initialized for test system prompt');
-      return res.status(503).json({ 
-        error: 'Service unavailable', 
+      return res.status(503).json({
+        error: 'Service unavailable',
         message: 'OpenAI API key is not configured. Please contact the administrator.'
       });
     }
@@ -42,7 +42,7 @@ router.post('/api/test-system-prompt', async (req, res) => {
     logger.info('Testing system prompt', {
       messageLength: customerMessage.length
     });
-    
+
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -59,24 +59,24 @@ router.post('/api/test-system-prompt', async (req, res) => {
       temperature: 0.7,
       max_tokens: 1000
     });
-    
-    const response = completion.choices[0].message.content;
-    
+
+    const response = completion.choices?.[0]?.message?.content;
+
     // Return the AI's response
     return res.status(200).json({
       response,
       usage: completion.usage
     });
   } catch (error) {
-    logger.error('Error testing system prompt', { 
+    logger.error('Error testing system prompt', {
       error: (error instanceof Error) ? error.message : 'Unknown error',
       stack: (error instanceof Error) ? error.stack : undefined
     });
-    
+
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Invalid request data', details: error.errors });
     }
-    
+
     return res.status(500).json({ error: 'Failed to test system prompt', message: (error instanceof Error) ? error.message : 'Unknown error' });
   }
 });

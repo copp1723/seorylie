@@ -53,6 +53,12 @@ services:
       CORS_ORIGIN: http://localhost:5173
       WATCHDOG_API_URL: http://watchdog-api:8000
       VIN_AGENT_API_URL: http://vin-agent:5000
+      # Mock service configuration
+      USE_MOCKS: ${USE_MOCKS:-false}
+      MOCK_OPENAI_URL: http://mock-openai:3001
+      MOCK_TWILIO_URL: http://mock-twilio:3002
+      MOCK_IMAP_HOST: mock-imap
+      MOCK_IMAP_PORT: 1143
     ports:
       - "3000:3000"
     volumes:
@@ -103,11 +109,19 @@ services:
       timeout: 5s
       retries: 3
 
+<<<<<<< HEAD
   # vin-agent automation service
   vin-agent:
     build:
       context: /Users/copp1723/vin-agent
       dockerfile: vin-agent-Dockerfile
+=======
+  # vin-agent service
+  vin-agent:
+    build:
+      context: /Users/copp1723/vin-agent
+      dockerfile: Dockerfile
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
     depends_on:
       postgres:
         condition: service_healthy
@@ -119,18 +133,33 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PORT: 5000
+<<<<<<< HEAD
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       CORS_ORIGIN: http://localhost:5173,http://localhost:3000
+=======
+      JWT_SECRET: ${JWT_SECRET:-76fc7f19f08433ab29ecb559c592b3671515693659f3fc6d636a5a42fe8f0233}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-32charencryptionkeyfordealership}
+      VINSOLUTIONS_USERNAME: ${VINSOLUTIONS_USERNAME:-}
+      VINSOLUTIONS_PASSWORD: ${VINSOLUTIONS_PASSWORD:-}
+      FORCE_SCHEMA_SYNC: "true"
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
     ports:
       - "5000:5000"
     volumes:
       - /Users/copp1723/vin-agent:/app
       - /app/node_modules
+<<<<<<< HEAD
       - vin_agent_logs:/app/logs
       - vin_agent_data:/app/data
       - vin_agent_screenshots:/app/screenshots
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+=======
+    working_dir: /app
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
       interval: 10s
       timeout: 5s
       retries: 3
@@ -152,13 +181,123 @@ services:
       retries: 3
       start_period: 30s
 
+  # ADF-013 Mock Services
+  
+  # Mock IMAP server for email testing
+  mock-imap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: testing
+    command: node test/mocks/imap-server.js
+    environment:
+      NODE_ENV: test
+      MOCK_IMAP_PORT: 1143
+      MOCK_IMAP_USER: test@example.com
+      MOCK_IMAP_PASSWORD: password
+      MOCK_MAILBOX_PATH: /app/test/fixtures/emails
+      LOG_LEVEL: info
+    ports:
+      - "1143:1143"
+    volumes:
+      - ./test/fixtures:/app/test/fixtures
+      - ./test/mocks:/app/test/mocks
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "1143"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # Mock OpenAI service for AI testing without API costs
+  mock-openai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: testing
+    command: node test/mocks/openai.js
+    environment:
+      NODE_ENV: test
+      MOCK_OPENAI_PORT: 3001
+      MOCK_RESPONSE_DELAY_MS: 200
+      MOCK_TEMPLATES_PATH: /app/test/fixtures/ai-responses
+      LOG_LEVEL: info
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./test/fixtures:/app/test/fixtures
+      - ./test/mocks:/app/test/mocks
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # Mock Twilio service for SMS testing
+  mock-twilio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: testing
+    command: node test/mocks/twilio.js
+    environment:
+      NODE_ENV: test
+      MOCK_TWILIO_PORT: 3002
+      MOCK_SMS_DELIVERY_DELAY_MS: 500
+      LOG_LEVEL: info
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./test/fixtures:/app/test/fixtures
+      - ./test/mocks:/app/test/mocks
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # Testing runner service for CI automation
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: testing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mock-imap:
+        condition: service_healthy
+      mock-openai:
+        condition: service_healthy
+      mock-twilio:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/aiplatform_test
+      REDIS_URL: redis://redis:6379
+      USE_MOCKS: "true"
+      MOCK_OPENAI_URL: http://mock-openai:3001
+      MOCK_TWILIO_URL: http://mock-twilio:3002
+      MOCK_IMAP_HOST: mock-imap
+      MOCK_IMAP_PORT: 1143
+      TEST_RESULTS_PATH: /app/test-results
+      JWT_SECRET: test-jwt-secret
+    volumes:
+      - ./:/app
+      - ./test-results:/app/test-results
+    command: npm run test:ci
+
 volumes:
   postgres_data:
   redis_data:
   mindsdb_data:
+<<<<<<< HEAD
   vin_agent_logs:
   vin_agent_data:
   vin_agent_screenshots:
+=======
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
 
 networks:
   default:

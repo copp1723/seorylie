@@ -4,13 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormValidation, validators, composeValidators, FormErrors } from "@/components/ui/form-field";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useToast } from "@/components/ui/use-toast";
-import { useApiClient } from "@/lib/api-client";
-import { Separator } from "@/components/ui/separator";
+import { ToastAction } from "@/components/ui/toast";
+import apiClient from "@/lib/api-client";
 
 export default function NotificationTestPage() {
   const notifications = useNotifications();
-  const { toast, success, error, warning, info, loading } = useToast();
-  const apiClient = useApiClient();
+  const { success, error, warning, info, loading } = useToast();
 
   // Form state for testing validation
   const [formData, setFormData] = useState({
@@ -118,10 +117,14 @@ export default function NotificationTestPage() {
           action: () => error({
             title: "Session Expired",
             description: "Your session has expired. Please log in again.",
-            action: {
-              label: "Log In",
-              onClick: () => window.location.href = "/auth"
-            }
+            action: (
+              <ToastAction 
+                altText="Log In" 
+                onClick={() => window.location.href = "/auth"}
+              >
+                Log In
+              </ToastAction>
+            )
           }),
         },
         {
@@ -151,10 +154,14 @@ export default function NotificationTestPage() {
           action: () => warning({
             title: "Unsaved Changes",
             description: "You have unsaved changes. Save before leaving?",
-            action: {
-              label: "Save Changes",
-              onClick: () => notifications.success("Saved", "Changes saved successfully")
-            }
+            action: (
+              <ToastAction 
+                altText="Save Changes" 
+                onClick={() => notifications.success("Saved", "Changes saved successfully")}
+              >
+                Save Changes
+              </ToastAction>
+            )
           }),
         },
         {
@@ -221,10 +228,7 @@ export default function NotificationTestPage() {
           name: "Test 401 Unauthorized",
           action: async () => {
             try {
-              await apiClient.request('/test-401', {
-                showErrorToast: true,
-                errorMessage: "Authentication required. Please log in."
-              });
+              await apiClient.get('/test-401');
             } catch (error) {
               console.log("Expected 401 error caught:", error);
             }
@@ -234,10 +238,7 @@ export default function NotificationTestPage() {
           name: "Test 404 Not Found",
           action: async () => {
             try {
-              await apiClient.request('/test-404', {
-                showErrorToast: true,
-                errorMessage: "The requested resource was not found."
-              });
+              await apiClient.get('/test-404');
             } catch (error) {
               console.log("Expected 404 error caught:", error);
             }
@@ -247,9 +248,7 @@ export default function NotificationTestPage() {
           name: "Test Network Error",
           action: async () => {
             try {
-              await apiClient.request('/invalid-endpoint-12345', {
-                showErrorToast: true
-              });
+              await apiClient.get('/invalid-endpoint-12345');
             } catch (error) {
               console.log("Expected network error caught:", error);
             }
