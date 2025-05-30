@@ -29,8 +29,13 @@ REDIS_PORT="6379"
 CLEANRYLIE_API="http://localhost:3000/api/metrics/health"
 CLEANRYLIE_FRONTEND="http://localhost:5173"
 WATCHDOG_API="http://localhost:8000/api/health"
+<<<<<<< HEAD
 MINDSDB_API="http://localhost:47334/api/health"
 VIN_AGENT_API="http://localhost:5000/health"
+=======
+VIN_AGENT_API="http://localhost:5000/health"
+MINDSDB_API="http://localhost:47334/api/health"
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
 
 # Initialize service status
 declare -A SERVICE_STATUS
@@ -39,8 +44,13 @@ SERVICE_STATUS["redis"]="pending"
 SERVICE_STATUS["cleanrylie-api"]="pending"
 SERVICE_STATUS["cleanrylie-frontend"]="pending"
 SERVICE_STATUS["watchdog-api"]="pending"
+<<<<<<< HEAD
 SERVICE_STATUS["mindsdb"]="pending"
 SERVICE_STATUS["vin-agent"]="pending"
+=======
+SERVICE_STATUS["vin-agent"]="pending"
+SERVICE_STATUS["mindsdb"]="pending"
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
 
 # Function to check PostgreSQL
 check_postgres() {
@@ -150,6 +160,7 @@ main() {
       fi
     fi
     
+<<<<<<< HEAD
     # Check mindsdb
     if [ "${SERVICE_STATUS[mindsdb]}" == "pending" ]; then
       if check_http $MINDSDB_API; then
@@ -158,6 +169,8 @@ main() {
       fi
     fi
     
+=======
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
     # Check vin-agent
     if [ "${SERVICE_STATUS[vin-agent]}" == "pending" ]; then
       if check_http $VIN_AGENT_API; then
@@ -166,6 +179,17 @@ main() {
       fi
     fi
     
+<<<<<<< HEAD
+=======
+    # Check mindsdb
+    if [ "${SERVICE_STATUS[mindsdb]}" == "pending" ]; then
+      if check_http $MINDSDB_API; then
+        SERVICE_STATUS["mindsdb"]="healthy"
+        echo -e "${GREEN}✓ MindsDB is healthy (${SECONDS}s)${NC}"
+      fi
+    fi
+    
+>>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
     # Print current status
     print_status
     status=$?

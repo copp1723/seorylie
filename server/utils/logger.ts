@@ -1,5 +1,4 @@
 import winston from 'winston';
-import 'winston-daily-rotate-file';
 import path from 'path';
 import { sanitizeObjectForLogging } from './phone-masking';
 
@@ -37,21 +36,15 @@ const logger = winston.createLogger({
 // In production, add file-based logging
 if (process.env.NODE_ENV === 'production') {
   logger.add(
-    new winston.transports.DailyRotateFile({
-      filename: path.join(logsDir, 'application-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      maxSize: '20m',
-      maxFiles: '14d',
+    new winston.transports.File({
+      filename: path.join(logsDir, 'application.log'),
       level: 'info'
     })
   );
 
   logger.add(
-    new winston.transports.DailyRotateFile({
-      filename: path.join(logsDir, 'error-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      maxSize: '20m',
-      maxFiles: '14d',
+    new winston.transports.File({
+      filename: path.join(logsDir, 'error.log'),
       level: 'error'
     })
   );
@@ -70,8 +63,9 @@ export default {
   error: (message: string, error?: unknown, context?: unknown) => {
     if (error) {
       const err = error instanceof Error ? error : new Error(String(error));
+      const sanitizedContext = context ? sanitizeObjectForLogging(context) : {};
       logger.error(`${message}: ${err.message}`, {
-        ...(context ? sanitizeObjectForLogging(context) : {}),
+        ...(typeof sanitizedContext === 'object' && sanitizedContext !== null ? sanitizedContext : {}),
         stack: err.stack
       });
     } else {
