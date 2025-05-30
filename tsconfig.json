@@ -68,8 +68,6 @@
     "noUnusedParameters": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    // Report usage of deprecated APIs
-    "reportDeprecated": true,
 
     // =============================================================================
     // MODULE RESOLUTION
