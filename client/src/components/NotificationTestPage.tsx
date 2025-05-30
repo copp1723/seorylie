@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormValidation, validators, composeValidators, FormErrors } from "@/components/ui/form-field";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useToast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { useApiClient } from "@/lib/api-client";
 import { Separator } from "@/components/ui/separator";
 
@@ -106,10 +107,14 @@ export default function NotificationTestPage() {
             "Import Failed",
             "Unable to process inventory file. Please check the format and try again.",
             {
-              action: {
-                label: "Retry Import",
-                onClick: () => notifications.info("Retry Triggered", "Retrying import...")
-              }
+              action: (
+                <ToastAction 
+                  altText="Retry Import" 
+                  onClick={() => notifications.info("Retry Triggered", "Retrying import...")}
+                >
+                  Retry Import
+                </ToastAction>
+              )
             }
           ),
         },
@@ -118,10 +123,14 @@ export default function NotificationTestPage() {
           action: () => error({
             title: "Session Expired",
             description: "Your session has expired. Please log in again.",
-            action: {
-              label: "Log In",
-              onClick: () => window.location.href = "/auth"
-            }
+            action: (
+              <ToastAction 
+                altText="Log In" 
+                onClick={() => window.location.href = "/auth"}
+              >
+                Log In
+              </ToastAction>
+            )
           }),
         },
         {
@@ -130,10 +139,14 @@ export default function NotificationTestPage() {
             "Network Error",
             "Unable to connect to the server. Please check your internet connection.",
             {
-              action: {
-                label: "Retry",
-                onClick: () => notifications.info("Retrying", "Attempting to reconnect...")
-              }
+              action: (
+                <ToastAction 
+                  altText="Retry" 
+                  onClick={() => notifications.info("Retrying", "Attempting to reconnect...")}
+                >
+                  Retry
+                </ToastAction>
+              )
             }
           ),
         },
@@ -151,10 +164,14 @@ export default function NotificationTestPage() {
           action: () => warning({
             title: "Unsaved Changes",
             description: "You have unsaved changes. Save before leaving?",
-            action: {
-              label: "Save Changes",
-              onClick: () => notifications.success("Saved", "Changes saved successfully")
-            }
+            action: (
+              <ToastAction 
+                altText="Save Changes" 
+                onClick={() => notifications.success("Saved", "Changes saved successfully")}
+              >
+                Save Changes
+              </ToastAction>
+            )
           }),
         },
         {
