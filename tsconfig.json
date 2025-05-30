@@ -22,7 +22,9 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     "test/**/*",
-    "coverage/**/*"
+    "coverage/**/*",
+    "client/src/components/bulk-operations/**/*",
+    "client/src/components/command-palette/**/*"
   ],
   "compilerOptions": {
     // =============================================================================
