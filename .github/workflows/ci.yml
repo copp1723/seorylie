@@ -42,7 +42,7 @@ jobs:
           npm cache clean --force
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-optional
 
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/node@master
@@ -77,7 +77,7 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-optional
 
       - name: Lint code
         run: npm run lint
@@ -121,7 +121,7 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-optional
 
       - name: Run unit tests for ${{ matrix.service }}
         run: ${{ matrix.test_command }}
@@ -166,7 +166,7 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-optional
 
       - name: Run migration tests
         run: npm run test:migrations
@@ -221,7 +221,7 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-optional
 
       - name: Run migrations
         run: npm run migrate
@@ -281,7 +281,7 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-optional
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -469,7 +469,7 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-optional
 
       - name: Run migrations
         run: npm run migrate
