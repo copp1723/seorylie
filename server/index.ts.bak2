@@ -112,9 +112,7 @@ app.use('/api', leadManagementRoutes);
 app.use('/api', userManagementRoutes);
 app.use('/api', customerInsightsRoutes);
 
-
-// Add external API v1 routes
-app.use(/api/v1, apiV1Routes);// Track all requests
+// Track all requests
 app.use((req, res, next) => {
   const start = performance.now();
   res.on('finish', () => {
