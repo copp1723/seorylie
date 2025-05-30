@@ -1,5 +1,5 @@
 // AgentSquad service index - extended with Tool Registry integration
-import logger from '../../utils/logger.js';
+import logger from '../../utils/logger';
 import { toolRegistry, ToolRequest, ToolResponse } from '../tool-registry';
 import { analyticsClient } from '../analytics-client';
 import { WebSocketService } from '../websocket-service';
