@@ -4,6 +4,7 @@ import logger from '../utils/logger';
 import { twilioSMSService } from '../services/twilio-sms-service';
 import { validateBody } from '../middleware/validation';
 import { z } from 'zod';
+import { adfSmsResponseSender } from '../services/adf-sms-response-sender';
 
 const router = express.Router();
 
@@ -67,6 +68,9 @@ router.post('/status',
 
       // Process the webhook through our SMS service
       await twilioSMSService.processWebhook(webhookData);
+      
+      // Also process through ADF SMS Response Sender
+      await adfSmsResponseSender.processWebhook(webhookData);
 
       // Respond with TwiML (empty response is fine for status webhooks)
       res.set('Content-Type', 'text/xml');
@@ -143,6 +147,9 @@ router.post('/inbound',
         // Forward to conversation system for customer support
         await forwardToConversationSystem(webhookData);
       }
+      
+      // Also process through ADF SMS Response Sender for opt-out handling
+      await adfSmsResponseSender.processInboundSms(webhookData);
 
       // Respond with empty TwiML
       res.set('Content-Type', 'text/xml');
@@ -160,6 +167,73 @@ router.post('/inbound',
     }
   }
 );
+
+/**
+ * Dedicated ADF SMS webhook endpoint (enhanced tracking)
+ */
+router.post('/adf-status',
+  validateTwilioSignature,
+  validateBody(twilioStatusWebhookSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const webhookData = req.body;
+
+      logger.info('Received ADF SMS status webhook', {
+        messageSid: webhookData.MessageSid,
+        status: webhookData.MessageStatus,
+        to: twilioSMSService.maskPhoneNumber(webhookData.To)
+      });
+
+      // Process through ADF SMS Response Sender first
+      await adfSmsResponseSender.processWebhook(webhookData);
+      
+      // Then process through general SMS service
+      await twilioSMSService.processWebhook(webhookData);
+
+      // Log processing completion
+      logger.info('ADF SMS webhook processed successfully', {
+        messageSid: webhookData.MessageSid,
+        status: webhookData.MessageStatus
+      });
+
+      // Respond with TwiML
+      res.set('Content-Type', 'text/xml');
+      res.send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to process ADF SMS webhook', {
+        error: err.message,
+        body: req.body
+      });
+
+      // Return 200 to prevent Twilio from retrying
+      res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+    }
+  }
+);
+
+/**
+ * ADF SMS metrics endpoint
+ */
+router.get('/adf-metrics', (req: Request, res: Response) => {
+  try {
+    const metrics = adfSmsResponseSender.getMetrics();
+    res.json({
+      status: 'success',
+      metrics,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Failed to get ADF SMS metrics', { error: err.message });
+    res.status(500).json({
+      status: 'error',
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 /**
  * Health check endpoint for webhook monitoring

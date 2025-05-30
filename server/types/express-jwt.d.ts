@@ -1,5 +1,4 @@
 // Express request augmentation for JWT authentication
-
 import { User } from "@shared/schema";
 
 export interface JWTPayload {
@@ -12,10 +11,25 @@ export interface JWTPayload {
   jti?: string;
 }
 
+// Combined user type that supports both JWT and Replit auth
+export type AuthUser = JWTPayload | User | {
+  claims?: {
+    sub: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    profile_image_url?: string;
+    exp?: number;
+  };
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: number;
+};
+
 declare global {
   namespace Express {
     interface Request {
-      user?: JWTPayload | User;
+      user?: AuthUser;
       token?: string;
       dealershipContext?: {
         dealershipId: number;

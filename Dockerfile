@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Base stage for common dependencies
 FROM node:18-alpine AS base
 WORKDIR /app
@@ -54,86 +53,33 @@ WORKDIR /app
 
 # Start client using Vite directly
 CMD ["npx", "vite", "--host", "0.0.0.0", "client"]
-=======
-# Dockerfile for vin-agent service
-# Multi-stage build for better efficiency and security
 
-# Build stage
-FROM node:18-alpine AS build
-
-# Install dependencies for Playwright
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    python3 \
-    py3-pip \
-    build-base \
-    curl
-
-# Set working directory
+# Testing stage for mock services and CI testing
+FROM base AS testing
 WORKDIR /app
 
-# Copy package files for better caching
-COPY package*.json ./
-
-# Install dependencies
+# Install all dependencies including dev dependencies
 RUN npm ci
 
-# Copy source code
-COPY . .
+# Copy all source code and test files
+COPY --chown=appuser:appgroup server ./server
+COPY --chown=appuser:appgroup shared ./shared
+COPY --chown=appuser:appgroup client ./client
+COPY --chown=appuser:appgroup test ./test
+COPY --chown=appuser:appgroup scripts ./scripts
+COPY --chown=appuser:appgroup migrations ./migrations
+COPY --chown=appuser:appgroup drizzle.config.ts ./
+COPY --chown=appuser:appgroup tsconfig.json ./
+COPY --chown=appuser:appgroup jest.config.js ./
+COPY --chown=appuser:appgroup .env.test ./.env
 
-# Install Playwright browsers
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN npx playwright install --with-deps chromium
+# Create directories for test results and artifacts
+RUN mkdir -p test-results/jest test-results/fixtures test-results/adf-e2e
 
-# Production stage
-FROM node:18-alpine AS production
+# Set environment variables for testing
+ENV NODE_ENV=test
+ENV USE_MOCKS=true
+ENV TEST_MODE=true
 
-# Install runtime dependencies for Playwright
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    curl
-
-# Create a non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
-# Set working directory
-WORKDIR /app
-
-# Copy from build stage
-COPY --from=build --chown=appuser:appgroup /app/node_modules ./node_modules
-COPY --from=build --chown=appuser:appgroup /app/package*.json ./
-COPY --from=build --chown=appuser:appgroup /app/client ./client
-COPY --from=build --chown=appuser:appgroup /app/server ./server
-COPY --from=build --chown=appuser:appgroup /app/scripts ./scripts
-COPY --from=build --chown=appuser:appgroup /app/shared ./shared
-COPY --from=build --chown=appuser:appgroup /app/migrations ./migrations
-COPY --from=build --chown=appuser:appgroup /app/tsconfig.json ./
-COPY --from=build --chown=appuser:appgroup /app/.env.example ./.env.example
-COPY --from=build --chown=appuser:appgroup /ms-playwright /ms-playwright
-
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=5000
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-
-# Expose port
-EXPOSE 5000
-
-# Switch to non-root user
-USER appuser
-
-# Set command to run the dev server
-CMD ["npm", "run", "dev"]
->>>>>>> f4f9c01f2e9364c76fa0867836193ea7318b3b60
+# Default command runs all tests with mocks
+CMD ["npm", "run", "test:ci"]

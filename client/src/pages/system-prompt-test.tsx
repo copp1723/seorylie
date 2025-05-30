@@ -52,6 +52,11 @@ Specific Constraints
 
 Always be friendly, helpful, and knowledgeable about vehicles. When customers ask about financing, direct them to {{financingUrl}}. For trade-ins, use {{tradeInUrl}}. To schedule appointments, use {{appointmentUrl}}.`;
 
+type ConversationEntry = {
+  role: "customer" | "assistant";
+  content: string;
+};
+
 export default function NewSystemPromptTester() {
   const [customerMessage, setCustomerMessage] = useState(
     "Hi there, I'm looking for a new SUV for my family. Can you help me?",
@@ -63,9 +68,7 @@ export default function NewSystemPromptTester() {
   const [splitScreen, setSplitScreen] = useState(true);
   const [showVariables, setShowVariables] = useState(true);
   const [activeTab, setActiveTab] = useState("editor");
-  const [conversation, setConversation] = useState<
-    { role: "customer" | "assistant"; content: string }[]
-  >([]);
+  const [conversation, setConversation] = useState<ConversationEntry[]>([]);
   const responseRef = useRef<HTMLDivElement>(null);
 
   // Default values for the replacements
@@ -116,19 +119,14 @@ export default function NewSystemPromptTester() {
     setIsLoading(true);
     setError(null);
 
-    // Add customer message to conversation
-    const updatedConversation = [
-      ...conversation,
-      { role: "customer", content: customerMessage },
-    ];
-    setConversation(updatedConversation);
+    const newCustomerMessageEntry: ConversationEntry = { role: "customer", content: customerMessage };
+    const updatedConversationWithCustomer = [...conversation, newCustomerMessageEntry];
+    setConversation(updatedConversationWithCustomer);
 
-    // Use our standalone approach that's known to work
     const customizedPrompt = generateCustomizedPrompt();
 
-    // Make a direct API call using the simplified approach
     try {
-      const response = await fetch("/api/direct-prompt-test", {
+      const apiResponse = await fetch("/api/direct-prompt-test", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -139,22 +137,19 @@ export default function NewSystemPromptTester() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      if (!apiResponse.ok) {
+        throw new Error(`API error: ${apiResponse.status}`);
       }
 
-      const result = await response.json();
+      const result = await apiResponse.json();
 
       if (result && result.response) {
         setResponse(result.response);
 
-        // Add assistant response to conversation
-        setConversation([
-          ...updatedConversation,
-          { role: "assistant", content: result.response },
-        ]);
+        const newAssistantMessageEntry: ConversationEntry = { role: "assistant", content: result.response };
+        setConversation(prevConversation => [...prevConversation.filter(msg => msg !== newCustomerMessageEntry || msg.content !== customerMessage), newCustomerMessageEntry, newAssistantMessageEntry]);
 
-        // Clear customer message input for next message
+
         setCustomerMessage("");
       } else {
         throw new Error("Invalid response format from API");
@@ -165,15 +160,12 @@ export default function NewSystemPromptTester() {
         err instanceof Error ? err.message : "An unknown error occurred",
       );
 
-      // Add simulated error response to conversation for better UX
-      setConversation([
-        ...updatedConversation,
-        {
-          role: "assistant",
-          content:
-            "I'm sorry, but I encountered an error processing your request. Please try again or contact support if the issue persists.",
-        },
-      ]);
+      const newErrorMessageEntry: ConversationEntry = {
+        role: "assistant",
+        content:
+          "I'm sorry, but I encountered an error processing your request. Please try again or contact support if the issue persists.",
+      };
+      setConversation(prevConversation => [...prevConversation.filter(msg => msg !== newCustomerMessageEntry || msg.content !== customerMessage), newCustomerMessageEntry, newErrorMessageEntry]);
     } finally {
       setIsLoading(false);
     }

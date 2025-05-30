@@ -64,6 +64,11 @@ Specific Constraints
 
 Always be friendly, helpful, and knowledgeable about vehicles. When customers ask about financing, direct them to {{financingUrl}}. For trade-ins, use {{tradeInUrl}}. To schedule appointments, use {{appointmentUrl}}.`;
 
+type ConversationEntry = {
+  role: "customer" | "assistant";
+  content: string;
+};
+
 export default function SystemPromptTester() {
   const { toast } = useToast();
   const [customerMessage, setCustomerMessage] = useState(
@@ -78,9 +83,7 @@ export default function SystemPromptTester() {
   const [splitScreen, setSplitScreen] = useState(true);
   const [showVariables, setShowVariables] = useState(true);
   const [activeTab, setActiveTab] = useState("editor");
-  const [conversation, setConversation] = useState<
-    { role: "customer" | "assistant"; content: string }[]
-  >([]);
+  const [conversation, setConversation] = useState<ConversationEntry[]>([]);
   const responseRef = useRef<HTMLDivElement>(null);
 
   // State for the saved prompt form
@@ -137,18 +140,14 @@ export default function SystemPromptTester() {
     setIsLoading(true);
     setError("");
 
-    // Add customer message to conversation
-    const updatedConversation = [
-      ...conversation,
-      { role: "customer", content: customerMessage },
-    ];
-    setConversation(updatedConversation);
+    const newCustomerMessageEntry: ConversationEntry = { role: "customer", content: customerMessage };
+    // Add customer message to conversation immediately for UI update
+    setConversation(prevConversation => [...prevConversation, newCustomerMessageEntry]);
 
     try {
-      // We'll use fetch directly to a simple API endpoint
       const customizedPrompt = generateCustomizedPrompt();
 
-      const response = await fetch("/api/test-system-prompt", {
+      const apiResponse = await fetch("/api/test-system-prompt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -156,15 +155,17 @@ export default function SystemPromptTester() {
         body: JSON.stringify({
           systemPrompt: customizedPrompt,
           customerMessage,
-          conversation: updatedConversation,
+          // Send the conversation history *before* adding the current customer message,
+          // or adjust backend to handle it if it expects the current message too.
+          // For this example, sending history up to the point before current user message.
+          conversation: conversation,
         }),
       });
 
-      // Check if response is valid before trying to parse JSON
-      const responseText = await response.text();
+      const responseText = await apiResponse.text();
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${responseText}`);
+      if (!apiResponse.ok) {
+        throw new Error(`Error ${apiResponse.status}: ${responseText}`);
       }
 
       let data;
@@ -183,19 +184,35 @@ export default function SystemPromptTester() {
 
       setResponse(data.response);
 
-      // Add assistant response to conversation
-      setConversation([
-        ...updatedConversation,
-        { role: "assistant", content: data.response },
-      ]);
-
-      // Clear customer message input for next message
+      const newAssistantMessageEntry: ConversationEntry = { role: "assistant", content: data.response };
+      // Update conversation: remove the temp customer message if it was added, then add both confirmed customer and assistant message
+      // This ensures no duplicate customer messages if the request fails or if state updates are tricky.
+      // A more robust way might be to only add to conversation on success.
+      setConversation(prevConversation => {
+        // Filter out the optimistic customer message if it's the last one and matches
+        const currentHistory = prevConversation.filter(
+          (msg, index) => !(index === prevConversation.length - 1 && msg.role === "customer" && msg.content === newCustomerMessageEntry.content)
+        );
+        return [...currentHistory, newCustomerMessageEntry, newAssistantMessageEntry];
+      });
+      
       setCustomerMessage("");
     } catch (err) {
       console.error("Error testing prompt:", err);
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred",
-      );
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+      setError(errorMessage);
+
+      // If an error occurs, add an error message from the assistant
+      const errorAssistantMessage: ConversationEntry = {
+        role: "assistant",
+        content: `Sorry, I encountered an error: ${errorMessage}`,
+      };
+       setConversation(prevConversation => {
+        const currentHistory = prevConversation.filter(
+          (msg, index) => !(index === prevConversation.length - 1 && msg.role === "customer" && msg.content === newCustomerMessageEntry.content)
+        );
+        return [...currentHistory, newCustomerMessageEntry, errorAssistantMessage];
+      });
     } finally {
       setIsLoading(false);
     }
@@ -218,7 +235,6 @@ export default function SystemPromptTester() {
     setIsSaving(true);
 
     try {
-      // Create the arguments object with all the variable values
       const args = {
         agentName,
         dealershipName,
@@ -230,7 +246,6 @@ export default function SystemPromptTester() {
         specificConstraints,
       };
 
-      // Parse tags
       const tags = promptTags
         ? promptTags.split(",").map((tag) => tag.trim())
         : [];
@@ -261,14 +276,12 @@ export default function SystemPromptTester() {
         variant: "default",
       });
 
-      // Reset the form and close the dialog
       setPromptName("");
       setPromptDescription("");
       setPromptTags("");
       setIsPublic(false);
       setSaveDialogOpen(false);
 
-      // Refresh the prompt library data
       queryClient.invalidateQueries({ queryKey: ["/api/prompt-library"] });
     } catch (error) {
       console.error("Error saving prompt:", error);
@@ -671,7 +684,7 @@ export default function SystemPromptTester() {
 }
 
 interface TestConversationProps {
-  conversation: { role: "customer" | "assistant"; content: string }[];
+  conversation: ConversationEntry[];
   customerMessage: string;
   setCustomerMessage: (message: string) => void;
   isLoading: boolean;
@@ -689,7 +702,6 @@ function TestConversation({
   error,
   handleKeyDown,
   handleTestPrompt,
-  resetConversation,
 }: TestConversationProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -734,7 +746,7 @@ function TestConversation({
           ))
         )}
 
-        {isLoading && (
+        {isLoading && conversation.length > 0 && conversation[conversation.length -1].role === 'customer' && (
           <div className="self-start bg-white dark:bg-gray-800 shadow-sm max-w-[80%] mb-3 rounded-lg p-3 flex items-center space-x-2">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span className="text-sm">Typing response...</span>
