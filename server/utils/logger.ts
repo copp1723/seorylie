@@ -37,21 +37,15 @@ const logger = winston.createLogger({
 // In production, add file-based logging
 if (process.env.NODE_ENV === 'production') {
   logger.add(
-    new winston.transports.DailyRotateFile({
-      filename: path.join(logsDir, 'application-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      maxSize: '20m',
-      maxFiles: '14d',
+    new winston.transports.File({
+      filename: path.join(logsDir, 'application.log'),
       level: 'info'
     })
   );
 
   logger.add(
-    new winston.transports.DailyRotateFile({
-      filename: path.join(logsDir, 'error-%DATE%.log'),
-      datePattern: 'YYYY-MM-DD',
-      maxSize: '20m',
-      maxFiles: '14d',
+    new winston.transports.File({
+      filename: path.join(logsDir, 'error.log'),
       level: 'error'
     })
   );

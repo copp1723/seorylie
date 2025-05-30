@@ -36,10 +36,10 @@ export async function initializeDefaultUser() {
         zip: '12345',
       }).returning();
 
-      dealershipId = newDealership[0]?.id;
+      dealershipId = newDealership[0]?.id || null;
       logger.info(`Created default dealership with ID: ${dealershipId}`);
     } else {
-      dealershipId = existingDealerships[0]?.id;
+      dealershipId = existingDealerships[0]?.id || null;
     }
 
     if (!dealershipId) {

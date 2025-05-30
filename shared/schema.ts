@@ -305,7 +305,7 @@ export const leadVehicles = pgTable(
   },
   (table) => {
     return {
-      pk: primaryKey({ columns: [table.leadId, table.vehicleId] }),
+      pk: primaryKey([table.leadId, table.vehicleId]),
       leadIdIdx: index("lead_vehicles_lead_id_idx").on(table.leadId),
       vehicleIdIdx: index("lead_vehicles_vehicle_id_idx").on(table.vehicleId),
     };

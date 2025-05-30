@@ -8,23 +8,19 @@
 
   // Files to include in compilation
   "include": [
-    "client/src/**/*",
-    "shared/**/*",
-    "server/**/*",
-    "scripts/**/*"
+    "client/src/components/error-boundary.tsx"
   ],
 
   // Files to exclude from compilation
   "exclude": [
     "node_modules",
-    "build",
+    "build", 
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",
     "test/**/*",
     "coverage/**/*",
-    "client/src/components/bulk-operations/**/*",
-    "client/src/components/command-palette/**/*"
+    "client/src/components/ui/**/*"
   ],
   "compilerOptions": {
     // =============================================================================
