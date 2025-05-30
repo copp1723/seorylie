@@ -50,10 +50,19 @@
     "test:notifications": "tsx scripts/test-notification-system.ts",
     "env:validate": "tsx scripts/validate-environment.ts",
     "env:check": "tsx scripts/check-env.ts",
+    "check-env": "tsx scripts/check-env.ts",
+    "test:fixtures": "jest test/fixtures",
+    "test:mocks": "jest test/mocks",
+    "test:integration-mocks": "jest test/integration --setupFilesAfterEnv='<rootDir>/test/setup/mocks.ts'",
+    "test:adf-mocks": "jest test/adf --setupFilesAfterEnv='<rootDir>/test/setup/mocks.ts'",
+    "test:ci": "jest --coverage --ci --watchAll=false",
+    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "deploy:check": "tsx scripts/deployment-readiness-check.ts",
     "clean": "rm -rf dist build coverage .nyc_output",
     "clean:deps": "rm -rf node_modules package-lock.json && npm install",
-    "setup": "npm install && npm run env:validate && npm run db:push"
+    "setup": "npm install && npm run env:validate && npm run db:push",
+    "health": "curl -s http://localhost:3000/health | npx prettyjson",
+    "adf:health": "curl -s http://localhost:3000/api/health/email | npx prettyjson"
   },
   "dependencies": {
     "@bull-board/api": "^5.8.0",
@@ -155,7 +164,8 @@
     "tsx": "^3.12.7",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
-    "vitest": "^0.34.4"
+    "vitest": "^0.34.4",
+    "prettyjson": "^1.2.1"
   },
   "jest-junit": {
     "outputDirectory": "test-results/jest",
