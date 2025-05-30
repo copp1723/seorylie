@@ -74,13 +74,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // WebSocket state
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [connectionId, setConnectionId] = useState<string | null>(null);
-  const [lastActivity, setLastActivity] = useState<Date | null>(null);
 
   // Chat state
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
 
   const wsRef = useRef<WebSocket | null>(null);

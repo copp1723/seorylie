@@ -12,7 +12,6 @@ import Login from './pages/login';
 import AuthPage from './pages/auth-page';
 import VerifyMagicLink from './pages/verify-magic-link';
 import SimplePromptTestPage from './pages/SimplePromptTestPage';
-import PromptTesting from './pages/prompt-testing';
 import ProtectedPromptTesting from './pages/protected-prompt-testing';
 import EnhancedPromptTesting from './pages/enhanced-prompt-testing';
 import Conversations from './pages/conversations';
