@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from './components/ui/toaster';
 import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './hooks/useAuth';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './components/protected-route';
 import Layout from './components/layout/layout';
 
 // Page imports

@@ -7,7 +7,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import ChatInterface from "@/components/chat/ChatInterface";
+import ChatInterface from "@/components/chat-interface";
 import ChatModeSettings from "@/components/chat/ChatModeSettings";
 
 interface DealershipSettings {
