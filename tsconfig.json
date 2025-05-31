@@ -46,7 +46,7 @@
     // TYPE CHECKING OPTIONS
     // =============================================================================
 
-    // Enable all strict type checking options (relaxed for CI)
+    // Enable all strict type checking options (gradually enabling for security)
     "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": true,

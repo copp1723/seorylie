@@ -20,6 +20,7 @@ import { checkDatabaseConnection } from './db';
 import { initMetrics } from './observability/metrics';
 // import { setupTracing } from './observability/tracing'; // Disabled - missing dependencies
 import { initializeRedis } from './lib/redis';
+import { closeDatabaseConnections } from './db';
 import adfRoutes from './routes/adf-routes';
 import adminRoutes from './routes/admin-routes';
 import authRoutes from './routes/auth-routes';
@@ -151,6 +152,31 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled rejection', { reason, promise });
 });
+
+// Graceful shutdown handling
+async function gracefulShutdown(signal: string) {
+  logger.info(`Received ${signal}, starting graceful shutdown...`);
+  
+  try {
+    // Close HTTP server
+    server.close(() => {
+      logger.info('HTTP server closed');
+    });
+
+    // Close database connections
+    await closeDatabaseConnections();
+    
+    logger.info('Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during graceful shutdown', { error });
+    process.exit(1);
+  }
+}
+
+// Register graceful shutdown handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Start the server
 startServer();

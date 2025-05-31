@@ -996,7 +996,9 @@ class WebSocketService {
             this.handleDisconnection(clientId);
           }
         });
+        this.timers.delete(terminateTimer);
       }, 5000); // Wait 5 seconds for pong responses
+      this.timers.add(terminateTimer);
 
       // Update metrics
       this.updateMetrics();
@@ -1241,7 +1243,7 @@ class WebSocketService {
 
       // TODO: Send to AI service for processing
       // For now, just send a mock AI response after a delay
-      setTimeout((): void => {
+      const aiResponseTimer = setTimeout((): void => {
         this.sendToClient(client.ws, {
           type: MessageType.CHAT_MESSAGE,
           dealershipId: data.dealershipId,
@@ -1253,7 +1255,9 @@ class WebSocketService {
           metadata: { isAiResponse: true },
           traceId: data.traceId
         });
+        this.timers.delete(aiResponseTimer);
       }, 1500);
+      this.timers.add(aiResponseTimer);
     } catch (error) {
       logger.error('Error handling Rylie AI message', {
         error,
@@ -1294,7 +1298,7 @@ class WebSocketService {
         // Get away message template
         const templates = await dealershipConfigService.getTemplateMessages(data.dealershipId);
 
-        setTimeout(() => {
+        const awayMessageTimer = setTimeout(() => {
           this.sendToClient(client.ws, {
             type: MessageType.CHAT_MESSAGE,
             dealershipId: data.dealershipId,
@@ -1306,7 +1310,9 @@ class WebSocketService {
             metadata: { isSystemMessage: true },
             traceId: data.traceId
           });
+          this.timers.delete(awayMessageTimer);
         }, 1000);
+        this.timers.add(awayMessageTimer);
         return;
       }
 
