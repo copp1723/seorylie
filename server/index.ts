@@ -5,6 +5,7 @@ config();
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
+import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
@@ -30,14 +31,21 @@ import sendgridRoutes from './routes/sendgrid-webhook-routes';
 // import traceRoutes from './routes/trace-routes';
 // import { traceCorrelation } from './services/trace-correlation';
 
+import { SERVER_CONFIG, validateRequiredEnvVars } from './config/constants.js';
+
+// Validate required environment variables
+validateRequiredEnvVars();
+
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || '0.0.0.0';
+const { PORT, HOST } = SERVER_CONFIG;
 
 // Setup observability
 initMetrics(app);
 // setupTracing(); // Disabled - missing dependencies
+
+// Security middleware
+app.use(helmet());
 
 // Middleware
 app.use(cors());
@@ -53,12 +61,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Session configuration
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: SERVER_CONFIG.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    secure: SERVER_CONFIG.NODE_ENV === 'production',
+    maxAge: SERVER_CONFIG.SESSION_MAX_AGE
   }
 }));
 

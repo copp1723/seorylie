@@ -4,13 +4,14 @@ import db from '../db';
 import { vehicles, type Vehicle } from '../../shared/schema';
 import { eq, and, ilike, or, sql } from 'drizzle-orm';
 import logger from '../utils/logger';
+import { AI_CONFIG } from '../config/constants.js';
 
 // Initialize OpenAI with the API key from environment variables
 let openai: OpenAI | null = null;
 
 try {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || apiKey.trim() === '' || apiKey === 'sk-actualOpenAIKeyHere') {
+  const apiKey = AI_CONFIG.OPENAI_API_KEY;
+  if (!apiKey || apiKey.trim() === '' || apiKey.startsWith('sk-dummy') || apiKey.includes('placeholder')) {
     console.warn("OpenAI API key not configured - AI features will be disabled");
     openai = null;
   } else {
@@ -93,12 +94,12 @@ export async function generateAIResponse(
         });
       }
 
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      // Use configured AI model and settings
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: AI_CONFIG.DEFAULT_MODEL,
         messages: messages,
-        temperature: 0.7,
-        max_tokens: 800,
+        temperature: AI_CONFIG.TEMPERATURE,
+        max_tokens: AI_CONFIG.MAX_TOKENS,
         response_format: { type: "json_object" }
       });
 
