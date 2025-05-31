@@ -131,9 +131,6 @@ export function getDatabasePoolStats() {
 export { db };
 export default db;
 
-// Export as default for compatibility
-export default db;
-
 // Export the client for direct access if needed
 export { client };
 

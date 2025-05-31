@@ -16,14 +16,14 @@ import { setupWebSocketServer } from './ws-server';
 import logger from './logger';
 import { setupRoutes } from './routes';
 import { checkDatabaseConnection } from './db';
-import { setupMetrics } from './observability/metrics';
-import { setupTracing } from './observability/tracing';
+import { initMetrics } from './observability/metrics';
+// import { setupTracing } from './observability/tracing'; // Disabled - missing dependencies
 import { initializeRedis } from './lib/redis';
 import adfRoutes from './routes/adf-routes';
 import adminRoutes from './routes/admin-routes';
 // import authRoutes from './routes/auth-routes'; // Commented out - auth service not implemented
 import conversationLogsRoutes from './routes/conversation-logs-routes';
-import agentSquadRoutes from './routes/agent-squad-routes';
+// import agentSquadRoutes from './routes/agent-squad-routes'; // Commented out - missing dependencies
 import adfConversationRoutes from './routes/adf-conversation-routes';
 import sendgridRoutes from './routes/sendgrid-webhook-routes';
 // TODO: Re-enable when trace services are available
@@ -36,8 +36,8 @@ const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 // Setup observability
-setupMetrics(app);
-setupTracing();
+initMetrics(app);
+// setupTracing(); // Disabled - missing dependencies
 
 // Middleware
 app.use(cors());
@@ -70,7 +70,7 @@ app.use(express.static(path.join(__dirname, '../dist/public')));
 app.use('/api/admin', adminRoutes);
 app.use('/api/adf', adfRoutes);
 app.use('/api/conversations', conversationLogsRoutes);
-app.use('/api/agent-squad', agentSquadRoutes);
+// app.use('/api/agent-squad', agentSquadRoutes); // Commented out - missing dependencies
 app.use('/api/adf/conversations', adfConversationRoutes);
 // TODO: Re-enable when trace services are available
 // app.use('/api/trace', traceRoutes);

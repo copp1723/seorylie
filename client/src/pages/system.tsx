@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-// import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -75,76 +75,52 @@ const SystemPage: React.FC = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Fetch invitations - TEMPORARILY DISABLED
-  const [invitationsData, setInvitationsData] = useState<{ invitations: Invitation[] } | undefined>(undefined);
-  
-  // TODO: Re-enable React Query
-  // const { data: invitationsData } = useQuery({
-  //   queryKey: ["/api/magic-link/invitations"],
-  //   queryFn: () =>
-  //     apiRequest<{ invitations: Invitation[] }>("/api/magic-link/invitations", {
-  //       method: "GET",
-  //     }),
-  // });
+  const { data: invitationsData } = useQuery({
+    queryKey: ["/api/magic-link/invitations"],
+    queryFn: () =>
+      apiRequest<{ invitations: Invitation[] }>("/api/magic-link/invitations", {
+        method: "GET",
+      }),
+  });
 
-  // Fetch dealerships for dropdown - TEMPORARILY DISABLED
-  const [dealershipsData, setDealershipsData] = useState<{ dealerships: Dealership[] } | undefined>(undefined);
-  
-  // TODO: Re-enable React Query
-  // const { data: dealershipsData } = useQuery({
-  //   queryKey: ["/api/dealerships"],
-  //   queryFn: () =>
-  //     apiRequest<{ dealerships: Dealership[] }>("/api/dealerships", {
-  //       method: "GET",
-  //     }),
-  // });
+  const { data: dealershipsData } = useQuery({
+    queryKey: ["/api/dealerships"],
+    queryFn: () =>
+      apiRequest<{ dealerships: Dealership[] }>("/api/dealerships", {
+        method: "GET",
+      }),
+  });
 
-  // Create invitation mutation - TEMPORARILY DISABLED
-  const createInvitation = {
-    mutate: (data: {
+  const queryClient = useQueryClient();
+
+  const createInvitation = useMutation({
+    mutationFn: (data: {
       email: string;
       role: string;
       dealership_id: number | null;
-    }) => {
-      console.log('Would create invitation:', data);
+    }) =>
+      apiRequest("/api/magic-link/invite", {
+        method: "POST",
+        body: data,
+      }),
+    onSuccess: () => {
       toast({
-        title: "Info",
-        description: "Invitation creation temporarily disabled",
+        title: "Invitation Sent",
+        description: `An invitation has been sent to ${newEmail}`,
       });
       setNewEmail("");
+      queryClient.invalidateQueries({
+        queryKey: ["/api/magic-link/invitations"],
+      });
     },
-    isPending: false
-  };
-  
-  // TODO: Re-enable React Query
-  // const createInvitation = useMutation({
-  //   mutationFn: (data: {
-  //     email: string;
-  //     role: string;
-  //     dealership_id: number | null;
-  //   }) =>
-  //     apiRequest("/api/magic-link/invite", {
-  //       method: "POST",
-  //       body: data,
-  //     }),
-  //   onSuccess: () => {
-  //     toast({
-  //       title: "Invitation Sent",
-  //       description: `An invitation has been sent to ${newEmail}`,
-  //     });
-  //     setNewEmail("");
-  //     queryClient.invalidateQueries({
-  //       queryKey: ["/api/magic-link/invitations"],
-  //     });
-  //   },
-  //   onError: (error) => {
-  //     toast({
-  //       title: "Error",
-  //       description: `Failed to send invitation: ${error.message}`,
-  //       variant: "destructive",
-  //     });
-  //   },
-  // });
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to send invitation: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Delete invitation mutation - TEMPORARILY DISABLED
   const deleteInvitation = {

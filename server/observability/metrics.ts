@@ -12,7 +12,6 @@
  */
 
 import promClient from 'prom-client';
-import promBundle from 'express-prom-bundle';
 import { Express, Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 
@@ -247,18 +246,40 @@ export function updateActiveSandboxes(count: number) {
 
 /**
  * Create Express middleware for metrics collection
+ * Using basic prometheus client without express-prom-bundle
  */
 export function createMetricsMiddleware() {
-  return promBundle({
-    includeMethod: true,
-    includePath: true,
-    includeStatusCode: true,
-    includeUp: true,
-    customLabels: { app: 'cleanrylie' },
-    promClient: { collectDefaultMetrics: {} },
-    metricsPath: '/metrics',
-    promRegistry: register
+  const httpDuration = new promClient.Histogram({
+    name: 'http_request_duration_seconds',
+    help: 'Duration of HTTP requests in seconds',
+    labelNames: ['method', 'status_code', 'path'],
+    registers: [register]
   });
+
+  const httpCounter = new promClient.Counter({
+    name: 'http_requests_total', 
+    help: 'Total number of HTTP requests',
+    labelNames: ['method', 'status_code', 'path'],
+    registers: [register]
+  });
+
+  return (req: Request, res: Response, next: NextFunction) => {
+    const start = Date.now();
+    const path = req.route?.path || req.path || 'unknown';
+    
+    const originalEnd = res.end;
+    res.end = function(...args: any[]) {
+      const duration = (Date.now() - start) / 1000;
+      const statusCode = res.statusCode.toString();
+      
+      httpDuration.labels(req.method, statusCode, path).observe(duration);
+      httpCounter.labels(req.method, statusCode, path).inc();
+      
+      originalEnd.apply(this, args);
+    };
+    
+    next();
+  };
 }
 
 /**
