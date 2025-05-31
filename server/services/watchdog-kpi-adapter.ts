@@ -10,7 +10,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import { logger } from '../utils/logger';
 import { db } from '../db';
 import { dailySpendLogs } from '../../shared/schema';
-import { and, avg, between, count, desc, eq, gte, lte, max, min, sql, sum } from 'drizzle-orm';
+import { and, avg, between, desc, eq, gte, lte, max, min, sql, sum } from 'drizzle-orm';
 import NodeCache from 'node-cache';
 import { promClient } from '../observability/metrics';
 import { retry } from '../utils/retry';

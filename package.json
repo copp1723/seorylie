@@ -1,6 +1,7 @@
 {
   "name": "cleanrylie",
   "version": "1.0.0",
+  "type": "module",
   "description": "CleanRylie - Automotive Dealership AI Platform",
   "main": "index.js",
   "scripts": {
@@ -52,6 +53,9 @@
     "test:ci": "jest --coverage --ci --watchAll=false",
     "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "deploy:check": "tsx scripts/deployment-readiness-check.ts",
+    "deploy:staging": "tsx scripts/deployment-automation.ts staging",
+    "deploy:production": "tsx scripts/deployment-automation.ts production",
+    "deploy:quick": "tsx scripts/deployment-automation.ts staging --skip-tests",
     "clean": "rm -rf dist build coverage .nyc_output",
     "clean:deps": "rm -rf node_modules package-lock.json && npm install",
     "setup": "npm install && npm run env:validate && npm run db:push",

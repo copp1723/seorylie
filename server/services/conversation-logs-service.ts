@@ -1,4 +1,4 @@
-import { eq, desc, and, gte, lte, count, sql } from 'drizzle-orm';
+import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import db from '../db';
 import {
   conversations,
@@ -143,7 +143,7 @@ export class ConversationLogsService {
 
       // Get total count
       const totalCountResult = await db
-        .select({ count: count() })
+        .select({ count: sql`COUNT(*)` })
         .from(conversations)
         .leftJoin(customers, eq(conversations.customerId, customers.id))
         .leftJoin(leads, eq(conversations.leadId, leads.id))
@@ -335,7 +335,7 @@ export class ConversationLogsService {
 
   private async getConversationMessageStats(conversationId: string) {
     const messageCountResult = await db
-      .select({ count: count() })
+      .select({ count: sql`COUNT(*)` })
       .from(messages)
       .where(eq(messages.conversationId, conversationId));
 
@@ -354,7 +354,7 @@ export class ConversationLogsService {
 
   private async getConversationEscalationStats(conversationId: string) {
     const escalationCountResult = await db
-      .select({ count: count() })
+      .select({ count: sql`COUNT(*)` })
       .from(handovers)
       .where(eq(handovers.conversationId, conversationId));
 
@@ -380,19 +380,19 @@ export class ConversationLogsService {
 
     // Total conversations
     const totalResult = await db
-      .select({ count: count() })
+      .select({ count: sql`COUNT(*)` })
       .from(conversations)
       .where(and(...whereConditions));
 
     // Active conversations
     const activeResult = await db
-      .select({ count: count() })
+      .select({ count: sql`COUNT(*)` })
       .from(conversations)
       .where(and(...whereConditions, eq(conversations.status, 'active')));
 
     // Escalated conversations
     const escalatedResult = await db
-      .select({ count: count() })
+      .select({ count: sql`COUNT(*)` })
       .from(conversations)
       .innerJoin(handovers, eq(conversations.id, handovers.conversationId))
       .where(and(...whereConditions));

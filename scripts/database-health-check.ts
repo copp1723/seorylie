@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 
 import db, { executeQuery, checkDatabaseConnection } from '../server/db';
-import { sql, count, eq } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 import logger from '../server/utils/logger';
 
 // Import all tables from schemas
@@ -92,7 +92,7 @@ async function checkTableExists(tableName: string): Promise<boolean> {
 async function getTableCount(table: any, tableName: string): Promise<number> {
   try {
     const result = await executeQuery(async () => {
-      return await db.select({ count: count() }).from(table);
+      return await db.select({ count: sql`COUNT(*)` }).from(table);
     });
     return result[0]?.count || 0;
   } catch (error) {

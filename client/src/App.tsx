@@ -22,6 +22,7 @@ import Security from './pages/security';
 import NotFound from './pages/not-found';
 import AgentStudio from './pages/agent-studio';
 import IntegrationDashboardPage from './pages/integration-dashboard';
+import AdminDealershipsPage from './pages/admin/dealerships';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -97,6 +98,12 @@ function App() {
                 <Route path="/integration">
                   <ProtectedRoute>
                     <IntegrationDashboardPage />
+                  </ProtectedRoute>
+                </Route>
+                {/* Admin Dealerships route */}
+                <Route path="/admin/dealerships">
+                  <ProtectedRoute>
+                    <AdminDealershipsPage />
                   </ProtectedRoute>
                 </Route>
                 {/* Catch-all route */}

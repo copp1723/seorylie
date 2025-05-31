@@ -1,4 +1,4 @@
-import { eq, and, desc, count, gte, lte } from 'drizzle-orm';
+import { eq, and, desc, gte, lte, sql } from 'drizzle-orm';
 import db from '../db';
 import { 
   customers, 
@@ -135,7 +135,7 @@ export class LeadService {
 
     // Count existing leads for this dealership within the same year
     const [{ total }] = await db
-      .select({ total: count(leads.id).as('total') })
+      .select({ total: sql`COUNT(${leads.id})`.as('total') })
       .from(leads)
       .where(and(
         eq(leads.dealershipId, dealershipId),
