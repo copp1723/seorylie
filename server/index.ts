@@ -20,11 +20,14 @@ import { checkDatabaseConnection } from './db';
 // import { setupTracing } from './observability/tracing';
 import adfRoutes from './routes/adf-routes';
 import adminRoutes from './routes/admin-routes';
-import authRoutes from './routes/auth-routes';
+// import authRoutes from './routes/auth-routes'; // Commented out - auth service not implemented
 import conversationLogsRoutes from './routes/conversation-logs-routes';
 import agentSquadRoutes from './routes/agent-squad-routes';
 import adfConversationRoutes from './routes/adf-conversation-routes';
 import sendgridRoutes from './routes/sendgrid-webhook-routes';
+// TODO: Re-enable when trace services are available
+// import traceRoutes from './routes/trace-routes';
+// import { traceCorrelation } from './services/trace-correlation';
 
 // Initialize Express app
 const app = express();
@@ -39,6 +42,13 @@ const HOST = process.env.HOST || '0.0.0.0';
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// TODO: Re-enable when trace correlation service is available
+// Add trace correlation middleware (before other routes)
+// if (traceCorrelation.isEnabled()) {
+//   app.use(traceCorrelation.middleware());
+//   logger.info('Trace correlation middleware enabled');
+// }
 
 // Session configuration
 app.use(session({
@@ -55,12 +65,15 @@ app.use(session({
 app.use(express.static(path.join(__dirname, '../dist/public')));
 
 // API routes
-// app.use('/api/auth', authRoutes);
-// app.use('/api/admin', adminRoutes);
-// app.use('/api/adf', adfRoutes);
-// app.use('/api/conversations', conversationLogsRoutes);
-// app.use('/api/agent-squad', agentSquadRoutes);
-// app.use('/api/adf/conversations', adfConversationRoutes);
+// app.use('/api/auth', authRoutes); // Commented out - auth service not implemented
+app.use('/api/admin', adminRoutes);
+app.use('/api/adf', adfRoutes);
+app.use('/api/conversations', conversationLogsRoutes);
+app.use('/api/agent-squad', agentSquadRoutes);
+app.use('/api/adf/conversations', adfConversationRoutes);
+// TODO: Re-enable when trace services are available
+// app.use('/api/trace', traceRoutes);
+// app.use('/api/agents', agentOrchestrationRoutes);
 
 // SendGrid webhook routes (safe to enable - doesn't affect existing system)
 app.use('/api/sendgrid', sendgridRoutes);
@@ -91,7 +104,7 @@ const server = createServer(app);
 // Start server
 async function startServer() {
   try {
-    // Check database connection
+    // Check database connection - temporarily disabled for testing
     // await checkDatabaseConnection();
     
     // Start HTTP server

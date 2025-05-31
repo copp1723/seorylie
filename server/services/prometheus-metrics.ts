@@ -7,7 +7,7 @@ import logger from '../utils/logger';
  * Implements comprehensive observability metrics for:
  * - ADF lead processing pipeline
  * - AI response generation
- * - Handover triggers
+ * - Handover triggers and dossier generation (ADF-08)
  * - IMAP connectivity
  * - System performance
  */
@@ -19,6 +19,10 @@ class PrometheusMetricsService {
   public readonly aiResponseLatency: Histogram<string>;
   public readonly handoverTriggerTotal: Counter<string>;
   public readonly adfImapDisconnectionsTotal: Counter<string>;
+  
+  // ADF-08 Handover Dossier Metrics (NEW)
+  public readonly handoverDossierGenerationMs: Histogram<string>;
+  public readonly handoverEmailSentTotal: Counter<string>;
   
   // System Performance Metrics
   public readonly httpRequestDuration: Histogram<string>;
@@ -64,6 +68,22 @@ class PrometheusMetricsService {
       name: 'adf_imap_disconnections_total',
       help: 'Total number of IMAP disconnections',
       labelNames: ['server', 'reason'],
+      registers: [register]
+    });
+
+    // ADF-08 Handover Dossier Metrics
+    this.handoverDossierGenerationMs = new Histogram({
+      name: 'handover_dossier_generation_ms',
+      help: 'Handover dossier generation time in milliseconds',
+      labelNames: ['dealership_id', 'status'],
+      buckets: [100, 250, 500, 1000, 2500, 5000, 10000, 15000, 20000, 30000],
+      registers: [register]
+    });
+
+    this.handoverEmailSentTotal = new Counter({
+      name: 'handover_email_sent_total',
+      help: 'Total number of handover emails sent',
+      labelNames: ['dealership_id', 'status', 'template'],
       registers: [register]
     });
 
@@ -133,7 +153,7 @@ class PrometheusMetricsService {
       registers: [register]
     });
 
-    logger.info('Prometheus metrics service initialized');
+    logger.info('Prometheus metrics service initialized with ADF-08 handover metrics');
   }
 
   public static getInstance(): PrometheusMetricsService {
@@ -202,6 +222,53 @@ class PrometheusMetricsService {
       server,
       reason
     });
+  }
+
+  /**
+   * ADF-08: Record handover dossier generation time
+   */
+  public recordDossierGenerationTime(
+    timeMs: number,
+    dealershipId: string,
+    status: 'success' | 'failed' | 'partial'
+  ): void {
+    try {
+      this.handoverDossierGenerationMs.observe({
+        dealership_id: dealershipId,
+        status
+      }, timeMs);
+    } catch (error) {
+      logger.error('Error recording handover_dossier_generation_ms metric', {
+        error: error instanceof Error ? error.message : String(error),
+        timeMs,
+        dealershipId,
+        status
+      });
+    }
+  }
+
+  /**
+   * ADF-08: Record handover email sent event
+   */
+  public recordHandoverEmailSent(
+    dealershipId: string,
+    status: 'sent' | 'failed' | 'queued',
+    template: string = 'default'
+  ): void {
+    try {
+      this.handoverEmailSentTotal.inc({
+        dealership_id: dealershipId,
+        status,
+        template
+      });
+    } catch (error) {
+      logger.error('Error recording handover_email_sent_total metric', {
+        error: error instanceof Error ? error.message : String(error),
+        dealershipId,
+        status,
+        template
+      });
+    }
   }
 
   /**
