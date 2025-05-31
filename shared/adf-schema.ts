@@ -1,3 +1,15 @@
+/**
+ * ADF (Automotive Data Format) Schema
+ * 
+ * This schema defines tables and types for handling ADF lead processing,
+ * including lead storage, processing logs, email queue management, and SMS integration.
+ * 
+ * Based on migrations:
+ * - 0011_adf_sms_responses_table.sql
+ * - 0014_adf_conversation_integration.sql
+ * - References from schema-resolver.ts
+ */
+
 import { pgTable, serial, text, varchar, timestamp, boolean, integer, json, decimal, index, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";

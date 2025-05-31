@@ -463,6 +463,204 @@ Authorization: Bearer <jwt-token>
 }
 ```
 
+### ADF Conversation Management
+
+CleanRylie includes comprehensive ADF (Automotive Data Format) conversation management endpoints that provide real-time conversation tracking, messaging, and analytics capabilities implemented as part of ADF-015.
+
+#### List ADF Conversations
+```http
+GET /api/adf/conversations
+Authorization: Bearer <jwt-token>
+```
+
+**Query Parameters:**
+- `page` (integer): Page number (default: 1)
+- `limit` (integer): Items per page (default: 20, max: 100)
+- `status` (string): Filter by conversation status
+- `channel` (string): Filter by communication channel
+- `source` (string): Filter by lead source
+- `search` (string): Search in conversation content
+- `startDate` (string): Filter from date (ISO 8601)
+- `endDate` (string): Filter to date (ISO 8601)
+- `sortBy` (string): Sort field
+- `sortDirection` (string): Sort direction (`asc`, `desc`)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 123,
+      "customer_name": "Jane Smith",
+      "customer_phone": "+1-555-0456",
+      "customer_email": "jane.smith@email.com",
+      "channel": "web",
+      "status": "active",
+      "adf_lead_id": 456,
+      "last_activity_at": "2024-01-15T10:25:00Z",
+      "message_count": 5,
+      "customer_response_rate": 85.5,
+      "average_response_time": 300,
+      "created_at": "2024-01-15T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 150,
+      "has_more": true
+    }
+  }
+}
+```
+
+#### Get ADF Conversation Statistics
+```http
+GET /api/adf/conversations/stats
+Authorization: Bearer <jwt-token>
+```
+
+**Query Parameters:**
+- `timeframe` (string): Time period (`hour`, `day`, `week`, `month`)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "total_conversations": 245,
+    "active_conversations": 12,
+    "response_rate": 87.3,
+    "average_response_time": 245,
+    "engagement_by_time": [
+      {"time": "2024-01-15T09:00:00Z", "count": 15},
+      {"time": "2024-01-15T10:00:00Z", "count": 23}
+    ]
+  }
+}
+```
+
+#### Get Conversation Details
+```http
+GET /api/adf/conversations/{conversation_id}
+Authorization: Bearer <jwt-token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 123,
+    "customer_name": "Jane Smith",
+    "customer_phone": "+1-555-0456",
+    "customer_email": "jane.smith@email.com",
+    "channel": "web",
+    "status": "active",
+    "adf_lead_id": 456,
+    "last_activity_at": "2024-01-15T10:25:00Z",
+    "message_count": 5,
+    "customer_response_rate": 85.5,
+    "average_response_time": 300,
+    "created_at": "2024-01-15T10:00:00Z"
+  }
+}
+```
+
+#### Get Conversation Messages
+```http
+GET /api/adf/conversations/{conversation_id}/messages
+Authorization: Bearer <jwt-token>
+```
+
+**Query Parameters:**
+- `cursor` (string): Cursor for pagination
+- `limit` (integer): Items per page (default: 25, max: 200)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 789,
+      "content": "I'm interested in the 2024 Honda Civic",
+      "is_from_customer": true,
+      "channel": "web",
+      "delivery_status": "delivered",
+      "ai_confidence": 0.95,
+      "metadata": {
+        "intent": "vehicle_inquiry",
+        "sentiment": "positive"
+      },
+      "created_at": "2024-01-15T10:25:00Z"
+    }
+  ],
+  "meta": {
+    "cursor": "next_page_cursor",
+    "has_more": true
+  }
+}
+```
+
+#### Get Lead Context for Conversation
+```http
+GET /api/adf/conversations/{conversation_id}/lead-context
+Authorization: Bearer <jwt-token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "lead": {
+      "id": 456,
+      "customer_name": "Jane Smith",
+      "vehicle_interest": "2024 Honda Civic",
+      "source": "website",
+      "status": "new"
+    },
+    "vehicle_context": {
+      "make": "Honda",
+      "model": "Civic",
+      "year": 2024,
+      "available_inventory": 5
+    }
+  }
+}
+```
+
+#### Log Conversation Event
+```http
+POST /api/adf/conversations/{conversation_id}/events
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "event_type": "handover",
+  "description": "Escalated to sales manager",
+  "metadata": {
+    "agent_id": 45,
+    "reason": "complex_inquiry"
+  }
+}
+```
+
+#### Update Conversation Status
+```http
+POST /api/adf/conversations/{conversation_id}/status
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "status": "escalated",
+  "notes": "Customer requires pricing information"
+}
+```
+
 ### Lead Management
 
 #### Create Lead

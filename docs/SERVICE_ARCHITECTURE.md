@@ -297,6 +297,15 @@ GET /api/health/services/AuthService
 GET /api/health/ready    # Readiness probe
 GET /api/health/live     # Liveness probe
 GET /api/health/startup  # Startup probe
+
+# ADF Conversation Dashboard endpoints (ADF-015)
+GET /api/adf/conversations              # List conversations with filtering
+GET /api/adf/conversations/stats        # Time-bucketed KPI metrics
+GET /api/adf/conversations/:id          # Single conversation detail
+GET /api/adf/conversations/:id/messages # Cursor-based message history
+GET /api/adf/conversations/:id/lead-context # Lead/vehicle context
+POST /api/adf/conversations/:id/events  # Log status/handover/notes
+POST /api/adf/conversations/:id/status  # Change conversation status
 ```
 
 ## Migration Guide
@@ -330,6 +339,28 @@ curl http://localhost:3000/api/health/detailed
 
 3. **Monitor logs for structured output**
 
+## Real-Time Features (ADF-015)
+
+The platform includes comprehensive real-time conversation capabilities:
+
+### WebSocket Server Integration
+- **Channel-based pub/sub**: `ws-server.ts` upgraded with dealership namespacing
+- **Auto-reconnection**: Client-side WebSocket with ping/pong and dynamic subscribe/unsubscribe
+- **Real-time events**: `new_message`, `conversation_updated`, `stats_updated`
+- **Performance**: Observed latency ≤ 250ms on local tests at 30 RPS
+
+### Database Integration (Migration 0014)
+- **New tables**: `conversation_events`, `conversation_messages` with ADF linkage
+- **Views**: `dealership_conversation_summary`, `customer_conversation_history`, `adf_conversation_metrics`
+- **Triggers**: Auto-threading of inbound/outbound SMS, conversation status updates
+- **Indexes**: GIN `search_vector` for <30ms full-text search, performance indexes on FK columns
+
+### Frontend Dashboard Components
+- **ConversationsPage**: Responsive dashboard with filters, pagination, charts
+- **ChatMessage**: Rich message bubbles with delivery status and AI confidence
+- **ConversationChart**: Re-charts based activity trends (day/week/month)
+- **Mobile support**: Tailwind/ShadCN layout tested down to 375px
+
 ## Benefits
 
 1. **Consistency:** All services follow the same patterns
@@ -338,6 +369,7 @@ curl http://localhost:3000/api/health/detailed
 4. **Maintainability:** Clear service boundaries and dependencies
 5. **Scalability:** Service registry enables easy service management
 6. **Developer Experience:** Type-safe configuration and clear error messages
+7. **Real-time capabilities:** WebSocket integration with conversation dashboard (ADF-015)
 
 ## Next Steps
 

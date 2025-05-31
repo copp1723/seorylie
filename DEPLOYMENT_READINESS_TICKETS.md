@@ -87,145 +87,129 @@
 
 ---
 
-## PHASE 2: HIGH PRIORITY ISSUES
+## PHASE 2: HIGH PRIORITY ISSUES (UPDATED SCOPE)
 
-### TICKET DEP-005: Complete Authentication System
-**Priority**: HIGH  
-**Estimate**: 12 hours  
-**Assignee**: Backend Developer  
+### TICKET DEP-004: Complete Authentication System
+**Priority**: HIGH
+**Estimate**: 6 hours
+**Assignee**: Backend Developer
+**Status**: UPDATED - Reduced scope
 
-**Description**: Implement missing authentication functionality and fix auth-related errors.
+**Description**: Complete remaining authentication functionality.
 
 **Tasks**:
-- [ ] Implement missing auth service functions
-- [ ] Uncomment and fix auth routes
 - [ ] Implement verifyMagicLink function in useAuth hook
-- [ ] Fix JWT token handling inconsistencies
+- [ ] Test magic link verification flow
+- [ ] Ensure JWT token validation works
 - [ ] Add proper error handling for auth failures
-- [ ] Test authentication flow end-to-end
 
 **Acceptance Criteria**:
-- [ ] All auth routes are functional
 - [ ] Magic link verification works
 - [ ] JWT tokens are properly validated
-- [ ] Auth middleware functions correctly
+- [ ] Auth error handling is robust
 
 **Files to Modify**:
-- `server/routes/auth-routes.ts`
-- `server/services/auth-service.ts`
 - `client/src/hooks/useAuth.tsx`
-- `server/middleware/authentication.ts`
+- `server/services/auth-service.ts`
 
 ---
 
-### TICKET DEP-006: Fix API Endpoint Type Mismatches
-**Priority**: HIGH  
-**Estimate**: 8 hours  
-**Assignee**: Full-stack Developer  
+### TICKET DEP-005: Fix Remaining API Issues
+**Priority**: HIGH
+**Estimate**: 4 hours
+**Assignee**: Full-stack Developer
+**Status**: UPDATED - Focused scope
 
-**Description**: Resolve API client/server type mismatches and method conflicts.
+**Description**: Fix remaining API client/server mismatches.
 
 **Tasks**:
 - [ ] Add PATCH method support to API client
-- [ ] Fix function signature mismatches (useFeatureFlag, apiRequest)
-- [ ] Align request/response types between client and server
-- [ ] Update API schemas to match actual implementations
-- [ ] Test all API endpoints for type consistency
+- [ ] Fix remaining function signature mismatches
+- [ ] Test critical API endpoints
+- [ ] Validate request/response types
 
 **Acceptance Criteria**:
 - [ ] All HTTP methods are supported
-- [ ] Function calls match their definitions
-- [ ] API requests/responses have consistent types
+- [ ] Critical API endpoints work correctly
+- [ ] No type errors in API calls
 
 **Files to Modify**:
 - `client/src/lib/api-client.ts`
 - `shared/api-schemas.ts`
-- Various API route files
 
 ---
 
-### TICKET DEP-007: Fix Frontend Component Issues
-**Priority**: HIGH  
-**Estimate**: 10 hours  
-**Assignee**: Frontend Developer  
+### TICKET DEP-006: Complete Missing UI Components
+**Priority**: MEDIUM
+**Estimate**: 4 hours
+**Assignee**: Frontend Developer
+**Status**: UPDATED - Minimal scope
 
-**Description**: Resolve missing UI components and hook signature mismatches.
+**Description**: Add any remaining missing UI components.
 
 **Tasks**:
-- [ ] Import missing Tabs components or create them
-- [ ] Fix useFeatureFlag hook signature
-- [ ] Fix useLoading hook missing methods (setError, withLoading, getKeyProgress)
-- [ ] Resolve Theme vs string type conflicts
-- [ ] Fix SkeletonLoader style jsx issues
-- [ ] Update component prop types to match usage
+- [ ] Create missing Tabs components if needed
+- [ ] Verify all UI components render correctly
+- [ ] Test component interactions
 
 **Acceptance Criteria**:
 - [ ] All UI components render without errors
-- [ ] Hooks work with expected parameters
-- [ ] No TypeScript errors in component files
+- [ ] No missing component imports
 
 **Files to Modify**:
-- `client/src/components/ui/tabs.tsx` (create if missing)
-- `client/src/hooks/useFeatureFlag.tsx`
-- `client/src/contexts/LoadingContext.tsx`
-- `client/src/components/loading/SkeletonLoader.tsx`
+- `client/src/components/ui/tabs.tsx` (if missing)
 
 ---
 
-## PHASE 3: MEDIUM PRIORITY ISSUES
+## PHASE 3: MEDIUM PRIORITY ISSUES (UPDATED SCOPE)
 
-### TICKET DEP-008: Complete Service Layer Implementation
-**Priority**: MEDIUM  
-**Estimate**: 16 hours  
-**Assignee**: Backend Developer  
+### TICKET DEP-007: Complete Service Layer Implementation
+**Priority**: MEDIUM
+**Estimate**: 8 hours
+**Assignee**: Backend Developer
+**Status**: UPDATED - Focused scope
 
-**Description**: Implement TODO methods and fix missing service exports.
+**Description**: Complete critical service implementations.
 
 **Tasks**:
-- [ ] Implement TODO methods in conversation-logs-service
-- [ ] Fix missing service exports (setupWebSocketServer, checkDatabaseConnection)
+- [ ] Implement setupWebSocketServer function
+- [ ] Fix missing service exports
 - [ ] Complete observability setup (metrics, tracing)
-- [ ] Fix file watcher close method in config-manager
-- [ ] Implement missing service factory methods
+- [ ] Implement TODO methods in conversation-logs-service
 
 **Acceptance Criteria**:
-- [ ] All services have complete implementations
 - [ ] WebSocket server can be initialized
-- [ ] Database connection checking works
+- [ ] All critical services have complete implementations
 - [ ] Observability features are functional
 
 **Files to Modify**:
-- `server/services/conversation-logs-service.ts`
 - `server/ws-server.ts`
-- `server/db.ts`
+- `server/services/conversation-logs-service.ts`
 - `server/observability/metrics.ts`
-- `server/config/config-manager.ts`
 
 ---
 
-### TICKET DEP-009: Fix Environment and Configuration
-**Priority**: MEDIUM  
-**Estimate**: 6 hours  
-**Assignee**: DevOps Developer  
+### TICKET DEP-008: Fix Environment and Configuration
+**Priority**: MEDIUM
+**Estimate**: 4 hours
+**Assignee**: DevOps Developer
+**Status**: UPDATED - Simplified scope
 
-**Description**: Ensure environment validation and configuration work properly.
+**Description**: Ensure environment validation works with chalk dependency.
 
 **Tasks**:
-- [ ] Fix environment check scripts
-- [ ] Implement proper Redis initialization
-- [ ] Add database migration validation
-- [ ] Create health check endpoints
+- [ ] Fix environment check scripts (after chalk installation)
 - [ ] Test configuration loading
+- [ ] Validate health check endpoints
+- [ ] Ensure Redis initialization works
 
 **Acceptance Criteria**:
 - [ ] Environment validation scripts run successfully
-- [ ] Redis connects properly in all environments
-- [ ] Database migrations can be verified
 - [ ] Health checks return accurate status
+- [ ] Configuration loading works correctly
 
 **Files to Modify**:
 - `scripts/check-env.ts`
-- `server/lib/redis.ts`
 - `server/routes.ts` (health checks)
 
 ---

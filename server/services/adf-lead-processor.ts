@@ -8,7 +8,7 @@ import {
   type InsertAdfEmailQueue,
   type InsertAdfProcessingLog,
   type AdfProcessingStatus
-} from '@shared/adf-schema';
+} from '../../shared/adf-schema';
 import { AdfParser } from './adf-parser';
 import logger from '../utils/logger';
 
@@ -481,4 +481,8 @@ export class AdfLeadProcessor {
   }
 }
 
+// Export the class as default
 export default AdfLeadProcessor;
+
+// Export a singleton instance for easy use
+export const adfLeadProcessor = new AdfLeadProcessor();

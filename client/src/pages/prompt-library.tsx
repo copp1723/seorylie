@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { promptLibraryApi, queryClient } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
+// import { useQuery, useMutation } from "@tanstack/react-query";
+// import { promptLibraryApi, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,33 +16,64 @@ export default function PromptLibraryPage() {
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState("test");
 
-  // Query for system prompts
-  const { data: systemPromptsData, isLoading: systemPromptsLoading } = useQuery(
-    {
-      queryKey: ["/api/prompt-library/system-prompts"],
-      queryFn: () => promptLibraryApi.getSystemPrompts(),
-    },
-  );
+  // Query for system prompts - TEMPORARILY DISABLED
+  const [systemPromptsData, setSystemPromptsData] = useState<any>(undefined);
+  const [systemPromptsLoading, setSystemPromptsLoading] = useState(false);
+  
+  // TODO: Re-enable React Query
+  // const { data: systemPromptsData, isLoading: systemPromptsLoading } = useQuery(
+  //   {
+  //     queryKey: ["/api/prompt-library/system-prompts"],
+  //     queryFn: () => promptLibraryApi.getSystemPrompts(),
+  //   },
+  // );
 
-  // Query for test history
-  const { data: testHistoryData, isLoading: testHistoryLoading } = useQuery({
-    queryKey: ["/api/prompt-library/history"],
-    queryFn: () => promptLibraryApi.getTestHistory(),
-    enabled: activeTab === "history",
-  });
+  // Query for test history - TEMPORARILY DISABLED
+  const [testHistoryData, setTestHistoryData] = useState<any>(undefined);
+  const [testHistoryLoading, setTestHistoryLoading] = useState(false);
+  
+  // TODO: Re-enable React Query
+  // const { data: testHistoryData, isLoading: testHistoryLoading } = useQuery({
+  //   queryKey: ["/api/prompt-library/history"],
+  //   queryFn: () => promptLibraryApi.getTestHistory(),
+  //   enabled: activeTab === "history",
+  // });
 
-  // Mutation for testing prompts
-  const testPromptMutation = useMutation({
-    mutationFn: (data: {
+  // Mutation for testing prompts - TEMPORARILY DISABLED
+  const testPromptMutation = {
+    mutate: (data: {
       prompt: string;
       variables?: Record<string, string>;
-    }) => promptLibraryApi.testPrompt(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/prompt-library/history"],
-      });
+    }) => {
+      console.log('Would test prompt:', data);
+      // Simulate response for testing
+      const mockResponse = {
+        processedPrompt: data.prompt,
+        aiResponse: "This is a mock response for testing purposes",
+        timestamp: new Date().toISOString()
+      };
+      setTestPromptMutation(prev => ({ ...prev, data: mockResponse }));
     },
-  });
+    isPending: false,
+    isError: false,
+    error: null,
+    data: null
+  };
+  
+  const [testPromptMutationState, setTestPromptMutation] = useState(testPromptMutation);
+  
+  // TODO: Re-enable React Query
+  // const testPromptMutation = useMutation({
+  //   mutationFn: (data: {
+  //     prompt: string;
+  //     variables?: Record<string, string>;
+  //   }) => promptLibraryApi.testPrompt(data),
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({
+  //       queryKey: ["/api/prompt-library/history"],
+  //     });
+  //   },
+  // });
 
   // Handle prompt selection from library
   const handleSelectPrompt = (template: string, promptVariables: string[]) => {
@@ -64,7 +95,7 @@ export default function PromptLibraryPage() {
     const variablesToSubmit =
       Object.keys(variables).length > 0 ? variables : undefined;
 
-    testPromptMutation.mutate({
+    testPromptMutationState.mutate({
       prompt,
       variables: variablesToSubmit,
     });
@@ -147,10 +178,10 @@ export default function PromptLibraryPage() {
 
                 <Button
                   onClick={handleTestPrompt}
-                  disabled={testPromptMutation.isLoading || !prompt.trim()}
+                  disabled={testPromptMutationState.isPending || !prompt.trim()}
                   className="w-full"
                 >
-                  {testPromptMutation.isLoading && (
+                  {testPromptMutationState.isPending && (
                     <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Test Prompt
@@ -163,44 +194,44 @@ export default function PromptLibraryPage() {
                 <CardTitle>Test Results</CardTitle>
               </CardHeader>
               <CardContent>
-                {testPromptMutation.isError && (
+                {testPromptMutationState.isError && (
                   <Alert variant="destructive" className="mb-4">
                     <AlertDescription>
-                      {testPromptMutation.error instanceof Error
-                        ? testPromptMutation.error.message
+                      {testPromptMutationState.error instanceof Error
+                        ? testPromptMutationState.error.message
                         : "An error occurred while testing the prompt."}
                     </AlertDescription>
                   </Alert>
                 )}
 
-                {testPromptMutation.data && (
+                {testPromptMutationState.data && (
                   <div>
                     <div className="mb-4">
                       <h3 className="text-lg font-medium mb-2">
                         Processed Prompt
                       </h3>
                       <div className="p-3 bg-muted rounded-md whitespace-pre-wrap">
-                        {testPromptMutation.data.processedPrompt}
+                        {testPromptMutationState.data.processedPrompt}
                       </div>
                     </div>
 
                     <div className="mb-4">
                       <h3 className="text-lg font-medium mb-2">AI Response</h3>
                       <div className="p-3 bg-muted rounded-md whitespace-pre-wrap">
-                        {testPromptMutation.data.aiResponse}
+                        {testPromptMutationState.data.aiResponse}
                       </div>
                     </div>
 
                     <div className="text-sm text-muted-foreground">
                       Tested at:{" "}
                       {new Date(
-                        testPromptMutation.data.timestamp,
+                        testPromptMutationState.data.timestamp,
                       ).toLocaleString()}
                     </div>
                   </div>
                 )}
 
-                {!testPromptMutation.data && !testPromptMutation.isError && (
+                {!testPromptMutationState.data && !testPromptMutationState.isError && (
                   <div className="text-center py-12 text-muted-foreground">
                     Test a prompt to see results
                   </div>

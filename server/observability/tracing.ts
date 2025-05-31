@@ -17,7 +17,7 @@ import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
-import { WsInstrumentation } from '@opentelemetry/instrumentation-ws';
+// import { WsInstrumentation } from '@opentelemetry/instrumentation-ws';
 import { AlwaysOnSampler, AlwaysOffSampler, ParentBasedSampler, TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-base';
 import { Span, SpanStatusCode, context, trace } from '@opentelemetry/api';
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
@@ -125,9 +125,9 @@ export function initTracing() {
         captureParameters: ENVIRONMENT !== 'production', // Don't capture query params in prod
       }),
       new RedisInstrumentation(),
-      new WsInstrumentation({
-        traceReconnect: false, // Don't trace reconnection events
-      }),
+      // new WsInstrumentation({
+      //   traceReconnect: false, // Don't trace reconnection events
+      // }),
     ],
     // Use W3C trace context for interoperability
     propagator: new W3CTraceContextPropagator(),
