@@ -2,8 +2,8 @@ import { EventEmitter } from 'events';
 import logger from '../utils/logger';
 import db from '../db';
 import { eq } from 'drizzle-orm';
-import { adfLeads } from '@shared/adf-schema';
-import { openai } from '../utils/openai';
+import { adfLeads } from '@shared/schema-resolver';
+import { openai } from './openai';
 import { sendAdfResponseEmail } from './email-service';
 
 export interface AdfResponseResult {

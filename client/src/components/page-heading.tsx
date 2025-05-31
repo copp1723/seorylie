@@ -1,6 +1,6 @@
 import React from "react";
 
-interface PageHeadingProps {
+export interface PageHeadingProps {
   title: string;
   description?: string;
   children?: React.ReactNode;

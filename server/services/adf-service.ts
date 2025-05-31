@@ -2,12 +2,12 @@ import { EventEmitter } from 'events';
 import logger from '../utils/logger';
 import db from '../db';
 import { sql } from 'drizzle-orm';
-// TODO: Fix missing modules - temporarily commented out for build
-// import { adfEmailListener } from './adf-email-listener';
+import { adfEmailListener } from './adf-email-listener';
 import { adfLeadProcessor } from './adf-lead-processor';
-// import { adfResponseOrchestrator } from './adf-response-orchestrator';
+import { adfResponseOrchestrator } from './adf-response-orchestrator';
 import { adfSmsResponseSender } from './adf-sms-response-sender';
 import { twilioSMSService } from './twilio-sms-service';
+import { dlqService } from './dead-letter-queue';
 
 export interface AdfServiceConfig {
   enabled?: boolean;
@@ -52,6 +52,9 @@ export class AdfService extends EventEmitter {
     // Setup orchestrator integration
     this.setupOrchestratorIntegration();
     
+    // Setup DLQ retry handlers
+    this.setupDlqRetryHandlers();
+    
     // Initialize SMS response sender
     adfSmsResponseSender.initialize().catch(error => {
       logger.error('Failed to initialize ADF SMS Response Sender', error);
@@ -78,10 +81,9 @@ export class AdfService extends EventEmitter {
       
       // Start email listener if enabled
       if (this.config.emailPollingEnabled) {
-        // TODO: Re-enable when adfEmailListener is available
-        // await adfEmailListener.start();
+        await adfEmailListener.start();
         this.isListening = true;
-        logger.info('ADF Email Listener started successfully (temporarily disabled)');
+        logger.info('ADF Email Listener started successfully');
       } else {
         logger.info('ADF Email Polling is disabled');
       }
@@ -105,10 +107,9 @@ export class AdfService extends EventEmitter {
       
       // Stop email listener if it was started
       if (this.isListening) {
-        // TODO: Re-enable when adfEmailListener is available
-        // await adfEmailListener.stop();
+        await adfEmailListener.stop();
         this.isListening = false;
-        logger.info('ADF Email Listener stopped successfully (temporarily disabled)');
+        logger.info('ADF Email Listener stopped successfully');
       }
       
       this.emit('stopped');
@@ -145,6 +146,16 @@ export class AdfService extends EventEmitter {
         this.processingStats.processingErrors++;
         this.lastError = new Error(result.error || 'Unknown processing error');
         logger.error('Failed to process ADF XML', { error: result.error, source });
+        
+        // Add to DLQ for retry
+        dlqService.addEntry('adf_xml_processing', {
+          xml,
+          source,
+          xmlLength: xml.length
+        }, result.error || 'Unknown processing error', {
+          priority: 'high',
+          metadata: { source, xmlLength: xml.length }
+        });
       }
       
       return result;
@@ -174,8 +185,6 @@ export class AdfService extends EventEmitter {
    * Setup event listeners for email and lead processing
    */
   private setupEventListeners(): void {
-    // TODO: Re-enable when adfEmailListener is available
-    /*
     // Listen for new emails
     adfEmailListener.on('email', async (email) => {
       try {
@@ -212,6 +221,16 @@ export class AdfService extends EventEmitter {
         this.processingStats.processingErrors++;
         this.lastError = err;
         logger.error('Failed to process ADF email', { error: err.message });
+        
+        // Add to DLQ for retry
+        dlqService.addEntry('adf_email_processing', {
+          email,
+          originalJobId: `email_${email.id}`
+        }, err.message, {
+          priority: 'high',
+          metadata: { emailSubject: email.subject, emailFrom: email.from }
+        });
+        
         this.emit('error', err);
       }
     });
@@ -221,6 +240,16 @@ export class AdfService extends EventEmitter {
       this.processingStats.processingErrors++;
       this.lastError = error;
       logger.error('ADF Email Listener error', { error: error.message });
+      
+      // Add to DLQ for retry
+      dlqService.addEntry('adf_email_listener_error', {
+        errorType: 'listener_error',
+        timestamp: new Date()
+      }, error.message, {
+        priority: 'critical',
+        metadata: { errorName: error.name }
+      });
+      
       this.emit('error', error);
     });
     
@@ -234,15 +263,12 @@ export class AdfService extends EventEmitter {
       logger.warn('ADF Email Listener disconnected');
       this.emit('emailListenerDisconnected');
     });
-    */
   }
   
   /**
    * Setup integration with the ADF Response Orchestrator
    */
   private setupOrchestratorIntegration(): void {
-    // TODO: Re-enable when adfResponseOrchestrator is available
-    /*
     // Forward lead processed events to orchestrator
     this.on('leadProcessed', async (data) => {
       try {
@@ -252,6 +278,15 @@ export class AdfService extends EventEmitter {
         logger.error('Failed to forward lead to orchestrator', { 
           error: err.message,
           leadId: data.leadId
+        });
+        
+        // Add to DLQ for retry
+        dlqService.addEntry('adf_orchestrator_processing', {
+          leadId: data.leadId,
+          source: data.source
+        }, err.message, {
+          priority: 'high',
+          metadata: { leadId: data.leadId, source: data.source }
         });
       }
     });
@@ -279,10 +314,18 @@ export class AdfService extends EventEmitter {
         error: result.error 
       });
       
+      // Add to DLQ for retry
+      dlqService.addEntry('adf_ai_response_failed', {
+        leadId: result.leadId,
+        latencyMs: result.latencyMs
+      }, result.error, {
+        priority: 'medium',
+        metadata: { leadId: result.leadId }
+      });
+      
       // Forward the event
       this.emit('aiResponseFailed', result);
     });
-    */
     
     // Setup SMS response sender integration  
     this.on('lead.response.ready', async (result) => {
@@ -405,6 +448,85 @@ export class AdfService extends EventEmitter {
       });
       throw error;
     }
+  }
+
+  /**
+   * Setup Dead Letter Queue retry handlers for ADF operations
+   */
+  private setupDlqRetryHandlers(): void {
+    // XML processing retry handler
+    dlqService.registerRetryHandler('adf_xml_processing', async (entry) => {
+      const { xml, source } = entry.data;
+      logger.info('Retrying ADF XML processing from DLQ', { 
+        entryId: entry.id, 
+        source,
+        xmlLength: xml.length
+      });
+      
+      const result = await adfLeadProcessor.processAdfXml(xml, `${source}-retry`);
+      if (!result.success) {
+        throw new Error(result.error || 'XML processing failed during retry');
+      }
+    });
+
+    // Email processing retry handler
+    dlqService.registerRetryHandler('adf_email_processing', async (entry) => {
+      const { email } = entry.data;
+      logger.info('Retrying ADF email processing from DLQ', { 
+        entryId: entry.id, 
+        emailSubject: email.subject 
+      });
+      
+      // Find ADF XML attachment
+      const adfAttachment = email.attachments.find((att: any) => 
+        att.filename.toLowerCase().endsWith('.xml') || 
+        att.contentType.includes('application/xml') ||
+        att.contentType.includes('text/xml')
+      );
+      
+      if (adfAttachment && adfAttachment.content) {
+        const xml = adfAttachment.content.toString('utf8');
+        await this.processAdfXml(xml, 'email-retry');
+      } else {
+        throw new Error('No ADF XML attachment found during retry');
+      }
+    });
+
+    // Orchestrator processing retry handler
+    dlqService.registerRetryHandler('adf_orchestrator_processing', async (entry) => {
+      const { leadId, source } = entry.data;
+      logger.info('Retrying ADF orchestrator processing from DLQ', { 
+        entryId: entry.id, 
+        leadId 
+      });
+      
+      await adfResponseOrchestrator.processLead(leadId);
+    });
+
+    // AI response failure retry handler
+    dlqService.registerRetryHandler('adf_ai_response_failed', async (entry) => {
+      const { leadId } = entry.data;
+      logger.info('Retrying AI response generation from DLQ', { 
+        entryId: entry.id, 
+        leadId 
+      });
+      
+      await adfResponseOrchestrator.processLead(leadId);
+    });
+
+    // Email listener error retry handler
+    dlqService.registerRetryHandler('adf_email_listener_error', async (entry) => {
+      logger.info('Retrying email listener connection from DLQ', { 
+        entryId: entry.id 
+      });
+      
+      if (!this.isListening && this.config.emailPollingEnabled) {
+        await adfEmailListener.start();
+        this.isListening = true;
+      }
+    });
+
+    logger.info('ADF DLQ retry handlers registered');
   }
 }
 

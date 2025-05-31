@@ -33,6 +33,7 @@ export class MonitoringService {
   registerCounter(name: string, description: string) {}
   registerHistogram(name: string, description: string) {}
   registerUpDownCounter(name: string, description: string) {}
+  registerObservableGauge(name: string, description: string, callback?: Function) {}
   recordHistogram(name: string, value: number, labels?: Record<string, string>) {}
   decrementUpDownCounter(name: string) {}
   incrementUpDownCounter(name: string) {}
