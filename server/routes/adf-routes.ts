@@ -5,7 +5,8 @@ import { AdfParser } from '../services/adf-parser';
 import logger from '../utils/logger';
 import db from '../db';
 import { eq, desc, and, gte } from 'drizzle-orm';
-import { adfLeads, adfEmailQueue, adfProcessingLogs } from '../../shared/adf-schema';
+// import { adfLeads, adfEmailQueue, adfProcessingLogs } from '../../shared/adf-schema';
+import { leads as adfLeads } from '../../shared/schema';
 
 const router = Router();
 
