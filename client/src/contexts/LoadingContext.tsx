@@ -56,7 +56,9 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({
   children,
   initialState = {},
 }) => {
-  const { theme } = useTheme();
+  // Remove theme dependency for now to avoid context conflicts
+  // Individual components can handle their own theming
+  // const { theme } = useTheme();
   const [loadingStates, setLoadingStates] = useState<Map<string, LoadingState>>(new Map());
   const [state, setState] = useState<LoadingState>({
     ...defaultLoadingState,

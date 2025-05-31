@@ -17,7 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
-    "baseUrl": ".",
+    "baseUrl": "../..",
     "paths": {
       "@/*": ["./client/src/*"],
       "@shared": ["./shared"],
@@ -27,12 +27,12 @@
     "resolveJsonModule": true
   },
   "include": [
-    "client/src/**/*",
-    "server/**/*",
-    "shared/**/*"
+    "../../client/src/**/*",
+    "../../server/**/*",
+    "../../shared/**/*"
   ],
   "exclude": [
-    "node_modules",
-    "test/**/*"
+    "../../node_modules",
+    "../../test/**/*"
   ]
 }
