@@ -1,0 +1,355 @@
+# CleanRylie Branching Strategy
+
+## Branch Types
+
+### Main Branches
+
+#### `main`
+- **Purpose**: Production-ready code
+- **Protection**: 
+  - Requires pull request reviews (minimum 1 reviewer)
+  - Requires status checks to pass
+  - Requires branches to be up to date before merging
+  - Requires linear history (squash and merge)
+- **Deployment**: Automatically deploys to production
+- **Direct commits**: ❌ Not allowed
+
+#### `develop` (if using GitFlow)
+- **Purpose**: Integration branch for features
+- **Protection**: Requires pull request reviews
+- **Merges from**: Feature branches, hotfix branches
+- **Merges to**: `main` via release branches
+
+### Feature Branches
+
+#### Naming Convention
+```
+feature/{ticket-id}-{short-description}
+```
+
+**Examples:**
+- `feature/TICKET-123-magic-link-authentication`
+- `feature/TICKET-456-conversation-analytics-dashboard`
+- `feature/TICKET-789-bulk-inventory-import`
+
+#### Guidelines
+- Branch from: `main` (or `develop` if using GitFlow)
+- Merge to: `main` via pull request
+- Lifetime: Delete after merge
+- Scope: Single feature or user story
+
+### Fix Branches
+
+#### Naming Convention
+```
+fix/{ticket-id}-{short-description}
+```
+
+**Examples:**
+- `fix/TICKET-234-login-redirect-loop`
+- `fix/TICKET-567-email-delivery-failure`
+- `fix/TICKET-890-memory-leak-websocket`
+
+#### Guidelines
+- Branch from: `main`
+- Merge to: `main` via pull request
+- Priority: High priority for critical bugs
+- Testing: Must include reproduction test
+
+### Hotfix Branches
+
+#### Naming Convention
+```
+hotfix/{ticket-id}-{short-description}
+```
+
+**Examples:**
+- `hotfix/TICKET-999-security-vulnerability`
+- `hotfix/TICKET-888-production-outage`
+
+#### Guidelines
+- Branch from: `main`
+- Merge to: `main` and `develop` (if exists)
+- Deploy: Immediate production deployment
+- Process: Can bypass normal review process for critical issues
+
+### Chore Branches
+
+#### Naming Convention
+```
+chore/{description}
+```
+
+**Examples:**
+- `chore/update-dependencies`
+- `chore/configure-monitoring`
+- `chore/cleanup-legacy-code`
+
+#### Guidelines
+- Branch from: `main`
+- Merge to: `main` via pull request
+- Scope: Maintenance tasks, dependency updates, tooling
+
+## Pull Request Workflow
+
+### 1. Branch Creation
+```bash
+# Create and checkout feature branch
+git checkout -b feature/TICKET-123-new-feature
+
+# Make your changes
+git add .
+git commit -m "feat(scope): implement new feature
+
+- Add feature implementation
+- Include unit tests
+- Update documentation
+
+Resolves: TICKET-123"
+
+# Push to remote
+git push -u origin feature/TICKET-123-new-feature
+```
+
+### 2. Pull Request Requirements
+
+#### Title Format
+```
+[TICKET-ID] Brief description of changes
+```
+
+#### Description Template
+```markdown
+## Summary
+Brief description of the changes and their purpose.
+
+## Changes Made
+- List of specific changes
+- Another change
+- Final change
+
+## Testing
+- [ ] Unit tests added/updated
+- [ ] Integration tests pass
+- [ ] Manual testing completed
+- [ ] Performance impact assessed
+
+## Screenshots (if applicable)
+Include screenshots for UI changes.
+
+## Related Issues
+Resolves: TICKET-123
+Related to: TICKET-456
+
+## Deployment Notes
+Any special deployment considerations.
+```
+
+#### Required Checks
+- ✅ All CI/CD tests pass
+- ✅ Code coverage meets minimum threshold (80%)
+- ✅ No TypeScript errors
+- ✅ ESLint checks pass
+- ✅ Security scan passes
+- ✅ Performance regression tests pass
+
+### 3. Review Process
+
+#### Required Reviewers
+- **Feature changes**: 1+ team member
+- **Critical fixes**: 2+ team members
+- **Security changes**: Security team member
+- **Database changes**: DBA review
+
+#### Review Checklist
+- [ ] Code follows established patterns
+- [ ] Proper error handling implemented
+- [ ] Security considerations addressed
+- [ ] Performance impact acceptable
+- [ ] Documentation updated
+- [ ] Tests provide adequate coverage
+
+### 4. Merge Process
+
+#### Merge Strategies
+- **Squash and Merge**: Default for feature branches
+- **Rebase and Merge**: For hotfixes to maintain history
+- **Merge Commit**: Only for release branches
+
+#### Post-Merge Actions
+1. Delete feature branch
+2. Update ticket status
+3. Monitor deployment
+4. Verify in staging/production
+
+## Branch Protection Rules
+
+### Main Branch Protection
+```yaml
+required_status_checks:
+  strict: true
+  contexts:
+    - "ci/tests"
+    - "ci/lint"
+    - "ci/type-check"
+    - "ci/security-scan"
+    - "ci/performance-test"
+
+enforce_admins: true
+required_pull_request_reviews:
+  required_approving_review_count: 1
+  dismiss_stale_reviews: true
+  require_code_owner_reviews: true
+
+restrictions:
+  users: []
+  teams: ["core-team"]
+
+allow_squash_merge: true
+allow_merge_commit: false
+allow_rebase_merge: false
+allow_auto_merge: false
+delete_branch_on_merge: true
+```
+
+## Release Management
+
+### Version Numbering
+Follow Semantic Versioning (SemVer):
+- `MAJOR.MINOR.PATCH`
+- **Major**: Breaking changes
+- **Minor**: New features (backward compatible)
+- **Patch**: Bug fixes (backward compatible)
+
+### Release Process
+1. Create release branch from `main`
+   ```bash
+   git checkout -b release/v1.2.0
+   ```
+
+2. Update version numbers and changelog
+3. Run full test suite
+4. Create pull request to `main`
+5. Tag release after merge
+   ```bash
+   git tag -a v1.2.0 -m "Release version 1.2.0"
+   git push origin v1.2.0
+   ```
+
+## Branch Cleanup
+
+### Automated Cleanup
+- Delete merged feature branches automatically
+- Delete stale branches after 30 days
+- Clean up local tracking branches
+
+### Manual Cleanup Commands
+```bash
+# Delete merged local branches
+git branch --merged | grep -v "\*\|main\|develop" | xargs -n 1 git branch -d
+
+# Delete remote tracking branches
+git remote prune origin
+
+# Delete local branches that no longer exist on remote
+git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -D
+```
+
+## Emergency Procedures
+
+### Critical Hotfix Process
+1. **Immediate Action**
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b hotfix/CRITICAL-issue-description
+   ```
+
+2. **Fast-track Review**
+   - Create PR with `[URGENT]` prefix
+   - Tag appropriate reviewers
+   - Skip normal CI for critical security issues (with approval)
+
+3. **Emergency Deployment**
+   - Deploy directly to production if needed
+   - Follow up with proper testing post-deployment
+   - Document incident and resolution
+
+### Rollback Procedures
+```bash
+# Quick rollback to previous release
+git checkout main
+git revert --mainline 1 <merge-commit-hash>
+git push origin main
+
+# Or reset to previous tag (destructive)
+git reset --hard <previous-tag>
+git push --force-with-lease origin main
+```
+
+## Best Practices
+
+### Commit Guidelines
+- Make atomic commits (one logical change per commit)
+- Write descriptive commit messages
+- Use conventional commit format
+- Reference ticket numbers
+
+### Branch Management
+- Keep branches short-lived (< 1 week)
+- Rebase frequently to stay current with main
+- Use draft PRs for work-in-progress
+- Clean up branches after merge
+
+### Collaboration
+- Communicate breaking changes early
+- Use feature flags for gradual rollouts
+- Document complex changes thoroughly
+- Share knowledge through code reviews
+
+## Tools and Automation
+
+### Branch Cleanup Script
+Create `/scripts/branch-cleanup.sh`:
+```bash
+#!/bin/bash
+# Automated branch cleanup script
+
+echo "Cleaning up merged branches..."
+git branch --merged main | grep -v "main\|develop" | xargs -n 1 git branch -d
+
+echo "Removing remote tracking branches..."
+git remote prune origin
+
+echo "Branch cleanup complete!"
+```
+
+### Git Hooks
+Set up pre-commit hooks for:
+- Code formatting (Prettier)
+- Linting (ESLint)
+- Type checking (TypeScript)
+- Test execution (critical tests only)
+
+### GitHub Actions
+Implement workflows for:
+- Automated testing on PR creation
+- Deployment on merge to main
+- Branch cleanup on PR merge
+- Security scanning on dependency changes
+
+## Monitoring and Metrics
+
+### Branch Health Metrics
+- Average branch lifetime
+- Number of active branches
+- Merge frequency
+- Time from PR creation to merge
+
+### Quality Metrics
+- Test coverage per branch
+- Code review completion rate
+- Deployment success rate
+- Rollback frequency
+
+Track these metrics to continuously improve the branching strategy and development workflow.
