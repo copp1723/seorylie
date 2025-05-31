@@ -1,7 +1,7 @@
 
 import rateLimit from 'express-rate-limit';
 import { Request } from 'express';
-import db from "../db";
+import { db } from "../db";
 import { dealerships } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 

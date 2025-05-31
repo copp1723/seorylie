@@ -567,4 +567,7 @@ export const useLoading = (): LoadingContextType => {
   return context;
 };
 
+// Alias for backwards compatibility
+export const useLoadingContext = useLoading;
+
 export default LoadingContext;

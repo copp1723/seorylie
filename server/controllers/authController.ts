@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { eq } from 'drizzle-orm';
-import db from '../db';
+import { db } from '../db';
 import { users } from '../../shared/schema';
 import logger from '../utils/logger';
 import bcrypt from 'bcrypt';
