@@ -84,6 +84,30 @@ export const leadSourcesTable = pgTable('lead_sources', {
   uniqueName: unique('lead_sources_unique_name').on(table.dealershipId, table.name),
 }));
 
+// Dealership Handover Settings - Configuration for handover system
+export const dealershipHandoverSettings = pgTable('dealership_handover_settings', {
+  id: serial('id').primaryKey(),
+  dealershipId: integer('dealership_id').notNull().references(() => dealerships.id, { onDelete: 'cascade' }),
+  
+  // Email configuration
+  handoverEmail: varchar('handover_email', { length: 255 }).notNull(),
+  
+  // SLA configuration
+  slaHours: integer('sla_hours').notNull().default(24),
+  
+  // Template configuration
+  dossierTemplate: varchar('dossier_template', { length: 100 }).default('default'),
+  
+  // Feature flag
+  isEnabled: boolean('is_enabled').default(true),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, table => ({
+  dealershipIdx: index('dealership_handover_settings_dealership_idx').on(table.dealershipId),
+  uniqueDealership: unique('unique_dealership_handover_settings').on(table.dealershipId),
+}));
+
 // Customers - Normalized customer information
 export const customers = pgTable('customers', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -380,6 +404,27 @@ export const handovers = pgTable('handovers', {
   context: json('context').$type<Record<string, any>>().default({}),
   handoverNotes: text('handover_notes'),
   resolutionNotes: text('resolution_notes'),
+  
+  // Sales dossier data (ADF-08)
+  dossier: json('dossier').$type<{
+    customerName: string;
+    customerContact: string;
+    conversationSummary: string;
+    customerInsights: Array<{
+      key: string;
+      value: string;
+      confidence: number;
+    }>;
+    vehicleInterests: Array<{
+      make: string;
+      model: string;
+      year: number;
+      confidence: number;
+    }>;
+    suggestedApproach: string;
+    urgency: 'low' | 'medium' | 'high';
+    escalationReason: string;
+  }>(),
 
   // Priority and urgency
   urgency: varchar('urgency', { length: 20 }).$type<LeadPriority>().default('medium'),
@@ -393,6 +438,7 @@ export const handovers = pgTable('handovers', {
   statusIdx: index('handovers_status_idx').on(table.status),
   toUserIdx: index('handovers_to_user_idx').on(table.toUserId),
   requestedAtIdx: index('handovers_requested_at_idx').on(table.requestedAt),
+  dossierIdx: index('handovers_dossier_gin').on(table.dossier, { method: 'gin', ops: 'jsonb_path_ops' }),
 }));
 
 // Lead Activities - Track all activities on a lead
@@ -438,6 +484,13 @@ export const leadSourcesRelations = relations(leadSourcesTable, ({ one, many }) 
     references: [dealerships.id],
   }),
   leads: many(leads),
+}));
+
+export const dealershipHandoverSettingsRelations = relations(dealershipHandoverSettings, ({ one }) => ({
+  dealership: one(dealerships, {
+    fields: [dealershipHandoverSettings.dealershipId],
+    references: [dealerships.id],
+  }),
 }));
 
 export const customersRelations = relations(customers, ({ one, many }) => ({
@@ -574,6 +627,12 @@ export const insertLeadSourceSchema = createInsertSchema(leadSourcesTable).omit(
   updatedAt: true,
 });
 
+export const insertDealershipHandoverSettingsSchema = createInsertSchema(dealershipHandoverSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true,
   createdAt: true,
@@ -619,6 +678,9 @@ export const insertLeadActivitySchema = createInsertSchema(leadActivities).omit(
 
 export type LeadSourceTable = typeof leadSourcesTable.$inferSelect;
 export type InsertLeadSource = z.infer<typeof insertLeadSourceSchema>;
+
+export type DealershipHandoverSettings = typeof dealershipHandoverSettings.$inferSelect;
+export type InsertDealershipHandoverSettings = z.infer<typeof insertDealershipHandoverSettingsSchema>;
 
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
