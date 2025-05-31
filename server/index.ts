@@ -16,8 +16,9 @@ import { setupWebSocketServer } from './ws-server';
 import logger from './logger';
 import { setupRoutes } from './routes';
 import { checkDatabaseConnection } from './db';
-// import { setupMetrics } from './observability/metrics';
-// import { setupTracing } from './observability/tracing';
+import { setupMetrics } from './observability/metrics';
+import { setupTracing } from './observability/tracing';
+import { initializeRedis } from './lib/redis';
 import adfRoutes from './routes/adf-routes';
 import adminRoutes from './routes/admin-routes';
 // import authRoutes from './routes/auth-routes'; // Commented out - auth service not implemented
@@ -35,8 +36,8 @@ const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 // Setup observability
-// setupMetrics(app);
-// setupTracing();
+setupMetrics(app);
+setupTracing();
 
 // Middleware
 app.use(cors());
@@ -99,13 +100,17 @@ app.get('*', (req, res) => {
 const server = createServer(app);
 
 // Setup WebSocket server
-// setupWebSocketServer(server);
+// setupWebSocketServer(server); // Commented out for now
 
 // Start server
 async function startServer() {
   try {
-    // Check database connection - temporarily disabled for testing
-    // await checkDatabaseConnection();
+    // Check database connection
+    await checkDatabaseConnection();
+    
+    // Initialize Redis
+    logger.info('Initializing Redis connection');
+    await initializeRedis();
     
     // Start HTTP server
     server.listen(PORT, HOST, () => {
@@ -113,7 +118,11 @@ async function startServer() {
       console.log(`🚀 Server running on http://${HOST}:${PORT}`);
     });
   } catch (error) {
-    logger.error('Failed to start server', { error });
+    if (error instanceof Error) {
+      logger.error('Failed to start server', { error: error.message, stack: error.stack });
+    } else {
+      logger.error('Failed to start server with unknown error', { error });
+    }
     process.exit(1);
   }
 }
