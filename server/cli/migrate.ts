@@ -11,9 +11,13 @@
  *   npm run migrate:validate        # Validate migration files
  */
 
+// Load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { migrationRunner } from '../utils/migration-runner';
 import logger from '../utils/logger';
-import { checkDatabaseConnection } from '../db';
+import { client } from '../db';
 
 const command = process.argv[2];
 const arg = process.argv[3];
@@ -57,7 +61,7 @@ async function main() {
     console.error('Error:', err.message);
     process.exit(1);
   } finally {
-    await closeDatabaseConnection();
+    await client.end();
   }
 }
 

@@ -1,4 +1,5 @@
 import { type Express } from "express";
+import adfRoutes from "./routes/adf-routes";
 
 export function setupRoutes(app: Express) {
   // Health check endpoint
@@ -10,4 +11,7 @@ export function setupRoutes(app: Express) {
   app.get("/api", (req, res) => {
     res.json({ message: "Cleanrylie API" });
   });
+
+  // ADF routes
+  app.use("/api/adf", adfRoutes);
 }
