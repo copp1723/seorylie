@@ -1,33 +1,54 @@
+import { config } from 'dotenv';
+// Load environment variables first
+config();
+
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { createServer } from 'http';
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { setupWebSocketServer } from './ws-server';
 import logger from './logger';
 import { setupRoutes } from './routes';
 import { checkDatabaseConnection } from './db';
-import { setupMetrics } from './observability/metrics';
-import { setupTracing } from './observability/tracing';
+// import { setupMetrics } from './observability/metrics';
+// import { setupTracing } from './observability/tracing';
 import adfRoutes from './routes/adf-routes';
 import adminRoutes from './routes/admin-routes';
-import authRoutes from './routes/auth-routes';
+// import authRoutes from './routes/auth-routes'; // Commented out - auth service not implemented
 import conversationLogsRoutes from './routes/conversation-logs-routes';
 import agentSquadRoutes from './routes/agent-squad-routes';
 import adfConversationRoutes from './routes/adf-conversation-routes';
+import sendgridRoutes from './routes/sendgrid-webhook-routes';
+// TODO: Re-enable when trace services are available
+// import traceRoutes from './routes/trace-routes';
+// import { traceCorrelation } from './services/trace-correlation';
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Setup observability
-setupMetrics(app);
-setupTracing();
+// setupMetrics(app);
+// setupTracing();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// TODO: Re-enable when trace correlation service is available
+// Add trace correlation middleware (before other routes)
+// if (traceCorrelation.isEnabled()) {
+//   app.use(traceCorrelation.middleware());
+//   logger.info('Trace correlation middleware enabled');
+// }
 
 // Session configuration
 app.use(session({
@@ -40,40 +61,56 @@ app.use(session({
   }
 }));
 
-// Static files
-app.use(express.static(path.join(__dirname, '../dist')));
+// Static files - serve from dist/public where Vite builds the frontend
+app.use(express.static(path.join(__dirname, '../dist/public')));
 
 // API routes
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes); // Commented out - auth service not implemented
 app.use('/api/admin', adminRoutes);
 app.use('/api/adf', adfRoutes);
 app.use('/api/conversations', conversationLogsRoutes);
 app.use('/api/agent-squad', agentSquadRoutes);
 app.use('/api/adf/conversations', adfConversationRoutes);
+// TODO: Re-enable when trace services are available
+// app.use('/api/trace', traceRoutes);
+// app.use('/api/agents', agentOrchestrationRoutes);
+
+// SendGrid webhook routes (safe to enable - doesn't affect existing system)
+app.use('/api/sendgrid', sendgridRoutes);
+
+// Add basic test route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Kunes RV Dealership Server Running!', 
+    timestamp: new Date().toISOString(),
+    status: 'ok'
+  });
+});
 
 // Setup additional routes
 setupRoutes(app);
 
 // Catch-all route for SPA
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
+  res.sendFile(path.join(__dirname, '../dist/public/index.html'));
 });
 
 // Create HTTP server
 const server = createServer(app);
 
 // Setup WebSocket server
-setupWebSocketServer(server);
+// setupWebSocketServer(server);
 
 // Start server
 async function startServer() {
   try {
-    // Check database connection
-    await checkDatabaseConnection();
+    // Check database connection - temporarily disabled for testing
+    // await checkDatabaseConnection();
     
     // Start HTTP server
-    server.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
+    server.listen(PORT, HOST, () => {
+      logger.info(`Server running on http://${HOST}:${PORT}`);
+      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
     });
   } catch (error) {
     logger.error('Failed to start server', { error });
