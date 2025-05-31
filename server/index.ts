@@ -19,6 +19,7 @@ import authRoutes from './routes/auth-routes';
 import conversationLogsRoutes from './routes/conversation-logs-routes';
 import agentSquadRoutes from './routes/agent-squad-routes';
 import adfConversationRoutes from './routes/adf-conversation-routes';
+import sendgridRoutes from './routes/sendgrid-webhook-routes';
 
 // Initialize Express app
 const app = express();
@@ -55,6 +56,9 @@ app.use(express.static(path.join(__dirname, '../dist')));
 // app.use('/api/conversations', conversationLogsRoutes);
 // app.use('/api/agent-squad', agentSquadRoutes);
 // app.use('/api/adf/conversations', adfConversationRoutes);
+
+// SendGrid webhook routes (safe to enable - doesn't affect existing system)
+app.use('/api/sendgrid', sendgridRoutes);
 
 // Add basic test route
 app.get('/', (req, res) => {
