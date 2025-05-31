@@ -21,7 +21,11 @@ const client = postgres(connectionString, {
 });
 
 // Create drizzle instance with schema
-export const db = drizzle(client, { schema });
+const db = drizzle(client, { schema });
+
+// Export as both named and default export for compatibility
+export { db };
+export default db;
 
 // Export the client for direct access if needed
 export { client };

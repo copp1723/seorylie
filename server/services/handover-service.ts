@@ -1,8 +1,7 @@
 import { EventEmitter } from 'events';
 import logger from '../utils/logger';
 import { db } from '../db';
-// import { adfLeads } from '@shared/adf-schema';
-import { leads as adfLeads } from '../../shared/schema';
+import { adfLeads } from '../../shared/adf-schema';
 import { eq } from 'drizzle-orm';
 import { EmailService } from './email-service';
 import { prometheusMetrics } from './prometheus-metrics';

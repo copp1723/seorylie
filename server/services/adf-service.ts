@@ -78,9 +78,10 @@ export class AdfService extends EventEmitter {
       
       // Start email listener if enabled
       if (this.config.emailPollingEnabled) {
-        await adfEmailListener.start();
+        // TODO: Re-enable when adfEmailListener is available
+        // await adfEmailListener.start();
         this.isListening = true;
-        logger.info('ADF Email Listener started successfully');
+        logger.info('ADF Email Listener started successfully (temporarily disabled)');
       } else {
         logger.info('ADF Email Polling is disabled');
       }
@@ -104,9 +105,10 @@ export class AdfService extends EventEmitter {
       
       // Stop email listener if it was started
       if (this.isListening) {
-        await adfEmailListener.stop();
+        // TODO: Re-enable when adfEmailListener is available
+        // await adfEmailListener.stop();
         this.isListening = false;
-        logger.info('ADF Email Listener stopped successfully');
+        logger.info('ADF Email Listener stopped successfully (temporarily disabled)');
       }
       
       this.emit('stopped');
@@ -172,6 +174,8 @@ export class AdfService extends EventEmitter {
    * Setup event listeners for email and lead processing
    */
   private setupEventListeners(): void {
+    // TODO: Re-enable when adfEmailListener is available
+    /*
     // Listen for new emails
     adfEmailListener.on('email', async (email) => {
       try {
@@ -230,12 +234,15 @@ export class AdfService extends EventEmitter {
       logger.warn('ADF Email Listener disconnected');
       this.emit('emailListenerDisconnected');
     });
+    */
   }
   
   /**
    * Setup integration with the ADF Response Orchestrator
    */
   private setupOrchestratorIntegration(): void {
+    // TODO: Re-enable when adfResponseOrchestrator is available
+    /*
     // Forward lead processed events to orchestrator
     this.on('leadProcessed', async (data) => {
       try {
@@ -275,6 +282,7 @@ export class AdfService extends EventEmitter {
       // Forward the event
       this.emit('aiResponseFailed', result);
     });
+    */
     
     // Setup SMS response sender integration  
     this.on('lead.response.ready', async (result) => {

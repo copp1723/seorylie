@@ -6,7 +6,12 @@ import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { createServer } from 'http';
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { setupWebSocketServer } from './ws-server';
 import logger from './logger';
 import { setupRoutes } from './routes';
@@ -46,8 +51,8 @@ app.use(session({
   }
 }));
 
-// Static files
-app.use(express.static(path.join(__dirname, '../dist')));
+// Static files - serve from dist/public where Vite builds the frontend
+app.use(express.static(path.join(__dirname, '../dist/public')));
 
 // API routes
 // app.use('/api/auth', authRoutes);
@@ -74,7 +79,7 @@ setupRoutes(app);
 
 // Catch-all route for SPA
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
+  res.sendFile(path.join(__dirname, '../dist/public/index.html'));
 });
 
 // Create HTTP server
