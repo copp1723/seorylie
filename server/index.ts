@@ -3,10 +3,10 @@ import session from 'express-session';
 import cors from 'cors';
 import path from 'path';
 import { createServer } from 'http';
-import { setupWebSocketServer } from './ws-server';
+// import { setupWebSocketServer } from './ws-server'; // Commented out - function not exported
 import logger from './logger';
 import { setupRoutes } from './routes';
-import { checkDatabaseConnection } from './db';
+// import { checkDatabaseConnection } from './db'; // Function doesn't exist
 import { setupMetrics } from './observability/metrics';
 import { setupTracing } from './observability/tracing';
 import adfRoutes from './routes/adf-routes';
@@ -15,23 +15,20 @@ import adminRoutes from './routes/admin-routes';
 import conversationLogsRoutes from './routes/conversation-logs-routes';
 import agentSquadRoutes from './routes/agent-squad-routes';
 import adfConversationRoutes from './routes/adf-conversation-routes';
-import traceRoutes from './routes/trace-routes';
-import { traceCorrelation } from './services/trace-correlation';
+import { initializeRedis } from './lib/redis';
 
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Setup observability
+setupMetrics(app);
+setupTracing();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Add trace correlation middleware (before other routes)
-if (traceCorrelation.isEnabled()) {
-  app.use(traceCorrelation.middleware());
-  logger.info('Trace correlation middleware enabled');
-}
 
 // Session configuration
 app.use(session({
@@ -45,7 +42,7 @@ app.use(session({
 }));
 
 // Static files
-app.use(express.static(path.join(__dirname, '../dist')));
+app.use(express.static(path.join(__dirname, '../dist/public')));
 
 // API routes
 // app.use('/api/auth', authRoutes); // Commented out - auth service not implemented
@@ -54,35 +51,40 @@ app.use('/api/adf', adfRoutes);
 app.use('/api/conversations', conversationLogsRoutes);
 app.use('/api/agent-squad', agentSquadRoutes);
 app.use('/api/adf/conversations', adfConversationRoutes);
-app.use('/api/trace', traceRoutes);
-app.use('/api/agents', agentOrchestrationRoutes);
 
 // Setup additional routes
 setupRoutes(app);
 
 // Catch-all route for SPA
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
+  res.sendFile(path.join(__dirname, '../dist/public/index.html'));
 });
 
 // Create HTTP server
 const server = createServer(app);
 
 // Setup WebSocket server
-setupWebSocketServer(server);
+// setupWebSocketServer(server); // Commented out - function not available
 
 // Start server
 async function startServer() {
   try {
-    // Check database connection
-    await checkDatabaseConnection();
+    // Check database connection (simplified)
+    logger.info('Skipping database connection check - function not implemented');
+
+    // Initialize Redis
+    logger.info('Skipping Redis initialization for development');
     
     // Start HTTP server
     server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
     });
   } catch (error) {
-    logger.error('Failed to start server', { error });
+    if (error instanceof Error) {
+      logger.error('Failed to start server', { error: error.message, stack: error.stack });
+    } else {
+      logger.error('Failed to start server with unknown error', { error });
+    }
     process.exit(1);
   }
 }

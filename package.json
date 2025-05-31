@@ -65,7 +65,13 @@
     "adf:health": "curl -s http://localhost:3000/api/health/email | npx prettyjson",
     "test:data-privacy": "tsx scripts/test-data-privacy.ts",
     "test:adf-e2e": "tsx scripts/test-adf-e2e.ts",
-    "test:ci-framework": "tsx scripts/test-ci-framework.ts"
+    "test:ci-framework": "tsx scripts/test-ci-framework.ts",
+    "dev:enhanced": "NODE_ENV=development tsx server/enhanced-index.ts",
+    "start:enhanced": "NODE_ENV=production tsx server/enhanced-index.ts",
+    "test:service-architecture": "tsx scripts/test-service-architecture.ts",
+    "health:enhanced": "curl -s http://localhost:3000/api/health | npx prettyjson",
+    "health:detailed": "curl -s http://localhost:3000/api/health/detailed | npx prettyjson",
+    "health:services": "curl -s http://localhost:3000/api/health/services | npx prettyjson"
   },
   "dependencies": {
     "@bull-board/api": "^5.8.0",
@@ -142,6 +148,8 @@
     "react-router-dom": "^7.6.1",
     "recharts": "^2.8.0",
     "redis": "^4.6.8",
+    "socket.io": "^4.7.2",
+    "ioredis": "^5.3.2",
     "swagger-jsdoc": "^6.2.8",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7",
