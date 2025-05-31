@@ -87,7 +87,18 @@ app.get('/', (req, res) => {
   res.json({ 
     message: 'Kunes RV Dealership Server Running!', 
     timestamp: new Date().toISOString(),
-    status: 'ok'
+    status: 'ok',
+    sessionInvalidated: true // Force session invalidation deployment
+  });
+});
+
+// Health check endpoint for session invalidation
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    sessionInvalidated: true,
+    message: 'All sessions invalidated - users must re-authenticate'
   });
 });
 
