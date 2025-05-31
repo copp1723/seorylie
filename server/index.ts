@@ -11,10 +11,12 @@ import { setupMetrics } from './observability/metrics';
 import { setupTracing } from './observability/tracing';
 import adfRoutes from './routes/adf-routes';
 import adminRoutes from './routes/admin-routes';
-import authRoutes from './routes/auth-routes';
+// import authRoutes from './routes/auth-routes'; // Commented out - auth service not implemented
 import conversationLogsRoutes from './routes/conversation-logs-routes';
 import agentSquadRoutes from './routes/agent-squad-routes';
 import adfConversationRoutes from './routes/adf-conversation-routes';
+import traceRoutes from './routes/trace-routes';
+import { traceCorrelation } from './services/trace-correlation';
 
 // Initialize Express app
 const app = express();
@@ -28,6 +30,12 @@ setupTracing();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Add trace correlation middleware (before other routes)
+if (traceCorrelation.isEnabled()) {
+  app.use(traceCorrelation.middleware());
+  logger.info('Trace correlation middleware enabled');
+}
 
 // Session configuration
 app.use(session({
@@ -44,12 +52,13 @@ app.use(session({
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // API routes
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes); // Commented out - auth service not implemented
 app.use('/api/admin', adminRoutes);
 app.use('/api/adf', adfRoutes);
 app.use('/api/conversations', conversationLogsRoutes);
 app.use('/api/agent-squad', agentSquadRoutes);
 app.use('/api/adf/conversations', adfConversationRoutes);
+app.use('/api/trace', traceRoutes);
 
 // Setup additional routes
 setupRoutes(app);

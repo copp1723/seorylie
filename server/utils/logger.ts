@@ -1,6 +1,7 @@
 import winston from 'winston';
 import path from 'path';
 import { sanitizeObjectForLogging } from './phone-masking';
+import type { TraceContext } from '../services/trace-correlation';
 
 // Create logs directory if it doesn't exist
 const logsDir = path.join(process.cwd(), 'logs');
@@ -49,51 +50,107 @@ if (process.env.NODE_ENV === 'production') {
   );
 }
 
+// Helper function to add trace context to log metadata
+function addTraceContext(context: unknown, traceContext?: TraceContext): unknown {
+  if (!traceContext) return context;
+
+  const traceInfo = {
+    traceId: traceContext.traceId,
+    spanId: traceContext.spanId,
+    ...(traceContext.parentSpanId && { parentSpanId: traceContext.parentSpanId })
+  };
+
+  if (!context) return traceInfo;
+
+  if (typeof context === 'object' && context !== null) {
+    return { ...context, trace: traceInfo };
+  }
+
+  return { data: context, trace: traceInfo };
+}
+
 // Helper functions to log with context and automatic phone number masking
 export default {
-  info: (message: string, context?: unknown) => {
-    logger.info(message, context ? sanitizeObjectForLogging(context) : context);
+  info: (message: string, context?: unknown, traceContext?: TraceContext) => {
+    const contextWithTrace = addTraceContext(context, traceContext);
+    logger.info(message, contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : contextWithTrace);
   },
 
-  warn: (message: string, context?: unknown) => {
-    logger.warn(message, context ? sanitizeObjectForLogging(context) : context);
+  warn: (message: string, context?: unknown, traceContext?: TraceContext) => {
+    const contextWithTrace = addTraceContext(context, traceContext);
+    logger.warn(message, contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : contextWithTrace);
   },
 
-  error: (message: string, error?: unknown, context?: unknown) => {
+  error: (message: string, error?: unknown, context?: unknown, traceContext?: TraceContext) => {
     if (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      const sanitizedContext = context ? sanitizeObjectForLogging(context) : {};
+      const contextWithTrace = addTraceContext(context, traceContext);
+      const sanitizedContext = contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : {};
       logger.error(`${message}: ${err.message}`, {
         ...(typeof sanitizedContext === 'object' && sanitizedContext !== null ? sanitizedContext : {}),
         stack: err.stack
       });
     } else {
-      logger.error(message, context ? sanitizeObjectForLogging(context) : context);
+      const contextWithTrace = addTraceContext(context, traceContext);
+      logger.error(message, contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : contextWithTrace);
     }
   },
 
-  debug: (message: string, context?: unknown) => {
-    logger.debug(message, context ? sanitizeObjectForLogging(context) : context);
+  debug: (message: string, context?: unknown, traceContext?: TraceContext) => {
+    const contextWithTrace = addTraceContext(context, traceContext);
+    logger.debug(message, contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : contextWithTrace);
   },
 
   // Additional methods for specific use cases
-  sms: (message: string, context?: unknown) => {
+  sms: (message: string, context?: unknown, traceContext?: TraceContext) => {
     // Special logging for SMS operations with enhanced masking
-    const sanitizedContext = context ? sanitizeObjectForLogging(context, {
+    const contextWithTrace = addTraceContext(context, traceContext);
+    const sanitizedContext = contextWithTrace ? sanitizeObjectForLogging(contextWithTrace, {
       visibleDigits: 0, // Don't show any digits for SMS logs
       maskCharacter: '*'
-    }) : context;
+    }) : contextWithTrace;
 
     logger.info(`[SMS] ${message}`, sanitizedContext);
   },
 
-  security: (message: string, context?: unknown) => {
+  security: (message: string, context?: unknown, traceContext?: TraceContext) => {
     // Security-related logging with maximum sanitization
-    const sanitizedContext = context ? sanitizeObjectForLogging(context, {
+    const contextWithTrace = addTraceContext(context, traceContext);
+    const sanitizedContext = contextWithTrace ? sanitizeObjectForLogging(contextWithTrace, {
       visibleDigits: 0,
       maskCharacter: 'X'
-    }) : context;
+    }) : contextWithTrace;
 
     logger.warn(`[SECURITY] ${message}`, sanitizedContext);
-  }
+  },
+
+  // Helper method to create a logger with bound trace context
+  withTraceContext: (traceContext: TraceContext) => ({
+    info: (message: string, context?: unknown) => {
+      const contextWithTrace = addTraceContext(context, traceContext);
+      logger.info(message, contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : contextWithTrace);
+    },
+    warn: (message: string, context?: unknown) => {
+      const contextWithTrace = addTraceContext(context, traceContext);
+      logger.warn(message, contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : contextWithTrace);
+    },
+    error: (message: string, error?: unknown, context?: unknown) => {
+      if (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        const contextWithTrace = addTraceContext(context, traceContext);
+        const sanitizedContext = contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : {};
+        logger.error(`${message}: ${err.message}`, {
+          ...(typeof sanitizedContext === 'object' && sanitizedContext !== null ? sanitizedContext : {}),
+          stack: err.stack
+        });
+      } else {
+        const contextWithTrace = addTraceContext(context, traceContext);
+        logger.error(message, contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : contextWithTrace);
+      }
+    },
+    debug: (message: string, context?: unknown) => {
+      const contextWithTrace = addTraceContext(context, traceContext);
+      logger.debug(message, contextWithTrace ? sanitizeObjectForLogging(contextWithTrace) : contextWithTrace);
+    }
+  })
 };
