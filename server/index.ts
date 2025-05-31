@@ -21,7 +21,7 @@ import { initMetrics } from './observability/metrics';
 import { initializeRedis } from './lib/redis';
 import adfRoutes from './routes/adf-routes';
 import adminRoutes from './routes/admin-routes';
-// import authRoutes from './routes/auth-routes'; // Commented out - auth service not implemented
+import authRoutes from './routes/auth-routes';
 import conversationLogsRoutes from './routes/conversation-logs-routes';
 // import agentSquadRoutes from './routes/agent-squad-routes'; // Commented out - missing dependencies
 import adfConversationRoutes from './routes/adf-conversation-routes';
@@ -38,9 +38,6 @@ const HOST = process.env.HOST || '0.0.0.0';
 // Setup observability
 initMetrics(app);
 // setupTracing(); // Disabled - missing dependencies
-
-// Trust proxy for Render deployment (fixes X-Forwarded-For header issues)
-app.set('trust proxy', true);
 
 // Middleware
 app.use(cors());
@@ -69,7 +66,7 @@ app.use(session({
 app.use(express.static(path.join(__dirname, '../dist/public')));
 
 // API routes
-// app.use('/api/auth', authRoutes); // Commented out - auth service not implemented
+app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/adf', adfRoutes);
 app.use('/api/conversations', conversationLogsRoutes);
@@ -87,18 +84,7 @@ app.get('/', (req, res) => {
   res.json({ 
     message: 'Kunes RV Dealership Server Running!', 
     timestamp: new Date().toISOString(),
-    status: 'ok',
-    sessionInvalidated: true // Force session invalidation deployment
-  });
-});
-
-// Health check endpoint for session invalidation
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    sessionInvalidated: true,
-    message: 'All sessions invalidated - users must re-authenticate'
+    status: 'ok'
   });
 });
 
