@@ -213,3 +213,5 @@ export { client };
 
 // Export all schema tables and types
 export * from "../shared/schema.js";
+
+}
