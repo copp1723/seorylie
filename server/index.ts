@@ -39,6 +39,9 @@ const HOST = process.env.HOST || '0.0.0.0';
 initMetrics(app);
 // setupTracing(); // Disabled - missing dependencies
 
+// Trust proxy for Render deployment (fixes X-Forwarded-For header issues)
+app.set('trust proxy', true);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
