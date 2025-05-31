@@ -7,43 +7,25 @@ import postgres from "postgres";
 import * as schema from "../shared/schema";
 import logger from "./utils/logger";
 
-// Load environment variables if not already loaded
-if (!process.env.DATABASE_URL && typeof require !== 'undefined') {
-  try {
-    require('dotenv').config();
-  } catch (e) {
-    // dotenv not available, continue
-  }
-}
-
 // Database connection configuration
-const connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL || 'postgresql://localhost:5432/dev_db';
 
-if (!connectionString) {
-  // For development/testing without database
-  console.warn("DATABASE_URL not set - database operations will be disabled");
-  // Create a dummy client that doesn't actually connect
-  const client = null;
-  const db = null;
-  export { db };
-  export default db;
-  export { client };
-  export * from "../shared/schema";
-  // Exit early to avoid connection attempts
-  if (module.exports) module.exports = { db: null, client: null };
-} else {
+console.log('Database configuration:', { 
+  hasConnectionString: !!process.env.DATABASE_URL,
+  defaultUsed: !process.env.DATABASE_URL
+});
 
 // Enhanced connection configuration with pooling
 const connectionConfig = {
-  max: parseInt(process.env.DB_POOL_MAX || '20'),              // Maximum connections in pool
-  idle_timeout: parseInt(process.env.DB_IDLE_TIMEOUT || '20'), // Seconds
-  connect_timeout: parseInt(process.env.DB_CONNECT_TIMEOUT || '10'), // Seconds
-  max_lifetime: parseInt(process.env.DB_MAX_LIFETIME || '3600'), // 1 hour connection lifetime
-  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
-  onnotice: process.env.NODE_ENV === 'development' ? console.log : undefined, // Log notices in dev
-  debug: process.env.DB_DEBUG === 'true',
+  max: parseInt(process.env.DB_POOL_MAX || '20'),
+  idle_timeout: parseInt(process.env.DB_IDLE_TIMEOUT || '20'),
+  connect_timeout: parseInt(process.env.DB_CONNECT_TIMEOUT || '10'),
+  max_lifetime: parseInt(process.env.DB_MAX_LIFETIME || '3600'),
+  ssl: false, // Disabled for development
+  onnotice: undefined, // Disable notices
+  debug: false,
   transform: {
-    undefined: null // Transform undefined values to null for database compatibility
+    undefined: null
   }
 };
 
@@ -69,13 +51,7 @@ export async function checkDatabaseConnection(): Promise<{
   
   try {
     // Test basic connectivity
-    const result = await client`
-      SELECT 
-        version() as version,
-        current_database() as database,
-        current_user as user,
-        (SELECT count(*) FROM pg_stat_activity WHERE state = 'active') as active_connections
-    `;
+    const result = await client`SELECT version() as version, current_database() as database, current_user as user`;
 
     const info = result[0];
     const latency = Date.now() - startTime;
@@ -83,7 +59,6 @@ export async function checkDatabaseConnection(): Promise<{
     logger.info('Database health check passed', {
       database: info.database,
       user: info.user,
-      activeConnections: info.active_connections,
       latency: `${latency}ms`
     });
 
@@ -92,13 +67,12 @@ export async function checkDatabaseConnection(): Promise<{
       version: info.version.split(' ')[0] + ' ' + info.version.split(' ')[1],
       database: info.database,
       user: info.user,
-      connectionCount: parseInt(info.active_connections as string),
       latency
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     
-    logger.error('Database health check failed', {
+    logger.warn('Database health check failed (development mode)', {
       error: errorMessage,
       latency: `${Date.now() - startTime}ms`
     });
@@ -114,31 +88,16 @@ export async function checkDatabaseConnection(): Promise<{
 /**
  * Test database connection with retries
  */
-export async function testDatabaseConnection(maxRetries: number = 3): Promise<boolean> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const health = await checkDatabaseConnection();
-      if (health.isHealthy) {
-        logger.info('Database connection test successful', { attempt });
-        return true;
-      }
-    } catch (error) {
-      logger.warn('Database connection test failed', {
-        attempt,
-        maxRetries,
-        error: error instanceof Error ? error.message : String(error)
-      });
-      
-      if (attempt < maxRetries) {
-        // Exponential backoff
-        const delay = Math.pow(2, attempt) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
+export async function testDatabaseConnection(maxRetries: number = 1): Promise<boolean> {
+  try {
+    const health = await checkDatabaseConnection();
+    return health.isHealthy;
+  } catch (error) {
+    logger.warn('Database connection test failed', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return false;
   }
-  
-  logger.error('Database connection test failed after all retries', { maxRetries });
-  return false;
 }
 
 /**
@@ -168,42 +127,6 @@ export function getDatabasePoolStats() {
   };
 }
 
-// Set up graceful shutdown handlers
-if (typeof process !== 'undefined') {
-  const gracefulShutdown = (signal: string) => {
-    logger.info(`Received ${signal}, initiating graceful shutdown...`);
-    
-    closeDatabaseConnections()
-      .then(() => {
-        logger.info('Graceful shutdown completed');
-        process.exit(0);
-      })
-      .catch((error) => {
-        logger.error('Error during graceful shutdown', {
-          error: error instanceof Error ? error.message : String(error)
-        });
-        process.exit(1);
-      });
-  };
-
-  // Handle different shutdown signals
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-  process.on('SIGUSR1', () => gracefulShutdown('SIGUSR1'));
-  process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2'));
-
-  // Handle uncaught exceptions
-  process.on('uncaughtException', (error) => {
-    logger.error('Uncaught exception', { error: error.message, stack: error.stack });
-    gracefulShutdown('uncaughtException');
-  });
-
-  process.on('unhandledRejection', (reason, promise) => {
-    logger.error('Unhandled rejection', { reason, promise });
-    gracefulShutdown('unhandledRejection');
-  });
-}
-
 // Export as both named and default export for compatibility
 export { db };
 export default db;
@@ -211,7 +134,5 @@ export default db;
 // Export the client for direct access if needed
 export { client };
 
-// Export all schema tables and types
-export * from "../shared/schema.js";
-
-}
+// Export all schema tables and types  
+export * from "../shared/schema";
