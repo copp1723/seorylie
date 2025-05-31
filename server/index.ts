@@ -22,10 +22,6 @@ import { traceCorrelation } from './services/trace-correlation';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Setup observability
-setupMetrics(app);
-setupTracing();
-
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -59,6 +55,7 @@ app.use('/api/conversations', conversationLogsRoutes);
 app.use('/api/agent-squad', agentSquadRoutes);
 app.use('/api/adf/conversations', adfConversationRoutes);
 app.use('/api/trace', traceRoutes);
+app.use('/api/agents', agentOrchestrationRoutes);
 
 // Setup additional routes
 setupRoutes(app);
