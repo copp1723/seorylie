@@ -107,11 +107,17 @@ async function startServer() {
   try {
     // Check database connection
     await checkDatabaseConnection();
-    
-    // Initialize Redis
+
+    // Initialize Redis (non-blocking - will use fallback if Redis unavailable)
     logger.info('Initializing Redis connection');
-    await initializeRedis();
-    
+    try {
+      await initializeRedis();
+    } catch (redisError) {
+      logger.warn('Redis initialization failed, continuing with fallback', {
+        error: redisError instanceof Error ? redisError.message : String(redisError)
+      });
+    }
+
     // Start HTTP server
     server.listen(PORT, HOST, () => {
       logger.info(`Server running on http://${HOST}:${PORT}`);

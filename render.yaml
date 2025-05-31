@@ -63,6 +63,8 @@ services:
         value: 900000
       - key: RATE_LIMIT_MAX_REQUESTS
         value: 100
+      - key: SKIP_REDIS
+        value: false # Set to true to disable Redis and use in-memory fallback
     healthCheckPath: /api/health
     autoDeploy: true # Enable auto-deploy on git push
     branch: main
@@ -218,8 +220,11 @@ environments:
             value: debug
           - key: ALLOW_AUTH_BYPASS
             value: true # Allow for testing
+          - key: SKIP_REDIS
+            value: true # Disable Redis for staging to prevent connection issues
     databases:
       - name: cleanrylie-db-staging
         plan: starter
-      - name: cleanrylie-redis-staging
-        plan: starter
+      # Redis disabled for staging - using in-memory fallback
+      # - name: cleanrylie-redis-staging
+      #   plan: starter

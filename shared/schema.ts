@@ -26,7 +26,7 @@ export const users = pgTable(
     id: serial("id").primaryKey(),
     username: varchar("username", { length: 100 }).notNull(),
     email: varchar("email", { length: 100 }).notNull(),
-    password: varchar("password", { length: 100 }),
+    password: varchar("password", { length: 100 }).notNull(),
     role: varchar("role", { length: 50 }).default("user").notNull(),
     dealershipId: integer("dealership_id"),
     // isActive: boolean("is_active").default(true).notNull(), // Temporarily removed - column missing in DB

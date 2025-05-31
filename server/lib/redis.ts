@@ -12,9 +12,16 @@ let redisClient: Redis | null = null;
  * Initialize Redis connection
  */
 export async function initializeRedis(): Promise<Redis> {
+  // Check if Redis should be skipped
+  if (process.env.SKIP_REDIS === 'true') {
+    logger.info('Redis disabled via SKIP_REDIS environment variable');
+    redisClient = createMockRedisClient();
+    return redisClient;
+  }
+
   try {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-    
+
     logger.info('Initializing Redis connection', {
       url: redisUrl.replace(/:[^:@]+@/, ':***@') // Hide password in logs
     });
@@ -25,16 +32,13 @@ export async function initializeRedis(): Promise<Redis> {
       lazyConnect: true,
       connectTimeout: 5000,
       commandTimeout: 5000,
+      enableOfflineQueue: false, // Prevent hanging when Redis is unavailable
     });
 
-    // Test the connection
-    await redisClient.ping();
-    
-    logger.info('Redis connection established successfully');
-    
-    // Set up error handlers
+    // Set up error handlers BEFORE attempting connection
     redisClient.on('error', (error) => {
       logger.error('Redis connection error', { error: error.message });
+      // Don't throw here - let the application continue with fallback
     });
 
     redisClient.on('connect', () => {
@@ -49,14 +53,34 @@ export async function initializeRedis(): Promise<Redis> {
       logger.info('Redis ready for commands');
     });
 
+    // Test the connection with timeout
+    const pingPromise = redisClient.ping();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Redis connection timeout')), 3000);
+    });
+
+    await Promise.race([pingPromise, timeoutPromise]);
+
+    logger.info('Redis connection established successfully');
     return redisClient;
+
   } catch (error) {
     logger.warn('Redis connection failed - running without Redis cache', {
       error: error instanceof Error ? error.message : String(error)
     });
-    
+
+    // Clean up failed connection
+    if (redisClient) {
+      try {
+        redisClient.disconnect();
+      } catch (disconnectError) {
+        // Ignore disconnect errors
+      }
+    }
+
     // Return a mock client for development if Redis is not available
-    return createMockRedisClient();
+    redisClient = createMockRedisClient();
+    return redisClient;
   }
 }
 
