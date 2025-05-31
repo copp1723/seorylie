@@ -149,9 +149,9 @@ export default function AuthPage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={loginMutation.isPending}
+                  disabled={loginMutation.isLoading}
                 >
-                  {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                  {loginMutation.isLoading ? "Signing in..." : "Sign In"}
                 </Button>
               </div>
             </form>
@@ -215,9 +215,9 @@ export default function AuthPage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={registerMutation.isPending}
+                  disabled={registerMutation.isLoading}
                 >
-                  {registerMutation.isPending
+                  {registerMutation.isLoading
                     ? "Creating account..."
                     : "Create Account"}
                 </Button>

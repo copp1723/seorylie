@@ -9,7 +9,7 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { SimpleSpanProcessor, BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
-import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
+// import { JaegerExporter } from '@opentelemetry/exporter-jaeger'; // Temporarily disabled - missing dependency
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
@@ -56,9 +56,9 @@ export function initTracing() {
   });
 
   // Configure exporters
-  const jaegerExporter = new JaegerExporter({
-    endpoint: JAEGER_ENDPOINT,
-  });
+  // const jaegerExporter = new JaegerExporter({
+  //   endpoint: JAEGER_ENDPOINT,
+  // }); // Temporarily disabled - missing dependency
 
   // Configure Tempo OTLP exporter with authentication
   const tempoExporter = new OTLPTraceExporter({
@@ -87,11 +87,11 @@ export function initTracing() {
         ? [new SimpleSpanProcessor(new ConsoleSpanExporter())] 
         : []),
       // Use batch processors for production performance
-      new BatchSpanProcessor(jaegerExporter, {
-        maxExportBatchSize: 100,
-        scheduledDelayMillis: 500,
-        maxQueueSize: 2000,
-      }),
+      // new BatchSpanProcessor(jaegerExporter, {
+      //   maxExportBatchSize: 100,
+      //   scheduledDelayMillis: 500,
+      //   maxQueueSize: 2000,
+      // }), // Temporarily disabled - missing dependency
       new BatchSpanProcessor(tempoExporter, {
         maxExportBatchSize: 100,
         scheduledDelayMillis: 500,

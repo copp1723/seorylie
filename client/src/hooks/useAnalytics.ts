@@ -14,9 +14,24 @@ import {
  */
 interface AnalyticsHook {
   /**
+   * Track a custom event (alias for trackEvent)
+   */
+  track: (event: string, properties?: Record<string, any>) => void;
+  
+  /**
    * Track a custom event
    */
   trackEvent: (eventName: string, parameters?: EventParameters) => void;
+  
+  /**
+   * Track timing/performance metrics
+   */
+  trackTiming: (name: string, duration: number) => void;
+  
+  /**
+   * Identify a user
+   */
+  identify: (userId: string, traits?: Record<string, any>) => void;
   
   /**
    * Track a page view
@@ -88,6 +103,29 @@ export const useAnalytics = (): AnalyticsHook => {
       logEvent(eventName, parameters);
     }
   }, [isEnabled]);
+
+  // Track event alias
+  const track = useCallback((event: string, properties: Record<string, any> = {}) => {
+    trackEvent(event, properties);
+  }, [trackEvent]);
+
+  // Track timing/performance metrics
+  const trackTiming = useCallback((name: string, duration: number) => {
+    trackEvent('timing', {
+      name,
+      duration,
+      timestamp: Date.now()
+    });
+  }, [trackEvent]);
+
+  // Identify user
+  const identify = useCallback((userId: string, traits: Record<string, any> = {}) => {
+    trackEvent('identify', {
+      userId,
+      traits,
+      timestamp: Date.now()
+    });
+  }, [trackEvent]);
   
   // Track page view wrapper
   const trackPageViewFn = useCallback((pageName: string, parameters: EventParameters = {}) => {
@@ -150,7 +188,10 @@ export const useAnalytics = (): AnalyticsHook => {
   }, []);
   
   return {
+    track,
     trackEvent,
+    trackTiming,
+    identify,
     trackPageView: trackPageViewFn,
     trackInteraction,
     trackFeatureUsage,

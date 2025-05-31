@@ -3,7 +3,7 @@
  * This provides a more reliable startup for testing the prompt interface
  */
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "../server/routes";
+import { setupRoutes } from "../server/routes";
 import { setupVite, serveStatic, log } from "../server/vite";
 import { standardLimiter } from '../server/middleware/rate-limit';
 import logger from "../server/utils/logger";
@@ -51,7 +51,7 @@ app.use((req, res, next) => {
 (async () => {
   logger.info("Starting server in simplified mode (Redis disabled)");
   
-  const server = await registerRoutes(app);
+  setupRoutes(app);
 
   // Handle errors
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -66,15 +66,23 @@ app.use((req, res, next) => {
     });
   });
 
+  // Create HTTP server
+  const { createServer } = require('http');
+  const server = createServer(app);
+
   // Setup Vite for development
-  await setupVite(app, server);
+  try {
+    await setupVite(app, server);
+  } catch (error) {
+    logger.warn("Vite setup failed, serving static files", { error });
+    // Fallback to serving static files if Vite fails
+    serveStatic(app);
+  }
   
   // Start server
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-  }, () => {
-    logger.info(`Server running on port ${port}`);
+  const port = 3000;
+  server.listen(port, "0.0.0.0", () => {
+    logger.info(`✅ Server running on http://localhost:${port}`);
+    logger.info("🎯 Ready for admin dashboard access!");
   });
 })();

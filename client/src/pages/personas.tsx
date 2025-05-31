@@ -674,12 +674,12 @@ export default function Personas() {
                 <Button
                   type="submit"
                   disabled={
-                    createPersonaMutation.isPending ||
-                    updatePersonaMutation.isPending
+                    createPersonaMutation.isLoading ||
+                    updatePersonaMutation.isLoading
                   }
                 >
-                  {createPersonaMutation.isPending ||
-                  updatePersonaMutation.isPending
+                  {createPersonaMutation.isLoading ||
+                  updatePersonaMutation.isLoading
                     ? "Saving..."
                     : editingPersona
                       ? "Update Persona"

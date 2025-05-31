@@ -50,13 +50,44 @@ type KeyboardEventHandler = (event: KeyboardEvent) => void;
 
 /**
  * Hook for registering and handling keyboard shortcuts
- * @param shortcutMap Object mapping shortcut keys to handlers
- * @param options Global options for all shortcuts
+ * @param shortcutMap Object mapping shortcut keys to handlers or array of shortcut strings
+ * @param handlerOrOptions Handler function (when using array) or options object
+ * @param options Global options for all shortcuts (when using array format)
  */
-const useKeyboardShortcut = (
+function useKeyboardShortcut(
   shortcutMap: Record<string, (event: KeyboardEvent) => void>,
+  options?: KeyboardShortcutOptions
+): void;
+function useKeyboardShortcut(
+  shortcuts: string[],
+  handler: (event: KeyboardEvent) => void,
+  options?: KeyboardShortcutOptions
+): void;
+function useKeyboardShortcut(
+  shortcutMapOrArray: Record<string, (event: KeyboardEvent) => void> | string[],
+  handlerOrOptions?: ((event: KeyboardEvent) => void) | KeyboardShortcutOptions,
   options: KeyboardShortcutOptions = {}
-): void => {
+): void {
+  // Normalize inputs to always work with object format
+  let shortcutMap: Record<string, (event: KeyboardEvent) => void>;
+  let finalOptions: KeyboardShortcutOptions;
+
+  if (Array.isArray(shortcutMapOrArray)) {
+    // Array format: ['Meta+k', 'Control+k']
+    if (typeof handlerOrOptions !== 'function') {
+      throw new Error('Handler function is required when using array format');
+    }
+    
+    shortcutMap = {};
+    shortcutMapOrArray.forEach(shortcut => {
+      shortcutMap[shortcut] = handlerOrOptions as (event: KeyboardEvent) => void;
+    });
+    finalOptions = options;
+  } else {
+    // Object format: { 'Meta+k': callback }
+    shortcutMap = shortcutMapOrArray;
+    finalOptions = (handlerOrOptions as KeyboardShortcutOptions) || {};
+  }
   // Store handlers in a ref to avoid unnecessary re-renders
   const handlersRef = useRef(shortcutMap);
   
@@ -72,7 +103,7 @@ const useKeyboardShortcut = (
     stopPropagation = true,
     enabled = true,
     global = false,
-  } = options;
+  } = finalOptions;
   
   // Parse a shortcut string into a KeyboardShortcut object
   const parseShortcut = useCallback((shortcut: string): KeyboardShortcut => {
@@ -161,7 +192,7 @@ const useKeyboardShortcut = (
       target.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown, global]);
-};
+}
 
 /**
  * Register a single keyboard shortcut

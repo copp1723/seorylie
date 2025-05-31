@@ -22,6 +22,9 @@ export {
   insertPromptVariantSchema,
   insertExperimentVariantSchema,
   insertPromptMetricSchema,
+} from './schema';
+
+export type {
   PromptExperiment,
   InsertPromptExperiment,
   PromptVariant,

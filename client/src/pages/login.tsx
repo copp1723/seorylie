@@ -144,9 +144,9 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loginMutation.isPending}
+              disabled={loginMutation.isLoading}
             >
-              {loginMutation.isPending ? (
+              {loginMutation.isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Logging in...

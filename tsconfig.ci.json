@@ -20,6 +20,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./client/src/*"],
+      "@shared": ["./shared"],
       "@shared/*": ["./shared/*"]
     },
     "skipLibCheck": true,

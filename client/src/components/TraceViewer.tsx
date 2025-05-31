@@ -154,7 +154,7 @@ export const TraceViewer: React.FC<TraceViewerProps> = ({ traceId, className = '
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .trace-viewer {
           position: fixed;
           bottom: 20px;

@@ -8,7 +8,11 @@
 
   // Files to include in compilation
   "include": [
-    "client/src/components/error-boundary.tsx"
+    "client/src/**/*",
+    "server/**/*", 
+    "shared/**/*",
+    "*.ts",
+    "*.tsx"
   ],
 
   // Files to exclude from compilation
@@ -99,6 +103,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./client/src/*"],
+      "@shared": ["./shared"],
       "@shared/*": ["./shared/*"],
       "@server/*": ["./server/*"],
       "@test/*": ["./test/*"]

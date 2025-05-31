@@ -65,7 +65,7 @@ import {
   dealerships, // Assuming this is for type reference if needed
   promptExperiments, // For type reference
   promptVariants, // For type reference
-} from "@shared/schema";
+} from "@shared";
 
 // Sample dealership data (replace with actual data from your API)
 const DEFAULT_DEALERSHIP_ID = 1;
@@ -710,8 +710,8 @@ export default function PromptExperimentInterface() {
       description: description || null,
       dealershipId, // dealershipId is part of PromptExperiment schema
       isActive: true,
-      startDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD format often preferred for dates
-      endDate: null, // No end date by default
+      startDate: new Date(), // Date object as expected by schema
+      endDate: undefined, // Use undefined instead of null for optional Date field
       // experimentVariants should be an array of objects linking to PromptVariant by ID
       // The actual structure depends on how the backend expects this.
       // Assuming backend expects an array of ExperimentVariant-like structures or variant IDs with allocations
@@ -1386,8 +1386,8 @@ export default function PromptExperimentInterface() {
 
 
                   <div className="flex gap-2">
-                    <Button onClick={handleSaveVariant} disabled={saveVariantMutation.isPending || !newVariantName.trim()}>
-                      {saveVariantMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (editingVariant ? "Update Variant" : "Save New Variant")}
+                    <Button onClick={handleSaveVariant} disabled={saveVariantMutation.isLoading || !newVariantName.trim()}>
+                      {saveVariantMutation.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (editingVariant ? "Update Variant" : "Save New Variant")}
                     </Button>
                     <Button variant="outline" onClick={resetVariantEditor}>
                       Cancel
@@ -1935,9 +1935,9 @@ export default function PromptExperimentInterface() {
                                     .filter(key => !['id', 'dealershipId', 'created_at', 'updated_at', 'lastSeen', 'images', 'features', 'categoryTags'].includes(key)) // Exclude complex or managed fields from direct edit here
                                     .map((key) => (
                                     <div key={key}>
-                                      <Label htmlFor={`vehicle-${index}-${key}`} className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</Label>
+                                      <Label htmlFor={`vehicle-${index}-${String(key)}`} className="capitalize">{String(key).replace(/([A-Z])/g, ' $1')}</Label>
                                       <Input
-                                        id={`vehicle-${index}-${key}`}
+                                        id={`vehicle-${index}-${String(key)}`}
                                         type={typeof vehicle[key] === 'number' ? 'number' : 'text'}
                                         value={vehicle[key] === null || vehicle[key] === undefined ? '' : String(vehicle[key])}
                                         onChange={(e) =>
@@ -1947,7 +1947,7 @@ export default function PromptExperimentInterface() {
                                             e.target.value,
                                           )
                                         }
-                                        placeholder={`Enter ${key}`}
+                                        placeholder={`Enter ${String(key)}`}
                                       />
                                     </div>
                                   ))}

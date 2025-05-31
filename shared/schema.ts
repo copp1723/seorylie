@@ -29,7 +29,7 @@ export const users = pgTable(
     password: varchar("password", { length: 100 }),
     role: varchar("role", { length: 50 }).default("user").notNull(),
     dealershipId: integer("dealership_id"),
-    isActive: boolean("is_active").default(true).notNull(),
+    // isActive: boolean("is_active").default(true).notNull(), // Temporarily removed - column missing in DB
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -922,6 +922,7 @@ export const promptVariants = pgTable(
     systemPrompt: text("system_prompt"),
     dealershipId: integer("dealership_id"),
     isActive: boolean("is_active").default(true).notNull(),
+    isControl: boolean("is_control").default(false).notNull(),
     metadata: json("metadata").$type<Record<string, any>>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),

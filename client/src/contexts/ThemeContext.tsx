@@ -1,23 +1,71 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
+// Color definitions
+export interface ThemeColors {
+  primary: string;
+  secondary: string;
+  background: string;
+  foreground: string;
+  card: string;
+  border: string;
+  text: string;
+  muted: string;
+  accent: string;
+  error: string;
+  success: string;
+  warning: string;
+  // Additional colors for components
+  skeleton: string;
+  borderLight: string;
+  backgroundAlt: string;
+  cardBackground: string;
+  tableHeader: string;
+  tableRow: string;
+  tableRowAlt: string;
+  userMessage: string;
+  assistantMessage: string;
+  tooltipBackground: string;
+}
+
+// Shadow definitions
+export interface ThemeShadows {
+  sm: string;
+  md: string;
+  lg: string;
+  xl: string;
+  inner: string;
+  // Additional shadows for components
+  card: string;
+  tooltip: string;
+}
+
 // Theme interface
 export interface Theme {
   mode: 'light' | 'dark';
-  colors: {
-    primary: string;
-    secondary: string;
-    background: string;
-    foreground: string;
-    card: string;
-    border: string;
-    text: string;
-    muted: string;
-    accent: string;
-    error: string;
-    success: string;
-    warning: string;
-  };
+  colors: ThemeColors;
+  shadows: ThemeShadows;
 }
+
+// Shadow definitions
+const lightShadows: ThemeShadows = {
+  sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+  md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+  lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+  xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+  inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
+  card: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+  tooltip: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+};
+
+const darkShadows: ThemeShadows = {
+  sm: '0 1px 2px 0 rgb(0 0 0 / 0.3)',
+  md: '0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4)',
+  lg: '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4)',
+  xl: '0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4)',
+  inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.3)',
+  card: '0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4)',
+  tooltip: '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4)',
+};
 
 // Light and dark theme definitions
 const lightTheme: Theme = {
@@ -35,7 +83,19 @@ const lightTheme: Theme = {
     error: '#ef4444', // Red
     success: '#10b981', // Green
     warning: '#f59e0b', // Amber
+    // Additional colors for components
+    skeleton: '#e5e7eb',
+    borderLight: '#f3f4f6',
+    backgroundAlt: '#f9fafb',
+    cardBackground: '#ffffff',
+    tableHeader: '#f9fafb',
+    tableRow: '#ffffff',
+    tableRowAlt: '#f9fafb',
+    userMessage: '#dbeafe',
+    assistantMessage: '#f3f4f6',
+    tooltipBackground: '#1f2937',
   },
+  shadows: lightShadows,
 };
 
 const darkTheme: Theme = {
@@ -53,7 +113,19 @@ const darkTheme: Theme = {
     error: '#f87171', // Lighter red
     success: '#34d399', // Lighter green
     warning: '#fbbf24', // Lighter amber
+    // Additional colors for components
+    skeleton: '#374151',
+    borderLight: '#4b5563',
+    backgroundAlt: '#1f2937',
+    cardBackground: '#1f2937',
+    tableHeader: '#374151',
+    tableRow: '#1f2937',
+    tableRowAlt: '#374151',
+    userMessage: '#1e40af',
+    assistantMessage: '#374151',
+    tooltipBackground: '#f9fafb',
   },
+  shadows: darkShadows,
 };
 
 // Theme context type
@@ -62,6 +134,8 @@ interface ThemeContextType {
   setTheme: (mode: 'light' | 'dark') => void;
   toggleTheme: () => void;
   isDarkMode: boolean;
+  colors: ThemeColors;
+  shadows: ThemeShadows;
 }
 
 // Create the context
@@ -156,6 +230,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTheme,
     toggleTheme,
     isDarkMode: theme.mode === 'dark',
+    colors: theme.colors,
+    shadows: theme.shadows,
   };
 
   return (

@@ -326,9 +326,9 @@ const SystemPage: React.FC = () => {
                   <Button
                     type="submit"
                     className="mt-4"
-                    disabled={createInvitation.isPending}
+                    disabled={createInvitation.isLoading}
                   >
-                    {createInvitation.isPending ? (
+                    {createInvitation.isLoading ? (
                       <>
                         Sending...{" "}
                         <RefreshCw className="ml-2 h-4 w-4 animate-spin" />
@@ -394,7 +394,7 @@ const SystemPage: React.FC = () => {
                                 onClick={() =>
                                   resendInvitation.mutate(invitation.id)
                                 }
-                                disabled={resendInvitation.isPending}
+                                disabled={resendInvitation.isLoading}
                               >
                                 Resend
                               </Button>
@@ -404,7 +404,7 @@ const SystemPage: React.FC = () => {
                                 onClick={() =>
                                   deleteInvitation.mutate(invitation.id)
                                 }
-                                disabled={deleteInvitation.isPending}
+                                disabled={deleteInvitation.isLoading}
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -470,9 +470,9 @@ const SystemPage: React.FC = () => {
                 <Button
                   type="submit"
                   className="mt-4"
-                  disabled={changePassword.isPending}
+                  disabled={changePassword.isLoading}
                 >
-                  {changePassword.isPending ? (
+                  {changePassword.isLoading ? (
                     <>
                       Updating...{" "}
                       <RefreshCw className="ml-2 h-4 w-4 animate-spin" />

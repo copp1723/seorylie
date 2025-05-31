@@ -147,10 +147,10 @@ export default function PromptLibraryPage() {
 
                 <Button
                   onClick={handleTestPrompt}
-                  disabled={testPromptMutation.isPending || !prompt.trim()}
+                  disabled={testPromptMutation.isLoading || !prompt.trim()}
                   className="w-full"
                 >
-                  {testPromptMutation.isPending && (
+                  {testPromptMutation.isLoading && (
                     <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Test Prompt

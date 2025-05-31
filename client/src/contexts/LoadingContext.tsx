@@ -14,10 +14,15 @@ export interface LoadingState {
 
 // Define the context interface with state and actions
 interface LoadingContextType {
+  // New key-based API
+  startLoading: (key: string, options?: { message?: string; progress?: number }) => void;
+  stopLoading: (key: string) => void;
+  setProgress: (key: string, progress: number) => void;
+  updateLoading: (key: string, updates: Partial<LoadingState>) => void;
+  isLoadingKey: (key: string) => boolean;
+  getLoadingState: (key: string) => LoadingState | undefined;
+  // Legacy support
   state: LoadingState;
-  startLoading: (options?: Partial<LoadingState>) => void;
-  updateLoading: (options: Partial<LoadingState>) => void;
-  stopLoading: () => void;
 }
 
 // Default loading state
@@ -33,8 +38,11 @@ const defaultLoadingState: LoadingState = {
 const LoadingContext = createContext<LoadingContextType>({
   state: defaultLoadingState,
   startLoading: () => {},
-  updateLoading: () => {},
   stopLoading: () => {},
+  setProgress: () => {},
+  updateLoading: () => {},
+  isLoadingKey: () => false,
+  getLoadingState: () => undefined,
 });
 
 // Props for the provider component
@@ -49,68 +57,112 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({
   initialState = {},
 }) => {
   const { theme } = useTheme();
+  const [loadingStates, setLoadingStates] = useState<Map<string, LoadingState>>(new Map());
   const [state, setState] = useState<LoadingState>({
     ...defaultLoadingState,
     ...initialState,
   });
 
-  // Start a loading operation
-  const startLoading = (options: Partial<LoadingState> = {}) => {
-    setState(prevState => ({
-      ...prevState,
-      ...options,
+  // Start a loading operation by key
+  const startLoading = (key: string, options: { message?: string; progress?: number } = {}) => {
+    const newState: LoadingState = {
       isLoading: true,
-      progress: options.progress ?? 0,
-    }));
+      message: options.message || 'Loading...',
+      progress: options.progress || 0,
+      indeterminate: options.progress === undefined,
+      cancelable: false,
+    };
+
+    setLoadingStates(prev => new Map(prev.set(key, newState)));
+    
+    // Update legacy state if this is the first loading operation
+    if (loadingStates.size === 0) {
+      setState(newState);
+    }
 
     // Log loading start event
     logEvent('loading_started', {
-      message: options.message || prevState.message,
-      indeterminate: options.indeterminate !== undefined ? options.indeterminate : prevState.indeterminate,
+      key,
+      message: newState.message,
+      indeterminate: newState.indeterminate,
     });
   };
 
-  // Update an in-progress loading operation
-  const updateLoading = (options: Partial<LoadingState>) => {
-    if (!state.isLoading) return;
-
-    setState(prevState => ({
-      ...prevState,
-      ...options,
-    }));
-
-    // Log progress update for determinate loaders
-    if (!state.indeterminate && options.progress !== undefined) {
-      logEvent('loading_progress_update', {
-        progress: options.progress,
-        message: options.message || state.message,
-      });
-    }
-  };
-
-  // Stop the current loading operation
-  const stopLoading = () => {
-    if (!state.isLoading) return;
-
-    setState(prevState => ({
-      ...prevState,
-      isLoading: false,
-      progress: 100,
-    }));
+  // Stop a loading operation by key
+  const stopLoading = (key: string) => {
+    setLoadingStates(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(key);
+      
+      // Update legacy state
+      if (newMap.size === 0) {
+        setState(defaultLoadingState);
+      } else {
+        // Set to the most recent loading state
+        const lastState = Array.from(newMap.values()).pop();
+        if (lastState) setState(lastState);
+      }
+      
+      return newMap;
+    });
 
     // Log loading complete event
     logEvent('loading_completed', {
-      message: state.message,
-      duration: 0, // Would calculate real duration in a production implementation
+      key,
+      duration: 0,
+    });
+  };
+
+  // Set progress for a specific loading operation
+  const setProgress = (key: string, progress: number) => {
+    setLoadingStates(prev => {
+      const current = prev.get(key);
+      if (!current) return prev;
+      
+      const updated = { ...current, progress, indeterminate: false };
+      const newMap = new Map(prev.set(key, updated));
+      
+      // Update legacy state if this is the current operation
+      if (state.isLoading && prev.size === 1) {
+        setState(updated);
+      }
+      
+      return newMap;
     });
 
-    // Reset to default state after a short delay to allow for animations
-    setTimeout(() => {
-      setState(prevState => ({
-        ...defaultLoadingState,
-        ...initialState,
-      }));
-    }, 300);
+    // Log progress update
+    logEvent('loading_progress_update', {
+      key,
+      progress,
+    });
+  };
+
+  // Update a loading operation with partial state
+  const updateLoading = (key: string, updates: Partial<LoadingState>) => {
+    setLoadingStates(prev => {
+      const current = prev.get(key);
+      if (!current) return prev;
+      
+      const updated = { ...current, ...updates };
+      const newMap = new Map(prev.set(key, updated));
+      
+      // Update legacy state if this is the current operation
+      if (state.isLoading && prev.size === 1) {
+        setState(updated);
+      }
+      
+      return newMap;
+    });
+  };
+
+  // Check if a specific key is loading
+  const isLoadingKey = (key: string): boolean => {
+    return loadingStates.has(key) && loadingStates.get(key)?.isLoading === true;
+  };
+
+  // Get loading state for a specific key
+  const getLoadingState = (key: string): LoadingState | undefined => {
+    return loadingStates.get(key);
   };
 
   // Provide the loading context to children
@@ -119,8 +171,11 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({
       value={{
         state,
         startLoading,
-        updateLoading,
         stopLoading,
+        setProgress,
+        updateLoading,
+        isLoadingKey,
+        getLoadingState,
       }}
     >
       {children}

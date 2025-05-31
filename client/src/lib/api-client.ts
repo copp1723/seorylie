@@ -98,6 +98,9 @@ export const http = {
     request<T>({ ...config, method: 'DELETE', url }),
 };
 
+// Export apiRequest function for backward compatibility
+export const apiRequest = request;
+
 export default http;
 
 // Example usage (can be removed or kept for reference):

@@ -106,7 +106,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
   const { trackEvent, trackTiming } = useAnalytics();
   
   // Feature flag for progressive rollout
-  const isEnabled = useFeatureFlag('bulk_operations_enabled', true);
+  const isEnabled = useFeatureFlag('bulk_operations_enabled');
   
   // Local state
   const [selectedItems, setSelectedItems] = useState<BulkOperationItem[]>([]);
@@ -835,7 +835,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
         document.body
       )}
       
-      <style jsx>{`
+      <style>{`
         .bulk-operations-panel {
           display: flex;
           flex-direction: column;

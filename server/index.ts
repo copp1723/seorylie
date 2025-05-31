@@ -8,7 +8,7 @@ import logger from './logger';
 import { setupRoutes } from './routes';
 // import { checkDatabaseConnection } from './db'; // Function doesn't exist
 import { setupMetrics } from './observability/metrics';
-import { setupTracing } from './observability/tracing';
+// import { setupTracing } from './observability/tracing'; // Temporarily disabled due to missing dependencies
 import adfRoutes from './routes/adf-routes';
 import adminRoutes from './routes/admin-routes';
 // import authRoutes from './routes/auth-routes'; // Commented out - auth service not implemented
@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 3000;
 
 // Setup observability
 setupMetrics(app);
-setupTracing();
+// setupTracing(); // Temporarily disabled due to missing dependencies
 
 // Middleware
 app.use(cors());

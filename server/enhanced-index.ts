@@ -127,7 +127,7 @@ class EnhancedServer {
     logger.info('Setting up observability...');
     
     setupMetrics(this.app);
-    setupTracing();
+    // setupTracing(); // Temporarily disabled due to missing dependencies
     
     logger.info('Observability configured');
   }

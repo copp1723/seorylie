@@ -279,14 +279,14 @@ export default function InvitationsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleResend(inv.id)}
-                        disabled={inv.used || resendMutation.isPending}
+                        disabled={inv.used || resendMutation.isLoading}
                         title={
                           inv.used
                             ? "Invitation already used"
                             : "Resend invitation"
                         }
                       >
-                        {resendMutation.isPending ? (
+                        {resendMutation.isLoading ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Mail className="h-4 w-4" />

@@ -827,7 +827,6 @@ const AgentStudio: React.FC = () => {
                               <div className="bg-gray-50 dark:bg-gray-900 rounded-md p-4 overflow-auto max-h-[200px]">
                                 <JsonView
                                   value={selectedInsight}
-                                  theme="dark"
                                   collapsed={1}
                                 />
                               </div>

@@ -507,8 +507,29 @@ export class AuthService extends BaseService {
   }
 }
 
-// Create and export singleton instance
-export const authService = new AuthService({
-  name: 'AuthService',
-  version: '1.0.0'
-});
+// Create and export singleton instance with lazy initialization
+let _authService: AuthService | null = null;
+
+export const authService = {
+  get instance(): AuthService {
+    if (!_authService) {
+      _authService = new AuthService({
+        name: 'AuthService',
+        version: '1.0.0'
+      });
+    }
+    return _authService;
+  },
+  
+  // Proxy methods for backward compatibility
+  authenticate: (...args: any[]) => authService.instance.authenticate(...args),
+  generateSession: (...args: any[]) => authService.instance.generateSession(...args),
+  validateSession: (...args: any[]) => authService.instance.validateSession(...args),
+  revokeSession: (...args: any[]) => authService.instance.revokeSession(...args),
+  hashPassword: (...args: any[]) => authService.instance.hashPassword(...args),
+  verifyPassword: (...args: any[]) => authService.instance.verifyPassword(...args),
+  generateJWT: (...args: any[]) => authService.instance.generateJWT(...args),
+  verifyJWT: (...args: any[]) => authService.instance.verifyJWT(...args),
+  createMagicLink: (...args: any[]) => authService.instance.createMagicLink(...args),
+  verifyMagicLink: (...args: any[]) => authService.instance.verifyMagicLink(...args),
+};

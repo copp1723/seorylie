@@ -36,10 +36,10 @@ export const loginUser = async (req: Request, res: Response) => {
     req.session.user = {
       id: user.id,
       username: user.username,
-      name: user.name || '',
+      name: user.username || '', // use username since name property doesn't exist
       email: user.email || '',
       role: user.role || 'user',
-      dealership_id: user.dealership_id
+      dealership_id: user.dealershipId
     };
 
     logger.info(`User logged in: ${username} (${user.role || 'user'})`);
