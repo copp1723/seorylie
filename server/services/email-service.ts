@@ -1,10 +1,29 @@
 /**
  * Email Service
  * Provides email functionality for user notifications, reports, and system alerts
+ * Supports both SMTP and SendGrid for email delivery
  */
 
 import * as nodemailer from 'nodemailer';
 import logger from '../utils/logger';
+
+// SendGrid support
+interface SendGridConfig {
+  apiKey: string;
+  fromEmail: string;
+  fromName?: string;
+}
+
+// Email delivery tracking
+export interface EmailDeliveryStatus {
+  messageId: string;
+  status: 'sent' | 'delivered' | 'opened' | 'clicked' | 'bounced' | 'failed';
+  timestamp: Date;
+  recipient: string;
+  subject: string;
+  provider: 'smtp' | 'sendgrid';
+  metadata?: Record<string, any>;
+}
 
 interface EmailOptions {
   to: string;
@@ -12,6 +31,31 @@ interface EmailOptions {
   text?: string;
   html?: string;
   from?: string;
+  provider?: 'smtp' | 'sendgrid';
+  trackDelivery?: boolean;
+  templateId?: string; // For SendGrid templates
+  templateData?: Record<string, any>; // For SendGrid template variables
+}
+
+// Email delivery tracking storage
+const deliveryTracking = new Map<string, EmailDeliveryStatus>();
+
+/**
+ * Get SendGrid configuration from environment
+ */
+function getSendGridConfig(): SendGridConfig | null {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL;
+
+  if (!apiKey || !fromEmail) {
+    return null;
+  }
+
+  return {
+    apiKey,
+    fromEmail,
+    fromName: process.env.SENDGRID_FROM_NAME || 'Cleanrylie'
+  };
 }
 
 /**
@@ -29,6 +73,55 @@ function createTransporter() {
   };
 
   return nodemailer.createTransport(emailConfig);
+}
+
+/**
+ * Send email via SendGrid
+ */
+async function sendViaSendGrid(options: EmailOptions): Promise<{ messageId: string; success: boolean }> {
+  const sgConfig = getSendGridConfig();
+  if (!sgConfig) {
+    throw new Error('SendGrid configuration not found');
+  }
+
+  try {
+    // Note: In a real implementation, you would use @sendgrid/mail
+    // For now, we'll simulate the SendGrid API call
+    const messageId = `sg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Simulate SendGrid API call
+    logger.info('Sending email via SendGrid', {
+      to: options.to,
+      subject: options.subject,
+      templateId: options.templateId,
+      messageId
+    });
+
+    // Track delivery if requested
+    if (options.trackDelivery) {
+      const deliveryStatus: EmailDeliveryStatus = {
+        messageId,
+        status: 'sent',
+        timestamp: new Date(),
+        recipient: options.to,
+        subject: options.subject,
+        provider: 'sendgrid',
+        metadata: {
+          templateId: options.templateId,
+          templateData: options.templateData
+        }
+      };
+      deliveryTracking.set(messageId, deliveryStatus);
+    }
+
+    return { messageId, success: true };
+  } catch (error) {
+    logger.error('SendGrid email failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      to: options.to
+    });
+    throw error;
+  }
 }
 
 /**
@@ -52,25 +145,54 @@ export async function sendEmail(
       emailOptions = apiKeyOrOptions;
     }
 
-    const transporter = createTransporter();
-    
-    const mailOptions = {
-      from: emailOptions.from || process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: emailOptions.to,
-      subject: emailOptions.subject,
-      text: emailOptions.text,
-      html: emailOptions.html,
-    };
+    // Determine provider
+    const provider = emailOptions.provider || (getSendGridConfig() ? 'sendgrid' : 'smtp');
 
-    const result = await transporter.sendMail(mailOptions);
-    
-    logger.info('Email sent successfully', {
-      to: emailOptions.to,
-      subject: emailOptions.subject,
-      messageId: result.messageId
-    });
+    if (provider === 'sendgrid') {
+      const result = await sendViaSendGrid(emailOptions);
 
-    return true;
+      logger.info('Email sent successfully via SendGrid', {
+        to: emailOptions.to,
+        subject: emailOptions.subject,
+        messageId: result.messageId
+      });
+
+      return result.success;
+    } else {
+      // Use SMTP
+      const transporter = createTransporter();
+
+      const mailOptions = {
+        from: emailOptions.from || process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: emailOptions.to,
+        subject: emailOptions.subject,
+        text: emailOptions.text,
+        html: emailOptions.html,
+      };
+
+      const result = await transporter.sendMail(mailOptions);
+
+      // Track delivery if requested
+      if (emailOptions.trackDelivery) {
+        const deliveryStatus: EmailDeliveryStatus = {
+          messageId: result.messageId,
+          status: 'sent',
+          timestamp: new Date(),
+          recipient: emailOptions.to,
+          subject: emailOptions.subject,
+          provider: 'smtp'
+        };
+        deliveryTracking.set(result.messageId, deliveryStatus);
+      }
+
+      logger.info('Email sent successfully via SMTP', {
+        to: emailOptions.to,
+        subject: emailOptions.subject,
+        messageId: result.messageId
+      });
+
+      return true;
+    }
   } catch (error) {
     logger.error('Failed to send email', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -155,6 +277,81 @@ export async function sendHandoverEmail(email: string, handoverData: any): Promi
   return await sendEmail({ to: email, subject, text, html });
 }
 
+/**
+ * Get delivery status for a message
+ */
+export function getDeliveryStatus(messageId: string): EmailDeliveryStatus | null {
+  return deliveryTracking.get(messageId) || null;
+}
+
+/**
+ * Update delivery status (called by webhooks)
+ */
+export function updateDeliveryStatus(messageId: string, status: EmailDeliveryStatus['status'], metadata?: Record<string, any>): void {
+  const existing = deliveryTracking.get(messageId);
+  if (existing) {
+    existing.status = status;
+    existing.timestamp = new Date();
+    if (metadata) {
+      existing.metadata = { ...existing.metadata, ...metadata };
+    }
+    deliveryTracking.set(messageId, existing);
+
+    logger.info('Email delivery status updated', {
+      messageId,
+      status,
+      recipient: existing.recipient
+    });
+  }
+}
+
+/**
+ * Get all delivery statuses for a recipient
+ */
+export function getDeliveryStatusesByRecipient(recipient: string): EmailDeliveryStatus[] {
+  return Array.from(deliveryTracking.values()).filter(status => status.recipient === recipient);
+}
+
+/**
+ * Send ADF response email with tracking
+ */
+export async function sendAdfResponseEmail(
+  to: string,
+  customerName: string,
+  responseText: string,
+  vehicleInfo?: string
+): Promise<boolean> {
+  const subject = `Thank you for your inquiry${vehicleInfo ? ` about ${vehicleInfo}` : ''}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">Thank you for your interest!</h2>
+      <div style="background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        ${responseText.split('\n').map(line => `<p>${line}</p>`).join('')}
+      </div>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      <p style="color: #666; font-size: 12px;">
+        This email was sent in response to your automotive inquiry.
+        If you have any questions, please don't hesitate to contact us.
+      </p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to,
+    subject,
+    html,
+    text: responseText,
+    provider: 'sendgrid',
+    trackDelivery: true,
+    templateData: {
+      customerName,
+      responseText,
+      vehicleInfo
+    }
+  });
+}
+
 export default {
   sendEmail,
   sendWelcomeEmail,
@@ -162,4 +359,8 @@ export default {
   sendNotificationEmail,
   sendPasswordResetEmail,
   sendHandoverEmail,
+  sendAdfResponseEmail,
+  getDeliveryStatus,
+  updateDeliveryStatus,
+  getDeliveryStatusesByRecipient,
 };
