@@ -1,0 +1,70 @@
+===============================================================
+SALES LEAD HANDOVER DOSSIER
+===============================================================
+
+{{#if dealershipName}}{{dealershipName}}{{else}}DEALERSHIP SALES TEAM{{/if}}
+
+---------------------------------------------------------------
+LEAD SNAPSHOT
+---------------------------------------------------------------
+
+CUSTOMER: {{customerName}}
+CONTACT: {{customerContact}}
+PRIORITY: *{{uppercase urgency}}*
+{{#if leadScore}}LEAD SCORE: {{leadScore}}{{/if}}
+HANDOVER REASON: {{escalationReason}}
+
+---------------------------------------------------------------
+CONVERSATION SUMMARY
+---------------------------------------------------------------
+
+{{conversationSummary}}
+
+{{#if slaDeadline}}
+*** RESPONSE DEADLINE: {{slaDeadline}} ***
+{{/if}}
+
+---------------------------------------------------------------
+VEHICLE INTERESTS
+---------------------------------------------------------------
+
+{{#if vehicleInterests.length}}
+{{#each vehicleInterests}}
+* {{year}} {{make}} {{model}}
+  Confidence: {{formatConfidence confidence}}
+{{/each}}
+{{else}}
+No specific vehicle interests detected.
+{{/if}}
+
+---------------------------------------------------------------
+CUSTOMER INSIGHTS
+---------------------------------------------------------------
+
+{{#each customerInsights}}
+* {{key}}: {{value}}
+  Confidence: {{formatConfidence confidence}}
+{{/each}}
+
+---------------------------------------------------------------
+SUGGESTED APPROACH
+---------------------------------------------------------------
+
+{{suggestedApproach}}
+
+---------------------------------------------------------------
+ADDITIONAL INFORMATION
+---------------------------------------------------------------
+
+{{#if dealershipName}}DEALERSHIP: {{dealershipName}}{{/if}}
+{{#if dealershipContact}}CONTACT: {{dealershipContact}}{{/if}}
+{{#if slaDeadline}}SLA DEADLINE: {{slaDeadline}}{{/if}}
+
+Generated: {{generatedAt}}
+Reference ID: {{handoverTimestamp}}
+
+---------------------------------------------------------------
+This is an automated handover notification. Please do not reply 
+to this email. Contact your system administrator if you have 
+any questions.
+---------------------------------------------------------------

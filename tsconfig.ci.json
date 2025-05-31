@@ -16,7 +16,6 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["node"],
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
@@ -27,7 +26,9 @@
     "resolveJsonModule": true
   },
   "include": [
-    "client/src/components/error-boundary.ci.tsx"
+    "client/src/**/*",
+    "server/**/*",
+    "shared/**/*"
   ],
   "exclude": [
     "node_modules",

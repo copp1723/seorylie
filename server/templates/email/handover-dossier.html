@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Lead Handover: {{customerName}}</title>
+    <style type="text/css">
+        /* Base styles for email clients */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1.5;
+            color: #333333;
+        }
+        
+        /* Responsive container */
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        
+        /* Header styling */
+        .header {
+            background-color: #1a3a6e;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .dealership-logo {
+            max-width: 200px;
+            margin-bottom: 10px;
+        }
+        
+        /* Lead snapshot section */
+        .lead-snapshot {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px;
+        }
+        
+        .customer-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+        }
+        
+        .contact-info {
+            margin-bottom: 10px;
+        }
+        
+        /* Urgency badge styling */
+        .urgency-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .urgency-low {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        
+        .urgency-medium {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .urgency-high {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Content sections */
+        .section {
+            margin: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #1a3a6e;
+        }
+        
+        /* Conversation highlights */
+        .highlights-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .highlights-list li {
+            margin-bottom: 8px;
+        }
+        
+        /* Vehicle interests table */
+        .vehicle-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .vehicle-table th {
+            background-color: #e9ecef;
+            text-align: left;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .vehicle-table td {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        /* Customer insights */
+        .insights-container {
+            margin-top: 10px;
+        }
+        
+        .insight-item {
+            margin-bottom: 12px;
+        }
+        
+        .insight-key {
+            font-weight: bold;
+        }
+        
+        .insight-value {
+            display: block;
+            margin-top: 3px;
+        }
+        
+        /* Confidence indicators */
+        .confidence {
+            display: inline-block;
+            height: 8px;
+            background-color: #dee2e6;
+            border-radius: 4px;
+            width: 100px;
+            margin-top: 5px;
+            position: relative;
+        }
+        
+        .confidence-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #28a745;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        /* SLA deadline */
+        .sla-deadline {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        /* Footer */
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        /* Responsive adjustments */
+        @media screen and (max-width: 480px) {
+            .lead-snapshot, .section {
+                margin: 10px;
+            }
+            
+            .customer-name {
+                font-size: 20px;
+            }
+            
+            .section-title {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with dealership branding -->
+        <div class="header">
+            {{#if dealershipName}}
+                <h1>{{dealershipName}}</h1>
+            {{else}}
+                <h1>Dealership Sales Team</h1>
+            {{/if}}
+            <p>Sales Lead Handover Dossier</p>
+        </div>
+        
+        <!-- Lead snapshot -->
+        <div class="lead-snapshot">
+            <h2 class="customer-name">{{customerName}}</h2>
+            
+            <!-- Urgency badge -->
+            <div class="urgency-badge urgency-{{urgency}}">
+                Priority: {{urgency}}
+            </div>
+            
+            <div class="contact-info">
+                <strong>Contact:</strong> {{customerContact}}
+            </div>
+            
+            {{#if leadScore}}
+                <div>
+                    <strong>Lead Score:</strong> {{leadScore}}
+                </div>
+            {{/if}}
+            
+            <div>
+                <strong>Handover Reason:</strong> {{escalationReason}}
+            </div>
+        </div>
+        
+        <!-- Conversation summary -->
+        <div class="section">
+            <h3 class="section-title">Conversation Summary</h3>
+            <p>{{conversationSummary}}</p>
+            
+            <!-- SLA deadline -->
+            {{#if slaDeadline}}
+                <div class="sla-deadline">
+                    Response Deadline: {{slaDeadline}}
+                </div>
+            {{/if}}
+        </div>
+        
+        <!-- Vehicle interests -->
+        <div class="section">
+            <h3 class="section-title">Vehicle Interests</h3>
+            
+            {{#if vehicleInterests.length}}
+                <table class="vehicle-table">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Make</th>
+                            <th>Model</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each vehicleInterests}}
+                            <tr>
+                                <td>{{year}}</td>
+                                <td>{{make}}</td>
+                                <td>{{model}}</td>
+                                <td>
+                                    <div class="confidence">
+                                        <div class="confidence-bar" style="width: {{multiply confidence 100}}%;"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            {{else}}
+                <p>No specific vehicle interests detected.</p>
+            {{/if}}
+        </div>
+        
+        <!-- Customer insights -->
+        <div class="section">
+            <h3 class="section-title">Customer Insights</h3>
+            
+            <div class="insights-container">
+                {{#each customerInsights}}
+                    <div class="insight-item">
+                        <span class="insight-key">{{key}}:</span>
+                        <span class="insight-value">{{value}}</span>
+                        <div class="confidence">
+                            <div class="confidence-bar" style="width: {{multiply confidence 100}}%;"></div>
+                        </div>
+                    </div>
+                {{/each}}
+            </div>
+        </div>
+        
+        <!-- Suggested approach -->
+        <div class="section">
+            <h3 class="section-title">Suggested Approach</h3>
+            <p>{{suggestedApproach}}</p>
+        </div>
+        
+        <!-- Footer with contact info -->
+        <div class="footer">
+            <p>
+                {{#if dealershipName}}
+                    <strong>{{dealershipName}}</strong><br>
+                {{/if}}
+                
+                {{#if dealershipContact}}
+                    Contact: {{dealershipContact}}<br>
+                {{/if}}
+            </p>
+            
+            <p>
+                Generated on {{generatedAt}}<br>
+                Reference: {{handoverTimestamp}}
+            </p>
+            
+            <p>
+                This is an automated handover notification. Please do not reply to this email.
+                Contact your system administrator if you have any questions.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
