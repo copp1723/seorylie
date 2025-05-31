@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+// import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api-client"; // Changed from @/lib/queryClient to @/lib/api-client for clarity if they are different
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -175,7 +175,7 @@ Every reply must follow this structure, with the answer field reflecting the for
 }`;
 
 export default function PromptExperimentInterface() {
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   const { toast } = useToast();
   const dealershipId = DEFAULT_DEALERSHIP_ID; // Used for context, not directly on PromptVariant
 
@@ -307,19 +307,27 @@ export default function PromptExperimentInterface() {
     detectCustomerInsights: true,
   });
 
-  // Fetch experiments
-  const { data: fetchedExperimentsData, isLoading: isExperimentsLoading } = useQuery<PromptExperimentData[]>({ // Explicitly type the query data
-    queryKey: ["prompt-experiments", dealershipId], // Changed API path to be more conventional
-    queryFn: () => apiRequest(`/api/prompt-experiments?dealershipId=${dealershipId}`),
-    enabled: activeTab === "experiments",
-  });
+  // Fetch experiments - TEMPORARILY DISABLED
+  const [fetchedExperimentsData, setFetchedExperimentsData] = useState<PromptExperimentData[] | undefined>(undefined);
+  const [isExperimentsLoading, setIsExperimentsLoading] = useState(false);
+  
+  // TODO: Re-enable React Query
+  // const { data: fetchedExperimentsData, isLoading: isExperimentsLoading } = useQuery<PromptExperimentData[]>({
+  //   queryKey: ["prompt-experiments", dealershipId],
+  //   queryFn: () => apiRequest(`/api/prompt-experiments?dealershipId=${dealershipId}`),
+  //   enabled: activeTab === "experiments",
+  // });
 
-  // Fetch variants
-  const { data: fetchedVariantsData, isLoading: isVariantsLoading } = useQuery<PromptVariant[]>({ // Explicitly type the query data
-    queryKey: ["prompt-variants", dealershipId], // Changed API path
-    queryFn: () => apiRequest(`/api/prompt-variants?dealershipId=${dealershipId}`),
-    enabled: activeTab === "variants",
-  });
+  // Fetch variants - TEMPORARILY DISABLED
+  const [fetchedVariantsData, setFetchedVariantsData] = useState<PromptVariant[] | undefined>(undefined);
+  const [isVariantsLoading, setIsVariantsLoading] = useState(false);
+  
+  // TODO: Re-enable React Query
+  // const { data: fetchedVariantsData, isLoading: isVariantsLoading } = useQuery<PromptVariant[]>({
+  //   queryKey: ["prompt-variants", dealershipId],
+  //   queryFn: () => apiRequest(`/api/prompt-variants?dealershipId=${dealershipId}`),
+  //   enabled: activeTab === "variants",
+  // });
 
   useEffect(() => {
     if (fetchedExperimentsData) {
@@ -333,69 +341,90 @@ export default function PromptExperimentInterface() {
     }
   }, [fetchedVariantsData]);
 
-  // Save variant mutation
-  const saveVariantMutation = useMutation<
-    PromptVariant, // Expected success response type
-    Error, // Error type
-    Partial<Omit<PromptVariant, 'dealershipId'>> // Variables type for mutationFn
-  >({
-    mutationFn: async (variantInput) => {
-      const apiPath = variantInput.id
-        ? `/api/prompt-variants/${variantInput.id}`
-        : "/api/prompt-variants";
-      const method = variantInput.id ? "PATCH" : "POST";
-      // Ensure dealershipId is not part of the variantInput payload directly if schema doesn't support it
-      // The backend should associate it based on the authenticated user or experiment context
-      return apiRequest(apiPath, { method, body: variantInput });
-    },
-    onSuccess: (savedVariant) => {
-      queryClient.invalidateQueries({ queryKey: ["prompt-variants", dealershipId] });
+  // Save variant mutation - TEMPORARILY DISABLED
+  const saveVariantMutation = {
+    mutate: (variantInput: any) => {
+      console.log('Would save variant:', variantInput);
       toast({
-        title: "Success",
-        description: editingVariant?.id // Check editingVariant to determine if it was an update
-          ? `Prompt variant "${savedVariant.name}" updated successfully`
-          : `New prompt variant "${savedVariant.name}" created`,
+        title: "Info",
+        description: "Variant save temporarily disabled",
       });
       resetVariantEditor();
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to save prompt variant: ${error.message}`,
-        variant: "destructive",
-      });
-      console.error("Error saving variant:", error);
-    },
-  });
+    isPending: false
+  };
+  
+  // TODO: Re-enable React Query
+  // const saveVariantMutation = useMutation<
+  //   PromptVariant,
+  //   Error,
+  //   Partial<Omit<PromptVariant, 'dealershipId'>>
+  // >({
+  //   mutationFn: async (variantInput) => {
+  //     const apiPath = variantInput.id
+  //       ? `/api/prompt-variants/${variantInput.id}`
+  //       : "/api/prompt-variants";
+  //     const method = variantInput.id ? "PATCH" : "POST";
+  //     return apiRequest(apiPath, { method, body: variantInput });
+  //   },
+  //   onSuccess: (savedVariant) => {
+  //     queryClient.invalidateQueries({ queryKey: ["prompt-variants", dealershipId] });
+  //     toast({
+  //       title: "Success",
+  //       description: editingVariant?.id
+  //         ? `Prompt variant "${savedVariant.name}" updated successfully`
+  //         : `New prompt variant "${savedVariant.name}" created`,
+  //     });
+  //     resetVariantEditor();
+  //   },
+  //   onError: (error) => {
+  //     toast({
+  //       title: "Error",
+  //       description: `Failed to save prompt variant: ${error.message}`,
+  //       variant: "destructive",
+  //     });
+  //     console.error("Error saving variant:", error);
+  //   },
+  // });
 
-  // Create experiment mutation
-  const createExperimentMutation = useMutation<
-    PromptExperiment, // Expected success response type
-    Error, // Error type
-    Partial<PromptExperiment> // Variables type
-  >({
-    mutationFn: async (experimentInput) => {
-      // Ensure dealershipId is part of the experimentInput if required by the API
-      const payload = { ...experimentInput, dealershipId };
-      return apiRequest("/api/prompt-experiments", { method: "POST", body: payload });
-    },
-    onSuccess: (newExperiment) => {
-      queryClient.invalidateQueries({ queryKey: ["prompt-experiments", dealershipId] });
+  // Create experiment mutation - TEMPORARILY DISABLED
+  const createExperimentMutation = {
+    mutate: (experimentInput: any) => {
+      console.log('Would create experiment:', experimentInput);
       toast({
-        title: "Success",
-        description: `New experiment "${newExperiment.name}" created successfully`,
+        title: "Info",
+        description: "Experiment creation temporarily disabled",
       });
-      // Optionally reset any form related to experiment creation here
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to create experiment: ${error.message}`,
-        variant: "destructive",
-      });
-      console.error("Error creating experiment:", error);
-    },
-  });
+    isPending: false
+  };
+  
+  // TODO: Re-enable React Query
+  // const createExperimentMutation = useMutation<
+  //   PromptExperiment,
+  //   Error,
+  //   Partial<PromptExperiment>
+  // >({
+  //   mutationFn: async (experimentInput) => {
+  //     const payload = { ...experimentInput, dealershipId };
+  //     return apiRequest("/api/prompt-experiments", { method: "POST", body: payload });
+  //   },
+  //   onSuccess: (newExperiment) => {
+  //     queryClient.invalidateQueries({ queryKey: ["prompt-experiments", dealershipId] });
+  //     toast({
+  //       title: "Success",
+  //       description: `New experiment "${newExperiment.name}" created successfully`,
+  //     });
+  //   },
+  //   onError: (error) => {
+  //     toast({
+  //       title: "Error",
+  //       description: `Failed to create experiment: ${error.message}`,
+  //       variant: "destructive",
+  //     });
+  //     console.error("Error creating experiment:", error);
+  //   },
+  // });
 
   // Conversation history management
   const addHistoryItem = () => {

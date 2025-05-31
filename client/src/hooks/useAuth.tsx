@@ -1,5 +1,4 @@
-import React, { createContext, useContext, ReactNode } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { toastSuccess, toastError } from "@/components/ui/use-toast";
 
 export interface User {
@@ -131,124 +130,148 @@ async function loginWithMagicLink(email: string): Promise<boolean> {
 }
 
 export function useAuth() {
-  const queryClient = useQueryClient();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Get current user
-  const {
-    data: user,
-    error,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["/api/user"],
-    queryFn: fetchCurrentUser,
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
+  // Fetch current user on mount
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        setIsLoading(true);
+        const userData = await fetchCurrentUser();
+        setUser(userData);
+        setError(null);
+      } catch (err) {
+        setError(err as Error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadUser();
+  }, []);
 
-  // Login mutation
-  const loginMutation = useMutation({
-    mutationFn: loginUser,
-    onSuccess: (userData) => {
-      // Update cache with user data
-      queryClient.setQueryData(["/api/user"], userData);
+  // Login function
+  const login = async (credentials: LoginData) => {
+    try {
+      setIsLoading(true);
+      const userData = await loginUser(credentials);
+      setUser(userData);
+      setError(null);
       
-      // Show success notification
       toastSuccess({
         title: "Login Successful",
         description: `Welcome back, ${userData.name || userData.username}!`,
       });
-    },
-    onError: (error: Error) => {
-      // Show error notification
+    } catch (err) {
+      const error = err as Error;
+      setError(error);
       toastError({
         title: "Login Failed",
         description: error.message || "Invalid credentials. Please try again.",
       });
-    },
-  });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Register mutation
-  const registerMutation = useMutation({
-    mutationFn: registerUser,
-    onSuccess: (userData) => {
-      // Update cache with user data
-      queryClient.setQueryData(["/api/user"], userData);
+  // Register function
+  const register = async (credentials: RegisterData) => {
+    try {
+      setIsLoading(true);
+      const userData = await registerUser(credentials);
+      setUser(userData);
+      setError(null);
       
-      // Show success notification
       toastSuccess({
         title: "Account Created",
         description: "Welcome to CleanRylie! Your account has been created successfully.",
       });
-    },
-    onError: (error: Error) => {
-      // Show error notification
+    } catch (err) {
+      const error = err as Error;
+      setError(error);
       toastError({
         title: "Registration Failed",
         description: error.message || "Unable to create account. Please try again.",
       });
-    },
-  });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Logout mutation
-  const logoutMutation = useMutation({
-    mutationFn: logoutUser,
-    onSuccess: () => {
-      // Clear user from cache
-      queryClient.setQueryData(["/api/user"], null);
+  // Logout function
+  const logout = async () => {
+    try {
+      await logoutUser();
+      setUser(null);
+      setError(null);
       
-      // Show success notification
       toastSuccess({
         title: "Logged Out",
         description: "You have been successfully logged out.",
       });
-    },
-    onError: (error: Error) => {
-      // Show error notification but still clear the cache
-      queryClient.setQueryData(["/api/user"], null);
+    } catch (err) {
+      const error = err as Error;
+      setUser(null); // Clear user locally even if logout fails
       toastError({
         title: "Logout Error",
         description: "There was an issue logging out, but you have been signed out locally.",
       });
-    },
-  });
+    }
+  };
 
-  // Magic link mutation
-  const magicLinkMutation = useMutation({
-    mutationFn: loginWithMagicLink,
-    onSuccess: () => {
-      // Show success notification
+  // Magic link function
+  const sendMagicLink = async (email: string) => {
+    try {
+      await loginWithMagicLink(email);
       toastSuccess({
         title: "Magic Link Sent",
         description: "Check your email for a login link.",
       });
-    },
-    onError: (error: Error) => {
-      // Show error notification
+    } catch (err) {
+      const error = err as Error;
       toastError({
         title: "Failed to Send Magic Link",
         description: error.message || "Unable to send magic link. Please try again.",
       });
-    },
-  });
+      throw error;
+    }
+  };
 
-  // Simple logout function that uses the mutation
-  const logout = () => {
-    logoutMutation.mutate();
+  // Refetch user
+  const refetchUser = async () => {
+    try {
+      setIsLoading(true);
+      const userData = await fetchCurrentUser();
+      setUser(userData);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return {
-    user: user ?? null,
+    user,
     isLoading,
     isAuthenticated: !!user,
     error,
-    loginMutation,
-    logoutMutation,
-    registerMutation,
-    magicLinkMutation,
-    refetchUser: refetch,
-    logout, // Add the simple logout function
-    loginWithMagicLink: (email: string) => magicLinkMutation.mutateAsync(email),
+    login,
+    logout,
+    register,
+    refetchUser,
+    loginWithMagicLink: sendMagicLink,
+    // Legacy mutation-style objects for backward compatibility
+    loginMutation: { mutate: login, mutateAsync: login },
+    logoutMutation: { mutate: logout },
+    registerMutation: { mutate: register, mutateAsync: register },
+    magicLinkMutation: { mutate: sendMagicLink, mutateAsync: sendMagicLink },
   };
 }
 
