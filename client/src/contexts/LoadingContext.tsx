@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
+// import { useTheme } from '../contexts/ThemeContext'; // Removed to avoid context conflicts
 import { logEvent } from '../utils/analytics';
 
 // Define the loading state interface
