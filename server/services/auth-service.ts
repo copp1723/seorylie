@@ -10,7 +10,7 @@ import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { BaseService, ServiceConfig, ServiceHealth } from './base-service';
 import { db } from '../db';
-import { users, sessions, magicLinks } from '../../shared/schema';
+import { users, sessions, magicLinkInvitations } from '../../shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import logger from '../utils/logger';
 import { CustomError } from '../utils/error-handler';
@@ -302,7 +302,7 @@ export class AuthService extends BaseService {
       const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
       // Store magic link
-      await db.insert(magicLinks).values({
+      await db.insert(magicLinkInvitations).values({
         id: uuidv4(),
         user_id: user.id,
         token,
@@ -329,11 +329,11 @@ export class AuthService extends BaseService {
     return this.executeWithMetrics(async () => {
       // Find magic link
       const linkResult = await db.select()
-        .from(magicLinks)
+        .from(magicLinkInvitations)
         .where(and(
-          eq(magicLinks.token, token),
-          eq(magicLinks.used, false),
-          gt(magicLinks.expires_at, new Date())
+          eq(magicLinkInvitations.token, token),
+          eq(magicLinkInvitations.used, false),
+          gt(magicLinkInvitations.expires_at, new Date())
         ))
         .limit(1);
 
@@ -348,9 +348,9 @@ export class AuthService extends BaseService {
       const link = linkResult[0];
 
       // Mark magic link as used
-      await db.update(magicLinks)
+      await db.update(magicLinkInvitations)
         .set({ used: true, used_at: new Date() })
-        .where(eq(magicLinks.id, link.id));
+        .where(eq(magicLinkInvitations.id, link.id));
 
       // Get user
       const userResult = await db.select()

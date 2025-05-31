@@ -580,4 +580,7 @@ class WebSocketChatServer {
   }
 }
 
+// Export singleton instance
+export const wsServer = new WebSocketChatServer();
+
 export default WebSocketChatServer;

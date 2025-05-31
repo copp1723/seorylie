@@ -335,3 +335,8 @@ export const HttpStatus = {
   NOT_IMPLEMENTED: 501,       // Endpoint not yet implemented
   SERVICE_UNAVAILABLE: 503    // Service temporarily unavailable
 };
+
+/**
+ * Format API response - compatibility alias for sendSuccess
+ */
+export const formatApiResponse = sendSuccess;

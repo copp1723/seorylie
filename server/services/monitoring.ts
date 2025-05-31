@@ -66,4 +66,5 @@ export class MonitoringService {
 }
 
 export const monitoringService = MonitoringService.getInstance();
+export const monitoring = monitoringService;
 export default monitoringService;

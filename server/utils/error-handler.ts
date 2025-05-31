@@ -50,6 +50,9 @@ export class CustomError extends Error implements AppError {
   }
 }
 
+// Alias for compatibility
+export class ApiError extends CustomError {}
+
 // Middleware to add request ID and trace ID
 export function requestIdMiddleware(
   req: Request,
