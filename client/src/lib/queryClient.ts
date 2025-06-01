@@ -1,6 +1,6 @@
 // API request interfaces and functions
 export interface ApiRequestOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   body?: any;
   headers?: Record<string, string>;
 }
@@ -24,7 +24,7 @@ export const apiRequest = async <T>(
   };
 
   // Only add body for methods that support it
-  if (body && (method === "POST" || method === "PUT")) {
+  if (body && (method === "POST" || method === "PUT" || method === "PATCH")) {
     requestOptions.body = JSON.stringify(body);
   }
 

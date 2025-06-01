@@ -1415,8 +1415,8 @@ export default function PromptExperimentInterface() {
 
 
                   <div className="flex gap-2">
-                    <Button onClick={handleSaveVariant} disabled={saveVariantMutation.isLoading || !newVariantName.trim()}>
-                      {saveVariantMutation.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (editingVariant ? "Update Variant" : "Save New Variant")}
+                    <Button onClick={handleSaveVariant} disabled={saveVariantMutation.isPending || !newVariantName.trim()}>
+                      {saveVariantMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (editingVariant ? "Update Variant" : "Save New Variant")}
                     </Button>
                     <Button variant="outline" onClick={resetVariantEditor}>
                       Cancel
