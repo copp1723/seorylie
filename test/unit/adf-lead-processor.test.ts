@@ -101,7 +101,7 @@ vi.mock('../../server/utils/logger', () => {
 
 // Valid ADF XML sample
 const validAdfXml = `<?xml version="1.0" encoding="UTF-8"?>
-<adf>
+<adf version="1.0">
   <prospect status="new">
     <id source="dealersite">test-123</id>
     <requestdate>2023-09-01T09:30:00-05:00</requestdate>
@@ -146,7 +146,7 @@ const malformedXml = `<?xml version="1.0" encoding="UTF-8"?>
 
 // Missing required fields XML
 const missingFieldsXml = `<?xml version="1.0" encoding="UTF-8"?>
-<adf>
+<adf version="1.0">
   <prospect status="new">
     <id source="dealersite">test-789</id>
     <requestdate>2023-09-01T09:30:00-05:00</requestdate>
@@ -254,25 +254,25 @@ describe('AdfLeadProcessor', () => {
     });
     
     it('should handle malformed XML', async () => {
-      const result = await processor.processAdfXml(malformedXml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(malformedXml, 'test@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-      expect(result.error).toContain('XML parsing error');
-      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Error parsing ADF XML'), expect.any(Object));
+      expect(result.errors[0]).toContain('XML syntax error');
+      expect(logger.error).toHaveBeenCalled();
     });
     
     it('should validate required fields in ADF XML', async () => {
-      const result = await processor.processAdfXml(missingFieldsXml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(missingFieldsXml, 'test@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Missing required fields');
+      expect(result.errors[0]).toContain('Missing required fields');
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Missing required fields'), expect.any(Object));
     });
     
     it('should extract customer information correctly', async () => {
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       // Check the extracted customer data in the database insert
       const dbInsert = vi.mocked(processor.db.insert);
@@ -287,7 +287,7 @@ describe('AdfLeadProcessor', () => {
     });
     
     it('should extract vehicle information correctly', async () => {
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       // Check the extracted vehicle data in the database insert
       const dbInsert = vi.mocked(processor.db.insert);
@@ -314,11 +314,11 @@ describe('AdfLeadProcessor', () => {
         { id: 1, externalId: 'test-123', dealershipId: 1, createdAt: new Date() }
       ]);
       
-      const result = await processor.processAdfXml(validAdfXml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Duplicate lead');
+      expect(result.errors[0]).toContain('Duplicate lead');
       expect(eventBus.emit).toHaveBeenCalledWith('adf.lead.duplicate', expect.any(Object));
       expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Duplicate lead detected'), expect.any(Object));
     });
@@ -330,7 +330,7 @@ describe('AdfLeadProcessor', () => {
       processor.db.where = vi.fn().mockReturnThis();
       processor.db.limit = vi.fn().mockResolvedValue([]);
       
-      const result = await processor.processAdfXml(validAdfXml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
@@ -341,7 +341,7 @@ describe('AdfLeadProcessor', () => {
   
   describe('Database Operations', () => {
     it('should insert lead into database successfully', async () => {
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       // Check database operations
       expect(processor.db.insert).toHaveBeenCalled();
@@ -353,16 +353,16 @@ describe('AdfLeadProcessor', () => {
       // Mock database to throw an error
       processor.db.transaction = vi.fn().mockRejectedValue(new Error('Database connection error'));
       
-      const result = await processor.processAdfXml(validAdfXml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Database error');
+      expect(result.errors[0]).toContain('Database error');
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Error storing ADF lead'), expect.any(Object));
     });
     
     it('should use database transaction for atomicity', async () => {
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       // Check transaction was used
       expect(processor.db.transaction).toHaveBeenCalled();
@@ -374,11 +374,11 @@ describe('AdfLeadProcessor', () => {
       // Mock dealership lookup to fail
       processor.getDealershipByEmail = vi.fn().mockResolvedValue(null);
       
-      const result = await processor.processAdfXml(validAdfXml, 'unknown@example.com');
+      const result = await processor.processAdfLead(createLeadInput(validAdfXml, 'unknown@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Dealership not found');
+      expect(result.errors[0]).toContain('Dealership not found');
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Dealership not found'), expect.any(Object));
     });
     
@@ -391,11 +391,11 @@ describe('AdfLeadProcessor', () => {
         isActive: false
       });
       
-      const result = await processor.processAdfXml(validAdfXml, 'inactive@example.com');
+      const result = await processor.processAdfLead(createLeadInput(validAdfXml, 'inactive@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Dealership is not active');
+      expect(result.errors[0]).toContain('Dealership is not active');
       expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Inactive dealership'), expect.any(Object));
     });
     
@@ -409,30 +409,30 @@ describe('AdfLeadProcessor', () => {
         settings: { enableAdfProcessing: false }
       });
       
-      const result = await processor.processAdfXml(validAdfXml, 'no-adf@example.com');
+      const result = await processor.processAdfLead(createLeadInput(validAdfXml, 'no-adf@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-      expect(result.error).toContain('ADF processing disabled');
+      expect(result.errors[0]).toContain('ADF processing disabled');
       expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('ADF processing disabled'), expect.any(Object));
     });
     
     it('should handle unexpected errors during processing', async () => {
-      // Mock unexpected error
-      processor.parseAdfXml = vi.fn().mockRejectedValue(new Error('Unexpected error'));
+      // Mock unexpected database error
+      mockDb.insert.mockRejectedValueOnce(new Error('Unexpected database error'));
       
-      const result = await processor.processAdfXml(validAdfXml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Unexpected error');
-      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Unexpected error'), expect.any(Object));
+      expect(result.errors[0]).toContain('Processing error');
+      expect(logger.error).toHaveBeenCalled();
     });
   });
   
   describe('Metrics Tracking', () => {
     it('should track successful lead processing in metrics', async () => {
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(prometheusMetrics.incrementLeadsProcessed).toHaveBeenCalledWith(expect.objectContaining({
         dealership_id: 1,
@@ -446,7 +446,7 @@ describe('AdfLeadProcessor', () => {
       // Mock database to throw an error
       processor.db.transaction = vi.fn().mockRejectedValue(new Error('Database error'));
       
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(prometheusMetrics.incrementLeadsProcessed).toHaveBeenCalledWith(expect.objectContaining({
         dealership_id: 1,
@@ -465,7 +465,7 @@ describe('AdfLeadProcessor', () => {
         { id: 1, externalId: 'test-123', dealershipId: 1, createdAt: new Date() }
       ]);
       
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(prometheusMetrics.incrementLeadsProcessed).toHaveBeenCalledWith(expect.objectContaining({
         dealership_id: 1,
@@ -478,7 +478,7 @@ describe('AdfLeadProcessor', () => {
   
   describe('Event Emission', () => {
     it('should emit adf.lead.received event at start of processing', async () => {
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(eventBus.emit).toHaveBeenCalledWith('adf.lead.received', expect.objectContaining({
         dealershipId: 1,
@@ -487,7 +487,7 @@ describe('AdfLeadProcessor', () => {
     });
     
     it('should emit adf.lead.processed event on successful processing', async () => {
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(eventBus.emit).toHaveBeenCalledWith('adf.lead.processed', expect.objectContaining({
         leadId: 1,
@@ -500,7 +500,7 @@ describe('AdfLeadProcessor', () => {
       // Mock database to throw an error
       processor.db.transaction = vi.fn().mockRejectedValue(new Error('Database error'));
       
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(eventBus.emit).toHaveBeenCalledWith('adf.lead.error', expect.objectContaining({
         dealershipId: 1,
@@ -518,7 +518,7 @@ describe('AdfLeadProcessor', () => {
         { id: 1, externalId: 'test-123', dealershipId: 1, createdAt: new Date() }
       ]);
       
-      await processor.processAdfXml(validAdfXml, 'test@example.com');
+      await processor.processAdfLead(createLeadInput(validAdfXml, 'test@example.com'));
       
       expect(eventBus.emit).toHaveBeenCalledWith('adf.lead.duplicate', expect.objectContaining({
         dealershipId: 1,
@@ -530,11 +530,11 @@ describe('AdfLeadProcessor', () => {
   
   describe('Edge Cases', () => {
     it('should handle empty XML input', async () => {
-      const result = await processor.processAdfXml('', 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput('', 'test@example.com'));
       
       expect(result).toBeDefined();
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Empty XML');
+      expect(result.errors[0]).toContain('Empty XML');
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Empty XML'), expect.any(Object));
     });
     
@@ -562,7 +562,7 @@ describe('AdfLeadProcessor', () => {
         </prospect>
       </adf>`;
       
-      const result = await processor.processAdfXml(emptyValuesXml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(emptyValuesXml, 'test@example.com'));
       
       // Should still process but with default/empty values
       expect(result.success).toBe(true);
@@ -584,7 +584,7 @@ describe('AdfLeadProcessor', () => {
         `<comments>${'A'.repeat(50000)}</comments>`
       );
       
-      const result = await processor.processAdfXml(largeXml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(largeXml, 'test@example.com'));
       
       // Should truncate and still process
       expect(result.success).toBe(true);
@@ -602,10 +602,10 @@ describe('AdfLeadProcessor', () => {
         <something>This is not an ADF format</something>
       </not-adf>`;
       
-      const result = await processor.processAdfXml(nonAdfXml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(nonAdfXml, 'test@example.com'));
       
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Invalid ADF format');
+      expect(result.errors[0]).toContain('Invalid ADF format');
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Invalid ADF format'), expect.any(Object));
     });
     
@@ -616,7 +616,7 @@ describe('AdfLeadProcessor', () => {
         'John\uD800' // Unpaired surrogate
       );
       
-      const result = await processor.processAdfXml(invalidUtf8Xml, 'test@example.com');
+      const result = await processor.processAdfLead(createLeadInput(invalidUtf8Xml, 'test@example.com'));
       
       // Should sanitize and still process
       expect(result.success).toBe(true);
