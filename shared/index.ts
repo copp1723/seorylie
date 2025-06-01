@@ -2,11 +2,11 @@
 export * from './schema';
 
 // Enhanced Schemas (selective exports to avoid conflicts)
-export {
-  // Additional enhanced schemas not conflicting with base schema
-  extendedUserSchema,
-  extendedVehicleSchema,
-} from './enhanced-schema';
+// Commented out - missing exports in enhanced-schema.ts
+// export {
+//   extendedUserSchema,
+//   extendedVehicleSchema,
+// } from './enhanced-schema';
 // Lead Management Schemas
 export * from './lead-management-schema';
 

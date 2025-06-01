@@ -38,8 +38,13 @@ class PrometheusMetricsService {
   public readonly errorTotal: Counter<string>;
 
   private constructor() {
-    // Enable default metrics collection (CPU, memory, etc.)
-    collectDefaultMetrics({ register });
+    // Enable default metrics collection (CPU, memory, etc.) - only if not already collected
+    try {
+      collectDefaultMetrics({ register });
+    } catch (error) {
+      // Default metrics already registered, continue
+      logger.debug('Default metrics already registered, skipping');
+    }
 
     // ADF Lead Processing Metrics
     this.adfLeadsProcessedTotal = new Counter({

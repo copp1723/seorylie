@@ -37,9 +37,13 @@ export type {
 
 // Re-export from schema.ts (base schema)
 export {
-  customers,
   customersRelations,
   insertCustomerSchema
+} from './schema';
+
+export type {
+  Customer,
+  InsertCustomer
 } from './schema';
 
 // Re-export from lead-management-schema.ts
