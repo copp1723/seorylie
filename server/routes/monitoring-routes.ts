@@ -4,6 +4,7 @@ import { dlqService } from "../services/dead-letter-queue";
 import { adfEmailListener } from "../services/adf-email-listener";
 import { getQueueStats } from "../services/queue";
 import logger from "../utils/logger";
+import { prometheusMetrics } from "../services/prometheus-metrics";
 
 const router = Router();
 
@@ -79,6 +80,7 @@ router.get("/metrics", async (req, res) => {
     const queueStats = await getQueueStats();
     const dlqStats = dlqService.getStats();
     const emailListenerHealth = adfEmailListener.getHealthStatus();
+    const prometheusMetricsData = await prometheusMetrics.getMetrics();
 
     res.json({
       timestamp: new Date().toISOString(),
@@ -88,7 +90,8 @@ router.get("/metrics", async (req, res) => {
       queues: queueStats,
       deadLetterQueue: dlqStats,
       emailListener: emailListenerHealth,
-      legacy: monitoring.getMetrics() // Existing metrics format
+      legacy: monitoring.getMetrics(), // Existing metrics format
+      prometheusMetrics: prometheusMetricsData // Add Prometheus metrics
     });
   } catch (error) {
     logger.error('Metrics collection failed', {
@@ -157,17 +160,21 @@ router.get("/imap/status", (req, res) => {
 });
 
 // Prometheus-compatible metrics endpoint
-router.get("/metrics/prometheus", (req, res) => {
-  // This would typically be handled by the OpenTelemetry Prometheus exporter
-  // For now, we'll provide a simple text format
-  res.set('Content-Type', 'text/plain');
-  res.send(`# HELP cleanrylie_health_status Component health status
-# TYPE cleanrylie_health_status gauge
-cleanrylie_health_status{component="overall"} 1
-# HELP cleanrylie_uptime_seconds Service uptime in seconds
-# TYPE cleanrylie_uptime_seconds counter
-cleanrylie_uptime_seconds ${process.uptime()}
-`);
+router.get("/metrics/prometheus", async (req, res) => {
+  try {
+    // Get actual metrics from the Prometheus metrics service
+    const metrics = await prometheusMetrics.getMetrics();
+    
+    // Set proper content type for Prometheus metrics
+    res.set('Content-Type', 'text/plain');
+    res.send(metrics);
+  } catch (error) {
+    logger.error('Prometheus metrics collection failed', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    
+    res.status(500).send('# Error collecting metrics\n');
+  }
 });
 
 export default router;

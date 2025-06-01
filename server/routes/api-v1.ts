@@ -9,8 +9,12 @@ import conversationRoutes from './conversation-api';
 import handoverRoutes from './handover-api';
 import { apiAuth } from '../middleware/api-auth';
 import logger from '../utils/logger';
+import { trackPerformance, trackPerformanceMiddleware } from '../monitoring/performance-tracker';
 
 const router = Router();
+
+// Apply performance tracking middleware to all API v1 routes
+router.use(trackPerformanceMiddleware('/api/v1'));
 
 // CORS configuration for API endpoints
 router.use(cors({
@@ -42,23 +46,23 @@ router.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Health check endpoint (no auth required)
-router.get('/health', (req: Request, res: Response) => {
+router.get('/health', trackPerformance((req: Request, res: Response) => {
   res.json({
     status: 'healthy',
     version: process.env.npm_package_version || '1.0.0',
     timestamp: new Date().toISOString()
   });
-});
+}));
 
 // API key validation endpoint
-router.get('/validate', apiAuth(), (req: Request, res: Response) => {
+router.get('/validate', trackPerformance(apiAuth(), (req: Request, res: Response) => {
   res.json({
     valid: true,
     clientId: req.apiClient?.clientId,
     clientName: req.apiClient?.clientName,
     scopes: req.apiClient?.scopes
   });
-});
+}));
 
 // Mount API routes
 router.use('/conversation', conversationRoutes);
