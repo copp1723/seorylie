@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ADF Prompt Template Metadata",
+  "description": "Schema for validating ADF prompt template metadata",
+  "type": "object",
+  "required": ["id", "description", "tags", "filepath"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the prompt template",
+      "pattern": "^[a-z0-9-_]+$",
+      "minLength": 3,
+      "maxLength": 50
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description of the prompt's purpose",
+      "minLength": 10,
+      "maxLength": 500
+    },
+    "tags": {
+      "type": "array",
+      "description": "Categorization tags for filtering and organization",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-_:]+$"
+      },
+      "minItems": 1
+    },
+    "max_turn": {
+      "type": "integer",
+      "description": "Maximum conversation turn this prompt is designed for (optional)",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "filepath": {
+      "type": "string",
+      "description": "Relative path to the prompt file from the prompts/adf directory",
+      "pattern": "^[a-zA-Z0-9-_/]+\\.md$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Version of the prompt template",
+      "pattern": "^v\\d+(\\.\\d+)?(\\.\\d+)?$",
+      "default": "v1"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "ISO timestamp when the prompt was created",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "description": "ISO timestamp when the prompt was last updated",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}
