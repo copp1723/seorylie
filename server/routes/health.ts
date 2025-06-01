@@ -1,13 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { checkDatabaseConnection, getDatabasePoolStats } from '../db';
 import logger from '../utils/logger';
+import { trackPerformance } from '../monitoring/performance-tracker';
 
 const router = Router();
 
 /**
  * General health check endpoint
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', trackPerformance(async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
     
@@ -89,12 +90,12 @@ router.get('/', async (req: Request, res: Response) => {
       }
     });
   }
-});
+}));
 
 /**
  * Database-specific health check endpoint
  */
-router.get('/db', async (req: Request, res: Response) => {
+router.get('/db', trackPerformance(async (req: Request, res: Response) => {
   try {
     const startTime = Date.now();
     
@@ -181,12 +182,12 @@ router.get('/db', async (req: Request, res: Response) => {
       }
     });
   }
-});
+}));
 
 /**
  * Readiness check endpoint (for Kubernetes/container orchestration)
  */
-router.get('/ready', async (req: Request, res: Response) => {
+router.get('/ready', trackPerformance(async (req: Request, res: Response) => {
   try {
     // Check if application is ready to serve traffic
     const dbHealth = await checkDatabaseConnection();
@@ -210,12 +211,12 @@ router.get('/ready', async (req: Request, res: Response) => {
       reason: error instanceof Error ? error.message : String(error)
     });
   }
-});
+}));
 
 /**
  * Liveness check endpoint (for Kubernetes/container orchestration)
  */
-router.get('/live', (req: Request, res: Response) => {
+router.get('/live', trackPerformance((req: Request, res: Response) => {
   // Simple liveness check - just verify the process is running
   res.status(200).json({
     status: 'alive',
@@ -223,6 +224,6 @@ router.get('/live', (req: Request, res: Response) => {
     uptime: process.uptime(),
     pid: process.pid
   });
-});
+}));
 
 export default router;
