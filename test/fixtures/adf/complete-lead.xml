@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<adf version="1.0">
+  <prospect>
+    <id source="autotrader">AT-12345-2024</id>
+    <requestdate>2024-01-15T10:30:00-05:00</requestdate>
+    <customer>
+      <contact primarycontact="1">
+        <name part="first">Michael</name>
+        <name part="last">Johnson</name>
+        <email>michael.johnson@example.com</email>
+        <phone type="voice" time="evening">555-123-4567</phone>
+        <phone type="cellphone" time="anytime">555-987-6543</phone>
+        <address>
+          <street>456 Oak Avenue</street>
+          <apartment>Unit 2B</apartment>
+          <city>Springfield</city>
+          <regioncode>IL</regioncode>
+          <postalcode>62701</postalcode>
+          <country>US</country>
+        </address>
+      </contact>
+      <comments>Looking for a reliable family vehicle with good fuel economy. Interested in financing options and trade-in value for my 2018 Honda Civic.</comments>
+    </customer>
+    <vehicle interest="buy" status="new">
+      <year>2024</year>
+      <make>Toyota</make>
+      <model>Camry</model>
+      <trim>LE Hybrid</trim>
+      <doors>4</doors>
+      <bodystyle>Sedan</bodystyle>
+      <transmission>CVT</transmission>
+      <condition>New</condition>
+      <fuel>Hybrid</fuel>
+      <engine>2.5L 4-Cylinder Hybrid</engine>
+      <exteriorcolor>Midnight Black Metallic</exteriorcolor>
+      <interiorcolor>Black</interiorcolor>
+      <vin>4T1C11AK6PU123456</vin>
+      <stock>TC2024LE001</stock>
+      <price type="asking" currency="USD">32500.00</price>
+      <mileage>5</mileage>
+      <options>
+        <option>Navigation System</option>
+        <option>Backup Camera</option>
+        <option>Heated Seats</option>
+        <option>Bluetooth Connectivity</option>
+      </options>
+    </vehicle>
+    <vendor>
+      <vendorname>Springfield Toyota</vendorname>
+      <contact primarycontact="1">
+        <name part="full">Springfield Toyota Sales Team</name>
+        <email>sales@springfieldtoyota.com</email>
+        <phone type="voice">555-TOYOTA-1</phone>
+        <address>
+          <street>789 Auto Mall Drive</street>
+          <city>Springfield</city>
+          <regioncode>IL</regioncode>
+          <postalcode>62704</postalcode>
+          <country>US</country>
+        </address>
+      </contact>
+      <url>https://www.springfieldtoyota.com</url>
+    </vendor>
+    <provider>
+      <name part="company">AutoTrader.com</name>
+      <service>web</service>
+      <url>https://www.autotrader.com</url>
+    </provider>
+    <timeframe>within 2 weeks</timeframe>
+  </prospect>
+</adf>

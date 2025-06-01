@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<adf version="1.0">
+  <prospect>
+    <requestdate>2024-01-15T10:30:00Z</requestdate>
+    <customer>
+      <contact>
+        <name part="first">Jane</name>
+        <name part="last">Smith</name>
+        <email>jane.smith@example.com</email>
+      </contact>
+    </customer>
+    <vehicle>
+      <year>2024</year>
+      <make>Honda</make>
+      <model>Accord</model>
+    </vehicle>
+    <vendor>
+      <vendorname>Test Dealership</vendorname>
+    </vendor>
+  </prospect>
+</adf>

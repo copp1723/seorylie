@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE adf [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<adf version="1.0">
+  <prospect>
+    <requestdate>2024-01-15T10:30:00Z</requestdate>
+    <customer>
+      <contact>
+        <name part="first">&xxe;</name>
+        <name part="last">Hacker</name>
+        <email>hacker@malicious.com</email>
+      </contact>
+    </customer>
+    <vehicle>
+      <year>2024</year>
+      <make>Evil</make>
+      <model>Hack</model>
+    </vehicle>
+    <vendor>
+      <vendorname>Malicious Vendor</vendorname>
+    </vendor>
+  </prospect>
+</adf>

@@ -20,7 +20,6 @@ const XML_PARSER_OPTIONS = {
   ignoreNameSpace: false,
   removeNSPrefix: false,
   parseNodeValue: true,
-  parseAttributeValue: true,
   cdataPropName: '__cdata',
 };
 
