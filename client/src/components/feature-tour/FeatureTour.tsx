@@ -380,7 +380,7 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
   const { trackEvent } = useAnalytics();
   
   // Feature flag for progressive rollout
-  const isEnabled = useFeatureFlag('feature_tour_enabled', true);
+  const isEnabled = useFeatureFlag('feature_tour_enabled');
   
   // Store completed tours in local storage
   const [completedTours, setCompletedTours] = useLocalStorage<string[]>(
@@ -414,7 +414,7 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
   
   // Merge themes
   const mergedTheme: TourTheme = useMemo(() => {
-    const baseTheme = appTheme === 'dark' ? defaultThemes.dark : defaultThemes.light;
+    const baseTheme = appTheme.mode === 'dark' ? defaultThemes.dark : defaultThemes.light;
     return { ...baseTheme, ...customTheme };
   }, [appTheme, customTheme]);
   
@@ -1059,7 +1059,7 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
       </div>
       
       {/* Mobile Responsive Styles */}
-      <style jsx>{`
+      <style>{`
         @media (max-width: 768px) {
           .feature-tour-tooltip {
             max-width: 90vw !important;

@@ -4,7 +4,9 @@ import { simpleParser, ParsedMail, Attachment } from 'mailparser';
 import logger from '../utils/logger';
 import db from '../db';
 import { eq } from 'drizzle-orm';
-import { dealerships, dealershipEmailConfigs } from '@shared/schema-resolver';
+import { dealerships } from '@shared/schema-resolver';
+import { monitoring } from './monitoring';
+import { addEmailJob } from './queue';
 
 export interface AdfEmailConfig {
   host: string;
@@ -32,7 +34,33 @@ export interface AdfEmailData {
   rawContent: string;
 }
 
+// Connection pool interface
+interface ImapConnection {
+  id: string;
+  imap: Imap;
+  config: any;
+  isConnected: boolean;
+  isInUse: boolean;
+  lastUsed: Date;
+  connectionAttempts: number;
+  maxRetries: number;
+}
+
+// Dead Letter Queue entry
+interface DLQEntry {
+  id: string;
+  type: 'email_processing' | 'imap_connection' | 'email_parsing';
+  data: any;
+  error: string;
+  timestamp: Date;
+  attempts: number;
+  maxAttempts: number;
+  nextRetryAt: Date;
+  originalJobId?: string;
+}
+
 export class AdfEmailListener extends EventEmitter {
+  // Legacy single connection (kept for backward compatibility)
   private imap: Imap | null = null;
   private isConnected: boolean = false;
   private isListening: boolean = false;
@@ -41,9 +69,31 @@ export class AdfEmailListener extends EventEmitter {
   private maxReconnectAttempts: number = 5;
   private reconnectDelay: number = 30000; // 30 seconds
 
+  // Enhanced connection pool
+  private connectionPool: Map<string, ImapConnection> = new Map();
+  private maxPoolSize: number = 5;
+  private connectionTimeout: number = 30000;
+  private idleTimeout: number = 300000; // 5 minutes
+  private poolCleanupInterval: NodeJS.Timeout | null = null;
+
+  // Dead Letter Queue
+  private dlq: Map<string, DLQEntry> = new Map();
+  private dlqProcessingInterval: NodeJS.Timeout | null = null;
+  private dlqRetryInterval: number = 60000; // 1 minute
+  private maxDlqAttempts: number = 3;
+
+  // Exponential backoff configuration
+  private baseRetryDelay: number = 1000; // 1 second
+  private maxRetryDelay: number = 300000; // 5 minutes
+  private retryMultiplier: number = 2;
+
   constructor() {
     super();
     this.setupErrorHandling();
+    this.setupMetrics();
+    this.setupHealthChecks();
+    this.startPoolCleanup();
+    this.startDlqProcessing();
   }
 
   /**
@@ -113,26 +163,21 @@ export class AdfEmailListener extends EventEmitter {
    */
   private async getEmailConfigurations(): Promise<any[]> {
     try {
-      const configs = await db.query.dealershipEmailConfigs.findMany({
-        where: eq(dealershipEmailConfigs.status, 'active'),
-        with: {
-          dealership: true
-        }
-      });
-
-      return configs.map(config => ({
-        id: config.id,
-        dealershipId: config.dealershipId,
-        dealershipName: config.dealership?.name || 'Unknown',
-        emailAddress: config.emailAddress,
-        host: config.imapHost,
-        port: config.imapPort,
-        user: config.imapUser,
-        password: this.decryptPassword(config.imapPassEncrypted),
-        tls: config.imapUseSsl,
-        isPrimary: config.isPrimary,
-        pollingInterval: config.pollingIntervalMs || 300000 // 5 minutes default
-      }));
+      // For now, return mock configuration for testing
+      // TODO: Implement proper dealership email configs table
+      return [{
+        id: 1,
+        dealershipId: 1,
+        dealershipName: 'Test Dealership',
+        emailAddress: process.env.IMAP_EMAIL || 'test@example.com',
+        host: process.env.IMAP_HOST || 'imap.gmail.com',
+        port: parseInt(process.env.IMAP_PORT || '993', 10),
+        user: process.env.IMAP_USER || 'test@example.com',
+        password: process.env.IMAP_PASSWORD || 'password',
+        tls: true,
+        isPrimary: true,
+        pollingInterval: 300000 // 5 minutes default
+      }];
     } catch (error) {
       logger.error('Failed to get email configurations', { 
         error: error instanceof Error ? error.message : String(error) 
@@ -314,18 +359,20 @@ export class AdfEmailListener extends EventEmitter {
    * Handle parsed email and check for ADF attachments
    */
   private async handleParsedEmail(parsed: ParsedMail, seqno: number): Promise<void> {
+    const startTime = Date.now();
+
     try {
       // Check if email has XML attachments (potential ADF)
-      const xmlAttachments = parsed.attachments?.filter(att => 
+      const xmlAttachments = parsed.attachments?.filter(att =>
         att.filename?.toLowerCase().endsWith('.xml') ||
         att.contentType?.includes('application/xml') ||
         att.contentType?.includes('text/xml')
       ) || [];
 
       if (xmlAttachments.length === 0) {
-        logger.debug('No XML attachments found', { 
+        logger.debug('No XML attachments found', {
           subject: parsed.subject,
-          from: parsed.from?.text 
+          from: parsed.from?.text
         });
         return;
       }
@@ -353,14 +400,36 @@ export class AdfEmailListener extends EventEmitter {
           attachmentCount: emailData.attachments.length
         });
 
+        // Track metrics
+        monitoring.incrementCounter('imap_emails_processed_total', {
+          has_attachments: 'true',
+          attachment_count: xmlAttachments.length.toString()
+        });
+
         this.emit('email', emailData);
       }
 
-    } catch (error) {
-      logger.error('Error handling parsed email', { 
-        error: error instanceof Error ? error.message : String(error),
-        seqno 
+      // Record processing time
+      const processingTime = Date.now() - startTime;
+      monitoring.recordHistogram('imap_email_processing_duration_ms', processingTime, {
+        attachment_count: xmlAttachments.length.toString()
       });
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      logger.error('Error handling parsed email', {
+        error: errorMessage,
+        seqno
+      });
+
+      // Track error metrics
+      monitoring.incrementCounter('imap_emails_failed_total', {
+        error_type: 'processing_error'
+      });
+
+      // Add to DLQ for retry
+      this.addToDlq('email_processing', { parsed, seqno }, errorMessage);
     }
   }
 
@@ -394,6 +463,308 @@ export class AdfEmailListener extends EventEmitter {
   private setupErrorHandling(): void {
     this.on('error', (error) => {
       logger.error('ADF Email Listener error', { error: error.message });
+      monitoring.incrementCounter('adf_email_listener_errors_total', {
+        error_type: error.name || 'unknown'
+      });
+    });
+  }
+
+  /**
+   * Setup metrics tracking
+   */
+  private setupMetrics(): void {
+    // Register custom metrics for IMAP operations
+    monitoring.registerCounter('imap_connections_total', 'Total IMAP connections created');
+    monitoring.registerCounter('imap_connection_failures_total', 'Total IMAP connection failures');
+    monitoring.registerCounter('imap_emails_processed_total', 'Total emails processed');
+    monitoring.registerCounter('imap_emails_failed_total', 'Total email processing failures');
+    monitoring.registerUpDownCounter('imap_active_connections', 'Number of active IMAP connections');
+    monitoring.registerHistogram('imap_connection_duration_ms', 'IMAP connection establishment time');
+    monitoring.registerHistogram('imap_email_processing_duration_ms', 'Email processing time');
+
+    // DLQ metrics
+    monitoring.registerCounter('dlq_entries_total', 'Total entries added to Dead Letter Queue');
+    monitoring.registerCounter('dlq_retries_total', 'Total DLQ retry attempts');
+    monitoring.registerCounter('dlq_successes_total', 'Total successful DLQ retries');
+    monitoring.registerUpDownCounter('dlq_pending_entries', 'Number of pending DLQ entries');
+  }
+
+  /**
+   * Setup health checks
+   */
+  private setupHealthChecks(): void {
+    monitoring.registerHealthCheck('adf_email_listener', async () => {
+      try {
+        const poolStats = this.getConnectionPoolStats();
+        const dlqStats = this.getDlqStats();
+
+        // Check if we have healthy connections
+        const healthyConnections = poolStats.connected;
+        const totalConnections = poolStats.total;
+
+        if (totalConnections === 0) {
+          return {
+            status: monitoring.ComponentHealthStatus.DEGRADED,
+            details: {
+              message: 'No IMAP connections configured',
+              poolStats,
+              dlqStats
+            }
+          };
+        }
+
+        if (healthyConnections === 0) {
+          return {
+            status: monitoring.ComponentHealthStatus.UNHEALTHY,
+            details: {
+              message: 'No healthy IMAP connections available',
+              poolStats,
+              dlqStats
+            }
+          };
+        }
+
+        // Check DLQ health
+        if (dlqStats.pending > 100) {
+          return {
+            status: monitoring.ComponentHealthStatus.DEGRADED,
+            details: {
+              message: 'High number of pending DLQ entries',
+              poolStats,
+              dlqStats
+            }
+          };
+        }
+
+        return {
+          status: monitoring.ComponentHealthStatus.HEALTHY,
+          details: {
+            poolStats,
+            dlqStats,
+            isListening: this.isListening
+          }
+        };
+      } catch (error) {
+        return {
+          status: monitoring.ComponentHealthStatus.UNHEALTHY,
+          details: {
+            error: error instanceof Error ? error.message : String(error)
+          }
+        };
+      }
+    });
+  }
+
+  /**
+   * Start connection pool cleanup
+   */
+  private startPoolCleanup(): void {
+    this.poolCleanupInterval = setInterval(() => {
+      this.cleanupIdleConnections();
+    }, 60000); // Clean up every minute
+  }
+
+  /**
+   * Start DLQ processing
+   */
+  private startDlqProcessing(): void {
+    this.dlqProcessingInterval = setInterval(() => {
+      this.processDlqEntries();
+    }, this.dlqRetryInterval);
+  }
+
+  /**
+   * Get connection pool statistics
+   */
+  private getConnectionPoolStats() {
+    const stats = {
+      total: this.connectionPool.size,
+      connected: 0,
+      inUse: 0,
+      idle: 0,
+      failed: 0
+    };
+
+    this.connectionPool.forEach(conn => {
+      if (conn.isConnected) {
+        stats.connected++;
+        if (conn.isInUse) {
+          stats.inUse++;
+        } else {
+          stats.idle++;
+        }
+      } else {
+        stats.failed++;
+      }
+    });
+
+    return stats;
+  }
+
+  /**
+   * Get DLQ statistics
+   */
+  private getDlqStats() {
+    const now = new Date();
+    const stats = {
+      total: this.dlq.size,
+      pending: 0,
+      retryable: 0,
+      expired: 0
+    };
+
+    this.dlq.forEach(entry => {
+      if (entry.attempts >= entry.maxAttempts) {
+        stats.expired++;
+      } else if (entry.nextRetryAt <= now) {
+        stats.retryable++;
+      } else {
+        stats.pending++;
+      }
+    });
+
+    return stats;
+  }
+
+  /**
+   * Clean up idle connections
+   */
+  private cleanupIdleConnections(): void {
+    const now = new Date();
+    const connectionsToRemove: string[] = [];
+
+    this.connectionPool.forEach((conn, id) => {
+      const idleTime = now.getTime() - conn.lastUsed.getTime();
+
+      if (!conn.isInUse && idleTime > this.idleTimeout) {
+        connectionsToRemove.push(id);
+
+        if (conn.isConnected) {
+          try {
+            conn.imap.end();
+          } catch (error) {
+            logger.warn('Error closing idle IMAP connection', {
+              connectionId: id,
+              error: error instanceof Error ? error.message : String(error)
+            });
+          }
+        }
+
+        monitoring.decrementUpDownCounter('imap_active_connections');
+      }
+    });
+
+    connectionsToRemove.forEach(id => {
+      this.connectionPool.delete(id);
+      logger.debug('Removed idle IMAP connection', { connectionId: id });
+    });
+  }
+
+  /**
+   * Process DLQ entries
+   */
+  private async processDlqEntries(): Promise<void> {
+    const now = new Date();
+    const retryableEntries = Array.from(this.dlq.values())
+      .filter(entry => entry.nextRetryAt <= now && entry.attempts < entry.maxAttempts);
+
+    for (const entry of retryableEntries) {
+      try {
+        monitoring.incrementCounter('dlq_retries_total', {
+          type: entry.type,
+          attempt: entry.attempts.toString()
+        });
+
+        await this.retryDlqEntry(entry);
+
+        // Remove from DLQ on success
+        this.dlq.delete(entry.id);
+        monitoring.decrementUpDownCounter('dlq_pending_entries');
+        monitoring.incrementCounter('dlq_successes_total', { type: entry.type });
+
+        logger.info('Successfully processed DLQ entry', {
+          entryId: entry.id,
+          type: entry.type,
+          attempts: entry.attempts
+        });
+
+      } catch (error) {
+        entry.attempts++;
+        entry.nextRetryAt = new Date(now.getTime() + this.calculateBackoffDelay(entry.attempts));
+
+        logger.warn('DLQ entry retry failed', {
+          entryId: entry.id,
+          type: entry.type,
+          attempts: entry.attempts,
+          maxAttempts: entry.maxAttempts,
+          error: error instanceof Error ? error.message : String(error)
+        });
+
+        if (entry.attempts >= entry.maxAttempts) {
+          logger.error('DLQ entry exceeded max attempts, marking as expired', {
+            entryId: entry.id,
+            type: entry.type,
+            attempts: entry.attempts
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Retry a DLQ entry
+   */
+  private async retryDlqEntry(entry: DLQEntry): Promise<void> {
+    switch (entry.type) {
+      case 'email_processing':
+        await this.handleParsedEmail(entry.data.parsed, entry.data.seqno);
+        break;
+      case 'imap_connection':
+        await this.connectToEmail(entry.data.config);
+        break;
+      case 'email_parsing':
+        const parsed = await simpleParser(entry.data.buffer);
+        await this.handleParsedEmail(parsed, entry.data.seqno);
+        break;
+      default:
+        throw new Error(`Unknown DLQ entry type: ${entry.type}`);
+    }
+  }
+
+  /**
+   * Calculate exponential backoff delay
+   */
+  private calculateBackoffDelay(attempts: number): number {
+    const delay = this.baseRetryDelay * Math.pow(this.retryMultiplier, attempts - 1);
+    return Math.min(delay, this.maxRetryDelay);
+  }
+
+  /**
+   * Add entry to Dead Letter Queue
+   */
+  private addToDlq(type: DLQEntry['type'], data: any, error: string, originalJobId?: string): void {
+    const id = `dlq_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const entry: DLQEntry = {
+      id,
+      type,
+      data,
+      error,
+      timestamp: new Date(),
+      attempts: 0,
+      maxAttempts: this.maxDlqAttempts,
+      nextRetryAt: new Date(Date.now() + this.baseRetryDelay),
+      originalJobId
+    };
+
+    this.dlq.set(id, entry);
+    monitoring.incrementUpDownCounter('dlq_pending_entries');
+    monitoring.incrementCounter('dlq_entries_total', { type });
+
+    logger.warn('Added entry to Dead Letter Queue', {
+      entryId: id,
+      type,
+      error,
+      originalJobId
     });
   }
 
@@ -407,6 +778,56 @@ export class AdfEmailListener extends EventEmitter {
     }
     return encryptedPassword;
   }
+
+  /**
+   * Enhanced stop method with cleanup
+   */
+  async stopEnhanced(): Promise<void> {
+    await this.stop();
+
+    // Clean up intervals
+    if (this.poolCleanupInterval) {
+      clearInterval(this.poolCleanupInterval);
+      this.poolCleanupInterval = null;
+    }
+
+    if (this.dlqProcessingInterval) {
+      clearInterval(this.dlqProcessingInterval);
+      this.dlqProcessingInterval = null;
+    }
+
+    // Close all pooled connections
+    for (const [id, conn] of this.connectionPool.entries()) {
+      if (conn.isConnected) {
+        try {
+          conn.imap.end();
+        } catch (error) {
+          logger.warn('Error closing pooled connection during shutdown', {
+            connectionId: id,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+    }
+
+    this.connectionPool.clear();
+
+    logger.info('Enhanced ADF Email Listener stopped with full cleanup');
+  }
+
+  /**
+   * Get health status for monitoring
+   */
+  getHealthStatus() {
+    return {
+      isListening: this.isListening,
+      connectionPool: this.getConnectionPoolStats(),
+      dlq: this.getDlqStats(),
+      uptime: Date.now() - this.startTime
+    };
+  }
+
+  private startTime: number = Date.now();
 }
 
 // Export singleton instance

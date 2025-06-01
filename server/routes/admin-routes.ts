@@ -466,7 +466,7 @@ router.post('/dealerships/:id/test-chat', checkDealershipAccess, async (req: Req
     try {
       // Check if OpenAI API key is configured
       const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey || apiKey === 'sk-actualOpenAIKeyHere') {
+      if (!apiKey || apiKey.startsWith('sk-dummy') || apiKey.includes('placeholder')) {
         return res.status(503).json({ 
           error: 'OpenAI API key not configured - test chat is disabled' 
         });

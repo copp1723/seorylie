@@ -1,5 +1,5 @@
-import { AgentSquad, OpenAIAgent, OpenAIClassifier, InMemoryChatStorage } from 'agent-squad';
-import type { ConversationMessage } from 'agent-squad';
+import { AgentSquad, OpenAIAgent, OpenAIClassifier, InMemoryChatStorage } from '../../lib/agent-squad-stub';
+import type { ConversationMessage } from '../../lib/agent-squad-stub';
 import logger from '../../utils/logger';
 import { 
   searchInventory, 

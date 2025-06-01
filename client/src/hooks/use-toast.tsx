@@ -345,3 +345,10 @@ export function useToast() {
     toasts: context.toasts,
   };
 }
+
+// Export toast function for direct import
+export const toast = (options: ToastOptions) => {
+  // This requires the hook to be used within a ToastProvider context
+  // For direct usage, components should use the useToast hook instead
+  throw new Error("toast function must be used through useToast hook within a ToastProvider");
+};

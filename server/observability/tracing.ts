@@ -9,7 +9,7 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { SimpleSpanProcessor, BatchSpanProcessor, ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
-import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
+// import { JaegerExporter } from '@opentelemetry/exporter-jaeger'; // Temporarily disabled - missing dependency
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
@@ -17,7 +17,7 @@ import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
-import { WsInstrumentation } from '@opentelemetry/instrumentation-ws';
+// import { WsInstrumentation } from '@opentelemetry/instrumentation-ws';
 import { AlwaysOnSampler, AlwaysOffSampler, ParentBasedSampler, TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-base';
 import { Span, SpanStatusCode, context, trace } from '@opentelemetry/api';
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
@@ -56,9 +56,9 @@ export function initTracing() {
   });
 
   // Configure exporters
-  const jaegerExporter = new JaegerExporter({
-    endpoint: JAEGER_ENDPOINT,
-  });
+  // const jaegerExporter = new JaegerExporter({
+  //   endpoint: JAEGER_ENDPOINT,
+  // }); // Temporarily disabled - missing dependency
 
   // Configure Tempo OTLP exporter with authentication
   const tempoExporter = new OTLPTraceExporter({
@@ -87,11 +87,11 @@ export function initTracing() {
         ? [new SimpleSpanProcessor(new ConsoleSpanExporter())] 
         : []),
       // Use batch processors for production performance
-      new BatchSpanProcessor(jaegerExporter, {
-        maxExportBatchSize: 100,
-        scheduledDelayMillis: 500,
-        maxQueueSize: 2000,
-      }),
+      // new BatchSpanProcessor(jaegerExporter, {
+      //   maxExportBatchSize: 100,
+      //   scheduledDelayMillis: 500,
+      //   maxQueueSize: 2000,
+      // }), // Temporarily disabled - missing dependency
       new BatchSpanProcessor(tempoExporter, {
         maxExportBatchSize: 100,
         scheduledDelayMillis: 500,
@@ -125,9 +125,9 @@ export function initTracing() {
         captureParameters: ENVIRONMENT !== 'production', // Don't capture query params in prod
       }),
       new RedisInstrumentation(),
-      new WsInstrumentation({
-        traceReconnect: false, // Don't trace reconnection events
-      }),
+      // new WsInstrumentation({
+      //   traceReconnect: false, // Don't trace reconnection events
+      // }),
     ],
     // Use W3C trace context for interoperability
     propagator: new W3CTraceContextPropagator(),

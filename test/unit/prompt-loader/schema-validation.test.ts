@@ -16,10 +16,10 @@ let validate: any;
 // Mock schema content
 const mockSchemaContent = {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ADF Prompt Template Metadata",
+  "title": "ADF Prompt Metadata Schema",
   "description": "Schema for validating ADF prompt template metadata",
   "type": "object",
-  "required": ["id", "description", "tags", "filepath"],
+  "required": ["id", "description", "tags"],
   "properties": {
     "id": {
       "type": "string",
@@ -30,7 +30,7 @@ const mockSchemaContent = {
     },
     "description": {
       "type": "string",
-      "description": "Brief description of the prompt's purpose",
+      "description": "Brief description of the prompt's purpose and usage",
       "minLength": 10,
       "maxLength": 500
     },
@@ -39,36 +39,36 @@ const mockSchemaContent = {
       "description": "Categorization tags for filtering and organization",
       "items": {
         "type": "string",
-        "pattern": "^[a-z0-9-_:]+$"
+        "pattern": "^[a-z0-9:_-]+$"
       },
       "minItems": 1,
       "uniqueItems": true
     },
     "max_turn": {
       "type": "integer",
-      "description": "Maximum conversation turn this prompt is designed for (optional)",
+      "description": "Maximum conversation turn this prompt should be used for (if applicable)",
       "minimum": 1,
       "maximum": 10
     },
     "filepath": {
       "type": "string",
       "description": "Relative path to the prompt file from the prompts/adf directory",
-      "pattern": "^[a-zA-Z0-9-_/]+\\.md$"
+      "pattern": "^(v[0-9]+/)?[a-zA-Z0-9-_/]+\\.md$"
     },
     "version": {
       "type": "string",
-      "description": "Version of the prompt template",
-      "pattern": "^v\\d+(\\.\\d+)?(\\.\\d+)?$",
+      "description": "Version identifier for the prompt template",
+      "pattern": "^v[0-9]+(\\.[0-9]+){0,2}$",
       "default": "v1"
     },
     "created_at": {
       "type": "string",
-      "description": "ISO timestamp when the prompt was created",
+      "description": "ISO timestamp of when the prompt was created",
       "format": "date-time"
     },
     "updated_at": {
       "type": "string",
-      "description": "ISO timestamp when the prompt was last updated",
+      "description": "ISO timestamp of when the prompt was last updated",
       "format": "date-time"
     },
     "author": {
@@ -100,300 +100,545 @@ const mockSchemaContent = {
   ]
 };
 
-// Basic valid metadata for testing
+// Valid metadata sample for testing
 const validMetadata = {
-  id: "test-prompt",
-  description: "This is a test prompt for validation purposes",
-  tags: ["test", "validation", "schema"],
-  filepath: "test/prompt.md",
-  created_at: "2023-01-01T00:00:00.000Z",
-  updated_at: "2023-01-01T00:00:00.000Z",
-  version: "v1.0.0",
-  author: "Test Author",
-  active: true
+  id: "base-system-prompt",
+  description: "This is a valid description for the prompt template that meets the minimum length requirement.",
+  tags: ["system", "base", "identity"],
+  filepath: "base-system-prompt.md",
+  version: "v1"
 };
 
 describe('Prompt Schema Validation', () => {
-  beforeAll(() => {
-    // Mock file system to return our schema
-    (fs.readFileSync as jest.Mock).mockImplementation((filePath: string) => {
-      if (filePath.includes('prompt-schema.json')) {
-        return JSON.stringify(mockSchemaContent);
+  beforeAll(async () => {
+    // Mock file read to return our schema
+    (fs.readFile as jest.Mock).mockImplementation((filePath, encoding, callback) => {
+      if (typeof callback === 'function') {
+        callback(null, JSON.stringify(mockSchemaContent));
+      } else {
+        return Promise.resolve(JSON.stringify(mockSchemaContent));
       }
-      throw new Error(`Unexpected file read: ${filePath}`);
     });
 
-    // Initialize Ajv with our schema
+    // Initialize AJV
     ajv = new Ajv({ allErrors: true });
     addFormats(ajv);
-    schema = mockSchemaContent;
+    
+    // Load schema
+    const schemaPath = path.resolve(process.cwd(), 'prompts/adf/prompt-schema.json');
+    const schemaContent = await readFile(schemaPath, 'utf8');
+    schema = JSON.parse(schemaContent);
+    
+    // Compile validator
     validate = ajv.compile(schema);
   });
 
-  describe('Basic Schema Validation', () => {
-    test('should validate a complete valid metadata object', () => {
-      const result = validate(validMetadata);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-
-    test('should validate with minimum required fields', () => {
-      const minimalMetadata = {
-        id: "minimal",
-        description: "Minimal valid metadata",
-        tags: ["test"],
-        filepath: "minimal.md"
-      };
-      const result = validate(minimalMetadata);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
-    });
-  });
-
   describe('Required Fields Validation', () => {
-    test('should fail when id is missing', () => {
-      const invalidMetadata = { ...validMetadata };
-      delete invalidMetadata.id;
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toHaveLength(1);
-      expect(validate.errors[0].params.missingProperty).toBe('id');
+    it('should validate when all required fields are present', () => {
+      expect(validate(validMetadata)).toBe(true);
+      expect(validate.errors).toBeNull();
     });
 
-    test('should fail when description is missing', () => {
-      const invalidMetadata = { ...validMetadata };
-      delete invalidMetadata.description;
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toHaveLength(1);
-      expect(validate.errors[0].params.missingProperty).toBe('description');
+    it('should fail when id is missing', () => {
+      const metadata = { ...validMetadata };
+      delete metadata.id;
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'required',
+          params: expect.objectContaining({
+            missingProperty: 'id'
+          })
+        })
+      );
     });
 
-    test('should fail when tags is missing', () => {
-      const invalidMetadata = { ...validMetadata };
-      delete invalidMetadata.tags;
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toHaveLength(1);
-      expect(validate.errors[0].params.missingProperty).toBe('tags');
+    it('should fail when description is missing', () => {
+      const metadata = { ...validMetadata };
+      delete metadata.description;
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'required',
+          params: expect.objectContaining({
+            missingProperty: 'description'
+          })
+        })
+      );
     });
 
-    test('should fail when filepath is missing', () => {
-      const invalidMetadata = { ...validMetadata };
-      delete invalidMetadata.filepath;
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toHaveLength(1);
-      expect(validate.errors[0].params.missingProperty).toBe('filepath');
-    });
-  });
-
-  describe('Field Format Validation', () => {
-    test('should fail when id has invalid format', () => {
-      const invalidMetadata = { 
-        ...validMetadata,
-        id: "Invalid ID with spaces!"
-      };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('pattern');
-    });
-
-    test('should fail when id is too short', () => {
-      const invalidMetadata = { 
-        ...validMetadata,
-        id: "ab" // Minimum length is 3
-      };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('minLength');
-    });
-
-    test('should fail when id is too long', () => {
-      const invalidMetadata = { 
-        ...validMetadata,
-        id: "a".repeat(51) // Maximum length is 50
-      };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('maxLength');
-    });
-
-    test('should fail when description is too short', () => {
-      const invalidMetadata = { 
-        ...validMetadata,
-        description: "Too short" // Minimum length is 10
-      };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('minLength');
-    });
-
-    test('should fail when filepath has invalid format', () => {
-      const invalidMetadata = { 
-        ...validMetadata,
-        filepath: "invalid/path/no-extension"
-      };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('pattern');
-    });
-
-    test('should fail when version has invalid format', () => {
-      const invalidMetadata = { 
-        ...validMetadata,
-        version: "invalid-version"
-      };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('pattern');
-    });
-
-    test('should fail when created_at has invalid date format', () => {
-      const invalidMetadata = { 
-        ...validMetadata,
-        created_at: "not-a-date"
-      };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('format');
+    it('should fail when tags is missing', () => {
+      const metadata = { ...validMetadata };
+      delete metadata.tags;
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'required',
+          params: expect.objectContaining({
+            missingProperty: 'tags'
+          })
+        })
+      );
     });
   });
 
-  describe('Tags Validation', () => {
-    test('should fail when tags is empty array', () => {
-      const invalidMetadata = { 
+  describe('String Pattern Validations', () => {
+    it('should validate when id matches pattern', () => {
+      const metadata = { 
+        ...validMetadata,
+        id: "valid-id-123"
+      };
+      
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when id contains invalid characters', () => {
+      const metadata = { 
+        ...validMetadata,
+        id: "Invalid ID!"
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'pattern',
+          instancePath: '/id'
+        })
+      );
+    });
+
+    it('should validate when filepath matches pattern', () => {
+      const metadata = { 
+        ...validMetadata,
+        filepath: "v1/objections/price-objection.md"
+      };
+      
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when filepath has invalid format', () => {
+      const metadata = { 
+        ...validMetadata,
+        filepath: "invalid/path/to/file.txt"
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'pattern',
+          instancePath: '/filepath'
+        })
+      );
+    });
+
+    it('should validate when version matches pattern', () => {
+      const metadata = { 
+        ...validMetadata,
+        version: "v1.2.3"
+      };
+      
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when version has invalid format', () => {
+      const metadata = { 
+        ...validMetadata,
+        version: "version1"
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'pattern',
+          instancePath: '/version'
+        })
+      );
+    });
+
+    it('should validate when tags have valid format', () => {
+      const metadata = { 
+        ...validMetadata,
+        tags: ["valid", "valid-tag", "valid:tag", "valid_tag", "valid1"]
+      };
+      
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when tags contain invalid characters', () => {
+      const metadata = { 
+        ...validMetadata,
+        tags: ["Invalid Tag!"]
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'pattern'
+        })
+      );
+    });
+  });
+
+  describe('Length Constraints', () => {
+    it('should validate when id length is within bounds', () => {
+      const metadata = { 
+        ...validMetadata,
+        id: "min" // 3 chars (minimum)
+      };
+      
+      expect(validate(metadata)).toBe(true);
+      
+      metadata.id = "a".repeat(50); // 50 chars (maximum)
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when id is too short', () => {
+      const metadata = { 
+        ...validMetadata,
+        id: "ab" // 2 chars (below minimum of 3)
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'minLength',
+          instancePath: '/id'
+        })
+      );
+    });
+
+    it('should fail when id is too long', () => {
+      const metadata = { 
+        ...validMetadata,
+        id: "a".repeat(51) // 51 chars (above maximum of 50)
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'maxLength',
+          instancePath: '/id'
+        })
+      );
+    });
+
+    it('should validate when description length is within bounds', () => {
+      const metadata = { 
+        ...validMetadata,
+        description: "a".repeat(10) // 10 chars (minimum)
+      };
+      
+      expect(validate(metadata)).toBe(true);
+      
+      metadata.description = "a".repeat(500); // 500 chars (maximum)
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when description is too short', () => {
+      const metadata = { 
+        ...validMetadata,
+        description: "short" // 5 chars (below minimum of 10)
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'minLength',
+          instancePath: '/description'
+        })
+      );
+    });
+
+    it('should fail when description is too long', () => {
+      const metadata = { 
+        ...validMetadata,
+        description: "a".repeat(501) // 501 chars (above maximum of 500)
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'maxLength',
+          instancePath: '/description'
+        })
+      );
+    });
+
+    it('should validate when tags array has at least one item', () => {
+      const metadata = { 
+        ...validMetadata,
+        tags: ["single-tag"]
+      };
+      
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when tags array is empty', () => {
+      const metadata = { 
         ...validMetadata,
         tags: []
       };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('minItems');
-    });
-
-    test('should fail when tag has invalid format', () => {
-      const invalidMetadata = { 
-        ...validMetadata,
-        tags: ["valid", "Invalid Tag!"]
-      };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('pattern');
-    });
-
-    test('should fail when tags has duplicate items', () => {
-      const invalidMetadata = { 
-        ...validMetadata,
-        tags: ["test", "validation", "test"] // Duplicate "test"
-      };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('uniqueItems');
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'minItems',
+          instancePath: '/tags'
+        })
+      );
     });
   });
 
-  describe('New Field Validation', () => {
-    test('should validate with author field', () => {
-      const metadataWithAuthor = {
+  describe('Type Validations', () => {
+    it('should validate when max_turn is an integer', () => {
+      const metadata = { 
         ...validMetadata,
-        author: "John Doe"
+        max_turn: 5
       };
-      const result = validate(metadataWithAuthor);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
+      
+      expect(validate(metadata)).toBe(true);
     });
 
-    test('should validate with active field set to false', () => {
-      const metadataWithActive = {
+    it('should fail when max_turn is not an integer', () => {
+      const metadata = { 
         ...validMetadata,
-        active: false
+        max_turn: "five" // string instead of integer
       };
-      const result = validate(metadataWithActive);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'type',
+          instancePath: '/max_turn'
+        })
+      );
     });
 
-    test('should fail when active is not a boolean', () => {
-      const invalidMetadata = { 
+    it('should validate when max_turn is within bounds', () => {
+      const metadata = { 
         ...validMetadata,
-        active: "yes" // Should be boolean
+        max_turn: 1 // minimum
       };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('type');
+      
+      expect(validate(metadata)).toBe(true);
+      
+      metadata.max_turn = 10; // maximum
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when max_turn is below minimum', () => {
+      const metadata = { 
+        ...validMetadata,
+        max_turn: 0 // below minimum of 1
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'minimum',
+          instancePath: '/max_turn'
+        })
+      );
+    });
+
+    it('should fail when max_turn is above maximum', () => {
+      const metadata = { 
+        ...validMetadata,
+        max_turn: 11 // above maximum of 10
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'maximum',
+          instancePath: '/max_turn'
+        })
+      );
+    });
+
+    it('should validate when active is a boolean', () => {
+      const metadata = { 
+        ...validMetadata,
+        active: true
+      };
+      
+      expect(validate(metadata)).toBe(true);
+      
+      metadata.active = false;
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when active is not a boolean', () => {
+      const metadata = { 
+        ...validMetadata,
+        active: "yes" // string instead of boolean
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'type',
+          instancePath: '/active'
+        })
+      );
     });
   });
 
-  describe('Conditional Validation Rules', () => {
-    test('should require max_turn when tags contains turn:X pattern', () => {
-      const metadataWithTurnTag = {
+  describe('Format Validations', () => {
+    it('should validate when created_at is a valid date-time', () => {
+      const metadata = { 
         ...validMetadata,
-        tags: ["test", "turn:2", "validation"],
-        // max_turn is missing but required due to turn:2 tag
+        created_at: "2023-06-01T12:00:00Z"
       };
-      const result = validate(metadataWithTurnTag);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('required');
-      expect(validate.errors[0].params.missingProperty).toBe('max_turn');
+      
+      expect(validate(metadata)).toBe(true);
     });
 
-    test('should validate when max_turn is provided with turn tag', () => {
-      const validTurnMetadata = {
+    it('should fail when created_at is not a valid date-time', () => {
+      const metadata = { 
         ...validMetadata,
-        tags: ["test", "turn:3", "validation"],
-        max_turn: 3
+        created_at: "not-a-date"
       };
-      const result = validate(validTurnMetadata);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'format',
+          instancePath: '/created_at'
+        })
+      );
     });
 
-    test('should fail when max_turn is out of range', () => {
-      const invalidMetadata = { 
+    it('should validate when updated_at is a valid date-time', () => {
+      const metadata = { 
         ...validMetadata,
-        tags: ["test", "turn:11", "validation"],
-        max_turn: 11 // Maximum is 10
+        updated_at: "2023-06-01T12:00:00Z"
       };
-      const result = validate(invalidMetadata);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('maximum');
+      
+      expect(validate(metadata)).toBe(true);
     });
 
-    test('should not require max_turn when no turn tag is present', () => {
-      const metadataWithoutTurnTag = {
+    it('should fail when updated_at is not a valid date-time', () => {
+      const metadata = { 
         ...validMetadata,
-        tags: ["test", "validation", "no-turn-tag"]
-        // max_turn is not required here
+        updated_at: "not-a-date"
       };
-      const result = validate(metadataWithoutTurnTag);
-      expect(result).toBe(true);
-      expect(validate.errors).toBeNull();
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'format',
+          instancePath: '/updated_at'
+        })
+      );
+    });
+  });
+
+  describe('Uniqueness Validation', () => {
+    it('should validate when tags are unique', () => {
+      const metadata = { 
+        ...validMetadata,
+        tags: ["tag1", "tag2", "tag3"]
+      };
+      
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when tags contain duplicates', () => {
+      const metadata = { 
+        ...validMetadata,
+        tags: ["tag1", "tag2", "tag1"] // duplicate "tag1"
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'uniqueItems',
+          instancePath: '/tags'
+        })
+      );
     });
   });
 
   describe('Additional Properties', () => {
-    test('should fail when additional properties are present', () => {
-      const metadataWithExtra = {
+    it('should fail when additional properties are present', () => {
+      const metadata = { 
         ...validMetadata,
-        extraProperty: "This should not be allowed"
+        unknownProperty: "some value" // not defined in schema
       };
-      const result = validate(metadataWithExtra);
-      expect(result).toBe(false);
-      expect(validate.errors).toBeTruthy();
-      expect(validate.errors[0].keyword).toBe('additionalProperties');
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'additionalProperties'
+        })
+      );
+    });
+  });
+
+  describe('Conditional Validation', () => {
+    it('should validate when turn tag is present and max_turn is provided', () => {
+      const metadata = { 
+        ...validMetadata,
+        tags: ["turn:3", "other-tag"],
+        max_turn: 3
+      };
+      
+      expect(validate(metadata)).toBe(true);
+    });
+
+    it('should fail when turn tag is present but max_turn is missing', () => {
+      const metadata = { 
+        ...validMetadata,
+        tags: ["turn:3", "other-tag"]
+        // max_turn is missing
+      };
+      
+      expect(validate(metadata)).toBe(false);
+      expect(validate.errors).toContainEqual(
+        expect.objectContaining({
+          keyword: 'required',
+          params: expect.objectContaining({
+            missingProperty: 'max_turn'
+          })
+        })
+      );
+    });
+
+    it('should validate when no turn tag is present and max_turn is missing', () => {
+      const metadata = { 
+        ...validMetadata,
+        tags: ["no-turn-tag", "other-tag"]
+        // max_turn is not required
+      };
+      
+      expect(validate(metadata)).toBe(true);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle empty objects', () => {
+      expect(validate({})).toBe(false);
+      expect(validate.errors?.length).toBeGreaterThan(0);
+    });
+
+    it('should handle null values', () => {
+      expect(validate(null)).toBe(false);
+      expect(validate.errors?.length).toBeGreaterThan(0);
+    });
+
+    it('should handle arrays instead of objects', () => {
+      expect(validate([])).toBe(false);
+      expect(validate.errors?.length).toBeGreaterThan(0);
+    });
+
+    it('should handle primitive values instead of objects', () => {
+      expect(validate("string")).toBe(false);
+      expect(validate(123)).toBe(false);
+      expect(validate(true)).toBe(false);
     });
   });
 });

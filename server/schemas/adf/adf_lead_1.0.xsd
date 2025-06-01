@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+           targetNamespace="http://www.adf.org/schema/1.0"
+           xmlns:adf="http://www.adf.org/schema/1.0"
+           elementFormDefault="qualified">
+
+  <!-- Root ADF element -->
+  <xs:element name="adf">
+    <xs:annotation>
+      <xs:documentation>
+        ADF (Auto Data Feed) root element for automotive lead data exchange.
+        Version 1.0 standard format.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="prospect" type="adf:prospectType" minOccurs="1" maxOccurs="1"/>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required" fixed="1.0"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Prospect element containing customer information -->
+  <xs:complexType name="prospectType">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="requestdate" type="xs:dateTime" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="customer" type="adf:customerType" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="vehicle" type="adf:vehicleType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="vendor" type="adf:vendorType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="provider" type="adf:providerType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="status" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Customer information -->
+  <xs:complexType name="customerType">
+    <xs:sequence>
+      <xs:element name="contact" type="adf:contactType" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="timeframe" type="adf:timeframeType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="comments" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="requesttype" type="adf:requesttypeType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Contact information -->
+  <xs:complexType name="contactType">
+    <xs:sequence>
+      <xs:element name="name" type="adf:nameType" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="email" type="adf:emailType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="phone" type="adf:phoneType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="address" type="adf:addressType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="primarycontact" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Name information -->
+  <xs:complexType name="nameType">
+    <xs:sequence>
+      <xs:element name="first" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="last" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="middle" type="xs:string" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="part" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Email information -->
+  <xs:complexType name="emailType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="preferredcontact" type="xs:boolean" use="optional"/>
+        <xs:attribute name="type" type="xs:string" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <!-- Phone information -->
+  <xs:complexType name="phoneType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xs:string" use="optional"/>
+        <xs:attribute name="time" type="xs:string" use="optional"/>
+        <xs:attribute name="preferredcontact" type="xs:boolean" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <!-- Address information -->
+  <xs:complexType name="addressType">
+    <xs:sequence>
+      <xs:element name="street" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="apartment" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="city" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="regioncode" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="postalcode" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="country" type="xs:string" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="type" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Timeframe information -->
+  <xs:complexType name="timeframeType">
+    <xs:sequence>
+      <xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="earliestdate" type="xs:date" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="latestdate" type="xs:date" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="type" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Request type information -->
+  <xs:complexType name="requesttypeType">
+    <xs:sequence>
+      <xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="type" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Vehicle information -->
+  <xs:complexType name="vehicleType">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="year" type="xs:gYear" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="make" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="model" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="vin" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="stock" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="trim" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="doors" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="bodystyle" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="transmission" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="odometer" type="adf:odometerType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="colorcombination" type="adf:colorCombinationType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="price" type="adf:priceType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="imagetag" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="option" type="adf:optionType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="comments" type="xs:string" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="interest" type="xs:string" use="optional"/>
+    <xs:attribute name="status" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Odometer information -->
+  <xs:complexType name="odometerType">
+    <xs:simpleContent>
+      <xs:extension base="xs:nonNegativeInteger">
+        <xs:attribute name="units" type="xs:string" use="optional" default="miles"/>
+        <xs:attribute name="status" type="xs:string" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <!-- Color combination information -->
+  <xs:complexType name="colorCombinationType">
+    <xs:sequence>
+      <xs:element name="exteriorcolor" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="interiorcolor" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="preference" type="xs:string" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Price information -->
+  <xs:complexType name="priceType">
+    <xs:simpleContent>
+      <xs:extension base="xs:decimal">
+        <xs:attribute name="type" type="xs:string" use="optional"/>
+        <xs:attribute name="currency" type="xs:string" use="optional" default="USD"/>
+        <xs:attribute name="delta" type="xs:string" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <!-- Option information -->
+  <xs:complexType name="optionType">
+    <xs:sequence>
+      <xs:element name="optionname" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="manufacturercode" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="stock" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="weighting" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="price" type="adf:priceType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="status" type="xs:string" use="optional"/>
+    <xs:attribute name="type" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Vendor information -->
+  <xs:complexType name="vendorType">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="vendorname" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="url" type="xs:anyURI" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="contact" type="adf:contactType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="salesperson" type="adf:salespersonType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Salesperson information -->
+  <xs:complexType name="salespersonType">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="name" type="adf:nameType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="email" type="adf:emailType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="phone" type="adf:phoneType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="status" type="xs:string" use="optional"/>
+    <xs:attribute name="type" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Provider information -->
+  <xs:complexType name="providerType">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="name" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="service" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="url" type="xs:anyURI" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="email" type="adf:emailType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="phone" type="adf:phoneType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="contact" type="adf:contactType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="status" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+</xs:schema>

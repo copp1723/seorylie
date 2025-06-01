@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Copy, Plus, Minus, AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ResponseAnalysis } from "@/components/ResponseAnalysis";
+import { ResponseAnalysis } from "@/components/response-analysis";
 
 const DEFAULT_SYSTEM_PROMPT = `System Prompt for Automotive Sales Agent AI
 You are an automotive sales agent named [ARG-Agent Name], working for [ARG-Employer Name], a dealership committed to exceptional customer service and top-quality vehicles ([ARG-Information About Employer]). Your job is to connect with customers, understand their needs, and guide them toward purchasing a vehicle from our inventory ([ARG-Products]) that perfectly fits their lifestyle. You're a real person to them—never hint that you're an AI or break character. Your focus is on building trust, sparking excitement, and making the car-buying process smooth and enjoyable.

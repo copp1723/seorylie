@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+// import { apiRequest } from "@/lib/queryClient";
 
 interface Invitation {
   id: number;
@@ -67,7 +67,7 @@ interface ExtendedUser {
 
 const SystemPage: React.FC = () => {
   const { user } = useAuth() as { user: ExtendedUser | null };
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState("user");
   const [newDealershipId, setNewDealershipId] = useState<number | null>(null);
@@ -75,7 +75,6 @@ const SystemPage: React.FC = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Fetch invitations
   const { data: invitationsData } = useQuery({
     queryKey: ["/api/magic-link/invitations"],
     queryFn: () =>
@@ -84,7 +83,6 @@ const SystemPage: React.FC = () => {
       }),
   });
 
-  // Fetch dealerships for dropdown
   const { data: dealershipsData } = useQuery({
     queryKey: ["/api/dealerships"],
     queryFn: () =>
@@ -93,7 +91,8 @@ const SystemPage: React.FC = () => {
       }),
   });
 
-  // Create invitation mutation
+  const queryClient = useQueryClient();
+
   const createInvitation = useMutation({
     mutationFn: (data: {
       email: string;
@@ -123,78 +122,117 @@ const SystemPage: React.FC = () => {
     },
   });
 
-  // Delete invitation mutation
-  const deleteInvitation = useMutation({
-    mutationFn: (invitationId: number) =>
-      apiRequest(`/api/magic-link/invitations/${invitationId}`, {
-        method: "DELETE",
-      }),
-    onSuccess: () => {
+  // Delete invitation mutation - TEMPORARILY DISABLED
+  const deleteInvitation = {
+    mutate: (invitationId: number) => {
+      console.log('Would delete invitation:', invitationId);
       toast({
-        title: "Invitation Deleted",
-        description: "The invitation has been deleted",
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["/api/magic-link/invitations"],
+        title: "Info",
+        description: "Invitation deletion temporarily disabled",
       });
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to delete invitation: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
+    isPending: false
+  };
+  
+  // TODO: Re-enable React Query
+  // const deleteInvitation = useMutation({
+  //   mutationFn: (invitationId: number) =>
+  //     apiRequest(`/api/magic-link/invitations/${invitationId}`, {
+  //       method: "DELETE",
+  //     }),
+  //   onSuccess: () => {
+  //     toast({
+  //       title: "Invitation Deleted",
+  //       description: "The invitation has been deleted",
+  //     });
+  //     queryClient.invalidateQueries({
+  //       queryKey: ["/api/magic-link/invitations"],
+  //     });
+  //   },
+  //   onError: (error) => {
+  //     toast({
+  //       title: "Error",
+  //       description: `Failed to delete invitation: ${error.message}`,
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
 
-  // Resend invitation mutation
-  const resendInvitation = useMutation({
-    mutationFn: (invitationId: number) =>
-      apiRequest(`/api/magic-link/invitations/${invitationId}/resend`, {
-        method: "POST",
-      }),
-    onSuccess: () => {
+  // Resend invitation mutation - TEMPORARILY DISABLED
+  const resendInvitation = {
+    mutate: (invitationId: number) => {
+      console.log('Would resend invitation:', invitationId);
       toast({
-        title: "Invitation Resent",
-        description: "The invitation has been resent",
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["/api/magic-link/invitations"],
+        title: "Info",
+        description: "Invitation resend temporarily disabled",
       });
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to resend invitation: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
+    isPending: false
+  };
+  
+  // TODO: Re-enable React Query
+  // const resendInvitation = useMutation({
+  //   mutationFn: (invitationId: number) =>
+  //     apiRequest(`/api/magic-link/invitations/${invitationId}/resend`, {
+  //       method: "POST",
+  //     }),
+  //   onSuccess: () => {
+  //     toast({
+  //       title: "Invitation Resent",
+  //       description: "The invitation has been resent",
+  //     });
+  //     queryClient.invalidateQueries({
+  //       queryKey: ["/api/magic-link/invitations"],
+  //     });
+  //   },
+  //   onError: (error) => {
+  //     toast({
+  //       title: "Error",
+  //       description: `Failed to resend invitation: ${error.message}`,
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
 
-  // Change password mutation
-  const changePassword = useMutation({
-    mutationFn: (data: { currentPassword: string; newPassword: string }) =>
-      apiRequest("/api/user/change-password", {
-        method: "POST",
-        body: data,
-      }),
-    onSuccess: () => {
+  // Change password mutation - TEMPORARILY DISABLED
+  const changePassword = {
+    mutate: (data: { currentPassword: string; newPassword: string }) => {
+      console.log('Would change password');
       toast({
-        title: "Password Changed",
-        description: "Your password has been updated successfully",
+        title: "Info",
+        description: "Password change temporarily disabled",
       });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to change password: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
+    isPending: false
+  };
+  
+  // TODO: Re-enable React Query
+  // const changePassword = useMutation({
+  //   mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+  //     apiRequest("/api/user/change-password", {
+  //       method: "POST",
+  //       body: data,
+  //     }),
+  //   onSuccess: () => {
+  //     toast({
+  //       title: "Password Changed",
+  //       description: "Your password has been updated successfully",
+  //     });
+  //     setCurrentPassword("");
+  //     setNewPassword("");
+  //     setConfirmPassword("");
+  //   },
+  //   onError: (error) => {
+  //     toast({
+  //       title: "Error",
+  //       description: `Failed to change password: ${error.message}`,
+  //       variant: "destructive",
+  //     });
+  //   },
+  // });
 
   // Handle invitation form submit
   const handleInviteSubmit = (e: React.FormEvent) => {
@@ -326,9 +364,9 @@ const SystemPage: React.FC = () => {
                   <Button
                     type="submit"
                     className="mt-4"
-                    disabled={createInvitation.isPending}
+                    disabled={createInvitation.isLoading}
                   >
-                    {createInvitation.isPending ? (
+                    {createInvitation.isLoading ? (
                       <>
                         Sending...{" "}
                         <RefreshCw className="ml-2 h-4 w-4 animate-spin" />
@@ -394,7 +432,7 @@ const SystemPage: React.FC = () => {
                                 onClick={() =>
                                   resendInvitation.mutate(invitation.id)
                                 }
-                                disabled={resendInvitation.isPending}
+                                disabled={resendInvitation.isLoading}
                               >
                                 Resend
                               </Button>
@@ -404,7 +442,7 @@ const SystemPage: React.FC = () => {
                                 onClick={() =>
                                   deleteInvitation.mutate(invitation.id)
                                 }
-                                disabled={deleteInvitation.isPending}
+                                disabled={deleteInvitation.isLoading}
                               >
                                 <Trash className="h-4 w-4" />
                               </Button>
@@ -470,9 +508,9 @@ const SystemPage: React.FC = () => {
                 <Button
                   type="submit"
                   className="mt-4"
-                  disabled={changePassword.isPending}
+                  disabled={changePassword.isLoading}
                 >
-                  {changePassword.isPending ? (
+                  {changePassword.isLoading ? (
                     <>
                       Updating...{" "}
                       <RefreshCw className="ml-2 h-4 w-4 animate-spin" />

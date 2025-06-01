@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AuthButtons } from "./AuthButtons";
+import { AuthButtons } from "./auth-buttons";
 
 interface HeaderProps {
   onMenuClick: () => void;

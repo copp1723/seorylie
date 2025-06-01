@@ -4,7 +4,7 @@
 export { MagicLinkForm } from "./auth/magic-link-form";
 
 // Chat components
-export { default as ChatInterface } from "./chat/ChatInterface";
+export { default as ChatInterface } from "./chat-interface";
 export { ChatMessage } from "./chat/ChatMessage";
 export { default as ChatModeSettings } from "./chat/ChatModeSettings";
 

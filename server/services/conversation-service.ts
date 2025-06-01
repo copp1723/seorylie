@@ -462,3 +462,7 @@ export class ConversationService {
     }
   }
 }
+
+// Export singleton instance
+export const conversationService = new ConversationService();
+export default conversationService;

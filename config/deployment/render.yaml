@@ -1,0 +1,230 @@
+# Render Blueprint for CleanRylie
+# This file defines the infrastructure and deployment configuration for Render
+
+services:
+  # Main web service
+  - type: web
+    name: cleanrylie-app
+    env: node
+    plan: starter # Can be upgraded to standard/pro as needed
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: ALLOW_AUTH_BYPASS
+        value: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cleanrylie-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: cleanrylie-redis
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false # Must be set manually in Render dashboard
+      - key: SENDGRID_API_KEY
+        sync: false # Must be set manually in Render dashboard
+      - key: SENDGRID_FROM_EMAIL
+        value: noreply@cleanrylie.com
+      - key: SENDGRID_FROM_NAME
+        value: CleanRylie
+      - key: ADF_EMAIL_ENABLED
+        value: true
+      - key: ADF_EMAIL_HOST
+        value: imap.gmail.com
+      - key: ADF_EMAIL_PORT
+        value: 993
+      - key: ADF_EMAIL_USER
+        sync: false # Must be set manually
+      - key: ADF_EMAIL_PASS
+        sync: false # Must be set manually
+      - key: ADF_EMAIL_TLS
+        value: true
+      - key: ADF_EMAIL_MAILBOX
+        value: INBOX
+      - key: ADF_EMAIL_CHECK_INTERVAL
+        value: 300
+      - key: ADF_EMAIL_MARK_AS_READ
+        value: true
+      - key: ADF_EMAIL_MAX_RETRIES
+        value: 3
+      - key: LOG_LEVEL
+        value: info
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      - key: SKIP_REDIS
+        value: false # Set to true to disable Redis and use in-memory fallback
+    healthCheckPath: /api/health
+    autoDeploy: true # Enable auto-deploy on git push
+    branch: main
+    rootDir: .
+    buildFilter:
+      paths:
+        - server/**
+        - client/**
+        - shared/**
+        - package.json
+        - package-lock.json
+        - tsconfig.json
+        - vite.config.ts
+        - tailwind.config.ts
+        - Dockerfile
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: geolocation=(), microphone=(), camera=()
+
+databases:
+  # PostgreSQL database
+  - name: cleanrylie-db
+    databaseName: cleanrylie
+    user: cleanrylie_user
+    plan: starter # Can be upgraded as needed
+    postgresMajorVersion: 15
+
+  # Redis for caching and sessions
+  - name: cleanrylie-redis
+    plan: starter # Can be upgraded as needed
+    maxmemoryPolicy: allkeys-lru
+
+# Background services for ADF processing
+services:
+  # ADF Email Processor (background worker)
+  - type: worker
+    name: cleanrylie-adf-worker
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:adf-worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WORKER_TYPE
+        value: adf-email
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cleanrylie-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: cleanrylie-redis
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: ADF_EMAIL_ENABLED
+        value: true
+      - key: ADF_EMAIL_HOST
+        value: imap.gmail.com
+      - key: ADF_EMAIL_PORT
+        value: 993
+      - key: ADF_EMAIL_USER
+        sync: false
+      - key: ADF_EMAIL_PASS
+        sync: false
+      - key: ADF_EMAIL_TLS
+        value: true
+      - key: LOG_LEVEL
+        value: info
+    autoDeploy: true
+    branch: main
+
+# Cron jobs for maintenance tasks
+  - type: cron
+    name: cleanrylie-maintenance
+    schedule: "0 2 * * *" # Daily at 2 AM UTC
+    buildCommand: npm install
+    startCommand: npm run maintenance:daily
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cleanrylie-db
+          property: connectionString
+      - key: LOG_LEVEL
+        value: info
+
+# Static site for documentation (optional)
+  - type: static
+    name: cleanrylie-docs
+    buildCommand: |
+      if [ -d "docs" ]; then
+        echo "Building documentation..."
+        # Add documentation build commands here if needed
+      else
+        echo "No documentation to build"
+      fi
+    staticPublishPath: docs
+    envVars:
+      - key: NODE_ENV
+        value: production
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=3600
+    autoDeploy: true
+    branch: main
+    buildFilter:
+      paths:
+        - docs/**
+
+# Environment-specific configurations
+environments:
+  production:
+    services:
+      - name: cleanrylie-app
+        plan: standard # Upgrade for production
+        scaling:
+          minInstances: 2
+          maxInstances: 10
+        envVars:
+          - key: LOG_LEVEL
+            value: warn
+          - key: RATE_LIMIT_MAX_REQUESTS
+            value: 50 # Stricter rate limiting in production
+    databases:
+      - name: cleanrylie-db
+        plan: standard # Upgrade for production
+      - name: cleanrylie-redis
+        plan: standard # Upgrade for production
+
+  staging:
+    services:
+      - name: cleanrylie-app-staging
+        plan: starter
+        envVars:
+          - key: LOG_LEVEL
+            value: debug
+          - key: ALLOW_AUTH_BYPASS
+            value: true # Allow for testing
+          - key: SKIP_REDIS
+            value: true # Disable Redis for staging to prevent connection issues
+    databases:
+      - name: cleanrylie-db-staging
+        plan: starter
+      # Redis disabled for staging - using in-memory fallback
+      # - name: cleanrylie-redis-staging
+      #   plan: starter

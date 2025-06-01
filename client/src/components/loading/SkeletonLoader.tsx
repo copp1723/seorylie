@@ -131,8 +131,8 @@ export const SkeletonLoader: React.FC<SkeletonBaseProps> = ({
   const theme = useTheme();
   
   // Default colors based on theme
-  const defaultBgColor = theme.colors.skeleton?.base || theme.colors.border || '#e0e0e0';
-  const defaultHighlightColor = theme.colors.skeleton?.highlight || theme.colors.borderLight || '#f0f0f0';
+  const defaultBgColor = theme.colors.skeleton || theme.colors.border || '#e0e0e0';
+  const defaultHighlightColor = theme.colors.borderLight || '#f0f0f0';
   
   // Use provided colors or fallback to theme defaults
   const bgColor = backgroundColor || defaultBgColor;
@@ -219,7 +219,7 @@ export const SkeletonLoader: React.FC<SkeletonBaseProps> = ({
   
   return (
     <>
-      <style jsx global>{`
+      <style>{`
         @keyframes skeleton-wave {
           0% { transform: translateX(-100%); }
           50%, 100% { transform: translateX(100%); }

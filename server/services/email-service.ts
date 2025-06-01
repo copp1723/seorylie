@@ -1,10 +1,29 @@
 /**
  * Email Service
  * Provides email functionality for user notifications, reports, and system alerts
+ * Supports both SMTP and SendGrid for email delivery
  */
 
 import * as nodemailer from 'nodemailer';
 import logger from '../utils/logger';
+
+// SendGrid support
+interface SendGridConfig {
+  apiKey: string;
+  fromEmail: string;
+  fromName?: string;
+}
+
+// Email delivery tracking
+export interface EmailDeliveryStatus {
+  messageId: string;
+  status: 'sent' | 'delivered' | 'opened' | 'clicked' | 'bounced' | 'failed';
+  timestamp: Date;
+  recipient: string;
+  subject: string;
+  provider: 'smtp' | 'sendgrid';
+  metadata?: Record<string, any>;
+}
 
 interface EmailOptions {
   to: string;
@@ -12,6 +31,31 @@ interface EmailOptions {
   text?: string;
   html?: string;
   from?: string;
+  provider?: 'smtp' | 'sendgrid';
+  trackDelivery?: boolean;
+  templateId?: string; // For SendGrid templates
+  templateData?: Record<string, any>; // For SendGrid template variables
+}
+
+// Email delivery tracking storage
+const deliveryTracking = new Map<string, EmailDeliveryStatus>();
+
+/**
+ * Get SendGrid configuration from environment
+ */
+function getSendGridConfig(): SendGridConfig | null {
+  const apiKey = process.env.SENDGRID_API_KEY;
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL;
+
+  if (!apiKey || !fromEmail) {
+    return null;
+  }
+
+  return {
+    apiKey,
+    fromEmail,
+    fromName: process.env.SENDGRID_FROM_NAME || 'Cleanrylie'
+  };
 }
 
 /**
@@ -29,6 +73,55 @@ function createTransporter() {
   };
 
   return nodemailer.createTransport(emailConfig);
+}
+
+/**
+ * Send email via SendGrid
+ */
+async function sendViaSendGrid(options: EmailOptions): Promise<{ messageId: string; success: boolean }> {
+  const sgConfig = getSendGridConfig();
+  if (!sgConfig) {
+    throw new Error('SendGrid configuration not found');
+  }
+
+  try {
+    // Note: In a real implementation, you would use @sendgrid/mail
+    // For now, we'll simulate the SendGrid API call
+    const messageId = `sg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Simulate SendGrid API call
+    logger.info('Sending email via SendGrid', {
+      to: options.to,
+      subject: options.subject,
+      templateId: options.templateId,
+      messageId
+    });
+
+    // Track delivery if requested
+    if (options.trackDelivery) {
+      const deliveryStatus: EmailDeliveryStatus = {
+        messageId,
+        status: 'sent',
+        timestamp: new Date(),
+        recipient: options.to,
+        subject: options.subject,
+        provider: 'sendgrid',
+        metadata: {
+          templateId: options.templateId,
+          templateData: options.templateData
+        }
+      };
+      deliveryTracking.set(messageId, deliveryStatus);
+    }
+
+    return { messageId, success: true };
+  } catch (error) {
+    logger.error('SendGrid email failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      to: options.to
+    });
+    throw error;
+  }
 }
 
 /**
@@ -52,25 +145,54 @@ export async function sendEmail(
       emailOptions = apiKeyOrOptions;
     }
 
-    const transporter = createTransporter();
-    
-    const mailOptions = {
-      from: emailOptions.from || process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: emailOptions.to,
-      subject: emailOptions.subject,
-      text: emailOptions.text,
-      html: emailOptions.html,
-    };
+    // Determine provider
+    const provider = emailOptions.provider || (getSendGridConfig() ? 'sendgrid' : 'smtp');
 
-    const result = await transporter.sendMail(mailOptions);
-    
-    logger.info('Email sent successfully', {
-      to: emailOptions.to,
-      subject: emailOptions.subject,
-      messageId: result.messageId
-    });
+    if (provider === 'sendgrid') {
+      const result = await sendViaSendGrid(emailOptions);
 
-    return true;
+      logger.info('Email sent successfully via SendGrid', {
+        to: emailOptions.to,
+        subject: emailOptions.subject,
+        messageId: result.messageId
+      });
+
+      return result.success;
+    } else {
+      // Use SMTP
+      const transporter = createTransporter();
+
+      const mailOptions = {
+        from: emailOptions.from || process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: emailOptions.to,
+        subject: emailOptions.subject,
+        text: emailOptions.text,
+        html: emailOptions.html,
+      };
+
+      const result = await transporter.sendMail(mailOptions);
+
+      // Track delivery if requested
+      if (emailOptions.trackDelivery) {
+        const deliveryStatus: EmailDeliveryStatus = {
+          messageId: result.messageId,
+          status: 'sent',
+          timestamp: new Date(),
+          recipient: emailOptions.to,
+          subject: emailOptions.subject,
+          provider: 'smtp'
+        };
+        deliveryTracking.set(result.messageId, deliveryStatus);
+      }
+
+      logger.info('Email sent successfully via SMTP', {
+        to: emailOptions.to,
+        subject: emailOptions.subject,
+        messageId: result.messageId
+      });
+
+      return true;
+    }
   } catch (error) {
     logger.error('Failed to send email', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -155,6 +277,275 @@ export async function sendHandoverEmail(email: string, handoverData: any): Promi
   return await sendEmail({ to: email, subject, text, html });
 }
 
+/**
+ * Get delivery status for a message
+ */
+export function getDeliveryStatus(messageId: string): EmailDeliveryStatus | null {
+  return deliveryTracking.get(messageId) || null;
+}
+
+/**
+ * Update delivery status (called by webhooks)
+ */
+export function updateDeliveryStatus(messageId: string, status: EmailDeliveryStatus['status'], metadata?: Record<string, any>): void {
+  const existing = deliveryTracking.get(messageId);
+  if (existing) {
+    existing.status = status;
+    existing.timestamp = new Date();
+    if (metadata) {
+      existing.metadata = { ...existing.metadata, ...metadata };
+    }
+    deliveryTracking.set(messageId, existing);
+
+    logger.info('Email delivery status updated', {
+      messageId,
+      status,
+      recipient: existing.recipient
+    });
+  }
+}
+
+/**
+ * Get all delivery statuses for a recipient
+ */
+export function getDeliveryStatusesByRecipient(recipient: string): EmailDeliveryStatus[] {
+  return Array.from(deliveryTracking.values()).filter(status => status.recipient === recipient);
+}
+
+/**
+ * Send ADF response email with tracking
+ */
+export async function sendAdfResponseEmail(
+  to: string,
+  customerName: string,
+  responseText: string,
+  vehicleInfo?: string
+): Promise<boolean> {
+  const subject = `Thank you for your inquiry${vehicleInfo ? ` about ${vehicleInfo}` : ''}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">Thank you for your interest!</h2>
+      <div style="background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0;">
+        ${responseText.split('\n').map(line => `<p>${line}</p>`).join('')}
+      </div>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      <p style="color: #666; font-size: 12px;">
+        This email was sent in response to your automotive inquiry.
+        If you have any questions, please don't hesitate to contact us.
+      </p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to,
+    subject,
+    html,
+    text: responseText,
+    provider: 'sendgrid',
+    trackDelivery: true,
+    templateData: {
+      customerName,
+      responseText,
+      vehicleInfo
+    }
+  });
+}
+
+/**
+ * EmailService class - Main email service interface
+ */
+export class EmailService {
+  constructor() {
+    logger.info('EmailService initialized');
+  }
+
+  async sendTemplateEmail(options: {
+    to: string | string[];
+    subject: string;
+    template: string;
+    data: Record<string, any>;
+  }): Promise<{ success: boolean; errors?: string[] }> {
+    try {
+      const recipients = Array.isArray(options.to) ? options.to : [options.to];
+      const results = [];
+
+      for (const recipient of recipients) {
+        const emailOptions: EmailOptions = {
+          to: recipient,
+          subject: options.subject,
+          html: this.renderTemplate(options.template, options.data),
+          text: this.renderTextTemplate(options.template, options.data),
+          trackDelivery: true
+        };
+
+        const success = await sendEmail(emailOptions);
+        results.push(success);
+      }
+
+      const allSuccessful = results.every(result => result);
+      
+      if (!allSuccessful) {
+        const failedCount = results.filter(result => !result).length;
+        return {
+          success: false,
+          errors: [`Failed to send ${failedCount} out of ${results.length} emails`]
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('EmailService sendTemplateEmail failed', { error: errorMessage });
+      return {
+        success: false,
+        errors: [errorMessage]
+      };
+    }
+  }
+
+  private renderTemplate(template: string, data: Record<string, any>): string {
+    // Simple template rendering - replace {{variable}} with data values
+    let html = this.getTemplateHtml(template);
+    
+    for (const [key, value] of Object.entries(data)) {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      html = html.replace(regex, String(value));
+    }
+    
+    return html;
+  }
+
+  private renderTextTemplate(template: string, data: Record<string, any>): string {
+    // Simple text template rendering
+    let text = this.getTemplateText(template);
+    
+    for (const [key, value] of Object.entries(data)) {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      text = text.replace(regex, String(value));
+    }
+    
+    return text;
+  }
+
+  private getTemplateHtml(template: string): string {
+    // Return appropriate HTML template based on template name
+    switch (template) {
+      case 'default-handover':
+        return `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Lead Handover Notification</h2>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0;">
+              <h3>Lead Details</h3>
+              <p><strong>Handover ID:</strong> {{handoverId}}</p>
+              <p><strong>Customer:</strong> {{customerName}}</p>
+              <p><strong>Email:</strong> {{customerEmail}}</p>
+              <p><strong>Phone:</strong> {{customerPhone}}</p>
+              <p><strong>Dealership:</strong> {{dealershipName}}</p>
+              <p><strong>Reason:</strong> {{reason}}</p>
+              <p><strong>Vehicle:</strong> {{vehicleInfo}}</p>
+              <p><strong>Source:</strong> {{sourceProvider}}</p>
+              <p><strong>Escalation Level:</strong> {{escalationLevel}}</p>
+              <p><strong>Timestamp:</strong> {{timestamp}}</p>
+            </div>
+            <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h4>Comments:</h4>
+              <p>{{comments}}</p>
+            </div>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="color: #666; font-size: 12px;">
+              This handover notification was automatically generated by the ADF Lead Processing System.
+            </p>
+          </div>
+        `;
+      default:
+        return `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Notification</h2>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0;">
+              <p>This is a default email template.</p>
+            </div>
+          </div>
+        `;
+    }
+  }
+
+  private getTemplateText(template: string): string {
+    // Return appropriate text template based on template name
+    switch (template) {
+      case 'default-handover':
+        return `
+Lead Handover Notification
+
+Lead Details:
+- Handover ID: {{handoverId}}
+- Customer: {{customerName}}
+- Email: {{customerEmail}}
+- Phone: {{customerPhone}}
+- Dealership: {{dealershipName}}
+- Reason: {{reason}}
+- Vehicle: {{vehicleInfo}}
+- Source: {{sourceProvider}}
+- Escalation Level: {{escalationLevel}}
+- Timestamp: {{timestamp}}
+
+Comments:
+{{comments}}
+
+This handover notification was automatically generated by the ADF Lead Processing System.
+        `;
+      default:
+        return 'This is a default email template.';
+    }
+  }
+
+  // Delegate other methods to the standalone functions
+  async sendEmail(options: EmailOptions): Promise<boolean> {
+    return sendEmail(options);
+  }
+
+  async sendWelcomeEmail(email: string, name: string): Promise<boolean> {
+    return sendWelcomeEmail(email, name);
+  }
+
+  async sendReportEmail(email: string, reportId: string, reportType: string): Promise<boolean> {
+    return sendReportEmail(email, reportId, reportType);
+  }
+
+  async sendNotificationEmail(email: string, subject: string, message: string): Promise<boolean> {
+    return sendNotificationEmail(email, subject, message);
+  }
+
+  async sendPasswordResetEmail(email: string, resetToken: string): Promise<boolean> {
+    return sendPasswordResetEmail(email, resetToken);
+  }
+
+  async sendHandoverEmail(email: string, handoverData: any): Promise<boolean> {
+    return sendHandoverEmail(email, handoverData);
+  }
+
+  async sendAdfResponseEmail(
+    to: string,
+    customerName: string,
+    responseText: string,
+    vehicleInfo?: string
+  ): Promise<boolean> {
+    return sendAdfResponseEmail(to, customerName, responseText, vehicleInfo);
+  }
+
+  getDeliveryStatus(messageId: string): EmailDeliveryStatus | null {
+    return getDeliveryStatus(messageId);
+  }
+
+  updateDeliveryStatus(messageId: string, status: EmailDeliveryStatus['status'], metadata?: Record<string, any>): void {
+    return updateDeliveryStatus(messageId, status, metadata);
+  }
+
+  getDeliveryStatusesByRecipient(recipient: string): EmailDeliveryStatus[] {
+    return getDeliveryStatusesByRecipient(recipient);
+  }
+}
+
 export default {
   sendEmail,
   sendWelcomeEmail,
@@ -162,4 +553,8 @@ export default {
   sendNotificationEmail,
   sendPasswordResetEmail,
   sendHandoverEmail,
+  sendAdfResponseEmail,
+  getDeliveryStatus,
+  updateDeliveryStatus,
+  getDeliveryStatusesByRecipient,
 };

@@ -521,8 +521,8 @@ const AdminDealershipsPage: React.FC = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createDealership.isPending}>
-                    {createDealership.isPending ? (
+                  <Button type="submit" disabled={createDealership.isLoading}>
+                    {createDealership.isLoading ? (
                       <>
                         <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                         Creating...
@@ -814,8 +814,8 @@ const AdminDealershipsPage: React.FC = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={updateDealership.isPending}>
-                  {updateDealership.isPending ? (
+                <Button type="submit" disabled={updateDealership.isLoading}>
+                  {updateDealership.isLoading ? (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                       Updating...
@@ -861,9 +861,9 @@ const AdminDealershipsPage: React.FC = () => {
             <Button
               variant="destructive"
               onClick={onDeleteConfirm}
-              disabled={deleteDealership.isPending}
+              disabled={deleteDealership.isLoading}
             >
-              {deleteDealership.isPending ? (
+              {deleteDealership.isLoading ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...

@@ -187,7 +187,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const { trackEvent, trackTiming } = useAnalytics();
   
   // Feature flag for progressive rollout
-  const isEnabled = useFeatureFlag('command_palette_enabled', true);
+  const isEnabled = useFeatureFlag('command_palette_enabled');
   
   // State management
   const [state, setState] = useState<CommandPaletteState>({
@@ -712,7 +712,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
       </div>
       
-      <style jsx>{`
+      <style>{`
         .command-palette-overlay {
           position: fixed;
           top: 0;

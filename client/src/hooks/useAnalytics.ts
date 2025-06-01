@@ -1,4 +1,13 @@
-import { useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { 
+  logEvent, 
+  trackPageView, 
+  usePageTracking, 
+  useComponentTracking,
+  useUserPresence,
+  EventParameters,
+  configureAnalytics
+} from '../utils/analytics';
 
 export interface AnalyticsEvent {
   name: string;
@@ -13,72 +22,225 @@ export interface AnalyticsUser {
   properties?: Record<string, any>;
 }
 
-export interface AnalyticsHook {
+/**
+ * Analytics hook interface
+ */
+interface AnalyticsHook {
+  /**
+   * Track a custom event (alias for trackEvent)
+   */
   track: (event: string, properties?: Record<string, any>) => void;
-  trackEvent: (event: string, properties?: Record<string, any>) => void;
-  trackTiming: (category: string, variable: string, value: number) => void;
-  identify: (user: AnalyticsUser) => void;
+  
+  /**
+   * Track a custom event
+   */
+  trackEvent: (eventName: string, parameters?: EventParameters) => void;
+  
+  /**
+   * Track timing/performance metrics
+   */
+  trackTiming: (name: string, duration: number) => void;
+  
+  /**
+   * Identify a user
+   */
+  identify: (userId: string, traits?: Record<string, any>) => void;
+  
+  /**
+   * Track a page view
+   */
+  trackPageView: (pageName: string, parameters?: EventParameters) => void;
+  
+  /**
+   * Track a user interaction
+   */
+  trackInteraction: (interactionType: string, elementId: string, parameters?: EventParameters) => void;
+  
+  /**
+   * Track a feature usage
+   */
+  trackFeatureUsage: (featureName: string, parameters?: EventParameters) => void;
+  
+  /**
+   * Track an error
+   */
+  trackError: (errorType: string, errorMessage: string, parameters?: EventParameters) => void;
+  
+  /**
+   * Track a conversion
+   */
+  trackConversion: (conversionType: string, parameters?: EventParameters) => void;
+  
+  /**
+   * Page tracking (alias for trackPageView)
+   */
   page: (name: string, properties?: Record<string, any>) => void;
+  
+  /**
+   * Reset analytics state
+   */
   reset: () => void;
+  
+  /**
+   * Check if analytics is enabled
+   */
   isEnabled: boolean;
+  
+  /**
+   * Toggle analytics on/off
+   */
+  setEnabled: (enabled: boolean) => void;
+  
+  /**
+   * Current user presence status
+   */
+  isUserActive: boolean;
 }
 
+/**
+ * Hook for using analytics throughout the application
+ * @returns Analytics functions and state
+ */
 export const useAnalytics = (): AnalyticsHook => {
-  const track = useCallback((event: string, properties?: Record<string, any>) => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', event, properties);
+  const [isEnabled, setIsEnabled] = useState<boolean>(() => {
+    // Check localStorage for user preference
+    if (typeof window !== 'undefined') {
+      const storedPreference = localStorage.getItem('analytics-enabled');
+      if (storedPreference !== null) {
+        return storedPreference === 'true';
+      }
     }
-    console.log('[Analytics] Track:', event, properties);
-  }, []);
-
-  const identify = useCallback((user: AnalyticsUser) => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('config', 'GA_TRACKING_ID', {
-        user_id: user.id,
-        custom_map: user.properties
-      });
+    // Default to true in production, false in development
+    return process.env.NODE_ENV === 'production';
+  });
+  
+  const { isActive } = useUserPresence();
+  
+  // Update analytics configuration when enabled state changes
+  useEffect(() => {
+    configureAnalytics({ enabled: isEnabled });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('analytics-enabled', String(isEnabled));
     }
-    console.log('[Analytics] Identify:', user);
-  }, []);
-
-  const page = useCallback((name: string, properties?: Record<string, any>) => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('config', 'GA_TRACKING_ID', {
-        page_title: name,
-        page_location: window.location.href,
-        ...properties
-      });
+  }, [isEnabled]);
+  
+  // Track event wrapper
+  const trackEvent = useCallback((eventName: string, parameters: EventParameters = {}) => {
+    if (isEnabled) {
+      logEvent(eventName, parameters);
     }
-    console.log('[Analytics] Page:', name, properties);
-  }, []);
+  }, [isEnabled]);
 
-  const trackEvent = useCallback((event: string, properties?: Record<string, any>) => {
-    track(event, properties);
-  }, [track]);
+  // Track event alias
+  const track = useCallback((event: string, properties: Record<string, any> = {}) => {
+    trackEvent(event, properties);
+  }, [trackEvent]);
 
-  const trackTiming = useCallback((category: string, variable: string, value: number) => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'timing_complete', {
-        name: variable,
-        value: value,
-        event_category: category
-      });
+  // Track timing/performance metrics
+  const trackTiming = useCallback((name: string, duration: number) => {
+    trackEvent('timing', {
+      name,
+      duration,
+      timestamp: Date.now()
+    });
+  }, [trackEvent]);
+
+  // Identify user
+  const identify = useCallback((userId: string, traits: Record<string, any> = {}) => {
+    trackEvent('identify', {
+      userId,
+      traits,
+      timestamp: Date.now()
+    });
+  }, [trackEvent]);
+  
+  // Track page view wrapper
+  const trackPageViewFn = useCallback((pageName: string, parameters: EventParameters = {}) => {
+    if (isEnabled) {
+      trackPageView(pageName, parameters);
     }
-    console.log('[Analytics] Timing:', category, variable, value);
-  }, []);
+  }, [isEnabled]);
 
+  // Page tracking alias
+  const page = useCallback((name: string, properties: Record<string, any> = {}) => {
+    trackPageViewFn(name, properties);
+  }, [trackPageViewFn]);
+  
+  // Track user interaction
+  const trackInteraction = useCallback((
+    interactionType: string, 
+    elementId: string, 
+    parameters: EventParameters = {}
+  ) => {
+    trackEvent('user_interaction', {
+      interactionType,
+      elementId,
+      ...parameters
+    });
+  }, [trackEvent]);
+  
+  // Track feature usage
+  const trackFeatureUsage = useCallback((
+    featureName: string, 
+    parameters: EventParameters = {}
+  ) => {
+    trackEvent('feature_usage', {
+      featureName,
+      ...parameters
+    });
+  }, [trackEvent]);
+  
+  // Track error
+  const trackError = useCallback((
+    errorType: string, 
+    errorMessage: string, 
+    parameters: EventParameters = {}
+  ) => {
+    trackEvent('error', {
+      errorType,
+      errorMessage,
+      ...parameters
+    });
+  }, [trackEvent]);
+  
+  // Track conversion
+  const trackConversion = useCallback((
+    conversionType: string, 
+    parameters: EventParameters = {}
+  ) => {
+    trackEvent('conversion', {
+      conversionType,
+      ...parameters
+    });
+  }, [trackEvent]);
+
+  // Reset analytics state
   const reset = useCallback(() => {
-    console.log('[Analytics] Reset');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('analytics-enabled');
+    }
+    setIsEnabled(process.env.NODE_ENV === 'production');
   }, []);
-
+  
+  // Set enabled state
+  const setEnabled = useCallback((enabled: boolean) => {
+    setIsEnabled(enabled);
+  }, []);
   return {
     track,
     trackEvent,
     trackTiming,
     identify,
+    trackPageView: trackPageViewFn,
+    trackInteraction,
+    trackFeatureUsage,
+    trackError,
+    trackConversion,
     page,
     reset,
-    isEnabled: process.env.NODE_ENV === 'production'
+    isEnabled,
+    setEnabled,
+    isUserActive: isActive
   };
 };
 

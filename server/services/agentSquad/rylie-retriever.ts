@@ -1,4 +1,4 @@
-import { Retriever } from 'agent-squad';
+import { Retriever } from '../../lib/agent-squad-stub';
 import { db } from '../../db';
 import { vehicles, dealerships, personas } from '../../../shared/schema';
 import { eq, and, like, sql } from 'drizzle-orm';

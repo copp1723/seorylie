@@ -24,3 +24,5 @@ test-agent-squad.js
 test-enhanced-agent-squad.js
 verify-agent-squad.js
 verify-enhanced-features.js
+*storybook.log
+storybook-static

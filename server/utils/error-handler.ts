@@ -50,6 +50,9 @@ export class CustomError extends Error implements AppError {
   }
 }
 
+// Alias for compatibility
+export class ApiError extends CustomError {}
+
 // Middleware to add request ID and trace ID
 export function requestIdMiddleware(
   req: Request,
@@ -67,7 +70,7 @@ export function requestIdMiddleware(
   next();
 }
 
-// Global error handler middleware
+// Enhanced global error handler middleware
 export function errorHandler(
   err: AppError | Error, // Can be CustomError or any other Error
   req: Request,
@@ -77,15 +80,16 @@ export function errorHandler(
   const customErr = err as AppError; // Type assertion to access custom properties
 
   const statusCode = customErr.statusCode || 500;
-  const message = customErr.userMessage || customErr.message || "Internal ServerError";
-  const traceId = customErr.traceId || (req.headers["x-trace-id"] as string) || uuidv4();
+  const message = customErr.userMessage || customErr.message || "Internal Server Error";
+  const traceId = customErr.traceId || req.traceId || (req.headers["x-trace-id"] as string) || uuidv4();
+  const requestId = req.requestId || (req.headers["x-request-id"] as string) || uuidv4();
   const code = customErr.code;
   const context = customErr.context;
 
-  // Log the error
-  logger.error("Error handled:", {
+  // Enhanced error logging with more context
+  const errorLogContext = {
     traceId,
-    requestId: req.headers["x-request-id"] as string,
+    requestId,
     statusCode,
     message: err.message, // Log the original, more specific error message
     code,
@@ -93,43 +97,105 @@ export function errorHandler(
     isOperational: customErr.isOperational,
     method: req.method,
     url: req.originalUrl,
-    ip: req.ip,
+    ip: req.ip || req.connection.remoteAddress,
+    userAgent: req.get('User-Agent'),
+    userId: req.user?.id,
+    dealershipId: req.dealershipId,
     context,
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined, // Log stack in dev
-  });
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    timestamp: new Date().toISOString()
+  };
 
-  // Set trace ID in response header if not already set by requestIdMiddleware
+  // Log the error with appropriate level
+  if (statusCode >= 500) {
+    logger.error("Server error handled", err, errorLogContext);
+  } else if (statusCode >= 400) {
+    logger.warn("Client error handled", errorLogContext);
+  } else {
+    logger.info("Error handled", errorLogContext);
+  }
+
+  // Set correlation headers if not already set
   if (!res.getHeader("X-Trace-Id")) {
     res.setHeader("X-Trace-Id", traceId);
   }
+  if (!res.getHeader("X-Request-Id")) {
+    res.setHeader("X-Request-Id", requestId);
+  }
 
-  const errorResponse: {
-    message: string;
-    code?: string;
-    traceId: string;
-    userMessage?: string;
-    stack?: string;
-  } = {
-    message: message, // Send user-friendly message or original message
-    traceId: traceId,
+  // Standardized error response format
+  const errorResponse: StandardErrorResponse = {
+    success: false,
+    error: {
+      message: message, // Send user-friendly message or original message
+      code: code || getDefaultErrorCode(statusCode),
+      traceId: traceId,
+      requestId: requestId,
+      timestamp: new Date().toISOString()
+    }
   };
 
-  if (code) {
-    errorResponse.code = code;
-  }
-
+  // Add user message if different from main message
   if (customErr.userMessage && customErr.userMessage !== message) {
-    errorResponse.userMessage = customErr.userMessage;
+    errorResponse.error.userMessage = customErr.userMessage;
   }
 
+  // Add stack trace in development
   if (process.env.NODE_ENV === "development" && err.stack) {
-    errorResponse.stack = err.stack;
+    errorResponse.error.stack = err.stack;
   }
 
-  res.status(statusCode).json({
-    error: errorResponse,
-    timestamp: new Date().toISOString(),
-  });
+  // Add context in development
+  if (process.env.NODE_ENV === "development" && context) {
+    errorResponse.error.context = context;
+  }
+
+  res.status(statusCode).json(errorResponse);
+}
+
+// Standardized error response interface
+export interface StandardErrorResponse {
+  success: false;
+  error: {
+    message: string;
+    code: string;
+    traceId: string;
+    requestId: string;
+    timestamp: string;
+    userMessage?: string;
+    stack?: string;
+    context?: any;
+  };
+}
+
+// Get default error code based on status code
+function getDefaultErrorCode(statusCode: number): string {
+  switch (statusCode) {
+    case 400:
+      return 'BAD_REQUEST';
+    case 401:
+      return 'UNAUTHORIZED';
+    case 403:
+      return 'FORBIDDEN';
+    case 404:
+      return 'NOT_FOUND';
+    case 409:
+      return 'CONFLICT';
+    case 422:
+      return 'VALIDATION_ERROR';
+    case 429:
+      return 'RATE_LIMIT_EXCEEDED';
+    case 500:
+      return 'INTERNAL_SERVER_ERROR';
+    case 502:
+      return 'BAD_GATEWAY';
+    case 503:
+      return 'SERVICE_UNAVAILABLE';
+    case 504:
+      return 'GATEWAY_TIMEOUT';
+    default:
+      return 'UNKNOWN_ERROR';
+  }
 }
 
 // Wrapper for async route handlers to catch errors

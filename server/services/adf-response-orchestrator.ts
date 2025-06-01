@@ -2,8 +2,9 @@ import { EventEmitter } from 'events';
 import logger from '../utils/logger';
 import db from '../db';
 import { eq } from 'drizzle-orm';
-import { adfLeads } from '@shared/adf-schema';
-import { openai } from '../utils/openai';
+import { adfLeads } from '@shared/schema-resolver';
+import { openai } from './openai';
+import { sendAdfResponseEmail } from './email-service';
 
 export interface AdfResponseResult {
   leadId: number;
@@ -105,6 +106,39 @@ export class AdfResponseOrchestrator extends EventEmitter {
 
       this.emit('aiResponseGenerated', result);
       this.emit('lead.response.ready', result);
+
+      // Send email response if customer email is available
+      if (lead.customerEmail) {
+        try {
+          const emailSent = await sendAdfResponseEmail(
+            lead.customerEmail,
+            lead.customerFirstName || lead.customerFullName || 'there',
+            responseText,
+            this.formatVehicleInfo(lead)
+          );
+
+          if (emailSent) {
+            logger.info('ADF response email sent successfully', {
+              leadId,
+              customerEmail: lead.customerEmail
+            });
+            this.emit('emailResponseSent', { leadId, email: lead.customerEmail });
+          } else {
+            logger.warn('Failed to send ADF response email', {
+              leadId,
+              customerEmail: lead.customerEmail
+            });
+          }
+        } catch (emailError) {
+          logger.error('Error sending ADF response email', {
+            leadId,
+            customerEmail: lead.customerEmail,
+            error: emailError instanceof Error ? emailError.message : String(emailError)
+          });
+        }
+      } else {
+        logger.info('No customer email available for ADF response', { leadId });
+      }
 
     } catch (error) {
       const latencyMs = Date.now() - startTime;

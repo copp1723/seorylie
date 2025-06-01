@@ -17,7 +17,7 @@ const serviceLogger = logger;
 let openai: OpenAI | null = null;
 try {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (apiKey && apiKey !== 'sk-actualOpenAIKeyHere') {
+  if (apiKey && !apiKey.startsWith('sk-dummy') && !apiKey.includes('placeholder')) {
     openai = new OpenAI({ apiKey });
   } else {
     console.warn('OpenAI API key not configured - response suggestions will be disabled');

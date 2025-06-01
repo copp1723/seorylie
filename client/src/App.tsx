@@ -1,9 +1,10 @@
 import React from 'react';
 import { Route, Switch } from 'wouter';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from './components/ui/toaster';
-import { ThemeProvider } from './components/theme-provider';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './hooks/useAuth';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './components/protected-route';
 import Layout from './components/layout/layout';
 
 // Page imports
@@ -21,11 +22,23 @@ import Security from './pages/security';
 import NotFound from './pages/not-found';
 import AgentStudio from './pages/agent-studio';
 import IntegrationDashboardPage from './pages/integration-dashboard';
+import AdminDealershipsPage from './pages/admin/dealerships';
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
         <Toaster />
         <Switch>
           {/* Public routes */}
@@ -87,14 +100,21 @@ function App() {
                     <IntegrationDashboardPage />
                   </ProtectedRoute>
                 </Route>
+                {/* Admin Dealerships route */}
+                <Route path="/admin/dealerships">
+                  <ProtectedRoute>
+                    <AdminDealershipsPage />
+                  </ProtectedRoute>
+                </Route>
                 {/* Catch-all route */}
                 <Route component={NotFound} />
               </Switch>
             </Layout>
           </Route>
         </Switch>
-      </AuthProvider>
-    </ThemeProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

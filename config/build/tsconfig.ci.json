@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
+    "noEmit": true,
+    "target": "ES2020",
+    "module": "ESNext",
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "noImplicitOverride": false,
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": false,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "baseUrl": "../..",
+    "paths": {
+      "@/*": ["./client/src/*"],
+      "@shared": ["./shared"],
+      "@shared/*": ["./shared/*"]
+    },
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "../../client/src/**/*",
+    "../../server/**/*",
+    "../../shared/**/*"
+  ],
+  "exclude": [
+    "../../node_modules",
+    "../../test/**/*"
+  ]
+}

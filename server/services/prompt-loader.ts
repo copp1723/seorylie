@@ -3,7 +3,7 @@ import path from 'path';
 import { promisify } from 'util';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { glob } from 'glob';
+import glob from 'glob';
 import matter from 'gray-matter';
 import { logger } from '../utils/logger';
 
@@ -11,9 +11,7 @@ import { logger } from '../utils/logger';
 const readFile = promisify(fs.readFile);
 const globAsync = promisify(glob);
 
-/**
- * Interface for prompt template metadata
- */
+// Define interfaces for prompt data
 interface PromptMetadata {
   id: string;
   description: string;
@@ -27,324 +25,274 @@ interface PromptMetadata {
   active?: boolean;
 }
 
-/**
- * Interface for a complete prompt template
- */
-interface PromptTemplate {
+interface Prompt {
   metadata: PromptMetadata;
   content: string;
-  rawContent: string;
+  template: string;
+}
+
+// Cache storage
+const promptCache: Map<string, Prompt> = new Map();
+let schemaValidator: Ajv;
+let isInitialized = false;
+
+/**
+ * Initialize the prompt loader
+ * Loads schema and validates it
+ */
+async function initialize(): Promise<void> {
+  if (isInitialized) return;
+  
+  try {
+    // Initialize schema validator
+    schemaValidator = new Ajv({ allErrors: true });
+    addFormats(schemaValidator);
+    
+    // Load schema
+    const schemaPath = path.resolve(process.cwd(), 'prompts/adf/prompt-schema.json');
+    const schemaContent = await readFile(schemaPath, 'utf8');
+    const schema = JSON.parse(schemaContent);
+    
+    // Add schema to validator
+    schemaValidator.addSchema(schema, 'prompt-schema');
+    
+    // Load all prompts
+    await loadAllPrompts();
+    
+    isInitialized = true;
+    logger.info(`Prompt loader initialized with ${promptCache.size} prompts`);
+  } catch (error) {
+    logger.error('Failed to initialize prompt loader', { error });
+    throw new Error(`Failed to initialize prompt loader: ${error.message}`);
+  }
 }
 
 /**
- * Service for loading, validating, and retrieving prompt templates
+ * Get the version folder based on environment variable
  */
-export class PromptLoader {
-  private static instance: PromptLoader;
-  private prompts: Map<string, PromptTemplate> = new Map();
-  private schema: any;
-  private validator: Ajv;
-  private promptsDir: string;
-  private version: string;
-  private initialized: boolean = false;
+function getVersionFolder(): string {
+  const version = process.env.PROMPT_LIBRARY_VERSION || 'v1';
+  return `v${version.replace(/^v/, '')}`;
+}
 
-  /**
-   * Private constructor for singleton pattern
-   */
-  private constructor() {
-    this.validator = new Ajv({ allErrors: true });
-    addFormats(this.validator);
-    this.version = process.env.PROMPT_LIBRARY_VERSION || 'v1';
-    this.promptsDir = path.resolve(process.cwd(), 'prompts/adf');
+/**
+ * Load all prompts from the filesystem
+ */
+async function loadAllPrompts(): Promise<void> {
+  try {
+    const versionFolder = getVersionFolder();
+    const basePromptDir = path.resolve(process.cwd(), 'prompts/adf');
+    const versionedPromptDir = path.resolve(basePromptDir, versionFolder);
     
-    // Load schema
-    try {
-      const schemaPath = path.join(this.promptsDir, 'prompt-schema.json');
-      this.schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
-      logger.info(`Loaded prompt schema from ${schemaPath}`);
-    } catch (error) {
-      logger.error(`Failed to load prompt schema: ${error instanceof Error ? error.message : String(error)}`);
-      throw new Error(`Failed to load prompt schema: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  /**
-   * Get the singleton instance
-   */
-  public static getInstance(): PromptLoader {
-    if (!PromptLoader.instance) {
-      PromptLoader.instance = new PromptLoader();
-    }
-    return PromptLoader.instance;
-  }
-
-  /**
-   * Initialize the prompt loader
-   * Scans the prompts directory, validates and caches all prompt templates
-   */
-  public async initialize(): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
-
-    logger.info(`Initializing prompt loader with version: ${this.version}`);
+    // Determine which directory to use (versioned if exists, otherwise base)
+    const promptDir = fs.existsSync(versionedPromptDir) ? versionedPromptDir : basePromptDir;
     
-    try {
-      // Get version-specific directory if it exists, otherwise use root
-      const versionDir = path.join(this.promptsDir, `v${this.version}`);
-      const baseDir = fs.existsSync(versionDir) ? versionDir : this.promptsDir;
-      
-      logger.info(`Scanning for prompt templates in: ${baseDir}`);
-      
-      // Find all markdown files
-      const files = await globAsync('**/*.md', { cwd: baseDir });
-      logger.info(`Found ${files.length} prompt template files`);
-      
-      // Process each file
-      for (const file of files) {
-        try {
-          const filePath = path.join(baseDir, file);
-          const content = await readFile(filePath, 'utf8');
-          const prompt = this.parsePromptFile(content, file);
-          
-          // Validate metadata
-          const isValid = this.validatePromptMetadata(prompt.metadata);
-          if (isValid) {
-            this.prompts.set(prompt.metadata.id, prompt);
-            logger.debug(`Loaded prompt: ${prompt.metadata.id} (${file})`);
-          } else {
-            logger.warn(`Invalid prompt metadata in ${file}, skipping`);
-          }
-        } catch (error) {
-          logger.error(`Error processing prompt file ${file}: ${error instanceof Error ? error.message : String(error)}`);
-        }
-      }
-      
-      logger.info(`Successfully loaded ${this.prompts.size} valid prompt templates`);
-      this.initialized = true;
-    } catch (error) {
-      logger.error(`Failed to initialize prompt loader: ${error instanceof Error ? error.message : String(error)}`);
-      throw new Error(`Failed to initialize prompt loader: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  /**
-   * Parse a prompt file to extract metadata and content
-   */
-  private parsePromptFile(content: string, filepath: string): PromptTemplate {
-    try {
-      // Use gray-matter to parse front matter
-      const parsed = matter(content);
-      const frontMatter = parsed.data || {};
-      
-      // Extract title (first heading) as ID if not in front matter
-      let id = frontMatter.id;
-      let description = frontMatter.description;
-      let tags = frontMatter.tags || [];
-      let maxTurn = frontMatter.max_turn;
-      let author = frontMatter.author;
-      let active = frontMatter.active !== undefined ? frontMatter.active : true;
-      
-      // If front matter doesn't have ID, extract from content
-      if (!id) {
-        const titleMatch = content.match(/^#\s+(.+?)(?:\s+–\s+(.+?))?$/m);
-        if (!titleMatch) {
-          throw new Error(`No title found in prompt file: ${filepath}`);
-        }
-        
-        const title = titleMatch[1].trim();
-        description = description || titleMatch[2]?.trim() || '';
-        
-        // Generate ID from title
-        id = title.toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '');
-      }
-      
-      // Extract purpose section if description is still missing
-      if (!description) {
-        const purposeMatch = content.match(/\*\*Purpose\*\*\s+(.+?)(?:\n\s*\n|$)/s);
-        description = purposeMatch ? purposeMatch[1].trim() : '';
-      }
-      
-      // Extract tags if not in front matter
-      if (!tags || tags.length === 0) {
-        const tagsMatch = content.match(/### Tags\s+`(.+?)`/s);
-        tags = tagsMatch 
-          ? tagsMatch[1].split('`').filter(t => t.trim() && t.trim() !== ' ').map(t => t.trim())
-          : [];
-      }
-      
-      // Determine max turn if it's a turn template and not already set
-      if (maxTurn === undefined) {
-        const turnMatch = id.match(/turn-?(\d+)/i) || tags.find(t => t.startsWith('turn:'))?.match(/turn:(\d+)/i);
-        if (turnMatch) {
-          maxTurn = parseInt(turnMatch[1], 10);
-        }
-      }
-      
-      // Extract template content
-      let templateContent = parsed.content.trim();
-      
-      // If content doesn't look like the template, try to extract it from markdown
-      if (!templateContent.includes('\n') || !templateContent.match(/^[A-Za-z]/m)) {
-        const templateMatch = content.match(/## Prompt Template\s+(.+?)(?:\n\s*\n---|\n\s*\n###|$)/s);
-        templateContent = templateMatch ? templateMatch[1].trim() : templateContent;
-      }
-      
-      // Create metadata
-      const metadata: PromptMetadata = {
-        id,
-        description,
-        tags,
-        filepath,
-        created_at: frontMatter.created_at || new Date().toISOString(),
-        updated_at: frontMatter.updated_at || new Date().toISOString(),
-        author,
-        active
-      };
-      
-      if (maxTurn !== undefined) {
-        metadata.max_turn = maxTurn;
-      }
-      
-      return {
-        metadata,
-        content: templateContent,
-        rawContent: content
-      };
-    } catch (error) {
-      logger.error(`Error parsing prompt file ${filepath}: ${error instanceof Error ? error.message : String(error)}`);
-      throw new Error(`Error parsing prompt file ${filepath}: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  /**
-   * Validate prompt metadata against the schema
-   */
-  private validatePromptMetadata(metadata: PromptMetadata): boolean {
-    try {
-      const validate = this.validator.compile(this.schema);
-      const isValid = validate(metadata);
-      
-      if (!isValid && validate.errors) {
-        logger.warn(`Validation errors for prompt ${metadata.id}:`);
-        validate.errors.forEach(err => {
-          logger.warn(`- ${err.instancePath}: ${err.message}`);
-        });
-      }
-      
-      return !!isValid;
-    } catch (error) {
-      logger.error(`Schema validation error for ${metadata.id}: ${error instanceof Error ? error.message : String(error)}`);
-      return false;
-    }
-  }
-
-  /**
-   * Get a prompt template by ID
-   */
-  public getPrompt(id: string): PromptTemplate | null {
-    if (!this.initialized) {
-      throw new Error('Prompt loader not initialized. Call initialize() first.');
+    // Find all markdown files
+    const promptFiles = await globAsync('**/*.md', { cwd: promptDir });
+    
+    // Process each prompt file
+    for (const file of promptFiles) {
+      const filePath = path.join(promptDir, file);
+      await loadPromptFile(filePath, file);
     }
     
-    const prompt = this.prompts.get(id);
-    if (!prompt) {
-      logger.warn(`Prompt not found: ${id}`);
-      return null;
-    }
-    
-    return prompt;
-  }
-
-  /**
-   * Get all prompts matching a tag
-   */
-  public getPromptsByTag(tag: string): PromptTemplate[] {
-    if (!this.initialized) {
-      throw new Error('Prompt loader not initialized. Call initialize() first.');
-    }
-    
-    return Array.from(this.prompts.values())
-      .filter(prompt => prompt.metadata.tags.some(t => t === tag || t.startsWith(`${tag}:`)));
-  }
-
-  /**
-   * Get all prompts for a specific turn
-   */
-  public getPromptsByTurn(turn: number): PromptTemplate[] {
-    if (!this.initialized) {
-      throw new Error('Prompt loader not initialized. Call initialize() first.');
-    }
-    
-    return Array.from(this.prompts.values())
-      .filter(prompt => 
-        prompt.metadata.max_turn === turn || 
-        prompt.metadata.tags.some(t => t === `turn:${turn}`)
-      );
-  }
-
-  /**
-   * Get all active prompts
-   */
-  public getActivePrompts(): PromptTemplate[] {
-    if (!this.initialized) {
-      throw new Error('Prompt loader not initialized. Call initialize() first.');
-    }
-    
-    return Array.from(this.prompts.values())
-      .filter(prompt => prompt.metadata.active !== false);
-  }
-
-  /**
-   * List all available prompts (for debugging)
-   */
-  public listPrompts(): PromptMetadata[] {
-    if (!this.initialized) {
-      throw new Error('Prompt loader not initialized. Call initialize() first.');
-    }
-    
-    return Array.from(this.prompts.values()).map(p => p.metadata);
-  }
-
-  /**
-   * Debug function to list all prompts
-   */
-  public static debugList(): void {
-    const loader = PromptLoader.getInstance();
-    loader.initialize().then(() => {
-      console.log('Available prompts:');
-      const prompts = loader.listPrompts();
-      prompts.forEach(p => {
-        console.log(`- ${p.id} (${p.filepath})`);
-        console.log(`  Description: ${p.description}`);
-        console.log(`  Tags: ${p.tags.join(', ')}`);
-        if (p.max_turn) console.log(`  Max Turn: ${p.max_turn}`);
-        if (p.author) console.log(`  Author: ${p.author}`);
-        console.log(`  Active: ${p.active !== false}`);
-        console.log('');
-      });
-    }).catch(err => {
-      console.error('Error listing prompts:', err);
-    });
-  }
-
-  /**
-   * Refresh the prompt cache (useful for development)
-   */
-  public async refresh(): Promise<void> {
-    logger.info('Refreshing prompt cache');
-    this.prompts.clear();
-    this.initialized = false;
-    await this.initialize();
+    logger.info(`Loaded ${promptCache.size} prompts from ${promptDir}`);
+  } catch (error) {
+    logger.error('Failed to load prompts', { error });
+    throw new Error(`Failed to load prompts: ${error.message}`);
   }
 }
 
-// Export singleton instance and convenience methods
-export const promptLoader = PromptLoader.getInstance();
-export const getPrompt = (id: string): PromptTemplate | null => promptLoader.getPrompt(id);
-export const getPromptsByTag = (tag: string): PromptTemplate[] => promptLoader.getPromptsByTag(tag);
-export const getPromptsByTurn = (turn: number): PromptTemplate[] => promptLoader.getPromptsByTurn(turn);
-export const getActivePrompts = (): PromptTemplate[] => promptLoader.getActivePrompts();
-export const debugList = PromptLoader.debugList;
+/**
+ * Load and parse a single prompt file
+ */
+async function loadPromptFile(filePath: string, relativePath: string): Promise<void> {
+  try {
+    // Read file content
+    const fileContent = await readFile(filePath, 'utf8');
+    
+    // Parse front matter
+    const { data, content } = matter(fileContent);
+    
+    // Extract metadata from front matter and file path
+    const id = data.id || path.basename(filePath, '.md');
+    
+    // Create metadata object
+    const metadata: PromptMetadata = {
+      id,
+      description: data.description || extractDescriptionFromContent(content),
+      tags: data.tags || extractTagsFromContent(content) || [],
+      filepath: relativePath,
+      ...data
+    };
+    
+    // Validate metadata against schema
+    const validate = schemaValidator.getSchema('prompt-schema');
+    if (!validate) {
+      throw new Error('Schema validator not initialized');
+    }
+    
+    const isValid = validate(metadata);
+    if (!isValid) {
+      const errors = schemaValidator.errorsText(validate.errors);
+      logger.warn(`Invalid prompt metadata in ${filePath}: ${errors}`);
+      
+      // Continue loading but mark as inactive if validation fails
+      metadata.active = false;
+    }
+    
+    // Store in cache
+    promptCache.set(id, {
+      metadata,
+      content,
+      template: content
+    });
+  } catch (error) {
+    logger.error(`Failed to load prompt file: ${filePath}`, { error });
+    // Continue loading other prompts
+  }
+}
+
+/**
+ * Extract description from content if not provided in front matter
+ */
+function extractDescriptionFromContent(content: string): string {
+  // Look for a purpose section in the content
+  const purposeMatch = content.match(/\*\*Purpose\*\*\s*\n(.*?)(\n\n|\n---)/s);
+  if (purposeMatch && purposeMatch[1]) {
+    return purposeMatch[1].trim();
+  }
+  
+  // Fallback to first paragraph
+  const firstParagraph = content.split('\n\n')[0];
+  return firstParagraph.replace(/^#.*\n/, '').trim();
+}
+
+/**
+ * Extract tags from content if not provided in front matter
+ */
+function extractTagsFromContent(content: string): string[] | null {
+  // Look for a tags section at the end of the content
+  const tagsMatch = content.match(/###\s*Tags\s*\n(.*?)(\n\n|\n---|\s*$)/s);
+  if (tagsMatch && tagsMatch[1]) {
+    return tagsMatch[1]
+      .split(/\s+/)
+      .map(tag => tag.trim())
+      .filter(tag => tag.startsWith('`') && tag.endsWith('`'))
+      .map(tag => tag.slice(1, -1));
+  }
+  return null;
+}
+
+/**
+ * Get a prompt by ID
+ */
+export async function getPrompt(id: string): Promise<Prompt | null> {
+  if (!isInitialized) {
+    await initialize();
+  }
+  
+  const prompt = promptCache.get(id);
+  if (!prompt || prompt.metadata.active === false) {
+    return null;
+  }
+  
+  return prompt;
+}
+
+/**
+ * Get all prompts matching specific tags
+ */
+export async function getPromptsByTags(tags: string[]): Promise<Prompt[]> {
+  if (!isInitialized) {
+    await initialize();
+  }
+  
+  const prompts: Prompt[] = [];
+  
+  for (const prompt of promptCache.values()) {
+    if (prompt.metadata.active === false) continue;
+    
+    const hasAllTags = tags.every(tag => 
+      prompt.metadata.tags.some(promptTag => 
+        promptTag === tag || promptTag.startsWith(`${tag}:`)
+      )
+    );
+    
+    if (hasAllTags) {
+      prompts.push(prompt);
+    }
+  }
+  
+  return prompts;
+}
+
+/**
+ * Get a prompt for a specific conversation turn
+ */
+export async function getPromptForTurn(turn: number): Promise<Prompt | null> {
+  if (!isInitialized) {
+    await initialize();
+  }
+  
+  // Find prompts with turn:N tag where N matches the requested turn
+  const turnTag = `turn:${turn}`;
+  
+  for (const prompt of promptCache.values()) {
+    if (prompt.metadata.active === false) continue;
+    
+    if (prompt.metadata.tags.includes(turnTag)) {
+      return prompt;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Reload all prompts (useful for testing or after file changes)
+ */
+export async function reloadPrompts(): Promise<void> {
+  promptCache.clear();
+  isInitialized = false;
+  await initialize();
+}
+
+/**
+ * Debug function to list all loaded prompts
+ */
+export function debugList(): void {
+  console.log(`Loaded prompts (${promptCache.size}):`);
+  
+  for (const [id, prompt] of promptCache.entries()) {
+    console.log(`- ${id} (${prompt.metadata.filepath})`);
+    console.log(`  Tags: ${prompt.metadata.tags.join(', ')}`);
+    console.log(`  Active: ${prompt.metadata.active !== false}`);
+    console.log('');
+  }
+}
+
+/**
+ * Get all prompt IDs (for testing and debugging)
+ */
+export async function getAllPromptIds(): Promise<string[]> {
+  if (!isInitialized) {
+    await initialize();
+  }
+  
+  return Array.from(promptCache.keys());
+}
+
+// Auto-initialize when imported
+initialize().catch(err => {
+  logger.error('Failed to auto-initialize prompt loader', { error: err });
+});
+
+export default {
+  getPrompt,
+  getPromptsByTags,
+  getPromptForTurn,
+  reloadPrompts,
+  debugList,
+  getAllPromptIds
+};

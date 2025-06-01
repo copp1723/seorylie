@@ -2,8 +2,7 @@ import db from "../db";
 import {
   eq,
   and,
-  sql,
-  count
+  sql
 } from 'drizzle-orm';
 import { users, dealerships } from '../../shared/schema';
 import { conversations, messages } from '../../shared/schema';
@@ -69,7 +68,7 @@ export async function getRecentConversations(
       .limit(limit)
       .offset(offset),
     db
-      .select({ total: count(conversations.id).as('total') })
+      .select({ total: sql`COUNT(${conversations.id})`.as('total') })
       .from(conversations)
       .where(whereClause)
   ]);
@@ -138,7 +137,7 @@ export async function getConversationCountsByStatus(
   const results = await db
     .select({
       status: conversations.status,
-      count: count(conversations.id).as('count')
+      count: sql`COUNT(${conversations.id})`.as('count')
     })
     .from(conversations)
     .where(eq(conversations.dealershipId, dealershipId))

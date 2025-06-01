@@ -4,7 +4,7 @@ import db from '../db';
 import { sql } from 'drizzle-orm';
 import { twilioSMSService, SMSMessage } from './twilio-sms-service';
 import { messageDeliveryService } from './message-delivery-service';
-import { AdfLead } from '../shared/adf-schema';
+import { AdfLead } from '../../shared/adf-schema';
 import { monitoringService } from './monitoring.ts';
 
 // Constants
@@ -550,7 +550,22 @@ export class AdfSmsResponseSender extends EventEmitter {
     // Run every 15 minutes
     setInterval(async () => {
       try {
+        // Check if table exists first
+        const tableExists = await db.execute(sql`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'adf_sms_responses'
+          );
+        `);
+        
+        if (!tableExists.rows[0]?.exists) {
+          logger.warn('adf_sms_responses table does not exist, skipping undelivered check');
+          return;
+        }
+
         // Find undelivered messages older than retry delay
+        const retryDelayInterval = `${Math.floor(RETRY_DELAY_MS / 1000)} seconds`;
         const undeliveredMessages = await db.execute(sql`
           SELECT 
             lead_id, message_sid, dealership_id, phone_number, message, retry_count
@@ -558,26 +573,27 @@ export class AdfSmsResponseSender extends EventEmitter {
           WHERE 
             status IN ('failed', 'undelivered')
             AND retry_count < ${MAX_RETRIES}
-            AND updated_at < NOW() - INTERVAL '${RETRY_DELAY_MS / 1000} seconds'
+            AND updated_at < NOW() - INTERVAL ${retryDelayInterval}
             AND created_at > NOW() - INTERVAL '24 hours'
           ORDER BY updated_at ASC
           LIMIT 50
         `);
         
-        if (undeliveredMessages.length > 0) {
+        if (undeliveredMessages.rows && undeliveredMessages.rows.length > 0) {
           logger.info('Found undelivered messages to retry', { 
-            count: undeliveredMessages.length 
+            count: undeliveredMessages.rows.length 
           });
           
           // Schedule retries
-          for (const msg of undeliveredMessages) {
+          for (const msg of undeliveredMessages.rows) {
             this.scheduleRetry(msg.lead_id);
           }
         }
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         logger.error('Failed to check for undelivered messages', { 
-          error: err.message 
+          error: err.message,
+          stack: err.stack 
         });
       }
     }, 15 * 60 * 1000); // 15 minutes

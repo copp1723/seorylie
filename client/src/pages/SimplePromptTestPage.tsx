@@ -1,5 +1,5 @@
 import React from "react";
-import SimplePromptTest from "@/components/SimplePromptTest";
+import SimplePromptTest from "@/components/simple-prompt-test";
 
 export default function SimplePromptTestPage() {
   return (

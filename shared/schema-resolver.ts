@@ -22,6 +22,9 @@ export {
   insertPromptVariantSchema,
   insertExperimentVariantSchema,
   insertPromptMetricSchema,
+} from './schema';
+
+export type {
   PromptExperiment,
   InsertPromptExperiment,
   PromptVariant,
@@ -32,14 +35,14 @@ export {
   InsertPromptMetric
 } from './schema';
 
-// Re-export from enhanced-schema.ts (enhanced schema that extends base schema)
+// Re-export from schema.ts (base schema)
 export {
   customers,
   customersRelations,
   insertCustomerSchema,
   Customer,
   InsertCustomer
-} from './enhanced-schema';
+} from './schema';
 
 // Re-export from lead-management-schema.ts
 export {

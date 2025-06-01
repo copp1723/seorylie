@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ADF Prompt Template Metadata",
+  "title": "ADF Prompt Metadata Schema",
   "description": "Schema for validating ADF prompt template metadata",
   "type": "object",
-  "required": ["id", "description", "tags", "filepath"],
+  "required": ["id", "description", "tags"],
   "properties": {
     "id": {
       "type": "string",
@@ -14,7 +14,7 @@
     },
     "description": {
       "type": "string",
-      "description": "Brief description of the prompt's purpose",
+      "description": "Brief description of the prompt's purpose and usage",
       "minLength": 10,
       "maxLength": 500
     },
@@ -23,36 +23,36 @@
       "description": "Categorization tags for filtering and organization",
       "items": {
         "type": "string",
-        "pattern": "^[a-z0-9-_:]+$"
+        "pattern": "^[a-z0-9:_-]+$"
       },
       "minItems": 1,
       "uniqueItems": true
     },
     "max_turn": {
       "type": "integer",
-      "description": "Maximum conversation turn this prompt is designed for (optional)",
+      "description": "Maximum conversation turn this prompt should be used for (if applicable)",
       "minimum": 1,
       "maximum": 10
     },
     "filepath": {
       "type": "string",
       "description": "Relative path to the prompt file from the prompts/adf directory",
-      "pattern": "^[a-zA-Z0-9-_/]+\\.md$"
+      "pattern": "^(v[0-9]+/)?[a-zA-Z0-9-_/]+\\.md$"
     },
     "version": {
       "type": "string",
-      "description": "Version of the prompt template",
-      "pattern": "^v\\d+(\\.\\d+)?(\\.\\d+)?$",
+      "description": "Version identifier for the prompt template",
+      "pattern": "^v[0-9]+(\\.[0-9]+){0,2}$",
       "default": "v1"
     },
     "created_at": {
       "type": "string",
-      "description": "ISO timestamp when the prompt was created",
+      "description": "ISO timestamp of when the prompt was created",
       "format": "date-time"
     },
     "updated_at": {
       "type": "string",
-      "description": "ISO timestamp when the prompt was last updated",
+      "description": "ISO timestamp of when the prompt was last updated",
       "format": "date-time"
     },
     "author": {
