@@ -2146,6 +2146,10 @@ export type Session = z.infer<typeof sessionSchema>;
 export type ReportSchedule = z.infer<typeof reportScheduleSchema>;
 export type UserRole = z.infer<typeof userRoleSchema>;
 export type DealershipVariable = z.infer<typeof dealershipVariableSchema>;
+
+// Export dealership mode enum
+export const dealershipModes = ['rylie_ai', 'human_only', 'hybrid'] as const;
+export type DealershipMode = typeof dealershipModes[number];
 export type PromptExperiment = z.infer<typeof promptExperimentSchema>;
 export type PromptVariant = z.infer<typeof promptVariantSchema>;
 export type ExperimentVariant = z.infer<typeof experimentVariantSchema>;

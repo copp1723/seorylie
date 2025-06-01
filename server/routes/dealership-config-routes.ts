@@ -2,7 +2,7 @@ import express from 'express';
 import { dealershipConfigService } from '../services/dealership-config-service';
 import logger from '../utils/logger';
 import { z } from 'zod';
-import { dealershipModes } from '../../shared/schema';
+import { dealershipModes } from '../../shared/index';
 
 const router = express.Router();
 

@@ -7,7 +7,7 @@
  * Based on migrations:
  * - 0011_adf_sms_responses_table.sql
  * - 0014_adf_conversation_integration.sql
- * - References from schema-resolver.ts
+ * - References from shared/index.ts
  */
 
 import { pgTable, serial, text, varchar, timestamp, boolean, integer, json, decimal, index, unique } from "drizzle-orm/pg-core";

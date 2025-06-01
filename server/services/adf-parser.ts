@@ -1,7 +1,7 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { createHash } from 'crypto';
 import logger from '../utils/logger';
-import type { AdfXmlStructure, InsertAdfLead } from '@shared/schema-resolver';
+import type { AdfXmlStructure, InsertAdfLead } from '@shared/index';
 
 // ADF XML Parsing Configuration
 const XML_PARSER_OPTIONS = {

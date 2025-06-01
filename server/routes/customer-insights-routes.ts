@@ -4,7 +4,7 @@
 import express from 'express';
 import { db } from '../db';
 import { eq } from 'drizzle-orm';
-import { customerProfiles } from '../../shared/schema-extensions';
+import { customerProfiles } from '../../shared/index';
 import { 
   getOrCreateCustomerProfile, 
   recordCustomerInteraction, 

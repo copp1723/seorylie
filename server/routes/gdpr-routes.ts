@@ -23,7 +23,7 @@ import { rateLimit } from 'express-rate-limit';
 import { body, param, validationResult } from 'express-validator';
 import { eq, and } from 'drizzle-orm';
 import db from '../db';
-import { adfLeads } from '../../shared/adf-schema';
+import { adfLeads } from '../../shared/index';
 import { maskPII, decrypt, encrypt } from '../utils/crypto';
 import logger from '../utils/logger';
 import { authenticateJWT } from '../middleware/auth';

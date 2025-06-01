@@ -49,22 +49,24 @@ export default function AuthPage() {
     setRegisterData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLoginSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    loginMutation.mutate(loginData, {
-      onSuccess: () => {
-        navigate("/");
-      },
-    });
+    try {
+      await loginMutation.mutate(loginData);
+      navigate("/");
+    } catch (error) {
+      // Error handling is already done in the useAuth hook
+    }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    registerMutation.mutate(registerData, {
-      onSuccess: () => {
-        navigate("/");
-      },
-    });
+    try {
+      await registerMutation.mutate(registerData);
+      navigate("/");
+    } catch (error) {
+      // Error handling is already done in the useAuth hook
+    }
   };
 
   return (

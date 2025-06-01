@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import logger from '../utils/logger';
 import db from '../db';
 import { eq } from 'drizzle-orm';
-import { adfLeads } from '@shared/schema-resolver';
+import { adfLeads } from '@shared/index';
 import { openai } from './openai';
 import { sendAdfResponseEmail } from './email-service';
 

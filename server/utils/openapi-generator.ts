@@ -22,7 +22,7 @@ import {
   apiMessageSchema,
   apiCustomerSchema,
   vehicleInterestSchema
-} from '../../shared/api-schemas';
+} from '../../shared/index';
 
 // Convert Zod schemas to JSON Schema for OpenAPI
 const convertToJsonSchema = (zodSchema: any, title?: string) => {

@@ -9,7 +9,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { adsApiService, AdsApiError, AuthenticationError, SearchCampaignParams } from '../services/ads-api-service';
 import { db } from '../db';
-import { gadsAccounts, gadsCampaigns } from '../../shared/schema';
+import { gadsAccounts, gadsCampaigns } from '../../shared/index';
 import { eq, and, isNull } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 import { authenticate } from '../middleware/authentication';

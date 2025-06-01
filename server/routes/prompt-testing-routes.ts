@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from "../db";
-import { personas } from '../../shared/schema';
+import { personas } from '../../shared/index';
 import { eq } from 'drizzle-orm';
 import { generateAIResponse, generateResponseAnalysis, generateHandoverDossier } from '../services/openai';
 import { enhancedConversationService } from '../services/enhanced-conversation-service';

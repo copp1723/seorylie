@@ -1,6 +1,9 @@
 // Primary Database Schemas - Export everything from schema.ts first
 export * from './schema';
 
+// Explicitly export key types that might be missed by wildcard
+export type { DealershipMode } from './schema';
+
 // Lead Management Schemas - Selective exports to avoid conflicts with schema.ts
 export {
   // Types
@@ -68,5 +71,3 @@ export * from './api-schemas';
 
 // Schema Extensions and Utilities
 export * from './schema-extensions';
-// Note: schema-resolver.ts also exports from schema.ts, causing conflicts, so we skip it
-// export * from './schema-resolver';

@@ -1,6 +1,6 @@
 import express from 'express';
 import { db } from '../db';
-import { tools, agentTools } from '../../shared/schema';
+import { tools, agentTools } from '../../shared/index';
 import { z } from 'zod';
 import { auth } from '../middleware/auth';
 import { logger } from '../utils/logger';

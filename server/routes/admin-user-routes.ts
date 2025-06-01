@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import db from '../db';
 import logger from '../utils/logger';
-import { users, dealerships, magicLinkInvitations } from '../../shared/enhanced-schema';
+import { users, dealerships, magicLinkInvitations } from '../../shared/index';
 import { eq, and, ne, or, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';

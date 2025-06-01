@@ -123,15 +123,20 @@ export const authApi = {
   },
 };
 
-// Temporarily commented out React Query for build issues
-// import { QueryClient } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 
-// Create a dummy QueryClient replacement for build compatibility
-export const queryClient = {
-  // Placeholder methods
-  invalidateQueries: () => {},
-  setQueryData: () => {},
-  getQueryData: () => null,
-};
+// Create a real QueryClient for React Query v5
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (was cacheTime in v4)
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 export default queryClient;

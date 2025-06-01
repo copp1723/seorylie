@@ -4,7 +4,7 @@ config();
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "../shared/schema";
+import * as schema from "../shared/index";
 import logger from "./utils/logger";
 
 // Database connection configuration
@@ -135,4 +135,4 @@ export default db;
 export { client };
 
 // Export all schema tables and types
-export * from "../shared/schema";
+export * from "../shared/index";

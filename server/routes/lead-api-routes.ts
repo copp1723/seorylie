@@ -16,7 +16,7 @@ import {
   leadListResponseSchema,
   leadDetailResponseSchema,
   errorResponseSchema
-} from '../../shared/api-schemas';
+} from '../../shared/index';
 import { 
   validateBody, 
   validateQuery, 

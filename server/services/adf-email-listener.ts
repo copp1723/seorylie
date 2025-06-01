@@ -4,7 +4,7 @@ import { simpleParser, ParsedMail, Attachment } from 'mailparser';
 import logger from '../utils/logger';
 import db from '../db';
 import { eq } from 'drizzle-orm';
-import { dealerships } from '@shared/schema-resolver';
+import { dealerships } from '@shared/index';
 import { monitoring } from './monitoring';
 import { addEmailJob } from './queue';
 

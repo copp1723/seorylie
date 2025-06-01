@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { users, dealerships } from '../../shared/schema';
+import { users, dealerships } from '../../shared/index';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import logger from './logger';

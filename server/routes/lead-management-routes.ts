@@ -13,8 +13,8 @@ import {
 import { logAuditEvent } from '../services/user-management';
 import { db } from '../db';
 import { eq } from 'drizzle-orm';
-import { conversations } from '../../shared/lead-management-schema';
-import { followUps } from '../../shared/schema-extensions';
+import { lmConversations as conversations } from '../../shared/index';
+import { followUps } from '../../shared/index';
 
 const router = express.Router();
 

@@ -2,7 +2,7 @@
 import rateLimit from 'express-rate-limit';
 import { Request } from 'express';
 import { db } from "../db";
-import { dealerships } from '../../shared/schema';
+import { dealerships } from '../../shared/index';
 import { eq } from 'drizzle-orm';
 
 // Rate limit tiers based on dealership size/plan

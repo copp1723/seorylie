@@ -8,7 +8,7 @@ import {
   type InsertAdfEmailQueue,
   type InsertAdfProcessingLog,
   type AdfProcessingStatus
-} from '@shared/schema-resolver';
+} from '@shared/index';
 import { AdfParser } from './adf-parser';
 import logger from '../utils/logger';
 
@@ -263,7 +263,7 @@ export class AdfLeadProcessor {
   private async mapToDealership(leadData: Partial<InsertAdfLead>): Promise<number | null> {
     try {
       // Import dealerships table
-      const { dealerships } = await import('@shared/schema-resolver');
+      const { dealerships } = await import('@shared/index');
 
       // If vendor name is provided, try to find matching dealership
       if (leadData.vendorName) {

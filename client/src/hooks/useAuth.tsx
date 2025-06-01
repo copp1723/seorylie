@@ -268,10 +268,33 @@ export function useAuth() {
     refetchUser,
     loginWithMagicLink: sendMagicLink,
     // Legacy mutation-style objects for backward compatibility
-    loginMutation: { mutate: login, mutateAsync: login },
-    logoutMutation: { mutate: logout },
-    registerMutation: { mutate: register, mutateAsync: register },
-    magicLinkMutation: { mutate: sendMagicLink, mutateAsync: sendMagicLink },
+    loginMutation: { 
+      mutate: login, 
+      mutateAsync: login,
+      isPending: isLoading,
+      isError: !!error,
+      error: error
+    },
+    logoutMutation: { 
+      mutate: logout,
+      isPending: isLoading,
+      isError: !!error,
+      error: error
+    },
+    registerMutation: { 
+      mutate: register, 
+      mutateAsync: register,
+      isPending: isLoading,
+      isError: !!error,
+      error: error
+    },
+    magicLinkMutation: { 
+      mutate: sendMagicLink, 
+      mutateAsync: sendMagicLink,
+      isPending: isLoading,
+      isError: !!error,
+      error: error
+    },
   };
 }
 

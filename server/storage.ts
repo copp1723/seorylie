@@ -4,7 +4,7 @@
  */
 
 import { db } from './db';
-import { dealerships, vehicles } from '../shared/schema';
+import { dealerships, vehicles } from '../shared/index';
 import { eq } from 'drizzle-orm';
 
 export const storage = {

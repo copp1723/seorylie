@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { db } from '../db';
 import { eq, or } from 'drizzle-orm';
-import { users } from '../../shared/schema';
+import { users } from '../../shared/index';
 import { logger } from '../logger';
 
 const router = Router();

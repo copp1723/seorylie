@@ -697,8 +697,8 @@ const BrandingPage: React.FC = () => {
                     )}
 
                     <div className="flex justify-end gap-2">
-                      <Button type="submit" disabled={updateBranding.isLoading}>
-                        {updateBranding.isLoading ? (
+                      <Button type="submit" disabled={updateBranding.isPending}>
+                        {updateBranding.isPending ? (
                           <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                             Saving...

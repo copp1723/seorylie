@@ -5,7 +5,7 @@ import { AdfParser } from '../services/adf-parser';
 import logger from '../utils/logger';
 import db from '../db';
 import { eq, desc, and, gte, or, like } from 'drizzle-orm';
-import { adfLeads, adfEmailQueue, adfProcessingLogs } from '../../shared/adf-schema';
+import { adfLeads, adfEmailQueue, adfProcessingLogs } from '../../shared/index';
 import { validateBodySize, validateContentType } from '../middleware/validation';
 import rateLimit from 'express-rate-limit';
 import { prometheusMetricsService } from '../services/prometheus-metrics';

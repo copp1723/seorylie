@@ -1,5 +1,5 @@
 // Express request augmentation for JWT authentication
-import { User } from "@shared/schema";
+import { User } from "@shared/index";
 
 export interface JWTPayload {
   userId: string;
