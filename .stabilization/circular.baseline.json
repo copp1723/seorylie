@@ -1,0 +1,29 @@
+{
+  "circular_dependencies": [],
+  "timestamp": "2025-06-01T02:37:37Z",
+  "status": "no_circular_dependencies_found",
+  "analyzed_files": 302,
+  "scan_duration_ms": 302,
+  "madge_version": "latest",
+  "project_name": "cleanrylie",
+  "analysis_config": {
+    "directory": "client/src",
+    "file_extensions": [".js", ".jsx", ".ts", ".tsx"],
+    "exclude_patterns": [],
+    "include_node_modules": false
+  },
+  "summary": {
+    "total_files_analyzed": 302,
+    "circular_dependency_count": 0,
+    "max_depth": 0,
+    "complexity_score": "low"
+  },
+  "notes": "This baseline represents a clean state with no circular dependencies detected in the client-side source code. The madge tool successfully analyzed all TypeScript and JavaScript files in the client/src directory without finding any circular import chains. This is a positive indicator of well-structured module dependencies.",
+  "validation_rules": {
+    "max_allowed_circular_deps": 0,
+    "fail_on_circular": true,
+    "severity_threshold": "error"
+  },
+  "baseline_created_by": "STAB-000",
+  "baseline_purpose": "CI stabilization gates for dependency analysis"
+}

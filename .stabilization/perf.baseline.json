@@ -1,0 +1,44 @@
+{
+  "lighthouse": {
+    "status": "not_configured",
+    "reason": "lighthouse:ci script not found in package.json",
+    "alternative_metrics": "using bundle size analysis"
+  },
+  "bundle_size": {
+    "current_size_bytes": 1945000,
+    "max_allowed_bytes": 1945000,
+    "size_human_readable": "1.9MB",
+    "compression": "gzip",
+    "status": "baseline_established"
+  },
+  "performance_metrics": {
+    "first_contentful_paint": "not_measured",
+    "largest_contentful_paint": "not_measured",
+    "time_to_interactive": "not_measured",
+    "cumulative_layout_shift": "not_measured",
+    "speed_index": "not_measured"
+  },
+  "build_analysis": {
+    "framework": "vite",
+    "typescript_compilation": "enabled",
+    "code_splitting": "unknown",
+    "tree_shaking": "enabled",
+    "minification": "enabled"
+  },
+  "timestamp": "2025-06-01T02:37:37Z",
+  "baseline_version": "1.0.0",
+  "notes": "This baseline establishes the maximum acceptable bundle size for the application. Future builds should not exceed this threshold without explicit approval. Consider implementing lighthouse CI for more comprehensive performance monitoring.",
+  "validation_rules": {
+    "max_bundle_size_bytes": 1945000,
+    "fail_on_size_increase": true,
+    "tolerance_percentage": 5
+  },
+  "recommendations": [
+    "Implement lighthouse CI for performance monitoring",
+    "Add bundle analyzer to track size changes",
+    "Consider code splitting for large components",
+    "Monitor third-party dependency sizes"
+  ],
+  "baseline_created_by": "STAB-000",
+  "baseline_purpose": "CI stabilization gates for performance monitoring"
+}

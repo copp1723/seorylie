@@ -1,0 +1,4093 @@
+[
+  {
+    "timestamp": "2025-06-01T04:27:02.312Z",
+    "duration": 2613,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 57%",
+        "details": {
+          "memoryUsage": 57
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "warning",
+        "duration": 1,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 419.1848620439948,
+          "memoryUsage": 57,
+          "cpuUsage": 43,
+          "timestamp": 1748752019701
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 8,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.10882025,
+          "memoryUsage": {
+            "rss": 87474176,
+            "heapTotal": 17907712,
+            "heapUsed": 9133440,
+            "external": 2320918,
+            "arrayBuffers": 17166
+          },
+          "pid": 35869
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 6,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 471,
+        "message": "Healthy response in 471ms",
+        "details": {
+          "responseTime": 471,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 192,
+        "message": "Healthy response in 192ms",
+        "details": {
+          "responseTime": 192,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 28,
+        "message": "Healthy response in 28ms",
+        "details": {
+          "responseTime": 28,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 666,
+        "message": "Healthy response in 666ms",
+        "details": {
+          "responseTime": 666,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 126,
+        "message": "Healthy response in 126ms",
+        "details": {
+          "responseTime": 126,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 2303,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "pass",
+        "duration": 0,
+        "message": "1 circular dependencies (within threshold)",
+        "details": {
+          "circularCount": 1
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 308,
+        "message": "388 TypeScript files tracked",
+        "details": {
+          "fileCount": 388
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 27,
+      "passed": 12,
+      "failed": 1,
+      "warnings": 14
+    },
+    "violations": [
+      "Fake violation for testing",
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "TypeScript validation failed: Command failed: npm run check\n"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 50839552,
+        "heapTotal": 18300928,
+        "heapUsed": 11278800,
+        "external": 2703630,
+        "arrayBuffers": 399878
+      },
+      "uptime": 2.713666375
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:26:59.422Z",
+    "duration": 2735,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 56%",
+        "details": {
+          "memoryUsage": 56
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "pass",
+        "duration": 1,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 586.7455429503427,
+          "memoryUsage": 56,
+          "cpuUsage": 52,
+          "timestamp": 1748752016689
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Status",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "1 pending migration(s)",
+        "details": {
+          "pendingCount": 1
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 7,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.105591333,
+          "memoryUsage": {
+            "rss": 88883200,
+            "heapTotal": 16859136,
+            "heapUsed": 10968304,
+            "external": 2355872,
+            "arrayBuffers": 38664
+          },
+          "pid": 35810
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 6,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 288,
+        "message": "Healthy response in 288ms",
+        "details": {
+          "responseTime": 288,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "fail",
+        "duration": 112,
+        "message": "Request failed: Network timeout",
+        "details": {
+          "error": "Network timeout"
+        },
+        "severity": "critical"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 28,
+        "message": "Healthy response in 28ms",
+        "details": {
+          "responseTime": 28,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 426,
+        "message": "Healthy response in 426ms",
+        "details": {
+          "responseTime": 426,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "fail",
+        "duration": 990,
+        "message": "Request failed: Network timeout",
+        "details": {
+          "error": "Network timeout"
+        },
+        "severity": "critical"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 2425,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "pass",
+        "duration": 0,
+        "message": "0 circular dependencies (within threshold)",
+        "details": {
+          "circularCount": 0
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 307,
+        "message": "388 TypeScript files tracked",
+        "details": {
+          "fileCount": 388
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 28,
+      "passed": 11,
+      "failed": 3,
+      "warnings": 14
+    },
+    "violations": [
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "1 pending database migrations detected",
+      "API endpoint /api/health failed: Network timeout",
+      "API endpoint /api/v1/conversations failed: Network timeout",
+      "TypeScript validation failed: Command failed: npm run check\n"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 62455808,
+        "heapTotal": 18300928,
+        "heapUsed": 11090056,
+        "external": 2692200,
+        "arrayBuffers": 388448
+      },
+      "uptime": 2.833216875
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:26:56.407Z",
+    "duration": 4355,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 55%",
+        "details": {
+          "memoryUsage": 55
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "pass",
+        "duration": 1,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 62.25240856296299,
+          "memoryUsage": 55,
+          "cpuUsage": 2,
+          "timestamp": 1748752012054
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "fail",
+        "duration": 4,
+        "message": "HTTP 503: Service Unavailable",
+        "details": {
+          "status": 503,
+          "statusText": "Service Unavailable"
+        },
+        "severity": "high"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Status",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "2 pending migration(s)",
+        "details": {
+          "pendingCount": 2
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 9,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.11237825,
+          "memoryUsage": {
+            "rss": 88309760,
+            "heapTotal": 16859136,
+            "heapUsed": 10930056,
+            "external": 2355872,
+            "arrayBuffers": 38664
+          },
+          "pid": 35716
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 8,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 575,
+        "message": "Healthy response in 575ms",
+        "details": {
+          "responseTime": 575,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 163,
+        "message": "Healthy response in 163ms",
+        "details": {
+          "responseTime": 163,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 141,
+        "message": "Healthy response in 141ms",
+        "details": {
+          "responseTime": 141,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 400,
+        "message": "Healthy response in 400ms",
+        "details": {
+          "responseTime": 400,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 3837,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "pass",
+        "duration": 0,
+        "message": "0 circular dependencies (within threshold)",
+        "details": {
+          "circularCount": 0
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 516,
+        "message": "388 TypeScript files tracked",
+        "details": {
+          "fileCount": 388
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 28,
+      "passed": 12,
+      "failed": 2,
+      "warnings": 14
+    },
+    "violations": [
+      "API endpoint /health returned HTTP 503",
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "2 pending database migrations detected",
+      "TypeScript validation failed: Command failed: npm run check\n"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 53821440,
+        "heapTotal": 18300928,
+        "heapUsed": 10944592,
+        "external": 2679749,
+        "arrayBuffers": 375997
+      },
+      "uptime": 4.458397875
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:26:12.408Z",
+    "duration": 3949,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 56%",
+        "details": {
+          "memoryUsage": 56
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "warning",
+        "duration": 1,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 406.354597973549,
+          "memoryUsage": 56,
+          "cpuUsage": 70,
+          "timestamp": 1748751968461
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Status",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "2 pending migration(s)",
+        "details": {
+          "pendingCount": 2
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 7,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.110827375,
+          "memoryUsage": {
+            "rss": 90472448,
+            "heapTotal": 17907712,
+            "heapUsed": 9131976,
+            "external": 2320918,
+            "arrayBuffers": 17166
+          },
+          "pid": 35401
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 6,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 709,
+        "message": "Healthy response in 709ms",
+        "details": {
+          "responseTime": 709,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 951,
+        "message": "Healthy response in 951ms",
+        "details": {
+          "responseTime": 951,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 660,
+        "message": "Healthy response in 660ms",
+        "details": {
+          "responseTime": 660,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 2462,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "pass",
+        "duration": 0,
+        "message": "0 circular dependencies (within threshold)",
+        "details": {
+          "circularCount": 0
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 316,
+        "message": "388 TypeScript files tracked",
+        "details": {
+          "fileCount": 388
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 880,
+        "message": "Healthy response in 880ms",
+        "details": {
+          "responseTime": 880,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 748,
+        "message": "Healthy response in 748ms",
+        "details": {
+          "responseTime": 748,
+          "status": 200
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 28,
+      "passed": 12,
+      "failed": 1,
+      "warnings": 15
+    },
+    "violations": [
+      "Fake violation for testing",
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "2 pending database migrations detected",
+      "TypeScript validation failed: Command failed: npm run check\n"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 50855936,
+        "heapTotal": 18300928,
+        "heapUsed": 11317072,
+        "external": 2703630,
+        "arrayBuffers": 399878
+      },
+      "uptime": 4.052331042
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:26:08.190Z",
+    "duration": 2785,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 56%",
+        "details": {
+          "memoryUsage": 56
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "pass",
+        "duration": 2,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 979.8189253231668,
+          "memoryUsage": 56,
+          "cpuUsage": 31,
+          "timestamp": 1748751965406
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 8,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.108787167,
+          "memoryUsage": {
+            "rss": 88997888,
+            "heapTotal": 16859136,
+            "heapUsed": 11029880,
+            "external": 2355872,
+            "arrayBuffers": 38664
+          },
+          "pid": 35354
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 6,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 336,
+        "message": "Healthy response in 336ms",
+        "details": {
+          "responseTime": 336,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 998,
+        "message": "Healthy response in 998ms",
+        "details": {
+          "responseTime": 998,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 547,
+        "message": "Healthy response in 547ms",
+        "details": {
+          "responseTime": 547,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 336,
+        "message": "Healthy response in 336ms",
+        "details": {
+          "responseTime": 336,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 152,
+        "message": "Healthy response in 152ms",
+        "details": {
+          "responseTime": 152,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 2472,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "pass",
+        "duration": 0,
+        "message": "3 circular dependencies (within threshold)",
+        "details": {
+          "circularCount": 3
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 312,
+        "message": "388 TypeScript files tracked",
+        "details": {
+          "fileCount": 388
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 27,
+      "passed": 13,
+      "failed": 1,
+      "warnings": 13
+    },
+    "violations": [
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "TypeScript validation failed: Command failed: npm run check\n"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 65044480,
+        "heapTotal": 18563072,
+        "heapUsed": 11211632,
+        "external": 2703342,
+        "arrayBuffers": 399590
+      },
+      "uptime": 2.886543959
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:26:05.136Z",
+    "duration": 3346,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 57%",
+        "details": {
+          "memoryUsage": 57
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "pass",
+        "duration": 2,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 337.7167024043541,
+          "memoryUsage": 57,
+          "cpuUsage": 27,
+          "timestamp": 1748751961791
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 7,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.107304,
+          "memoryUsage": {
+            "rss": 90128384,
+            "heapTotal": 18169856,
+            "heapUsed": 9143912,
+            "external": 2320918,
+            "arrayBuffers": 17166
+          },
+          "pid": 35273
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 7,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 103,
+        "message": "Healthy response in 103ms",
+        "details": {
+          "responseTime": 103,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 519,
+        "message": "Healthy response in 519ms",
+        "details": {
+          "responseTime": 519,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 605,
+        "message": "Healthy response in 605ms",
+        "details": {
+          "responseTime": 605,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 344,
+        "message": "Healthy response in 344ms",
+        "details": {
+          "responseTime": 344,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 653,
+        "message": "Healthy response in 653ms",
+        "details": {
+          "responseTime": 653,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 3041,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "pass",
+        "duration": 0,
+        "message": "5 circular dependencies (within threshold)",
+        "details": {
+          "circularCount": 5
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 304,
+        "message": "388 TypeScript files tracked",
+        "details": {
+          "fileCount": 388
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 27,
+      "passed": 13,
+      "failed": 1,
+      "warnings": 13
+    },
+    "violations": [
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "TypeScript validation failed: Command failed: npm run check\n"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 63406080,
+        "heapTotal": 18563072,
+        "heapUsed": 11331872,
+        "external": 2703630,
+        "arrayBuffers": 399878
+      },
+      "uptime": 3.444719208
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:25:39.939Z",
+    "duration": 2810,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 57%",
+        "details": {
+          "memoryUsage": 57
+        },
+        "severity": "low"
+      },
+      {
+        "name": "CPU Usage",
+        "category": "performance",
+        "status": "warning",
+        "duration": 0,
+        "message": "High CPU usage: 95%",
+        "details": {
+          "cpuUsage": 95,
+          "threshold": 75
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "warning",
+        "duration": 1,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 322.93569143698187,
+          "memoryUsage": 57,
+          "cpuUsage": 95,
+          "timestamp": 1748751937130
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Status",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "2 pending migration(s)",
+        "details": {
+          "pendingCount": 2
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 7,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.106087458,
+          "memoryUsage": {
+            "rss": 88440832,
+            "heapTotal": 17907712,
+            "heapUsed": 9116808,
+            "external": 2320918,
+            "arrayBuffers": 17166
+          },
+          "pid": 35108
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 6,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 291,
+        "message": "Healthy response in 291ms",
+        "details": {
+          "responseTime": 291,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 48,
+        "message": "Healthy response in 48ms",
+        "details": {
+          "responseTime": 48,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 650,
+        "message": "Healthy response in 650ms",
+        "details": {
+          "responseTime": 650,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 732,
+        "message": "Healthy response in 732ms",
+        "details": {
+          "responseTime": 732,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 699,
+        "message": "Healthy response in 699ms",
+        "details": {
+          "responseTime": 699,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 2500,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "pass",
+        "duration": 0,
+        "message": "0 circular dependencies (within threshold)",
+        "details": {
+          "circularCount": 0
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 307,
+        "message": "388 TypeScript files tracked",
+        "details": {
+          "fileCount": 388
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 29,
+      "passed": 12,
+      "failed": 1,
+      "warnings": 16
+    },
+    "violations": [
+      "Fake violation for testing",
+      "CPU usage above threshold: 95%",
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "2 pending database migrations detected",
+      "TypeScript validation failed: Command failed: npm run check\n"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 51003392,
+        "heapTotal": 18300928,
+        "heapUsed": 11332032,
+        "external": 2703630,
+        "arrayBuffers": 399878
+      },
+      "uptime": 2.908300958
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:25:36.857Z",
+    "duration": 2787,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 56%",
+        "details": {
+          "memoryUsage": 56
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "pass",
+        "duration": 2,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 830.8899651768145,
+          "memoryUsage": 56,
+          "cpuUsage": 29,
+          "timestamp": 1748751934071
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.107191083,
+          "memoryUsage": {
+            "rss": 88784896,
+            "heapTotal": 16596992,
+            "heapUsed": 10900808,
+            "external": 2355872,
+            "arrayBuffers": 38664
+          },
+          "pid": 35055
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 7,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 10,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 656,
+        "message": "Healthy response in 656ms",
+        "details": {
+          "responseTime": 656,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 192,
+        "message": "Healthy response in 192ms",
+        "details": {
+          "responseTime": 192,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "fail",
+        "duration": 31,
+        "message": "Request failed: Network timeout",
+        "details": {
+          "error": "Network timeout"
+        },
+        "severity": "critical"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 349,
+        "message": "Healthy response in 349ms",
+        "details": {
+          "responseTime": 349,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "fail",
+        "duration": 844,
+        "message": "Request failed: Network timeout",
+        "details": {
+          "error": "Network timeout"
+        },
+        "severity": "critical"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 2481,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "pass",
+        "duration": 0,
+        "message": "4 circular dependencies (within threshold)",
+        "details": {
+          "circularCount": 4
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 303,
+        "message": "388 TypeScript files tracked",
+        "details": {
+          "fileCount": 388
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 27,
+      "passed": 11,
+      "failed": 3,
+      "warnings": 13
+    },
+    "violations": [
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "API endpoint /api/health/detailed failed: Network timeout",
+      "API endpoint /api/v1/conversations failed: Network timeout",
+      "TypeScript validation failed: Command failed: npm run check\n"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 56016896,
+        "heapTotal": 18300928,
+        "heapUsed": 11142768,
+        "external": 2682658,
+        "arrayBuffers": 378906
+      },
+      "uptime": 2.884667
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:25:33.802Z",
+    "duration": 3665,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 56%",
+        "details": {
+          "memoryUsage": 56
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "pass",
+        "duration": 2,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 284.32265793818146,
+          "memoryUsage": 56,
+          "cpuUsage": 73,
+          "timestamp": 1748751930138
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Status",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "1 pending migration(s)",
+        "details": {
+          "pendingCount": 1
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 8,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.121939834,
+          "memoryUsage": {
+            "rss": 90816512,
+            "heapTotal": 17907712,
+            "heapUsed": 9090144,
+            "external": 2320918,
+            "arrayBuffers": 17166
+          },
+          "pid": 34981
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 7,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 628,
+        "message": "Healthy response in 628ms",
+        "details": {
+          "responseTime": 628,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 367,
+        "message": "Healthy response in 367ms",
+        "details": {
+          "responseTime": 367,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 966,
+        "message": "Healthy response in 966ms",
+        "details": {
+          "responseTime": 966,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 805,
+        "message": "Healthy response in 805ms",
+        "details": {
+          "responseTime": 805,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 3327,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "warning",
+        "duration": 0,
+        "message": "6 circular dependencies found",
+        "details": {
+          "circularCount": 6,
+          "threshold": 5
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 884,
+        "message": "Healthy response in 884ms",
+        "details": {
+          "responseTime": 884,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 336,
+        "message": "388 TypeScript files tracked",
+        "details": {
+          "fileCount": 388
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 28,
+      "passed": 12,
+      "failed": 1,
+      "warnings": 15
+    },
+    "violations": [
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "1 pending database migrations detected",
+      "TypeScript validation failed: Command failed: npm run check\n",
+      "6 circular dependencies detected (threshold: 5)"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 50954240,
+        "heapTotal": 18300928,
+        "heapUsed": 11393976,
+        "external": 2703630,
+        "arrayBuffers": 399878
+      },
+      "uptime": 3.778938542
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:24:52.831Z",
+    "duration": 3310,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 56%",
+        "details": {
+          "memoryUsage": 56
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "warning",
+        "duration": 2,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 150.26886587820565,
+          "memoryUsage": 56,
+          "cpuUsage": 73,
+          "timestamp": 1748751889522
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 4,
+        "message": "Healthy response in 4ms",
+        "details": {
+          "responseTime": 4,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 9,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.175121417,
+          "memoryUsage": {
+            "rss": 90210304,
+            "heapTotal": 17645568,
+            "heapUsed": 9113152,
+            "external": 2320918,
+            "arrayBuffers": 17166
+          },
+          "pid": 34729
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 7,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "fail",
+        "duration": 787,
+        "message": "HTTP 503: Service Unavailable",
+        "details": {
+          "status": 503,
+          "statusText": "Service Unavailable"
+        },
+        "severity": "high"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "fail",
+        "duration": 280,
+        "message": "HTTP 503: Service Unavailable",
+        "details": {
+          "status": 503,
+          "statusText": "Service Unavailable"
+        },
+        "severity": "high"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 752,
+        "message": "Healthy response in 752ms",
+        "details": {
+          "responseTime": 752,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 158,
+        "message": "Healthy response in 158ms",
+        "details": {
+          "responseTime": 158,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 2975,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "warning",
+        "duration": 0,
+        "message": "7 circular dependencies found",
+        "details": {
+          "circularCount": 7,
+          "threshold": 5
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 333,
+        "message": "387 TypeScript files tracked",
+        "details": {
+          "fileCount": 387
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 27,
+      "passed": 9,
+      "failed": 3,
+      "warnings": 15
+    },
+    "violations": [
+      "Fake violation for testing",
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "API endpoint /api/health returned HTTP 503",
+      "API endpoint /api/health/detailed returned HTTP 503",
+      "TypeScript validation failed: Command failed: npm run check\n",
+      "7 circular dependencies detected (threshold: 5)"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 55607296,
+        "heapTotal": 18038784,
+        "heapUsed": 11065400,
+        "external": 2703630,
+        "arrayBuffers": 399878
+      },
+      "uptime": 3.476381542
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:24:22.435Z",
+    "duration": 4112,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 55%",
+        "details": {
+          "memoryUsage": 55
+        },
+        "severity": "low"
+      },
+      {
+        "name": "CPU Usage",
+        "category": "performance",
+        "status": "warning",
+        "duration": 0,
+        "message": "High CPU usage: 83%",
+        "details": {
+          "cpuUsage": 83,
+          "threshold": 75
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "warning",
+        "duration": 1,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 583.9353739911628,
+          "memoryUsage": 55,
+          "cpuUsage": 83,
+          "timestamp": 1748751858324
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Status",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "1 pending migration(s)",
+        "details": {
+          "pendingCount": 1
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 10,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.136865417,
+          "memoryUsage": {
+            "rss": 90636288,
+            "heapTotal": 17645568,
+            "heapUsed": 9117080,
+            "external": 2320918,
+            "arrayBuffers": 17166
+          },
+          "pid": 34505
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "All required environment variables present",
+        "severity": "low"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 9,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 711,
+        "message": "Healthy response in 711ms",
+        "details": {
+          "responseTime": 711,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 186,
+        "message": "Healthy response in 186ms",
+        "details": {
+          "responseTime": 186,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 65,
+        "message": "Healthy response in 65ms",
+        "details": {
+          "responseTime": 65,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 510,
+        "message": "Healthy response in 510ms",
+        "details": {
+          "responseTime": 510,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "fail",
+        "duration": 779,
+        "message": "HTTP 500: Internal Server Error",
+        "details": {
+          "status": 500,
+          "statusText": "Internal Server Error"
+        },
+        "severity": "high"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 3151,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "pass",
+        "duration": 0,
+        "message": "1 circular dependencies (within threshold)",
+        "details": {
+          "circularCount": 1
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 958,
+        "message": "387 TypeScript files tracked",
+        "details": {
+          "fileCount": 387
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 29,
+      "passed": 11,
+      "failed": 2,
+      "warnings": 16
+    },
+    "violations": [
+      "CPU usage above threshold: 83%",
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "1 pending database migrations detected",
+      "API endpoint /api/v1/conversations returned HTTP 500",
+      "TypeScript validation failed: Command failed: npm run check\n"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 69730304,
+        "heapTotal": 18038784,
+        "heapUsed": 11338552,
+        "external": 2703630,
+        "arrayBuffers": 399878
+      },
+      "uptime": 4.238193958
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:23:48.017Z",
+    "duration": 4329,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 56%",
+        "details": {
+          "memoryUsage": 56
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "pass",
+        "duration": 2,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 902.0693175342283,
+          "memoryUsage": 56,
+          "cpuUsage": 71,
+          "timestamp": 1748751823689
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 9,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.115119042,
+          "memoryUsage": {
+            "rss": 85901312,
+            "heapTotal": 17907712,
+            "heapUsed": 9074344,
+            "external": 2355872,
+            "arrayBuffers": 16953
+          },
+          "pid": 34274
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing environment variables: NODE_ENV",
+        "details": {
+          "missingVars": [
+            "NODE_ENV"
+          ]
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 9,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "fail",
+        "duration": 703,
+        "message": "Request failed: Network timeout",
+        "details": {
+          "error": "Network timeout"
+        },
+        "severity": "critical"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 941,
+        "message": "Healthy response in 941ms",
+        "details": {
+          "responseTime": 941,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 372,
+        "message": "Healthy response in 372ms",
+        "details": {
+          "responseTime": 372,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 153,
+        "message": "Healthy response in 153ms",
+        "details": {
+          "responseTime": 153,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 238,
+        "message": "Healthy response in 238ms",
+        "details": {
+          "responseTime": 238,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 3408,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "warning",
+        "duration": 0,
+        "message": "7 circular dependencies found",
+        "details": {
+          "circularCount": 7,
+          "threshold": 5
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 920,
+        "message": "387 TypeScript files tracked",
+        "details": {
+          "fileCount": 387
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 27,
+      "passed": 10,
+      "failed": 2,
+      "warnings": 15
+    },
+    "violations": [
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "Missing required environment variables: NODE_ENV",
+      "API endpoint /health failed: Network timeout",
+      "TypeScript validation failed: Command failed: npm run check\n",
+      "7 circular dependencies detected (threshold: 5)"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 58130432,
+        "heapTotal": 18300928,
+        "heapUsed": 11442688,
+        "external": 2703417,
+        "arrayBuffers": 399665
+      },
+      "uptime": 4.434427625
+    }
+  },
+  {
+    "timestamp": "2025-06-01T04:23:29.790Z",
+    "duration": 11440,
+    "status": "fail",
+    "checks": [
+      {
+        "name": "Memory Usage",
+        "category": "performance",
+        "status": "pass",
+        "duration": 0,
+        "message": "Memory usage normal: 45%",
+        "details": {
+          "memoryUsage": 45
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Performance Baseline Validation",
+        "category": "performance",
+        "status": "pass",
+        "duration": 2,
+        "message": "Performance metrics gathered and validated",
+        "details": {
+          "responseTime": 10.184649509011212,
+          "memoryUsage": 45,
+          "cpuUsage": 51,
+          "timestamp": 1748751798352
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_conversation_intelligence.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0009_tool_registry.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_dealership_handover_settings.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0010_sandboxes_and_rate_limiting.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_gads_accounts.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0011_pii_encryption_consent.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0012_daily_spend_logs.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0013_rls_security_policies.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_adf_conversation_integration.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0014_dealership_management_system.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0015_add_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Migration Rollback Consistency",
+        "category": "database",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing rollback for migration: 0016_dual_mode_schema.sql",
+        "severity": "medium"
+      },
+      {
+        "name": "Database Schema Validation",
+        "category": "database",
+        "status": "pass",
+        "duration": 13,
+        "message": "Database schema is consistent and migrations are up to date",
+        "severity": "low"
+      },
+      {
+        "name": "Disk Space",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Moderate disk usage: 85%",
+        "details": {
+          "diskUsage": 85
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Process Health",
+        "category": "system",
+        "status": "pass",
+        "duration": 0,
+        "message": "Process healthy: uptime 0s",
+        "details": {
+          "uptime": 0.192194292,
+          "memoryUsage": {
+            "rss": 90439680,
+            "heapTotal": 17645568,
+            "heapUsed": 9258512,
+            "external": 2320918,
+            "arrayBuffers": 17166
+          },
+          "pid": 34073
+        },
+        "severity": "low"
+      },
+      {
+        "name": "Environment Variables",
+        "category": "system",
+        "status": "warning",
+        "duration": 0,
+        "message": "Missing environment variables: NODE_ENV",
+        "details": {
+          "missingVars": [
+            "NODE_ENV"
+          ]
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "System Health Validation",
+        "category": "system",
+        "status": "pass",
+        "duration": 11,
+        "message": "System health checks completed",
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /health",
+        "category": "api",
+        "status": "pass",
+        "duration": 535,
+        "message": "Healthy response in 535ms",
+        "details": {
+          "responseTime": 535,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health",
+        "category": "api",
+        "status": "pass",
+        "duration": 670,
+        "message": "Healthy response in 670ms",
+        "details": {
+          "responseTime": 670,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/health/detailed",
+        "category": "api",
+        "status": "pass",
+        "duration": 934,
+        "message": "Healthy response in 934ms",
+        "details": {
+          "responseTime": 934,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/dealerships",
+        "category": "api",
+        "status": "pass",
+        "duration": 702,
+        "message": "Healthy response in 702ms",
+        "details": {
+          "responseTime": 702,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "API Health: GET /api/v1/conversations",
+        "category": "api",
+        "status": "pass",
+        "duration": 19,
+        "message": "Healthy response in 19ms",
+        "details": {
+          "responseTime": 19,
+          "status": 200
+        },
+        "severity": "low"
+      },
+      {
+        "name": "TypeScript Check",
+        "category": "code",
+        "status": "fail",
+        "duration": 10259,
+        "message": "TypeScript check failed: Command failed: npm run check\n",
+        "severity": "high"
+      },
+      {
+        "name": "Circular Dependencies",
+        "category": "code",
+        "status": "warning",
+        "duration": 0,
+        "message": "7 circular dependencies found",
+        "details": {
+          "circularCount": 7,
+          "threshold": 5
+        },
+        "severity": "medium"
+      },
+      {
+        "name": "Code Metrics",
+        "category": "code",
+        "status": "pass",
+        "duration": 1179,
+        "message": "387 TypeScript files tracked",
+        "details": {
+          "fileCount": 387
+        },
+        "severity": "low"
+      }
+    ],
+    "summary": {
+      "total": 27,
+      "passed": 11,
+      "failed": 1,
+      "warnings": 15
+    },
+    "violations": [
+      "Migration 0009_conversation_intelligence.sql missing rollback file 0009_conversation_intelligence_rollback.sql",
+      "Migration 0009_tool_registry.sql missing rollback file 0009_tool_registry_rollback.sql",
+      "Migration 0010_dealership_handover_settings.sql missing rollback file 0010_dealership_handover_settings_rollback.sql",
+      "Migration 0010_sandboxes_and_rate_limiting.sql missing rollback file 0010_sandboxes_and_rate_limiting_rollback.sql",
+      "Migration 0011_gads_accounts.sql missing rollback file 0011_gads_accounts_rollback.sql",
+      "Migration 0011_pii_encryption_consent.sql missing rollback file 0011_pii_encryption_consent_rollback.sql",
+      "Migration 0012_daily_spend_logs.sql missing rollback file 0012_daily_spend_logs_rollback.sql",
+      "Migration 0013_rls_security_policies.sql missing rollback file 0013_rls_security_policies_rollback.sql",
+      "Migration 0014_adf_conversation_integration.sql missing rollback file 0014_adf_conversation_integration_rollback.sql",
+      "Migration 0014_dealership_management_system.sql missing rollback file 0014_dealership_management_system_rollback.sql",
+      "Migration 0015_add_dual_mode_schema.sql missing rollback file 0015_add_dual_mode_schema_rollback.sql",
+      "Migration 0016_dual_mode_schema.sql missing rollback file 0016_dual_mode_schema_rollback.sql",
+      "Missing required environment variables: NODE_ENV",
+      "TypeScript validation failed: Command failed: npm run check\n",
+      "7 circular dependencies detected (threshold: 5)"
+    ],
+    "metadata": {
+      "nodeVersion": "v22.14.0",
+      "platform": "darwin",
+      "memoryUsage": {
+        "rss": 66093056,
+        "heapTotal": 10698752,
+        "heapUsed": 9486224,
+        "external": 2342456,
+        "arrayBuffers": 38704
+      },
+      "uptime": 11.619358625
+    }
+  }
+]
