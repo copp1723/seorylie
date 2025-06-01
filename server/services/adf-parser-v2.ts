@@ -93,5 +93,4 @@ export class ADFParserV2 {
   }
 }
 
-export { ADFParserV2 };
 export default ADFParserV2;
