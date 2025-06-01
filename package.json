@@ -44,7 +44,7 @@
     "test:kunes": "tsx scripts/test-kunes-setup.ts",
     "setup:sendgrid": "tsx scripts/setup-sendgrid-gradual.ts",
     "test:notifications": "tsx scripts/test-notification-system.ts",
-    "env:validate": "tsx scripts/validate-environment.ts",
+    "env:validate": "tsx tools/validation/validate-environment.ts",
     "env:check": "tsx scripts/check-env.ts",
     "test:fixtures": "jest test/fixtures --config config/build/jest.config.js",
     "test:mock": "jest test/mocks --config config/build/jest.config.js",
