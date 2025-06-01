@@ -1,0 +1,277 @@
+name: STAB-402 Continuous Validation Suite
+
+on:
+  # Nightly run at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Manual dispatch for testing
+  workflow_dispatch:
+    inputs:
+      run_type:
+        description: 'Type of validation run'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - quick
+          - daemon-test
+      
+      timeout_minutes:
+        description: 'Timeout in minutes'
+        required: false
+        default: '10'
+        type: string
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: cleanrylie_validation
+  REDIS_URL: redis://localhost:6379
+
+jobs:
+  validation-suite:
+    name: Continuous Validation Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ fromJson(github.event.inputs.timeout_minutes || '10') }}
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          npm install --legacy-peer-deps
+          echo "✅ Dependencies installed successfully"
+
+      - name: Ensure validation directory exists
+        run: |
+          mkdir -p validation
+          echo "📁 Validation directory created"
+
+      - name: Run single validation check
+        if: github.event.inputs.run_type != 'daemon-test'
+        run: |
+          echo "🔍 Running single validation check..."
+          npm run validation:run
+        env:
+          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+          REDIS_URL: ${{ env.REDIS_URL }}
+          NODE_ENV: test
+
+      - name: Verify validation output (single run)
+        if: github.event.inputs.run_type != 'daemon-test'
+        run: |
+          echo "📊 Checking validation output..."
+          
+          if [ ! -f "validation/latest.json" ]; then
+            echo "❌ Validation output file not found"
+            exit 1
+          fi
+          
+          file_size=$(stat -c%s "validation/latest.json" 2>/dev/null || stat -f%z "validation/latest.json")
+          file_size_kb=$((file_size / 1024))
+          
+          echo "📄 Validation output file size: ${file_size_kb} KB"
+          
+          if [ $file_size -lt 1024 ]; then
+            echo "❌ Validation output file too small (${file_size_kb} KB, expected ≥1 KB)"
+            exit 1
+          fi
+          
+          echo "✅ Validation output file meets size requirement"
+          
+          # Check if it's valid JSON
+          if ! jq empty validation/latest.json 2>/dev/null; then
+            echo "❌ Validation output is not valid JSON"
+            exit 1
+          fi
+          
+          echo "✅ Validation output is valid JSON"
+
+      - name: Test daemon functionality
+        if: github.event.inputs.run_type == 'daemon-test'
+        timeout-minutes: 3
+        run: |
+          echo "🤖 Testing validation daemon..."
+          
+          # Start daemon in background
+          npm run validation:daemon &
+          DAEMON_PID=$!
+          
+          echo "🚀 Daemon started with PID: $DAEMON_PID"
+          
+          # Wait for daemon to start
+          sleep 10
+          
+          # Check if daemon is responding to health checks
+          for i in {1..6}; do
+            if curl -f http://localhost:8082/health; then
+              echo "✅ Daemon health check passed"
+              break
+            else
+              echo "⏳ Waiting for daemon to start... (attempt $i/6)"
+              sleep 5
+            fi
+            
+            if [ $i -eq 6 ]; then
+              echo "❌ Daemon health check failed after 30 seconds"
+              kill $DAEMON_PID 2>/dev/null || true
+              exit 1
+            fi
+          done
+          
+          # Check daemon status
+          echo "📊 Daemon status:"
+          curl -s http://localhost:8082/status | jq .
+          
+          # Wait for at least one validation run to complete
+          echo "⏳ Waiting for validation run to complete..."
+          sleep 60
+          
+          # Check if validation output was created
+          if [ ! -f "validation/latest.json" ]; then
+            echo "❌ Validation output file not created by daemon"
+            kill $DAEMON_PID 2>/dev/null || true
+            exit 1
+          fi
+          
+          file_size=$(stat -c%s "validation/latest.json" 2>/dev/null || stat -f%z "validation/latest.json")
+          file_size_kb=$((file_size / 1024))
+          
+          if [ $file_size -lt 1024 ]; then
+            echo "❌ Daemon validation output too small (${file_size_kb} KB)"
+            kill $DAEMON_PID 2>/dev/null || true
+            exit 1
+          fi
+          
+          echo "✅ Daemon validation output meets requirements (${file_size_kb} KB)"
+          
+          # Stop daemon gracefully
+          kill -TERM $DAEMON_PID 2>/dev/null || true
+          sleep 5
+          
+          echo "✅ Daemon test completed successfully"
+        env:
+          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+          REDIS_URL: ${{ env.REDIS_URL }}
+          NODE_ENV: test
+
+      - name: Test violation detection
+        run: |
+          echo "🧪 Testing violation detection..."
+          
+          # Create a fake violation by modifying the validation script temporarily
+          cp validation/continuous-checks.ts validation/continuous-checks.ts.backup
+          
+          # Add a fake violation to the script
+          sed -i 's/this\.violations = \[\];/this.violations = ["Fake violation for testing"];/' validation/continuous-checks.ts
+          
+          # Run validation and expect it to fail
+          if npm run validation:run; then
+            echo "❌ Validation should have failed with fake violation"
+            cp validation/continuous-checks.ts.backup validation/continuous-checks.ts
+            exit 1
+          else
+            echo "✅ Validation correctly failed with fake violation"
+          fi
+          
+          # Restore original script
+          cp validation/continuous-checks.ts.backup validation/continuous-checks.ts
+          rm validation/continuous-checks.ts.backup
+          
+          echo "✅ Violation detection test passed"
+        env:
+          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
+          REDIS_URL: ${{ env.REDIS_URL }}
+          NODE_ENV: test
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results-${{ github.run_number }}
+          path: |
+            validation/latest.json
+            validation/history.json
+            validation/daemon.log
+          retention-days: 7
+
+      - name: Display validation summary
+        if: always()
+        run: |
+          echo "📋 Validation Summary"
+          echo "===================="
+          
+          if [ -f "validation/latest.json" ]; then
+            echo "📊 Latest validation results:"
+            jq -r '.summary | "Total: \(.total), Passed: \(.passed), Failed: \(.failed), Warnings: \(.warnings)"' validation/latest.json
+            
+            echo ""
+            echo "🔍 Validation status:"
+            jq -r '.status' validation/latest.json
+            
+            if [ "$(jq -r '.violations | length' validation/latest.json)" -gt 0 ]; then
+              echo ""
+              echo "⚠️  Violations found:"
+              jq -r '.violations[]' validation/latest.json
+            fi
+          else
+            echo "❌ No validation results found"
+          fi
+
+      - name: Check final status
+        run: |
+          if [ -f "validation/latest.json" ]; then
+            status=$(jq -r '.status' validation/latest.json)
+            violations=$(jq -r '.violations | length' validation/latest.json)
+            
+            echo "Final validation status: $status"
+            echo "Number of violations: $violations"
+            
+            if [ "$status" = "fail" ] || [ "$violations" -gt 0 ]; then
+              echo "❌ Validation failed or has violations"
+              exit 1
+            else
+              echo "✅ Validation passed successfully"
+            fi
+          else
+            echo "❌ No validation results to check"
+            exit 1
+          fi

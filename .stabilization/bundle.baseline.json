@@ -1,0 +1,16 @@
+{
+  "bundle_size": {
+    "current_size_bytes": 1945000,
+    "max_allowed_bytes": 1945000,
+    "size_human_readable": "1.9 MB",
+    "compression": "gzip",
+    "status": "baseline_established"
+  },
+  "validation_rules": {
+    "max_bundle_size_bytes": 1945000,
+    "fail_on_size_increase": true,
+    "tolerance_percentage": 10
+  },
+  "timestamp": "2025-06-01T02:37:37Z",
+  "baseline_version": "1.0.0"
+}
