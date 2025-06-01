@@ -59,7 +59,7 @@ npm run dev
 ```
 ✅ PostgreSQL connection test successful
 ✅ Server running on port 3000
-✅ Frontend available at http://localhost:3000
+✅ Frontend available at http://localhost:5173
 ```
 
 ---
@@ -88,7 +88,7 @@ Before you begin manual testing, verify these items:
 - [ ] ✅ `npm run dev` starts without errors
 - [ ] ✅ No database connection errors
 - [ ] ✅ Server accessible at http://localhost:3000
-- [ ] ✅ Frontend loads correctly
+- [ ] ✅ Frontend loads correctly at http://localhost:5173
 
 ---
 
@@ -97,7 +97,7 @@ Before you begin manual testing, verify these items:
 ### **🎯 Core Functionality Tests**
 
 #### **1. Basic Application**
-- [ ] ✅ Navigate to http://localhost:3000
+- [ ] ✅ Navigate to http://localhost:5173
 - [ ] ✅ Homepage loads without errors
 - [ ] ✅ No console errors in browser
 - [ ] ✅ UI components render correctly

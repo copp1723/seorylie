@@ -29,15 +29,32 @@ Full details: [docs/BRANCHING_STRATEGY.md](docs/BRANCHING_STRATEGY.md).
 
 ## 🚀 Quick Start
 
-```bash
-# Install dependencies
-npm install
+### ⚠️ Prerequisites
 
-# Set up environment variables
+**Before running any lint, check, or test commands, ensure dependencies are installed:**
+
+```bash
+npm install
+```
+
+To verify vitest is installed, run:
+```bash
+npx vitest --version
+```
+
+If any errors about missing modules occur, repeat `npm install`.
+
+### Development Setup
+
+```bash
+# 1. Comprehensive environment setup (recommended)
+npm run setup
+
+# 2. Set up environment variables
 cp .env.example .env
 # IMPORTANT: Edit .env with your actual API keys and configuration values
 
-# Set up database
+# 3. Set up database
 # Ensure PostgreSQL is running and accessible
 # Option 1: Use Drizzle migrations (recommended for most setups)
 npm run db:generate # If you made schema changes in shared/schema.ts
@@ -46,10 +63,37 @@ npm run db:push     # Applies pending migrations
 # Option 2: Use the complete SQL schema (for a fresh start if migrations fail)
 # psql your_database_url < supabase-schema.sql # Adjust command as per your DB
 
-# Start development server (frontend and backend)
+# 4. Setup ADF-W10 Conversation Orchestrator
+npm run setup:orchestrator setup --test-mode
+
+# 5. Start development server (frontend and backend)
 npm run dev
 ```
+
 The application should now be running on `http://localhost:5173` (frontend) and `http://localhost:3000` (backend API).
+
+### Development Commands
+
+After setup, you can safely run:
+
+```bash
+npm run lint       # TypeScript checking (with auto pre-check)
+npm run check      # Type checking (with auto pre-check)  
+npm run test       # Run tests (with auto pre-check)
+npm run build      # Build project (with auto pre-check)
+```
+
+**Note:** These commands now include automatic dependency verification. If dependencies are missing, you'll get clear error messages with instructions.
+
+### Environment Restrictions
+
+**If your environment restricts network access after container startup:**
+All dependencies must be installed during the setup/init phase. Use:
+- `npm ci` for reproducible installs
+- `npm run setup` to verify all dependencies
+- Include `node_modules` in deployment if necessary
+
+See [SETUP.md](SETUP.md) for comprehensive setup documentation.
 
 ---
 

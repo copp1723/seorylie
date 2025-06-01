@@ -17,10 +17,10 @@ import {
   errorResponseSchema,
   validationErrorResponseSchema,
   twilioWebhookSchema,
-  leadSchema,
-  conversationSchema,
-  messageSchema,
-  customerSchema,
+  apiLeadSchema,
+  apiConversationSchema,
+  apiMessageSchema,
+  apiCustomerSchema,
   vehicleInterestSchema
 } from '../../shared/api-schemas';
 
@@ -127,10 +127,10 @@ The API supports webhooks for real-time notifications:
         ConversationDetailResponse: convertToJsonSchema(conversationDetailResponseSchema, 'ConversationDetailResponse'),
         
         // Entity schemas
-        Lead: convertToJsonSchema(leadSchema, 'Lead'),
-        Conversation: convertToJsonSchema(conversationSchema, 'Conversation'),
-        Message: convertToJsonSchema(messageSchema, 'Message'),
-        Customer: convertToJsonSchema(customerSchema, 'Customer'),
+        Lead: convertToJsonSchema(apiLeadSchema, 'Lead'),
+        Conversation: convertToJsonSchema(apiConversationSchema, 'Conversation'),
+        Message: convertToJsonSchema(apiMessageSchema, 'Message'),
+        Customer: convertToJsonSchema(apiCustomerSchema, 'Customer'),
         VehicleInterest: convertToJsonSchema(vehicleInterestSchema, 'VehicleInterest'),
         
         // Error schemas

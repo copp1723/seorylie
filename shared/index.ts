@@ -1,14 +1,64 @@
-// Primary Database Schemas
+// Primary Database Schemas - Export everything from schema.ts first
 export * from './schema';
 
-// Enhanced Schemas (selective exports to avoid conflicts)
+// Lead Management Schemas - Selective exports to avoid conflicts with schema.ts
 export {
-  // Additional enhanced schemas not conflicting with base schema
-  extendedUserSchema,
-  extendedVehicleSchema,
-} from './enhanced-schema';
-// Lead Management Schemas
-export * from './lead-management-schema';
+  // Types
+  leadSources,
+  leadStatuses, 
+  leadPriorities,
+  conversationStatuses,
+  messageTypes,
+  messageSenders,
+  handoverReasons,
+  handoverStatuses,
+  type LeadSource,
+  type LeadStatus,
+  type LeadPriority,
+  type ConversationStatus,
+  type MessageType,
+  type MessageSender,
+  type HandoverReason,
+  type HandoverStatus,
+  
+  // Tables (with lm_ prefix to avoid conflicts)
+  leadSourcesTable,
+  dealershipHandoverSettings,
+  customers as lmCustomers,
+  vehicleInterests,
+  leads as lmLeads,
+  conversations as lmConversations,
+  messages as lmMessages,
+  handovers,
+  leadActivities,
+  
+  // Relations
+  leadSourcesRelations,
+  dealershipHandoverSettingsRelations,
+  customersRelations as lmCustomersRelations,
+  vehicleInterestsRelations,
+  leadsRelations as lmLeadsRelations,
+  conversationsRelations as lmConversationsRelations,
+  messagesRelations as lmMessagesRelations,
+  handoversRelations,
+  leadActivitiesRelations,
+  
+  // Zod schemas (with lm_ prefix to avoid conflicts)
+  insertLeadSourceSchema as lmInsertLeadSourceSchema,
+  insertDealershipHandoverSettingsSchema,
+  insertCustomerSchema as lmInsertCustomerSchema,
+  insertVehicleInterestSchema,
+  insertLeadSchema as lmInsertLeadSchema,
+  insertConversationSchema as lmInsertConversationSchema,
+  insertMessageSchema as lmInsertMessageSchema,
+  insertHandoverSchema,
+  insertLeadActivitySchema,
+  
+  // API schemas
+  inboundLeadSchema,
+  replyMessageSchema,
+  handoverRequestSchema,
+} from './lead-management-schema';
 
 // ADF Schemas
 export * from './adf-schema';
@@ -18,4 +68,5 @@ export * from './api-schemas';
 
 // Schema Extensions and Utilities
 export * from './schema-extensions';
-export * from './schema-resolver';
+// Note: schema-resolver.ts also exports from schema.ts, causing conflicts, so we skip it
+// export * from './schema-resolver';

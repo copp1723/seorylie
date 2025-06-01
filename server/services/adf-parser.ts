@@ -9,7 +9,7 @@ const XML_PARSER_OPTIONS = {
   attributeNamePrefix: '',
   attributesGroupName: '$',
   textNodeName: '_',
-  parseAttributeValue: true,
+  parseAttributeValue: false, // Keep attributes as strings to preserve version "1.0"
   parseTagValue: true,
   trimValues: true,
   parseTrueNumberOnly: false,
@@ -138,10 +138,23 @@ export class AdfSchemaValidator {
 
   private static validateNameStructure(name: any): boolean {
     if (typeof name === 'string') return true; // Simple string name is valid
-    
+
+    // Handle array of name elements with part attributes
+    if (Array.isArray(name)) {
+      return name.every((part: any) =>
+        part.$ && ['first', 'last', 'full'].includes(part.$.part) && part._
+      );
+    }
+
+    // Handle single name element with part attribute
+    if (name.$ && name._ && ['first', 'last', 'full'].includes(name.$.part)) {
+      return true;
+    }
+
+    // Handle structured name with parts
     if (name.part) {
       if (Array.isArray(name.part)) {
-        return name.part.every((part: any) => 
+        return name.part.every((part: any) =>
           part.$ && ['first', 'last', 'full'].includes(part.$.type) && part._
         );
       } else if (name.part.$ && name.part._) {
@@ -229,7 +242,7 @@ export class AdfParser {
 
       // Step 6: Store raw XML for audit
       mappedLead.rawAdfXml = xmlContent;
-      mappedLead.parsedAdfData = parsedXml;
+      mappedLead.parsedAdfData = parsedXml as any;
 
       logger.info('ADF XML parsed successfully', { 
         customerName: mappedLead.customerFullName,
@@ -263,7 +276,7 @@ export class AdfParser {
 
     // ADF Header
     lead.adfVersion = parsedXml.adf.$?.version || '1.0';
-    lead.requestDate = this.parseRequestDate(prospect.requestdate);
+    lead.requestDate = this.parseRequestDate(prospect.requestdate || '');
 
     // Customer Information
     if (prospect.customer?.contact) {

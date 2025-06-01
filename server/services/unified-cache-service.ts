@@ -581,7 +581,7 @@ class UnifiedCacheService extends EventEmitter {
       }
       
       // Store in cache
-      const ttl = isKpiQuery ? this.config.kpiTtl : (options.ttl || this.config.ttl);
+      const ttl = isKpiQuery ? this.config.kpiTtl : (options.ttl !== undefined ? options.ttl : this.config.ttl);
       await this.set(fullKey, value, { 
         ...options, 
         ttl,
@@ -628,7 +628,7 @@ class UnifiedCacheService extends EventEmitter {
       const computeTime = Date.now() - startTime;
       
       // Store with the same options but update the compute time
-      const ttl = options.kpi ? this.config.kpiTtl : (options.ttl || this.config.ttl);
+      const ttl = options.kpi ? this.config.kpiTtl : (options.ttl !== undefined ? options.ttl : this.config.ttl);
       await this.set(fullKey, value, { 
         ...options, 
         ttl,
@@ -714,7 +714,7 @@ class UnifiedCacheService extends EventEmitter {
   async set(key: string, value: any, options: CacheOptions = {}): Promise<boolean> {
     try {
       const fullKey = this.getFullKey(key, options.prefix);
-      const ttl = options.ttl || this.config.ttl;
+      const ttl = options.ttl !== undefined ? options.ttl : this.config.ttl;
       const expires = Date.now() + (ttl * 1000);
       const isKpiQuery = options.kpi === true;
       const tags = options.tags || [];

@@ -61,7 +61,7 @@ export const validationErrorResponseSchema = z.object({
 
 // ===== CUSTOMER SCHEMAS =====
 
-export const customerSchema = z.object({
+export const apiCustomerSchema = z.object({
   id: z.string().uuid(),
   dealershipId: z.number(),
   firstName: z.string().nullable(),
@@ -161,7 +161,7 @@ export const vehicleInterestInputSchema = z.object({
 
 // ===== LEAD SCHEMAS =====
 
-export const leadSchema = z.object({
+export const apiLeadSchema = z.object({
   id: z.string().uuid(),
   dealershipId: z.number(),
   customerId: z.string().uuid(),
@@ -286,7 +286,7 @@ export const handoverUpdateRequestSchema = z.object({
 
 // ===== CONVERSATION SCHEMAS =====
 
-export const conversationSchema = z.object({
+export const apiConversationSchema = z.object({
   id: z.string().uuid(),
   dealershipId: z.number(),
   leadId: z.string().uuid(),
@@ -307,7 +307,7 @@ export const conversationSchema = z.object({
   closedAt: z.string().datetime().nullable()
 });
 
-export const messageSchema = z.object({
+export const apiMessageSchema = z.object({
   id: z.string().uuid(),
   conversationId: z.string().uuid(),
   content: z.string(),
@@ -365,20 +365,20 @@ export const conversationsQuerySchema = z.object({
 // ===== RESPONSE SCHEMAS =====
 
 export const leadListResponseSchema = apiResponseSchema(z.object({
-  leads: z.array(leadSchema),
+  leads: z.array(apiLeadSchema),
   pagination: paginationSchema
 }));
 
-export const leadDetailResponseSchema = apiResponseSchema(leadSchema);
+export const leadDetailResponseSchema = apiResponseSchema(apiLeadSchema);
 
 export const conversationListResponseSchema = apiResponseSchema(z.object({
-  conversations: z.array(conversationSchema),
+  conversations: z.array(apiConversationSchema),
   pagination: paginationSchema
 }));
 
 export const conversationDetailResponseSchema = apiResponseSchema(z.object({
-  conversation: conversationSchema,
-  messages: z.array(messageSchema),
+  conversation: apiConversationSchema,
+  messages: z.array(apiMessageSchema),
   totalMessages: z.number()
 }));
 

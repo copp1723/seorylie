@@ -6,9 +6,46 @@ import logger from '../utils/logger';
 import db from '../db';
 import { eq, desc, and, gte, or, like } from 'drizzle-orm';
 import { adfLeads, adfEmailQueue, adfProcessingLogs } from '../../shared/adf-schema';
+import { validateBodySize, validateContentType } from '../middleware/validation';
+import rateLimit from 'express-rate-limit';
+import { prometheusMetricsService } from '../services/prometheus-metrics';
 // import { dealershipEmailConfigs } from '../../shared/schema-resolver'; // Commented out - table doesn't exist
 
 const router = Router();
+
+// ADF Lead Ingestion Rate Limiter (30 requests per minute per IP)
+const adfLeadRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 requests per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'ADF lead ingestion rate limit exceeded',
+    message: 'Maximum 30 requests per minute allowed',
+    retryAfter: '60 seconds'
+  },
+  keyGenerator: (req) => req.ip, // Rate limit by IP address
+  handler: (req, res) => {
+    logger.warn('ADF lead ingestion rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      timestamp: new Date().toISOString()
+    });
+    // Record rate limit metric
+    prometheusMetricsService.adfRateLimitExceeded.inc({
+      endpoint: '/api/adf/lead',
+      ip: req.ip
+    });
+
+    res.status(429).json({
+      success: false,
+      error: 'ADF lead ingestion rate limit exceeded',
+      message: 'Maximum 30 requests per minute allowed',
+      retryAfter: '60 seconds'
+    });
+  }
+});
 
 // Initialize ADF parser for manual processing
 const adfParser = new AdfParser();
@@ -305,6 +342,187 @@ router.patch('/leads/:id/status', [
     res.status(500).json({
       success: false,
       error: 'Failed to update lead status'
+    });
+  }
+});
+
+/**
+ * ADF Lead Ingestion Endpoint (ADF-W03)
+ * POST /api/adf/lead
+ *
+ * Primary endpoint for ADF lead ingestion with comprehensive validation,
+ * rate limiting, XXE protection, and Prometheus metrics.
+ *
+ * Features:
+ * - 500KB size limit validation
+ * - Rate limiting (30 req/min/IP)
+ * - XXE protection via XML parser configuration
+ * - V2/V1 parser fallback
+ * - Prometheus metrics (adf_ingest_success_total, adf_parse_failure_total, adf_ingest_duration_seconds)
+ */
+router.post('/lead', [
+  adfLeadRateLimiter, // Rate limiting: 30 req/min/IP
+  validateContentType(['application/xml', 'text/xml', 'application/json']), // Accept XML and JSON
+  validateBodySize(500 * 1024), // 500KB size limit
+  body('xml').optional().isString().notEmpty(),
+  body('xmlContent').optional().isString().notEmpty(),
+  body('source').optional().isString().default('api'),
+  body('dealershipId').optional().isInt()
+], async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  let xmlContent: string;
+  let source: string = req.body.source || 'api';
+  let dealershipId: string | undefined = req.body.dealershipId?.toString();
+
+  try {
+    // Validation
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      prometheusMetricsService.adfParseFailureTotal.inc({
+        dealership_id: dealershipId || 'unknown',
+        error_type: 'validation_error',
+        parser_version: 'validation'
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors.array(),
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Extract XML content from request
+    if (req.get('content-type')?.includes('xml')) {
+      // Raw XML in request body
+      xmlContent = req.body.toString();
+    } else {
+      // JSON payload with XML content
+      xmlContent = req.body.xml || req.body.xmlContent;
+    }
+
+    if (!xmlContent) {
+      prometheusMetricsService.adfParseFailureTotal.inc({
+        dealership_id: dealershipId || 'unknown',
+        error_type: 'missing_xml',
+        parser_version: 'validation'
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: 'Missing XML content',
+        message: 'Provide XML content in request body or as "xml"/"xmlContent" field',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // XXE Protection: XML parser is configured with secure defaults in AdfParser
+    // processEntities: true with htmlEntities: true provides safe entity processing
+    // ignoreNameSpace: false prevents namespace-based XXE attacks
+
+    logger.info('ADF lead ingestion request received', {
+      source,
+      xmlLength: xmlContent.length,
+      dealershipId,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+
+    // Initialize ADF service for processing
+    const adfService = new AdfService();
+
+    // Process ADF XML with V2/V1 fallback
+    const result = await adfService.processAdfXml(xmlContent, source, dealershipId);
+
+    const processingTime = Date.now() - startTime;
+
+    // Record processing duration metric
+    prometheusMetricsService.adfIngestDurationSeconds.observe({
+      dealership_id: dealershipId || 'unknown',
+      parser_version: result.parserUsed || 'unknown',
+      status: result.success ? 'success' : 'failure'
+    }, processingTime / 1000);
+
+    if (result.success) {
+      // Record success metric
+      prometheusMetricsService.adfIngestSuccessTotal.inc({
+        dealership_id: dealershipId || 'unknown',
+        source_provider: source,
+        parser_version: result.parserUsed || 'unknown'
+      });
+
+      logger.info('ADF lead ingestion successful', {
+        leadId: result.leadId,
+        source,
+        dealershipId,
+        processingTime,
+        parserUsed: result.parserUsed,
+        isDuplicate: result.isDuplicate
+      });
+
+      return res.status(result.isDuplicate ? 200 : 201).json({
+        success: true,
+        data: {
+          leadId: result.leadId,
+          isDuplicate: result.isDuplicate,
+          parserUsed: result.parserUsed,
+          processingTime: `${processingTime}ms`
+        },
+        message: result.isDuplicate ? 'Duplicate lead detected' : 'ADF lead processed successfully',
+        warnings: result.warnings || [],
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      // Record failure metric
+      prometheusMetricsService.adfParseFailureTotal.inc({
+        dealership_id: dealershipId || 'unknown',
+        error_type: 'processing_error',
+        parser_version: result.parserUsed || 'unknown'
+      });
+
+      logger.error('ADF lead ingestion failed', {
+        source,
+        dealershipId,
+        processingTime,
+        errors: result.errors,
+        parserUsed: result.parserUsed
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: 'ADF lead processing failed',
+        details: result.errors || ['Unknown processing error'],
+        warnings: result.warnings || [],
+        processingTime: `${processingTime}ms`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+  } catch (error) {
+    const processingTime = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Record failure metric
+    prometheusMetricsService.adfParseFailureTotal.inc({
+      dealership_id: dealershipId || 'unknown',
+      error_type: 'system_error',
+      parser_version: 'unknown'
+    });
+
+    logger.error('ADF lead ingestion system error', {
+      error: errorMessage,
+      source,
+      dealershipId,
+      processingTime,
+      ip: req.ip
+    });
+
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error during ADF processing',
+      message: 'Please try again later or contact support',
+      processingTime: `${processingTime}ms`,
+      timestamp: new Date().toISOString()
     });
   }
 });
