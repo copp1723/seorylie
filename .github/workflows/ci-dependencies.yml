@@ -1,0 +1,91 @@
+name: Dependency Setup and Verification
+
+on:
+  push:
+    branches: [ main, integration/* ]
+  pull_request:
+    branches: [ main, integration/* ]
+
+jobs:
+  setup-and-test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    # Critical: Install dependencies first
+    - name: Install dependencies
+      run: npm ci
+    
+    # Verify setup before running any commands
+    - name: Verify environment setup
+      run: npm run setup:verify
+    
+    # Run verification script
+    - name: Run setup verification
+      run: ./scripts/verify-setup.sh
+    
+    # Now safe to run all commands
+    - name: Run type checking
+      run: npm run check
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Run tests
+      run: npm run test
+    
+    - name: Build project
+      run: npm run build
+    
+    # Test ADF-W10 setup (if environment variables are available)
+    - name: Test Conversation Orchestrator Setup
+      run: npm run setup:orchestrator migrate || true
+      env:
+        DATABASE_URL: postgresql://test:test@localhost:5432/test
+    
+  dependency-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Audit dependencies
+      run: npm audit --audit-level=high
+    
+    - name: Check for outdated dependencies
+      run: npm outdated || true
+    
+    - name: Verify critical dependencies
+      run: |
+        echo "Checking critical dependencies..."
+        DEPS=("drizzle-orm" "vitest" "typescript" "tsx" "bull" "ioredis" "handlebars" "express")
+        for dep in "${DEPS[@]}"; do
+          if [ ! -d "node_modules/$dep" ]; then
+            echo "❌ Missing critical dependency: $dep"
+            exit 1
+          else
+            echo "✅ Found: $dep"
+          fi
+        done

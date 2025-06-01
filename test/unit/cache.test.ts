@@ -1,7 +1,7 @@
 /**
  * Unit tests for the cache utility
  */
-import { describe, beforeEach, test, expect } from '@jest/globals';
+import { describe, beforeEach, test, expect, jest } from '@jest/globals';
 import { 
   getFromCache, 
   setInCache, 
@@ -32,23 +32,24 @@ describe('Cache Utility', () => {
 
   test('should handle TTL expiration', () => {
     // Arrange
+    jest.useFakeTimers();
     const key = 'expiring-key';
     const value = 'will expire';
-    
+
     // Act - set with a 10ms TTL
     setInCache(key, value, 10);
-    
+
     // Assert - immediately available
     expect(getFromCache(key)).toEqual(value);
-    
-    // Wait until expired
-    return new Promise(resolve => {
-      setTimeout(() => {
-        // Should be gone after expiration
-        expect(getFromCache(key)).toBeNull();
-        resolve(true);
-      }, 20);
-    });
+
+    // Fast-forward time past expiration
+    jest.advanceTimersByTime(20);
+
+    // Should be gone after expiration
+    expect(getFromCache(key)).toBeNull();
+
+    // Cleanup
+    jest.useRealTimers();
   });
 
   test('should delete keys', () => {

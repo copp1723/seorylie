@@ -43,7 +43,7 @@ export {
 
 export type {
   Customer,
-  InsertCustomer
+  InsertUser as InsertCustomer  // Using InsertUser from schema.ts as InsertCustomer alias
 } from './schema';
 
 // Re-export from lead-management-schema.ts
@@ -141,7 +141,7 @@ export {
   leadScores,
   followUps,
   userInvitations,
-  auditLogs,
+  extensionAuditLogs,
   customerProfiles,
   customerInteractions,
   customerInsights,
@@ -150,7 +150,7 @@ export {
   insertLeadScoreSchema,
   insertFollowUpSchema,
   insertUserInvitationSchema,
-  insertAuditLogSchema,
+  insertExtensionAuditLogSchema,
   insertCustomerProfileSchema,
   insertCustomerInteractionSchema,
   insertCustomerInsightSchema,
@@ -167,8 +167,8 @@ export type {
   InsertFollowUp,
   UserInvitation,
   InsertUserInvitation,
-  AuditLog,
-  InsertAuditLog,
+  ExtensionAuditLog,
+  InsertExtensionAuditLog,
   CustomerProfile,
   InsertCustomerProfile,
   CustomerInteraction,
@@ -186,11 +186,11 @@ export {
   errorResponseSchema,
   validationErrorSchema,
   validationErrorResponseSchema,
-  customerSchema,
+  apiCustomerSchema,
   customerInputSchema,
   vehicleInterestSchema,
   vehicleInterestInputSchema,
-  leadSchema,
+  apiLeadSchema,
   inboundLeadRequestSchema,
   leadCreationResponseSchema,
   replyMessageRequestSchema,
@@ -198,8 +198,8 @@ export {
   handoverRequestSchema as apiHandoverRequestSchema,
   handoverResponseSchema,
   handoverUpdateRequestSchema,
-  conversationSchema,
-  messageSchema,
+  apiConversationSchema,
+  apiMessageSchema,
   leadsQuerySchema,
   conversationsQuerySchema,
   leadListResponseSchema,

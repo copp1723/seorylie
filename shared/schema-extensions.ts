@@ -83,7 +83,7 @@ export const userInvitations = pgTable('user_invitations', {
 }));
 
 // Audit logs for user management
-export const auditLogs = pgTable('audit_logs', {
+export const extensionAuditLogs = pgTable('audit_logs', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id),
   dealershipId: integer('dealership_id').references(() => dealerships.id),
@@ -159,7 +159,7 @@ export const insertEscalationTriggerSchema = createInsertSchema(escalationTrigge
 export const insertLeadScoreSchema = createInsertSchema(leadScores).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertFollowUpSchema = createInsertSchema(followUps).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserInvitationSchema = createInsertSchema(userInvitations).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, createdAt: true });
+export const insertExtensionAuditLogSchema = createInsertSchema(extensionAuditLogs).omit({ id: true, createdAt: true });
 export const insertCustomerProfileSchema = createInsertSchema(customerProfiles).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerInteractionSchema = createInsertSchema(customerInteractions).omit({ id: true, createdAt: true });
 export const insertCustomerInsightSchema = createInsertSchema(customerInsights).omit({ id: true, createdAt: true });
@@ -178,8 +178,8 @@ export type InsertFollowUp = z.infer<typeof insertFollowUpSchema>;
 export type UserInvitation = typeof userInvitations.$inferSelect;
 export type InsertUserInvitation = z.infer<typeof insertUserInvitationSchema>;
 
-export type AuditLog = typeof auditLogs.$inferSelect;
-export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type ExtensionAuditLog = typeof extensionAuditLogs.$inferSelect;
+export type InsertExtensionAuditLog = z.infer<typeof insertExtensionAuditLogSchema>;
 
 export type CustomerProfile = typeof customerProfiles.$inferSelect;
 export type InsertCustomerProfile = z.infer<typeof insertCustomerProfileSchema>;

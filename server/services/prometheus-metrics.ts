@@ -19,6 +19,12 @@ class PrometheusMetricsService {
   public readonly aiResponseLatency: Histogram<string>;
   public readonly handoverTriggerTotal: Counter<string>;
   public readonly adfImapDisconnectionsTotal: Counter<string>;
+
+  // ADF-W03 Lead Ingestion Metrics (DEP-004/005)
+  public readonly adfIngestSuccessTotal: Counter<string>;
+  public readonly adfParseFailureTotal: Counter<string>;
+  public readonly adfIngestDurationSeconds: Histogram<string>;
+  public readonly adfRateLimitExceeded: Counter<string>;
   
   // ADF-08 Handover Dossier Metrics (NEW)
   public readonly handoverDossierGenerationMs: Histogram<string>;
@@ -73,6 +79,36 @@ class PrometheusMetricsService {
       name: 'adf_imap_disconnections_total',
       help: 'Total number of IMAP disconnections',
       labelNames: ['server', 'reason'],
+      registers: [register]
+    });
+
+    // ADF-W03 Lead Ingestion Metrics (DEP-004/005)
+    this.adfIngestSuccessTotal = new Counter({
+      name: 'adf_ingest_success_total',
+      help: 'Total number of successful ADF lead ingestions',
+      labelNames: ['dealership_id', 'source_provider', 'parser_version'],
+      registers: [register]
+    });
+
+    this.adfParseFailureTotal = new Counter({
+      name: 'adf_parse_failure_total',
+      help: 'Total number of ADF parsing failures',
+      labelNames: ['dealership_id', 'error_type', 'parser_version'],
+      registers: [register]
+    });
+
+    this.adfIngestDurationSeconds = new Histogram({
+      name: 'adf_ingest_duration_seconds',
+      help: 'ADF lead ingestion processing duration in seconds',
+      labelNames: ['dealership_id', 'parser_version', 'status'],
+      buckets: [0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30],
+      registers: [register]
+    });
+
+    this.adfRateLimitExceeded = new Counter({
+      name: 'adf_rate_limit_exceeded_total',
+      help: 'Total number of ADF rate limit violations',
+      labelNames: ['endpoint', 'ip'],
       registers: [register]
     });
 
@@ -397,4 +433,5 @@ class PrometheusMetricsService {
 
 // Export singleton instance
 export const prometheusMetrics = PrometheusMetricsService.getInstance();
+export const prometheusMetricsService = PrometheusMetricsService.getInstance();
 export default prometheusMetrics;
