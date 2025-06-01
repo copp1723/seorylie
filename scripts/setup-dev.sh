@@ -72,11 +72,11 @@ install_dependencies() {
     log_progress "Installing dependencies..."
     
     if [ -f "package-lock.json" ]; then
-        log_info "Using npm ci (package-lock.json found)"
-        npm ci
+        log_info "Using npm ci with legacy peer deps (package-lock.json found)"
+        npm ci --legacy-peer-deps
     else
-        log_info "Using npm install (no package-lock.json)"
-        npm install
+        log_info "Using npm install with legacy peer deps (no package-lock.json)"
+        npm install --legacy-peer-deps
     fi
     
     log_info "Dependencies installed successfully"
