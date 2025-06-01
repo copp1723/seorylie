@@ -438,7 +438,7 @@ export const handovers = pgTable('handovers', {
   statusIdx: index('handovers_status_idx').on(table.status),
   toUserIdx: index('handovers_to_user_idx').on(table.toUserId),
   requestedAtIdx: index('handovers_requested_at_idx').on(table.requestedAt),
-  dossierIdx: index('handovers_dossier_gin').on(table.dossier, { method: 'gin', ops: 'jsonb_path_ops' }),
+  dossierIdx: index('handovers_dossier_gin').on(table.dossier),
 }));
 
 // Lead Activities - Track all activities on a lead

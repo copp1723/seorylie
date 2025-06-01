@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
  * @param delay The delay in milliseconds (default: 500ms)
  * @returns The debounced value
  */
-export function useDebounce<T>(value: T, delay = 500): T {
+export const useDebounce = <T>(value: T, delay = 500): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function useDebounce<T>(value: T, delay = 500): T {
   }, [value, delay]);
 
   return debouncedValue;
-}
+};
 
 /**
  * Hook that returns a debounced version of a callback function that only executes
@@ -32,16 +32,18 @@ export function useDebounce<T>(value: T, delay = 500): T {
  * 
  * @param callback The function to debounce
  * @param delay The delay in milliseconds (default: 500ms)
+ * @param deps Dependency array for the callback (optional)
  * @returns The debounced callback function
  */
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   callback: T,
-  delay = 500
-): (...args: Parameters<T>) => void {
+  delay = 500,
+  deps: React.DependencyList = []
+): T => {
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
   const debouncedFn = useCallback(
-    (...args: Parameters<T>) => {
+    ((...args: Parameters<T>) => {
       // Clear any existing timeout
       if (timeoutId) {
         clearTimeout(timeoutId);
@@ -54,8 +56,8 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
       }, delay);
 
       setTimeoutId(id);
-    },
-    [callback, delay, timeoutId]
+    }) as T,
+    [callback, delay, timeoutId, ...deps]
   );
 
   // Clean up on unmount
@@ -68,6 +70,6 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   }, [timeoutId]);
 
   return debouncedFn;
-}
+};
 
 export default useDebounce;

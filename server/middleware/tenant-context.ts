@@ -6,7 +6,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import db from "../db";
+import { db } from "../db";
 import logger from '../utils/logger';
 
 // Extend Express Request interface to include dealership context

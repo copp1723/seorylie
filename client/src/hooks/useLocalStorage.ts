@@ -33,6 +33,7 @@ export interface LocalStorageOptions {
  */
 const isStorageAvailable = (type: 'localStorage' | 'sessionStorage'): boolean => {
   try {
+    if (typeof window === 'undefined') return false;
     const storage = window[type];
     const testKey = '__storage_test__';
     storage.setItem(testKey, testKey);
@@ -44,17 +45,17 @@ const isStorageAvailable = (type: 'localStorage' | 'sessionStorage'): boolean =>
 };
 
 /**
- * Hook for using localStorage with React state
+ * Hook for managing localStorage with React state
  * @param key The key to store the value under
  * @param initialValue The initial value (or a function that returns it)
  * @param options Configuration options
- * @returns A stateful value and a function to update it
+ * @returns A stateful value, a function to update it, and utility functions
  */
-function useLocalStorage<T>(
+export const useLocalStorage = <T>(
   key: string,
   initialValue: T | (() => T),
   options: LocalStorageOptions = {}
-): [T, Dispatch<SetStateAction<T>>, { remove: () => void, error: Error | null }] {
+): [T, Dispatch<SetStateAction<T>>, { remove: () => void, error: Error | null }] => {
   const {
     useSessionStorage = false,
     serialize = true,
@@ -214,7 +215,6 @@ function useLocalStorage<T>(
   }, [storageAvailable, storageType, prefixedKey, initialValue, safelyAccessStorage]);
 
   return [storedValue, setValue, { remove, error }];
-}
+};
 
-export { useLocalStorage };
 export default useLocalStorage;

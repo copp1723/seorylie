@@ -235,8 +235,6 @@ export const useLoading = () => {
   return context;
 };
 
-// Add alias for backward compatibility
+// Alias for backwards compatibility
 export const useLoadingContext = useLoading;
-
-// Default export for direct imports
 export default LoadingContext;

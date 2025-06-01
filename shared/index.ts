@@ -1,7 +1,10 @@
-// Database Schemas
+// Primary Database Schemas
 export * from './schema';
-export * from './enhanced-schema';
+
+// Lead Management Schemas
 export * from './lead-management-schema';
+
+// ADF Schemas
 export * from './adf-schema';
 
 // API Schemas

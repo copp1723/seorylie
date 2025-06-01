@@ -46,24 +46,120 @@ export interface KeyboardShortcutOptions {
   global?: boolean;
 }
 
+export interface KeyboardShortcutHook {
+  register: (shortcuts: KeyboardShortcut[], callback: (shortcut: KeyboardShortcut) => void) => () => void;
+  unregister: (shortcuts: KeyboardShortcut[]) => void;
+  isPressed: (key: string) => boolean;
+}
+
 type KeyboardEventHandler = (event: KeyboardEvent) => void;
 
+// Main hook that returns a management interface
+export const useKeyboardShortcut = (): KeyboardShortcutHook => {
+  const shortcutsRef = useRef<Map<string, { shortcut: KeyboardShortcut; callback: (shortcut: KeyboardShortcut) => void }>>(new Map());
+  const pressedKeysRef = useRef<Set<string>>(new Set());
+
+  const createShortcutKey = useCallback((shortcut: KeyboardShortcut): string => {
+    const modifiers = [];
+    if (shortcut.ctrlKey) modifiers.push('ctrl');
+    if (shortcut.shiftKey) modifiers.push('shift');
+    if (shortcut.altKey) modifiers.push('alt');
+    if (shortcut.metaKey) modifiers.push('meta');
+    return [...modifiers, shortcut.key.toLowerCase()].join('+');
+  }, []);
+
+  const matchesShortcut = useCallback((event: KeyboardEvent, shortcut: KeyboardShortcut): boolean => {
+    // If shortcut is disabled, it never matches
+    if (shortcut.enabled === false) return false;
+    
+    const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
+    const ctrlMatches = !!event.ctrlKey === !!shortcut.ctrlKey;
+    const shiftMatches = !!event.shiftKey === !!shortcut.shiftKey;
+    const altMatches = !!event.altKey === !!shortcut.altKey;
+    const metaMatches = !!event.metaKey === !!shortcut.metaKey;
+
+    return keyMatches && ctrlMatches && shiftMatches && altMatches && metaMatches;
+  }, []);
+
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    pressedKeysRef.current.add(event.key.toLowerCase());
+
+    for (const [, { shortcut, callback }] of shortcutsRef.current) {
+      if (matchesShortcut(event, shortcut)) {
+        if (shortcut.preventDefault !== false) {
+          event.preventDefault();
+        }
+        if (shortcut.stopPropagation) {
+          event.stopPropagation();
+        }
+        callback(shortcut);
+        break;
+      }
+    }
+  }, [matchesShortcut]);
+
+  const handleKeyUp = useCallback((event: KeyboardEvent) => {
+    pressedKeysRef.current.delete(event.key.toLowerCase());
+  }, []);
+
+  const register = useCallback((shortcuts: KeyboardShortcut[], callback: (shortcut: KeyboardShortcut) => void): (() => void) => {
+    shortcuts.forEach(shortcut => {
+      const key = createShortcutKey(shortcut);
+      shortcutsRef.current.set(key, { shortcut, callback });
+    });
+
+    return () => {
+      shortcuts.forEach(shortcut => {
+        const key = createShortcutKey(shortcut);
+        shortcutsRef.current.delete(key);
+      });
+    };
+  }, [createShortcutKey]);
+
+  const unregister = useCallback((shortcuts: KeyboardShortcut[]) => {
+    shortcuts.forEach(shortcut => {
+      const key = createShortcutKey(shortcut);
+      shortcutsRef.current.delete(key);
+    });
+  }, [createShortcutKey]);
+
+  const isPressed = useCallback((key: string): boolean => {
+    return pressedKeysRef.current.has(key.toLowerCase());
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleKeyDown, handleKeyUp]);
+
+  return {
+    register,
+    unregister,
+    isPressed
+  };
+};
+
 /**
- * Hook for registering and handling keyboard shortcuts
+ * Simple hook for registering keyboard shortcuts with string format
  * @param shortcutMap Object mapping shortcut keys to handlers or array of shortcut strings
  * @param handlerOrOptions Handler function (when using array) or options object
  * @param options Global options for all shortcuts (when using array format)
  */
-function useKeyboardShortcut(
+function useKeyboardShortcuts(
   shortcutMap: Record<string, (event: KeyboardEvent) => void>,
   options?: KeyboardShortcutOptions
 ): void;
-function useKeyboardShortcut(
+function useKeyboardShortcuts(
   shortcuts: string[],
   handler: (event: KeyboardEvent) => void,
   options?: KeyboardShortcutOptions
 ): void;
-function useKeyboardShortcut(
+function useKeyboardShortcuts(
   shortcutMapOrArray: Record<string, (event: KeyboardEvent) => void> | string[],
   handlerOrOptions?: ((event: KeyboardEvent) => void) | KeyboardShortcutOptions,
   options: KeyboardShortcutOptions = {}
@@ -88,6 +184,7 @@ function useKeyboardShortcut(
     shortcutMap = shortcutMapOrArray;
     finalOptions = (handlerOrOptions as KeyboardShortcutOptions) || {};
   }
+  
   // Store handlers in a ref to avoid unnecessary re-renders
   const handlersRef = useRef(shortcutMap);
   
@@ -205,7 +302,8 @@ export const useShortcut = (
   handler: KeyboardEventHandler,
   options: KeyboardShortcutOptions = {}
 ): void => {
-  useKeyboardShortcut({ [shortcut]: handler }, options);
+  useKeyboardShortcuts({ [shortcut]: handler }, options);
 };
 
-export default useKeyboardShortcut;
+// Export the string-based shortcut hook as the default
+export default useKeyboardShortcuts;
