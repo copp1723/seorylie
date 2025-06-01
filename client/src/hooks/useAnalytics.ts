@@ -9,6 +9,19 @@ import {
   configureAnalytics
 } from '../utils/analytics';
 
+export interface AnalyticsEvent {
+  name: string;
+  properties?: Record<string, any>;
+  timestamp?: Date;
+}
+
+export interface AnalyticsUser {
+  id: string;
+  email?: string;
+  name?: string;
+  properties?: Record<string, any>;
+}
+
 /**
  * Analytics hook interface
  */
@@ -59,6 +72,16 @@ interface AnalyticsHook {
   trackConversion: (conversionType: string, parameters?: EventParameters) => void;
   
   /**
+   * Page tracking (alias for trackPageView)
+   */
+  page: (name: string, properties?: Record<string, any>) => void;
+  
+  /**
+   * Reset analytics state
+   */
+  reset: () => void;
+  
+  /**
    * Check if analytics is enabled
    */
   isEnabled: boolean;
@@ -81,9 +104,11 @@ interface AnalyticsHook {
 export const useAnalytics = (): AnalyticsHook => {
   const [isEnabled, setIsEnabled] = useState<boolean>(() => {
     // Check localStorage for user preference
-    const storedPreference = localStorage.getItem('analytics-enabled');
-    if (storedPreference !== null) {
-      return storedPreference === 'true';
+    if (typeof window !== 'undefined') {
+      const storedPreference = localStorage.getItem('analytics-enabled');
+      if (storedPreference !== null) {
+        return storedPreference === 'true';
+      }
     }
     // Default to true in production, false in development
     return process.env.NODE_ENV === 'production';
@@ -94,7 +119,9 @@ export const useAnalytics = (): AnalyticsHook => {
   // Update analytics configuration when enabled state changes
   useEffect(() => {
     configureAnalytics({ enabled: isEnabled });
-    localStorage.setItem('analytics-enabled', String(isEnabled));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('analytics-enabled', String(isEnabled));
+    }
   }, [isEnabled]);
   
   // Track event wrapper
@@ -133,6 +160,11 @@ export const useAnalytics = (): AnalyticsHook => {
       trackPageView(pageName, parameters);
     }
   }, [isEnabled]);
+
+  // Page tracking alias
+  const page = useCallback((name: string, properties: Record<string, any> = {}) => {
+    trackPageViewFn(name, properties);
+  }, [trackPageViewFn]);
   
   // Track user interaction
   const trackInteraction = useCallback((
@@ -181,12 +213,19 @@ export const useAnalytics = (): AnalyticsHook => {
       ...parameters
     });
   }, [trackEvent]);
+
+  // Reset analytics state
+  const reset = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('analytics-enabled');
+    }
+    setIsEnabled(process.env.NODE_ENV === 'production');
+  }, []);
   
   // Set enabled state
   const setEnabled = useCallback((enabled: boolean) => {
     setIsEnabled(enabled);
   }, []);
-  
   return {
     track,
     trackEvent,
@@ -197,6 +236,8 @@ export const useAnalytics = (): AnalyticsHook => {
     trackFeatureUsage,
     trackError,
     trackConversion,
+    page,
+    reset,
     isEnabled,
     setEnabled,
     isUserActive: isActive

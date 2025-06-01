@@ -13,7 +13,7 @@ import { createServer } from 'http';
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { setupWebSocketServer } from './ws-server';
+import { setupWebSocketServer } from './websocket';
 import logger from './logger';
 import { setupRoutes } from './routes';
 import { checkDatabaseConnection } from './db';
@@ -32,7 +32,7 @@ import sendgridRoutes from './routes/sendgrid-webhook-routes';
 // import traceRoutes from './routes/trace-routes';
 // import { traceCorrelation } from './services/trace-correlation';
 
-import { SERVER_CONFIG, validateRequiredEnvVars } from './config/constants.js';
+import { SERVER_CONFIG, validateRequiredEnvVars } from './config/constants';
 
 // Validate required environment variables
 validateRequiredEnvVars();
@@ -108,14 +108,21 @@ app.get('*', (req, res) => {
 // Create HTTP server
 const server = createServer(app);
 
-// Setup WebSocket server
-// setupWebSocketServer(server); // Commented out for now
-
 // Start server
 async function startServer() {
   try {
     // Check database connection
     await checkDatabaseConnection();
+
+    // Setup WebSocket server with observability
+    logger.info('Setting up WebSocket server...');
+    try {
+      await setupWebSocketServer(server);
+      logger.info('WebSocket server setup completed');
+    } catch (error) {
+      logger.error('Failed to setup WebSocket server:', error);
+      // Continue without WebSocket - non-critical for basic functionality
+    }
 
     // Initialize Redis (non-blocking - will use fallback if Redis unavailable)
     logger.info('Initializing Redis connection');

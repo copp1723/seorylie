@@ -1,7 +1,16 @@
-// Database Schemas
+// Primary Database Schemas
 export * from './schema';
-export * from './enhanced-schema';
+
+// Enhanced Schemas (selective exports to avoid conflicts)
+export {
+  // Additional enhanced schemas not conflicting with base schema
+  extendedUserSchema,
+  extendedVehicleSchema,
+} from './enhanced-schema';
+// Lead Management Schemas
 export * from './lead-management-schema';
+
+// ADF Schemas
 export * from './adf-schema';
 
 // API Schemas

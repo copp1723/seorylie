@@ -2,7 +2,7 @@ import * as jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import logger from '../utils/logger';
-import db from '../db';
+import { db } from '../db';
 import { sql } from 'drizzle-orm';
 import type { StringValue } from 'ms';
 

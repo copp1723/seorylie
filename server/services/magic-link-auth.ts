@@ -2,7 +2,7 @@ import { randomBytes, createHash } from 'crypto';
 import db from '../db';
 import { eq, and, gte } from 'drizzle-orm';
 import logger from '../utils/logger';
-import { magicLinkInvitations, users } from '@shared/schema';
+import { magicLinkInvitations, users } from '../../shared/enhanced-schema';
 import { sendEmail } from './email-service';
 
 /**

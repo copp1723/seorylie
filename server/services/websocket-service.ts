@@ -9,7 +9,7 @@ import { featureFlagsService, FeatureFlagNames } from '../services/feature-flags
 import { monitoringService } from '../services/monitoring';
 import { AppError, ErrorCode } from '../utils/error-codes';
 import { generateTraceId } from '../utils/error-handler';
-import { WEBSOCKET_CONFIG, REDIS_CONFIG } from '../config/constants.js';
+import { WEBSOCKET_CONFIG, REDIS_CONFIG } from '../config/constants';
 
 // Message types for our WebSocket communication
 export enum MessageType {
@@ -110,6 +110,16 @@ class WebSocketService {
       lastReconnect: 0
     }
   };
+
+  // Performance optimization caches
+  private metricsCache = {
+    lastUpdate: 0,
+    cachedMetrics: null as any,
+    ttl: 1000 // 1 second cache
+  };
+
+  private rateLimitCache = new Map<string, { blocked: boolean; count: number; resetTime: number }>();
+  private dealershipModeCache = new Map<number, { mode: string; cachedAt: number; ttl: number }>();
 
   /**
    * Initialize the WebSocket server
@@ -1184,15 +1194,15 @@ class WebSocketService {
   }
 
   /**
-   * Handle chat messages, routing based on dealership mode
+   * Handle chat messages, routing based on dealership mode with caching
    */
   private async handleChatMessage(clientId: string, data: WebSocketMessage) {
     const client = this.clients.get(clientId);
     if (!client || !data.dealershipId) return;
 
     try {
-      // Get dealership mode to determine message handling
-      const mode = await dealershipConfigService.getDealershipMode(data.dealershipId);
+      // Get dealership mode with caching to improve performance
+      const mode = await this.getCachedDealershipMode(data.dealershipId);
 
       // Handle differently based on mode
       if (mode === 'rylie_ai') {
@@ -1216,6 +1226,31 @@ class WebSocketService {
         traceId: data.traceId
       });
     }
+  }
+
+  /**
+   * Get dealership mode with caching for performance
+   */
+  private async getCachedDealershipMode(dealershipId: number): Promise<string> {
+    const now = Date.now();
+    const cached = this.dealershipModeCache.get(dealershipId);
+    
+    // Return cached mode if still valid (5 minute TTL)
+    if (cached && (now - cached.cachedAt) < cached.ttl) {
+      return cached.mode;
+    }
+
+    // Fetch fresh mode from service
+    const mode = await dealershipConfigService.getDealershipMode(dealershipId);
+    
+    // Cache the result with 5 minute TTL
+    this.dealershipModeCache.set(dealershipId, {
+      mode,
+      cachedAt: now,
+      ttl: 300000 // 5 minutes
+    });
+
+    return mode;
   }
 
   /**
@@ -1640,10 +1675,19 @@ class WebSocketService {
   }
 
   /**
-   * Get connection metrics
+   * Get connection metrics with caching for performance
    */
   getMetrics(): any {
-    return {
+    const now = Date.now();
+    
+    // Return cached metrics if still valid
+    if (this.metricsCache.cachedMetrics && 
+        (now - this.metricsCache.lastUpdate) < this.metricsCache.ttl) {
+      return this.metricsCache.cachedMetrics;
+    }
+
+    // Generate fresh metrics
+    const freshMetrics = {
       connections: {
         total: this.metrics.connections.total,
         active: this.metrics.connections.active,
@@ -1652,8 +1696,15 @@ class WebSocketService {
       messages: { ...this.metrics.messages },
       redis: { ...this.metrics.redis },
       instanceId: this.instanceId,
-      redisEnabled: this.isRedisEnabled
+      redisEnabled: this.isRedisEnabled,
+      timestamp: now
     };
+
+    // Cache the metrics
+    this.metricsCache.cachedMetrics = freshMetrics;
+    this.metricsCache.lastUpdate = now;
+
+    return freshMetrics;
   }
 }
 

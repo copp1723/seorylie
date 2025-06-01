@@ -8,7 +8,7 @@ import {
   type InsertAdfEmailQueue,
   type InsertAdfProcessingLog,
   type AdfProcessingStatus
-} from '../../shared/adf-schema';
+} from '@shared/schema-resolver';
 import { AdfParser } from './adf-parser';
 import logger from '../utils/logger';
 
@@ -395,6 +395,93 @@ export class AdfLeadProcessor {
         status,
         message
       });
+    }
+  }
+
+  /**
+   * Process ADF XML directly (without email context)
+   */
+  async processAdfXml(xmlContent: string, source: string = 'direct'): Promise<{
+    success: boolean;
+    leadId?: number;
+    isDuplicate?: boolean;
+    error?: string;
+    warnings: string[];
+  }> {
+    const startTime = Date.now();
+    
+    try {
+      logger.info('Processing ADF XML directly', { source, xmlLength: xmlContent.length });
+      
+      // Parse the XML
+      const parseResult = await this.adfParser.parseAdfXml(xmlContent);
+      
+      if (!parseResult.success) {
+        return {
+          success: false,
+          error: parseResult.errors?.join('; ') || 'XML parsing failed',
+          warnings: parseResult.warnings || []
+        };
+      }
+      
+      // Get the mapped lead data from parser result
+      const leadData = parseResult.mappedLead;
+      
+      // Map to dealership (fallback to first available)
+      const dealershipId = await this.mapToDealership(leadData);
+      if (dealershipId) {
+        leadData.dealershipId = dealershipId;
+      }
+      
+      // Check for duplicates
+      const { isDuplicate, existingLeadId } = await this.checkForDuplicates(leadData);
+      
+      if (isDuplicate) {
+        logger.info('Duplicate lead detected during XML processing', { existingLeadId, source });
+        return {
+          success: true,
+          leadId: existingLeadId,
+          isDuplicate: true,
+          warnings: parseResult.warnings || []
+        };
+      }
+      
+      // Store the lead
+      const leadId = await this.storeLead(leadData);
+      
+      // Log success
+      await this.logProcessingStep(leadId, 'xml_processing', 'success', `XML processed successfully from ${source}`);
+      
+      logger.info('ADF XML processed successfully', { 
+        leadId, 
+        source,
+        processingTime: Date.now() - startTime 
+      });
+      
+      return {
+        success: true,
+        leadId,
+        isDuplicate: false,
+        warnings: parseResult.warnings || []
+      };
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      logger.error('Failed to process ADF XML', { 
+        error: errorMessage, 
+        source,
+        processingTime: Date.now() - startTime 
+      });
+      
+      // Log failure
+      await this.logProcessingStep(null, 'xml_processing', 'error', `XML processing failed: ${errorMessage}`);
+      
+      return {
+        success: false,
+        error: errorMessage,
+        warnings: []
+      };
     }
   }
 

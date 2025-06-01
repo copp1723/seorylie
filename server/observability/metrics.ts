@@ -16,7 +16,7 @@ import { Express, Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 
 // Initialize the Prometheus registry
-const register = new promClient.Registry();
+const register = promClient.register;
 
 // Add default metrics (CPU, memory, event loop, etc.)
 promClient.collectDefaultMetrics({ register });

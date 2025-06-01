@@ -4,7 +4,7 @@ import { simpleParser, ParsedMail, Attachment } from 'mailparser';
 import logger from '../utils/logger';
 import db from '../db';
 import { eq } from 'drizzle-orm';
-import { dealerships, dealershipEmailConfigs } from '@shared/schema-resolver';
+import { dealerships } from '@shared/schema-resolver';
 import { monitoring } from './monitoring';
 import { addEmailJob } from './queue';
 
@@ -163,26 +163,21 @@ export class AdfEmailListener extends EventEmitter {
    */
   private async getEmailConfigurations(): Promise<any[]> {
     try {
-      const configs = await db.query.dealershipEmailConfigs.findMany({
-        where: eq(dealershipEmailConfigs.status, 'active'),
-        with: {
-          dealership: true
-        }
-      });
-
-      return configs.map(config => ({
-        id: config.id,
-        dealershipId: config.dealershipId,
-        dealershipName: config.dealership?.name || 'Unknown',
-        emailAddress: config.emailAddress,
-        host: config.imapHost,
-        port: config.imapPort,
-        user: config.imapUser,
-        password: this.decryptPassword(config.imapPassEncrypted),
-        tls: config.imapUseSsl,
-        isPrimary: config.isPrimary,
-        pollingInterval: config.pollingIntervalMs || 300000 // 5 minutes default
-      }));
+      // For now, return mock configuration for testing
+      // TODO: Implement proper dealership email configs table
+      return [{
+        id: 1,
+        dealershipId: 1,
+        dealershipName: 'Test Dealership',
+        emailAddress: process.env.IMAP_EMAIL || 'test@example.com',
+        host: process.env.IMAP_HOST || 'imap.gmail.com',
+        port: parseInt(process.env.IMAP_PORT || '993', 10),
+        user: process.env.IMAP_USER || 'test@example.com',
+        password: process.env.IMAP_PASSWORD || 'password',
+        tls: true,
+        isPrimary: true,
+        pollingInterval: 300000 // 5 minutes default
+      }];
     } catch (error) {
       logger.error('Failed to get email configurations', { 
         error: error instanceof Error ? error.message : String(error) 
