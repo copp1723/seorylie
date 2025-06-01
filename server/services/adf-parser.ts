@@ -483,4 +483,6 @@ export class AdfParser {
   }
 }
 
+// Export with both names for compatibility
+export { AdfParser as ADFParser };
 export default AdfParser;

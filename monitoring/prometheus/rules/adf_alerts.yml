@@ -1,0 +1,172 @@
+# ADF (Auto Data Format) Alert Rules
+# Enhanced monitoring for ADF lead processing pipeline
+# Based on enterprise-grade thresholds for automotive lead processing
+
+groups:
+  - name: adf_processing_alerts
+    rules:
+      # ADF Lead Ingestion Success Rate Alert
+      - alert: ADF_Ingest_Success_Rate_Low
+        expr: |
+          (
+            sum(rate(adf_leads_processed_total{status="success"}[15m])) /
+            sum(rate(adf_leads_processed_total[15m]))
+          ) < 0.98
+        for: 5m
+        labels:
+          severity: critical
+          service: adf
+          component: ingestion
+          team: platform
+        annotations:
+          summary: "ADF lead ingestion success rate is below 98%"
+          description: |
+            ADF lead ingestion success rate has been below 98% for more than 5 minutes.
+            Current rate: {{ $value | humanizePercentage }}
+            This indicates potential issues with email parsing, IMAP connectivity, or lead validation.
+          runbook_url: "https://docs.cleanrylie.com/runbooks/adf-ingestion-failure"
+          dashboard_url: "http://grafana:3000/d/adf-overview/adf-overview-dashboard"
+
+      # ADF Dossier Generation Success Rate Alert  
+      - alert: ADF_Dossier_Success_Rate_Low
+        expr: |
+          (
+            sum(rate(handover_dossier_generation_ms_count{status="success"}[1h])) /
+            sum(rate(handover_dossier_generation_ms_count[1h]))
+          ) < 0.95
+        for: 10m
+        labels:
+          severity: warning
+          service: adf
+          component: dossier
+          team: platform
+        annotations:
+          summary: "ADF dossier generation success rate is below 95%"
+          description: |
+            ADF handover dossier generation success rate has been below 95% for more than 10 minutes.
+            Current rate: {{ $value | humanizePercentage }}
+            This may impact human handover quality and dealership satisfaction.
+          runbook_url: "https://docs.cleanrylie.com/runbooks/adf-dossier-failure"
+          dashboard_url: "http://grafana:3000/d/adf-conversation-quality/adf-conversation-quality"
+
+      # ADF Response Time P95 Alert (Enterprise automotive SLA: 2s)
+      - alert: ADF_Response_Time_High
+        expr: |
+          histogram_quantile(0.95, sum(rate(ai_response_latency_ms_bucket[5m])) by (le)) > 2000
+        for: 3m
+        labels:
+          severity: warning
+          service: adf
+          component: ai_response
+          team: platform
+        annotations:
+          summary: "ADF AI response P95 latency exceeds 2 seconds"
+          description: |
+            ADF AI response P95 latency has been above 2000ms for more than 3 minutes.
+            Current P95: {{ $value }}ms
+            This may impact customer experience and lead conversion rates.
+          runbook_url: "https://docs.cleanrylie.com/runbooks/adf-response-latency"
+          dashboard_url: "http://grafana:3000/d/adf-overview/adf-overview-dashboard"
+
+      # ADF High Handover Rate Alert
+      - alert: ADF_High_Handover_Rate
+        expr: |
+          (
+            sum(rate(handover_trigger_total[1h])) /
+            sum(rate(adf_leads_processed_total[1h]))
+          ) > 0.4
+        for: 15m
+        labels:
+          severity: warning
+          service: adf
+          component: handover
+          team: platform
+        annotations:
+          summary: "ADF human handover rate exceeds 40%"
+          description: |
+            ADF human handover rate has been above 40% for more than 15 minutes.
+            Current rate: {{ $value | humanizePercentage }}
+            High handover rates may indicate AI model issues or complex customer inquiries.
+          runbook_url: "https://docs.cleanrylie.com/runbooks/adf-high-handover"
+          dashboard_url: "http://grafana:3000/d/adf-conversation-quality/adf-conversation-quality"
+
+      # ADF IMAP Disconnection Alert
+      - alert: ADF_IMAP_Disconnections_High
+        expr: |
+          sum(rate(adf_imap_disconnections_total[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: adf
+          component: imap
+          team: platform
+        annotations:
+          summary: "ADF IMAP disconnection rate is high"
+          description: |
+            ADF IMAP disconnection rate has been above 0.1/minute for more than 2 minutes.
+            Current rate: {{ $value }}/min
+            This will prevent new lead ingestion and requires immediate attention.
+          runbook_url: "https://docs.cleanrylie.com/runbooks/adf-imap-connectivity"
+          dashboard_url: "http://grafana:3000/d/adf-overview/adf-overview-dashboard"
+
+      # ADF No Leads Processed Alert (Dead Letter Queue scenario)
+      - alert: ADF_No_Leads_Processed
+        expr: |
+          sum(rate(adf_leads_processed_total[10m])) == 0
+        for: 10m
+        labels:
+          severity: critical
+          service: adf
+          component: processing
+          team: platform
+        annotations:
+          summary: "No ADF leads processed in the last 10 minutes"
+          description: |
+            No ADF leads have been processed for 10 minutes.
+            This indicates a complete system failure or email ingestion issue.
+            Check IMAP connectivity, email queue, and processing pipeline.
+          runbook_url: "https://docs.cleanrylie.com/runbooks/adf-no-processing"
+          dashboard_url: "http://grafana:3000/d/adf-overview/adf-overview-dashboard"
+
+  - name: adf_performance_alerts
+    rules:
+      # ADF Dossier Generation Time Alert
+      - alert: ADF_Dossier_Generation_Slow
+        expr: |
+          histogram_quantile(0.95, sum(rate(handover_dossier_generation_ms_bucket[5m])) by (le)) > 10000
+        for: 5m
+        labels:
+          severity: warning
+          service: adf
+          component: dossier
+          team: platform
+        annotations:
+          summary: "ADF dossier generation P95 time exceeds 10 seconds"
+          description: |
+            ADF handover dossier generation P95 time has been above 10 seconds for more than 5 minutes.
+            Current P95: {{ $value }}ms
+            Slow dossier generation may delay human handovers and impact SLA.
+          runbook_url: "https://docs.cleanrylie.com/runbooks/adf-dossier-performance"
+          dashboard_url: "http://grafana:3000/d/adf-conversation-quality/adf-conversation-quality"
+
+      # ADF Email Delivery Failure Alert
+      - alert: ADF_Email_Delivery_Failures
+        expr: |
+          (
+            sum(rate(handover_email_sent_total{status="failed"}[15m])) /
+            sum(rate(handover_email_sent_total[15m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: adf
+          component: email
+          team: platform
+        annotations:
+          summary: "ADF email delivery failure rate exceeds 5%"
+          description: |
+            ADF handover email delivery failure rate has been above 5% for more than 5 minutes.
+            Current failure rate: {{ $value | humanizePercentage }}
+            Check SendGrid configuration and dealership email settings.
+          runbook_url: "https://docs.cleanrylie.com/runbooks/adf-email-delivery"
+          dashboard_url: "http://grafana:3000/d/adf-overview/adf-overview-dashboard"

@@ -313,7 +313,6 @@ export class EnhancedAIService {
 
 // Export singleton instance with default configuration
 export const aiService = new EnhancedAIService();
-export const enhancedAIService = aiService;
 
 // Export with alternative name for backward compatibility
 export const enhancedAIService = aiService;

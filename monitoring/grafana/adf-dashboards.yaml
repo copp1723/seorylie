@@ -1,0 +1,219 @@
+# ADF Grafana Dashboards Index
+# For Helm chart deployment and dashboard provisioning
+# Part of ADF-W31 Enhanced Monitoring Implementation
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adf-dashboards-config
+  namespace: monitoring
+  labels:
+    app: grafana
+    component: dashboards
+    feature: adf-monitoring
+    version: "1.0.0"
+  annotations:
+    description: "ADF (Auto Data Format) monitoring dashboards configuration"
+    docs: "https://docs.cleanrylie.com/monitoring/adf-dashboards"
+    ticket: "ADF-W31"
+data:
+  # Dashboard provider configuration
+  adf-dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'adf-dashboards'
+        orgId: 1
+        folder: 'ADF Monitoring'
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/dashboards/adf
+
+  # Dashboard metadata and descriptions
+  dashboard-index.json: |
+    {
+      "adf_dashboards": {
+        "version": "1.0.0",
+        "created": "2024-01-15",
+        "ticket": "ADF-W31",
+        "dashboards": [
+          {
+            "uid": "adf-overview",
+            "title": "ADF Overview Dashboard",
+            "description": "Main ADF monitoring dashboard with lead funnel, response times, and flow analysis",
+            "file": "adf_overview.json",
+            "tags": ["adf", "overview", "leads"],
+            "refresh": "30s",
+            "panels": [
+              "Lead Processing Status (24h)",
+              "Leads Processed by Dealership (1h)", 
+              "AI Response Latency by Flow Type",
+              "Human Handoffs (1h)",
+              "Lead Processing Success Rate",
+              "Fast-track vs Standard Flow Ratio",
+              "Dossier Generation Time (P95)"
+            ]
+          },
+          {
+            "uid": "adf-source-breakdown",
+            "title": "ADF Lead Source Analysis",
+            "description": "Detailed breakdown of lead sources, types, and provider performance over 7 days",
+            "file": "adf_source_breakdown.json",
+            "tags": ["adf", "source", "analysis"],
+            "refresh": "30s",
+            "panels": [
+              "Leads by Source Provider (7 Days)",
+              "Source Provider Distribution (7 Days)",
+              "Leads by Type (7 Days)",
+              "Source Provider Performance Summary"
+            ]
+          },
+          {
+            "uid": "adf-conversation-quality",
+            "title": "ADF Conversation Quality",
+            "description": "Conversation quality metrics including success rates, response times, and handover analysis",
+            "file": "adf_conversation_quality.json", 
+            "tags": ["adf", "conversation", "quality"],
+            "refresh": "30s",
+            "panels": [
+              "Overall Success Rate",
+              "Dossier Generation Success Rate",
+              "Human Handover Rate",
+              "P95 Response Latency",
+              "Response Time Distribution",
+              "Handover Reasons Over Time"
+            ]
+          }
+        ],
+        "alerts": {
+          "file": "adf_alerts.yml",
+          "groups": [
+            "adf_processing_alerts",
+            "adf_performance_alerts"
+          ],
+          "rules": [
+            "ADF_Ingest_Success_Rate_Low",
+            "ADF_Dossier_Success_Rate_Low", 
+            "ADF_Response_Time_High",
+            "ADF_High_Handover_Rate",
+            "ADF_IMAP_Disconnections_High",
+            "ADF_No_Leads_Processed",
+            "ADF_Dossier_Generation_Slow",
+            "ADF_Email_Delivery_Failures"
+          ]
+        },
+        "metrics": {
+          "source": "prometheus-metrics.ts",
+          "namespace": "cleanrylie",
+          "metrics": [
+            "adf_leads_processed_total",
+            "ai_response_latency_ms",
+            "handover_trigger_total",
+            "handover_dossier_generation_ms",
+            "handover_email_sent_total",
+            "adf_imap_disconnections_total"
+          ]
+        }
+      }
+    }
+
+---
+# Helm values for ADF dashboard deployment
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adf-helm-values
+  namespace: monitoring
+  labels:
+    app: grafana
+    component: helm-config
+    feature: adf-monitoring
+data:
+  values.yaml: |
+    grafana:
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+          - name: 'adf'
+            orgId: 1
+            folder: 'ADF Monitoring'
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/adf
+      
+      dashboards:
+        adf:
+          adf-overview:
+            gnetId: null
+            revision: 1
+            datasource: prometheus
+            file: adf_overview.json
+          adf-source-breakdown:
+            gnetId: null
+            revision: 1
+            datasource: prometheus
+            file: adf_source_breakdown.json
+          adf-conversation-quality:
+            gnetId: null
+            revision: 1
+            datasource: prometheus
+            file: adf_conversation_quality.json
+
+      # Prometheus configuration for ADF metrics
+      prometheus:
+        prometheusSpec:
+          ruleSelector:
+            matchLabels:
+              app: prometheus
+              release: monitoring
+          ruleNamespaceSelector:
+            matchNames:
+            - monitoring
+          additionalScrapeConfigs:
+          - job_name: 'cleanrylie-adf'
+            metrics_path: '/metrics'
+            scrape_interval: 10s
+            static_configs:
+            - targets: ['cleanrylie-api:3000']
+              labels:
+                service: 'cleanrylie-api'
+                component: 'adf'
+            metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: '(adf_leads_processed_total|ai_response_latency_ms.*|handover_trigger_total|handover_dossier_generation_ms.*|handover_email_sent_total|adf_imap_disconnections_total)'
+              action: keep
+
+      # Alert manager configuration for ADF alerts
+      alertmanager:
+        config:
+          route:
+            group_by: ['alertname', 'service']
+            group_wait: 10s
+            group_interval: 10s
+            repeat_interval: 1h
+            receiver: 'adf-alerts'
+            routes:
+            - match:
+                service: adf
+              receiver: 'adf-alerts'
+              group_wait: 5s
+              repeat_interval: 30m
+          
+          receivers:
+          - name: 'adf-alerts'
+            slack_configs:
+            - api_url: '{{ .SlackWebhookURL }}'
+              channel: '#adf-alerts'
+              title: 'ADF Alert: {{ .GroupLabels.alertname }}'
+              text: |
+                {{ range .Alerts }}
+                *Alert:* {{ .Annotations.summary }}
+                *Description:* {{ .Annotations.description }}
+                *Runbook:* {{ .Annotations.runbook_url }}
+                *Dashboard:* {{ .Annotations.dashboard_url }}
+                {{ end }}

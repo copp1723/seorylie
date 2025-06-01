@@ -221,12 +221,39 @@ export function recordRateLimit(
  * Record an error
  */
 export function recordError(
-  errorType: string, 
-  component: string, 
+  errorType: string,
+  component: string,
   sandboxId?: number | string
 ) {
   const sandboxIdStr = sandboxId ? String(sandboxId) : 'unknown';
   errorCounter.labels(sandboxIdStr, errorType, component).inc();
+}
+
+/**
+ * Record a success event
+ */
+export function recordSuccess(
+  metric: string,
+  service: string,
+  dealershipId?: number
+) {
+  // Use existing counter with success status
+  const sandboxIdStr = dealershipId ? String(dealershipId) : 'unknown';
+  toolExecutionCounter.labels(metric, sandboxIdStr, 'success').inc();
+}
+
+/**
+ * Record duration for a metric
+ */
+export function recordDuration(
+  metric: string,
+  duration: number,
+  dealershipId?: number
+) {
+  // Convert milliseconds to seconds and use existing histogram
+  const durationSeconds = duration / 1000;
+  const sandboxIdStr = dealershipId ? String(dealershipId) : 'unknown';
+  toolExecutionDuration.labels(metric, sandboxIdStr, 'success').observe(durationSeconds);
 }
 
 /**

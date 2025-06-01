@@ -27,6 +27,7 @@ alerting:
 rule_files:
   - "/etc/prometheus/rules/sandbox_alerts.yml"
   - "/etc/prometheus/rules/system_alerts.yml"
+  - "/etc/prometheus/rules/adf_alerts.yml"
 
 # Scrape configurations
 scrape_configs:
@@ -43,7 +44,7 @@ scrape_configs:
     honor_labels: true
     metric_relabel_configs:
       - source_labels: [__name__]
-        regex: '(token_usage_total|openai_cost_usd_total|sandbox_cost_usd_current|rate_limit_hits_total|tool_execution_duration_seconds.*)'
+        regex: '(token_usage_total|openai_cost_usd_total|sandbox_cost_usd_current|rate_limit_hits_total|tool_execution_duration_seconds.*|adf_leads_processed_total|ai_response_latency_ms.*|handover_trigger_total|handover_dossier_generation_ms.*|handover_email_sent_total|adf_imap_disconnections_total)'
         action: keep
 
   # Node Exporter for system metrics
