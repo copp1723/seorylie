@@ -2,6 +2,31 @@
 
 > This repository contains CleanRylie, a production-ready, multi-service AI platform for automotive dealerships. It's the result of a comprehensive integration and cleanup effort, consolidating features into a robust, scalable, and maintainable system.
 
+## 🚀 How We Work Now
+
+**Run `npm run setup` before all local or CI work. All quality gates are auto-checked before running. See [SETUP.md](SETUP.md) for troubleshooting.**
+
+### Quick Start for Developers
+1. **Setup**: `npm run setup` (handles all dependencies and validation)
+2. **Development**: `npm run dev` (starts frontend and backend)
+3. **Testing**: `npm run test` (auto-validates dependencies first)
+4. **Building**: `npm run build` (auto-validates dependencies first)
+
+### Quality Gates
+All commands now include automatic dependency verification and quality checks:
+- ✅ Dependencies installed and validated
+- ✅ TypeScript compilation passes
+- ✅ Linting rules enforced
+- ✅ Tests pass before builds
+- ✅ Environment properly configured
+
+### CI/CD Integration
+- **Staging**: Push to `integration/production-readiness-phase1` → auto-deploys to staging
+- **Production**: Merge to `main` after staging validation passes
+- **Feature Work**: Create `feature/` branches off integration branch
+
+---
+
 ## Branching & Release Model
 
 | Branch | Purpose |
