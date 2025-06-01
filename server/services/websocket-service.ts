@@ -111,6 +111,16 @@ class WebSocketService {
     }
   };
 
+  // Performance optimization caches
+  private metricsCache = {
+    lastUpdate: 0,
+    cachedMetrics: null as any,
+    ttl: 1000 // 1 second cache
+  };
+
+  private rateLimitCache = new Map<string, { blocked: boolean; count: number; resetTime: number }>();
+  private dealershipModeCache = new Map<number, { mode: string; cachedAt: number; ttl: number }>();
+
   /**
    * Initialize the WebSocket server
    */
@@ -1640,10 +1650,19 @@ class WebSocketService {
   }
 
   /**
-   * Get connection metrics
+   * Get connection metrics with caching for performance
    */
   getMetrics(): any {
-    return {
+    const now = Date.now();
+    
+    // Return cached metrics if still valid
+    if (this.metricsCache.cachedMetrics && 
+        (now - this.metricsCache.lastUpdate) < this.metricsCache.ttl) {
+      return this.metricsCache.cachedMetrics;
+    }
+
+    // Generate fresh metrics
+    const freshMetrics = {
       connections: {
         total: this.metrics.connections.total,
         active: this.metrics.connections.active,
@@ -1652,8 +1671,15 @@ class WebSocketService {
       messages: { ...this.metrics.messages },
       redis: { ...this.metrics.redis },
       instanceId: this.instanceId,
-      redisEnabled: this.isRedisEnabled
+      redisEnabled: this.isRedisEnabled,
+      timestamp: now
     };
+
+    // Cache the metrics
+    this.metricsCache.cachedMetrics = freshMetrics;
+    this.metricsCache.lastUpdate = now;
+
+    return freshMetrics;
   }
 }
 
