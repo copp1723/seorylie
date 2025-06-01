@@ -199,17 +199,22 @@ export class HealthCheckService extends BaseService {
         const startTime = Date.now();
         
         // Run check with strict timeout enforcement - DEP-009 requirement (5 seconds max)
+        let timeoutId: NodeJS.Timeout;
         const timeoutPromise = new Promise<never>((_, reject) => {
-          const timeoutId = setTimeout(() => {
+          timeoutId = setTimeout(() => {
             reject(new Error(`Health check timeout after ${this.checkConfig.timeout}ms`));
           }, this.checkConfig.timeout);
-          
-          // Ensure timeout is cleared if promise resolves first
-          return timeoutId;
         });
         
         const result = await Promise.race([
-          checkFunction(),
+          (async () => {
+            try {
+              const res = await checkFunction();
+              return res;
+            } finally {
+              clearTimeout(timeoutId); // Clear the timeout when checkFunction completes
+            }
+          })(),
           timeoutPromise
         ]);
 

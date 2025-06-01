@@ -54,7 +54,7 @@ export const WithActions: Story = {
   args: {
     title: 'Lead Management',
     description: 'Manage and track customer leads from various sources',
-    actions: (
+    children: (
       <div className="flex gap-2">
         <Button variant="outline">Export</Button>
         <Button>Add Lead</Button>
@@ -67,7 +67,7 @@ export const WithMultipleActions: Story = {
   args: {
     title: 'Analytics Dashboard',
     description: 'Comprehensive analytics and reporting for your dealership performance',
-    actions: (
+    children: (
       <div className="flex gap-2">
         <Button variant="ghost" size="sm">Refresh</Button>
         <Button variant="outline" size="sm">Settings</Button>
