@@ -1194,15 +1194,15 @@ class WebSocketService {
   }
 
   /**
-   * Handle chat messages, routing based on dealership mode
+   * Handle chat messages, routing based on dealership mode with caching
    */
   private async handleChatMessage(clientId: string, data: WebSocketMessage) {
     const client = this.clients.get(clientId);
     if (!client || !data.dealershipId) return;
 
     try {
-      // Get dealership mode to determine message handling
-      const mode = await dealershipConfigService.getDealershipMode(data.dealershipId);
+      // Get dealership mode with caching to improve performance
+      const mode = await this.getCachedDealershipMode(data.dealershipId);
 
       // Handle differently based on mode
       if (mode === 'rylie_ai') {
@@ -1226,6 +1226,31 @@ class WebSocketService {
         traceId: data.traceId
       });
     }
+  }
+
+  /**
+   * Get dealership mode with caching for performance
+   */
+  private async getCachedDealershipMode(dealershipId: number): Promise<string> {
+    const now = Date.now();
+    const cached = this.dealershipModeCache.get(dealershipId);
+    
+    // Return cached mode if still valid (5 minute TTL)
+    if (cached && (now - cached.cachedAt) < cached.ttl) {
+      return cached.mode;
+    }
+
+    // Fetch fresh mode from service
+    const mode = await dealershipConfigService.getDealershipMode(dealershipId);
+    
+    // Cache the result with 5 minute TTL
+    this.dealershipModeCache.set(dealershipId, {
+      mode,
+      cachedAt: now,
+      ttl: 300000 // 5 minutes
+    });
+
+    return mode;
   }
 
   /**
