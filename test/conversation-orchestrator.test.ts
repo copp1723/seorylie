@@ -64,51 +64,82 @@ vi.mock('../server/services/ai-response-service', () => ({
   }))
 }));
 
-vi.mock('../server/utils/logger', () => ({
-  default: {
+vi.mock('../server/utils/logger', () => {
+  const mockLogger = {
     info: vi.fn(),
     debug: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn()
-  }
-}));
+    error: vi.fn(),
+    trace: vi.fn(),
+    fatal: vi.fn(),
+    child: vi.fn(() => mockLogger),
+    level: 'info',
+    silent: false
+  };
+
+  return {
+    default: mockLogger,
+    logger: mockLogger,
+    ...mockLogger
+  };
+});
 
 describe('ConversationOrchestrator', () => {
   let orchestrator: ConversationOrchestrator;
   let mockDb: any;
-  let mockRedis: any;
+  let cleanupTasks: Array<() => Promise<void>> = [];
 
   beforeAll(async () => {
     // Suppress console output during tests
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Increase EventEmitter max listeners to prevent memory leak warnings
+    process.setMaxListeners(50);
   });
 
-  afterAll(() => {
+  afterAll(async () => {
+    // Ensure all cleanup tasks are executed
+    await Promise.all(cleanupTasks.map(task => task().catch(console.error)));
     vi.restoreAllMocks();
   });
 
   beforeEach(async () => {
     // Reset all mocks
     vi.clearAllMocks();
-    
+    cleanupTasks = [];
+
     // Create fresh orchestrator instance
     orchestrator = new ConversationOrchestrator();
-    
+
+    // Set max listeners to prevent memory leak warnings
+    orchestrator.setMaxListeners(20);
+
     // Mock database responses
     mockDb = await import('../server/db');
     mockDb.default.execute.mockResolvedValue({ rows: [] });
-    
+
     // Mock Redis responses
     const redisModule = await import('../server/lib/redis');
-    mockRedis = redisModule.getRedisClient();
+    redisModule.getRedisClient();
   });
 
   afterEach(async () => {
+    // Immediate shutdown to prevent memory leaks
     if (orchestrator) {
-      await orchestrator.shutdown();
+      try {
+        // Remove all listeners before shutdown to prevent memory leaks
+        orchestrator.removeAllListeners();
+        await orchestrator.shutdown();
+      } catch (error) {
+        console.error('Error during orchestrator shutdown:', error);
+      }
     }
+
+    // Execute any additional cleanup tasks
+    await Promise.all(cleanupTasks.map(task => task().catch(console.error)));
+    cleanupTasks = [];
   });
 
   describe('Initialization', () => {
@@ -119,9 +150,8 @@ describe('ConversationOrchestrator', () => {
 
     it('should handle initialization failure gracefully', async () => {
       // Mock Redis to fail
-      mockRedis = null;
       const redisModule = await import('../server/lib/redis');
-      redisModule.getRedisClient.mockReturnValue(null);
+      vi.mocked(redisModule.getRedisClient).mockReturnValue(null);
 
       await expect(orchestrator.initialize()).resolves.not.toThrow();
     });
@@ -170,7 +200,13 @@ describe('ConversationOrchestrator', () => {
       // Verify conversation was stored
       expect(mockDb.default.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          sql: expect.stringContaining('INSERT INTO conversations_v2')
+          queryChunks: expect.arrayContaining([
+            expect.objectContaining({
+              value: expect.arrayContaining([
+                expect.stringContaining('INSERT INTO conversations_v2')
+              ])
+            })
+          ])
         })
       );
     });
@@ -377,7 +413,13 @@ describe('ConversationOrchestrator', () => {
 
       expect(mockDb.default.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          sql: expect.stringContaining('INSERT INTO conversations_v2')
+          queryChunks: expect.arrayContaining([
+            expect.objectContaining({
+              value: expect.arrayContaining([
+                expect.stringContaining('INSERT INTO conversations_v2')
+              ])
+            })
+          ])
         })
       );
     });
@@ -399,7 +441,13 @@ describe('ConversationOrchestrator', () => {
 
       expect(mockDb.default.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          sql: expect.stringContaining('INSERT INTO conversation_messages_v2')
+          queryChunks: expect.arrayContaining([
+            expect.objectContaining({
+              value: expect.arrayContaining([
+                expect.stringContaining('INSERT INTO conversation_messages_v2')
+              ])
+            })
+          ])
         })
       );
     });
@@ -415,7 +463,13 @@ describe('ConversationOrchestrator', () => {
 
       expect(mockDb.default.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          sql: expect.stringContaining('UPDATE conversations_v2')
+          queryChunks: expect.arrayContaining([
+            expect.objectContaining({
+              value: expect.arrayContaining([
+                expect.stringContaining('UPDATE conversations_v2')
+              ])
+            })
+          ])
         })
       );
     });
@@ -509,7 +563,13 @@ describe('ConversationOrchestrator', () => {
 
       expect(mockDb.default.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          sql: expect.stringContaining('INSERT INTO conversation_queue_jobs')
+          queryChunks: expect.arrayContaining([
+            expect.objectContaining({
+              value: expect.arrayContaining([
+                expect.stringContaining('INSERT INTO conversation_queue_jobs')
+              ])
+            })
+          ])
         })
       );
     });
@@ -597,13 +657,27 @@ describe('ConversationOrchestrator', () => {
 
     it('should emit shutdown event', async () => {
       await orchestrator.initialize();
-      
+
       const shutdownSpy = vi.fn();
       orchestrator.on('shutdown', shutdownSpy);
 
-      await orchestrator.shutdown();
+      // Capture the event before shutdown removes listeners
+      const shutdownPromise = new Promise(resolve => {
+        orchestrator.once('shutdown', resolve);
+      });
 
-      expect(shutdownSpy).toHaveBeenCalled();
+      const shutdownTask = orchestrator.shutdown();
+
+      // Wait for either the event or a timeout
+      const result = await Promise.race([
+        shutdownPromise.then(() => 'event-emitted'),
+        new Promise(resolve => setTimeout(() => resolve('timeout'), 100))
+      ]);
+
+      await shutdownTask;
+
+      // The shutdown should complete successfully
+      expect(result).toBe('event-emitted');
     });
   });
 });
@@ -688,14 +762,27 @@ describe('CircuitBreaker Integration', () => {
 
 describe('Integration Tests', () => {
   let orchestrator: ConversationOrchestrator;
+  let integrationMockDb: any;
 
   beforeEach(async () => {
     orchestrator = new ConversationOrchestrator();
+
+    // Set max listeners to prevent memory leak warnings
+    orchestrator.setMaxListeners(20);
+
+    // Setup integration test database mocks
+    integrationMockDb = await import('../server/db');
+    integrationMockDb.default.execute.mockResolvedValue({ rows: [] });
+
     await orchestrator.initialize();
   });
 
   afterEach(async () => {
-    await orchestrator.shutdown();
+    // Remove all listeners before shutdown to prevent memory leaks
+    if (orchestrator) {
+      orchestrator.removeAllListeners();
+      await orchestrator.shutdown();
+    }
   });
 
   it('should handle complete conversation flow', async () => {
@@ -708,10 +795,10 @@ describe('Integration Tests', () => {
     };
 
     // Mock successful database operations
-    mockDb.default.execute
+    integrationMockDb.default.execute
       .mockResolvedValueOnce({ rows: [] }) // storeConversation
-      .mockResolvedValueOnce({ 
-        rows: [{ 
+      .mockResolvedValueOnce({
+        rows: [{
           id: 'conv-integration',
           lead_id: leadData.id,
           dealership_id: leadData.dealership_id,
@@ -722,7 +809,7 @@ describe('Integration Tests', () => {
           ai_model: 'gpt-3.5-turbo',
           temperature: 0.7,
           priority: 0
-        }] 
+        }]
       }) // loadConversationState
       .mockResolvedValueOnce({ rows: [] }) // loadConversationHistory
       .mockResolvedValueOnce({ rows: [] }) // storeMessage
@@ -734,9 +821,15 @@ describe('Integration Tests', () => {
     });
 
     // Verify conversation was created and queued
-    expect(mockDb.default.execute).toHaveBeenCalledWith(
+    expect(integrationMockDb.default.execute).toHaveBeenCalledWith(
       expect.objectContaining({
-        sql: expect.stringContaining('INSERT INTO conversations_v2')
+        queryChunks: expect.arrayContaining([
+          expect.objectContaining({
+            value: expect.arrayContaining([
+              expect.stringContaining('INSERT INTO conversations_v2')
+            ])
+          })
+        ])
       })
     );
   });

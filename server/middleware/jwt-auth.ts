@@ -379,7 +379,10 @@ export const jwtAuthMiddleware = (required: boolean = true) => {
       }
 
       // Attach user info to request
-      req.user = payload;
+      req.user = {
+        ...payload,
+        id: payload.userId || payload.id || 'unknown'
+      };
       req.token = token;
 
       // Set agent ID header for agent dashboard routes

@@ -222,6 +222,23 @@ class PrometheusMetricsService {
   }
 
   /**
+   * Increment leads processed - alias for recordLeadProcessed
+   */
+  public incrementLeadsProcessed(labels: {
+    dealership_id: string | number;
+    source_provider?: string;
+    lead_type?: string;
+    status: string;
+  }): void {
+    this.adfLeadsProcessedTotal.inc({
+      dealership_id: String(labels.dealership_id),
+      source_provider: labels.source_provider || 'unknown',
+      lead_type: labels.lead_type || 'email',
+      status: labels.status
+    });
+  }
+
+  /**
    * Record AI response latency
    */
   public recordAIResponseLatency(
@@ -310,6 +327,21 @@ class PrometheusMetricsService {
         template
       });
     }
+  }
+
+  /**
+   * Increment handover email sent - alias for recordHandoverEmailSent
+   */
+  public incrementHandoverEmailSent(labels: {
+    dealership_id: string | number;
+    status: string;
+    template?: string;
+  }): void {
+    this.recordHandoverEmailSent(
+      String(labels.dealership_id),
+      labels.status as 'sent' | 'failed' | 'queued',
+      labels.template || 'default'
+    );
   }
 
   /**

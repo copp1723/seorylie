@@ -122,7 +122,7 @@ class EnvironmentValidator {
           }
           return null;
         },
-        critical: this.options.environment === 'production'
+        critical: true // Always critical for proper email functionality
       }
     ];
 

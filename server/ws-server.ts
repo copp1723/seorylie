@@ -462,6 +462,22 @@ class WebSocketChatServer {
     }
   }
 
+  /**
+   * Publish a message to a specific channel (conversation)
+   */
+  publishToChannel(channel: string, data: any): void {
+    // Parse channel to get conversation ID
+    const conversationId = parseInt(channel.replace('conversation_', ''), 10);
+    
+    if (isNaN(conversationId)) {
+      logger.warn(`Invalid channel format: ${channel}`);
+      return;
+    }
+
+    this.notifyConversation(conversationId, data);
+    logger.debug(`Published message to channel: ${channel}`);
+  }
+
   private setupCleanupJobs() {
     // Heartbeat interval to detect dead connections
     this.heartbeatInterval = setInterval(() => {

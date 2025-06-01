@@ -52,6 +52,7 @@ const ConfigSchema = z.object({
   auth: z.object({
     jwtSecret: z.string().min(32),
     jwtExpiresIn: z.string().default('24h'),
+    sessionSecret: z.string().min(32).default('fallback-session-secret-change-in-production'),
     magicLinkExpiresIn: z.number().default(900), // 15 minutes
     bcryptRounds: z.number().min(10).max(15).default(12),
     sessionMaxAge: z.number().default(86400000), // 24 hours

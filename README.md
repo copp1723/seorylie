@@ -20,6 +20,32 @@ All commands now include automatic dependency verification and quality checks:
 - ✅ Tests pass before builds
 - ✅ Environment properly configured
 
+### Git Strategy & Workflow
+
+CleanRylie uses a **stabilization git strategy** for controlled feature development:
+
+```
+main ─┬─► (production)
+      │
+      └─ stabilization ─► (long-lived integration branch)
+          ├─ feature/stab-101/bundle-size-guard
+          ├─ feature/stab-102/performance-tracker
+          └─ feature/stab-<ID>/<description>
+```
+
+**Branch Workflow:**
+- Work on feature branches: `feature/stab-<ID>/<desc>` branched from `stabilization`
+- Fast-forward merge to `stabilization` after CI passes
+- Final merge `stabilization → main` only when STAB-502 production readiness passes
+- Commit format: `feat: [STAB-101] description`
+
+**Development Process:**
+1. Create feature branch from `stabilization`
+2. Implement changes with comprehensive testing
+3. Run `npm run setup` and quality gates
+4. Submit PR to `stabilization` branch
+5. Merge after CI validation and review
+
 ### CI/CD Integration
 - **Staging**: Push to `integration/production-readiness-phase1` → auto-deploys to staging
 - **Production**: Merge to `main` after staging validation passes

@@ -19,6 +19,10 @@ import path from 'path';
 import { Client } from 'pg';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
+import { config } from 'dotenv';
+
+// Load environment variables
+config();
 
 // Get the directory of this script
 const __filename = fileURLToPath(import.meta.url);
@@ -26,14 +30,50 @@ const __dirname = path.dirname(__filename);
 
 // Configuration
 const MIGRATIONS_DIR = path.join(__dirname, '../../migrations');
-const DB_CONNECTION = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'cleanrylie',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
-};
+
+// Parse DATABASE_URL or use individual environment variables as fallback
+function getDatabaseConfig() {
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (databaseUrl) {
+    try {
+      const url = new URL(databaseUrl);
+      return {
+        host: url.hostname,
+        port: parseInt(url.port) || 5432,
+        database: url.pathname.slice(1), // Remove leading slash
+        user: url.username,
+        password: url.password,
+        ssl: url.hostname.includes('render.com') || url.hostname.includes('supabase.co')
+          ? { rejectUnauthorized: false }
+          : process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+      };
+    } catch (error) {
+      console.error('Failed to parse DATABASE_URL, falling back to individual env vars');
+    }
+  }
+
+  // Fallback to individual environment variables
+  return {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'cleanrylie',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || '',
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+  };
+}
+
+const DB_CONNECTION = getDatabaseConfig();
+
+// Debug: Log the database configuration (without password)
+console.log('Database configuration:', {
+  host: DB_CONNECTION.host,
+  port: DB_CONNECTION.port,
+  database: DB_CONNECTION.database,
+  user: DB_CONNECTION.user,
+  ssl: !!DB_CONNECTION.ssl
+});
 
 // Colors for console output
 const colors = {

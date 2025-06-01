@@ -2,14 +2,30 @@
 
 ## ⚠️ Critical Setup Requirements
 
-**Before running any lint, check, or test commands, ensure dependencies are installed:**
+**CleanRylie uses a stabilization workflow. Before running any commands, ensure proper setup:**
 
 ```bash
-npm install
+npm run setup
 ```
 
 **For environments with network restrictions after container startup:**
 All dependencies must be installed during the setup/init phase, not dynamically at test time.
+
+## 🔄 Stabilization Workflow Setup
+
+CleanRylie follows a **stabilization git strategy** with automated quality gates:
+
+### Branch Strategy
+- `main` - Production baseline (protected)
+- `stabilization` - Long-lived integration branch
+- `feature/stab-<ID>/<desc>` - Feature development branches
+
+### Required Setup Steps
+1. **Clone and setup**: `git clone <repo> && cd cleanrylie && npm run setup`
+2. **Create feature branch**: `git checkout -b feature/stab-<ID>/<description> stabilization`
+3. **Development**: Make changes with comprehensive testing
+4. **Quality gates**: `npm run setup` validates all requirements
+5. **Submit PR**: Target `stabilization` branch for review
 
 ## Quick Start
 

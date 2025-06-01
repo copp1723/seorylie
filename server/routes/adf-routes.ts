@@ -4,7 +4,7 @@ import { AdfService } from '../services/adf-service';
 import { AdfParser } from '../services/adf-parser';
 import logger from '../utils/logger';
 import db from '../db';
-import { eq, desc, and, gte, or, like } from 'drizzle-orm';
+import { eq, desc, and, gte, or, like, count } from 'drizzle-orm';
 import { adfLeads, adfEmailQueue, adfProcessingLogs } from '../../shared/index';
 import { validateBodySize, validateContentType } from '../middleware/validation';
 import rateLimit from 'express-rate-limit';
@@ -131,14 +131,14 @@ router.get('/status', async (req: Request, res: Response) => {
     };
 
     // Get actual queue size
-    const queueSize = await db.select({ count: db.count() })
+    const queueSize = await db.select({ count: count() })
       .from(adfEmailQueue)
       .where(eq(adfEmailQueue.processingStatus, 'pending'));
 
     status.currentQueueSize = queueSize[0]?.count || 0;
 
     // Get total processed leads
-    const totalProcessed = await db.select({ count: db.count() })
+    const totalProcessed = await db.select({ count: count() })
       .from(adfLeads);
 
     status.totalLeadsProcessed = totalProcessed[0]?.count || 0;
@@ -639,25 +639,25 @@ router.get('/stats', [
 
     // Get statistics
     const [totalLeads, processedLeads, failedLeads, emailsInQueue] = await Promise.all([
-      db.select({ count: db.count() })
+      db.select({ count: count() })
         .from(adfLeads)
         .where(gte(adfLeads.createdAt, startDate)),
 
-      db.select({ count: db.count() })
+      db.select({ count: count() })
         .from(adfLeads)
         .where(and(
           eq(adfLeads.processingStatus, 'processed'),
           gte(adfLeads.createdAt, startDate)
         )),
 
-      db.select({ count: db.count() })
+      db.select({ count: count() })
         .from(adfLeads)
         .where(and(
           eq(adfLeads.processingStatus, 'failed'),
           gte(adfLeads.createdAt, startDate)
         )),
 
-      db.select({ count: db.count() })
+      db.select({ count: count() })
         .from(adfEmailQueue)
         .where(eq(adfEmailQueue.processingStatus, 'pending'))
     ]);

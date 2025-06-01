@@ -6,7 +6,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create lead_sources table
-CREATE TABLE lead_sources (
+CREATE TABLE IF NOT EXISTS lead_sources (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     dealership_id INTEGER NOT NULL REFERENCES dealerships(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
@@ -24,11 +24,11 @@ CREATE TABLE lead_sources (
 );
 
 -- Create indexes for lead_sources
-CREATE INDEX lead_sources_dealership_idx ON lead_sources(dealership_id);
-CREATE INDEX lead_sources_type_idx ON lead_sources(type);
+CREATE INDEX IF NOT EXISTS lead_sources_dealership_idx ON lead_sources(dealership_id);
+CREATE INDEX IF NOT EXISTS lead_sources_type_idx ON lead_sources(type);
 
 -- Create vehicle_interests table
-CREATE TABLE vehicle_interests (
+CREATE TABLE IF NOT EXISTS vehicle_interests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     year INTEGER,
     make VARCHAR(100),
@@ -58,12 +58,12 @@ CREATE TABLE vehicle_interests (
 );
 
 -- Create indexes for vehicle_interests
-CREATE INDEX vehicle_interests_make_model_idx ON vehicle_interests(make, model);
-CREATE INDEX vehicle_interests_year_idx ON vehicle_interests(year);
-CREATE INDEX vehicle_interests_vin_idx ON vehicle_interests(vin);
+CREATE INDEX IF NOT EXISTS vehicle_interests_make_model_idx ON vehicle_interests(make, model);
+CREATE INDEX IF NOT EXISTS vehicle_interests_year_idx ON vehicle_interests(year);
+CREATE INDEX IF NOT EXISTS vehicle_interests_vin_idx ON vehicle_interests(vin);
 
 -- Create customers table
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     dealership_id INTEGER NOT NULL REFERENCES dealerships(id) ON DELETE CASCADE,
     first_name VARCHAR(100),
@@ -99,14 +99,14 @@ CREATE TABLE customers (
 );
 
 -- Create indexes for customers
-CREATE INDEX customers_dealership_idx ON customers(dealership_id);
-CREATE INDEX customers_email_idx ON customers(email);
-CREATE INDEX customers_phone_idx ON customers(phone);
-CREATE INDEX customers_full_name_idx ON customers(full_name);
-CREATE INDEX customers_dedup_idx ON customers(deduplication_hash);
+CREATE INDEX IF NOT EXISTS customers_dealership_idx ON customers(dealership_id);
+CREATE INDEX IF NOT EXISTS customers_email_idx ON customers(email);
+CREATE INDEX IF NOT EXISTS customers_phone_idx ON customers(phone);
+CREATE INDEX IF NOT EXISTS customers_full_name_idx ON customers(full_name);
+CREATE INDEX IF NOT EXISTS customers_dedup_idx ON customers(deduplication_hash);
 
 -- Create leads table
-CREATE TABLE leads (
+CREATE TABLE IF NOT EXISTS leads (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     dealership_id INTEGER NOT NULL REFERENCES dealerships(id) ON DELETE CASCADE,
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -148,16 +148,16 @@ CREATE TABLE leads (
 );
 
 -- Create indexes for leads
-CREATE INDEX leads_dealership_idx ON leads(dealership_id);
-CREATE INDEX leads_customer_idx ON leads(customer_id);
-CREATE INDEX leads_status_idx ON leads(status);
-CREATE INDEX leads_assigned_user_idx ON leads(assigned_user_id);
-CREATE INDEX leads_source_idx ON leads(source);
-CREATE INDEX leads_created_at_idx ON leads(created_at);
-CREATE INDEX leads_lead_number_idx ON leads(lead_number);
+CREATE INDEX IF NOT EXISTS leads_dealership_idx ON leads(dealership_id);
+CREATE INDEX IF NOT EXISTS leads_customer_idx ON leads(customer_id);
+CREATE INDEX IF NOT EXISTS leads_status_idx ON leads(status);
+CREATE INDEX IF NOT EXISTS leads_assigned_user_idx ON leads(assigned_user_id);
+CREATE INDEX IF NOT EXISTS leads_source_idx ON leads(source);
+CREATE INDEX IF NOT EXISTS leads_created_at_idx ON leads(created_at);
+CREATE INDEX IF NOT EXISTS leads_lead_number_idx ON leads(lead_number);
 
 -- Create conversations table
-CREATE TABLE conversations (
+CREATE TABLE IF NOT EXISTS conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     dealership_id INTEGER NOT NULL REFERENCES dealerships(id) ON DELETE CASCADE,
     lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
@@ -179,15 +179,15 @@ CREATE TABLE conversations (
 );
 
 -- Create indexes for conversations
-CREATE INDEX conversations_dealership_idx ON conversations(dealership_id);
-CREATE INDEX conversations_lead_idx ON conversations(lead_id);
-CREATE INDEX conversations_customer_idx ON conversations(customer_id);
-CREATE INDEX conversations_status_idx ON conversations(status);
-CREATE INDEX conversations_assigned_user_idx ON conversations(assigned_user_id);
-CREATE INDEX conversations_last_message_idx ON conversations(last_message_at);
+CREATE INDEX IF NOT EXISTS conversations_dealership_idx ON conversations(dealership_id);
+CREATE INDEX IF NOT EXISTS conversations_lead_idx ON conversations(lead_id);
+CREATE INDEX IF NOT EXISTS conversations_customer_idx ON conversations(customer_id);
+CREATE INDEX IF NOT EXISTS conversations_status_idx ON conversations(status);
+CREATE INDEX IF NOT EXISTS conversations_assigned_user_idx ON conversations(assigned_user_id);
+CREATE INDEX IF NOT EXISTS conversations_last_message_idx ON conversations(last_message_at);
 
 -- Create messages table
-CREATE TABLE messages (
+CREATE TABLE IF NOT EXISTS messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
@@ -214,14 +214,14 @@ CREATE TABLE messages (
 );
 
 -- Create indexes for messages
-CREATE INDEX messages_conversation_idx ON messages(conversation_id);
-CREATE INDEX messages_type_idx ON messages(type);
-CREATE INDEX messages_sender_idx ON messages(sender);
-CREATE INDEX messages_created_at_idx ON messages(created_at);
-CREATE INDEX messages_external_id_idx ON messages(external_message_id);
+CREATE INDEX IF NOT EXISTS messages_conversation_idx ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS messages_type_idx ON messages(type);
+CREATE INDEX IF NOT EXISTS messages_sender_idx ON messages(sender);
+CREATE INDEX IF NOT EXISTS messages_created_at_idx ON messages(created_at);
+CREATE INDEX IF NOT EXISTS messages_external_id_idx ON messages(external_message_id);
 
 -- Create handovers table
-CREATE TABLE handovers (
+CREATE TABLE IF NOT EXISTS handovers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
     lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
@@ -244,14 +244,14 @@ CREATE TABLE handovers (
 );
 
 -- Create indexes for handovers
-CREATE INDEX handovers_conversation_idx ON handovers(conversation_id);
-CREATE INDEX handovers_lead_idx ON handovers(lead_id);
-CREATE INDEX handovers_status_idx ON handovers(status);
-CREATE INDEX handovers_to_user_idx ON handovers(to_user_id);
-CREATE INDEX handovers_requested_at_idx ON handovers(requested_at);
+CREATE INDEX IF NOT EXISTS handovers_conversation_idx ON handovers(conversation_id);
+CREATE INDEX IF NOT EXISTS handovers_lead_idx ON handovers(lead_id);
+CREATE INDEX IF NOT EXISTS handovers_status_idx ON handovers(status);
+CREATE INDEX IF NOT EXISTS handovers_to_user_idx ON handovers(to_user_id);
+CREATE INDEX IF NOT EXISTS handovers_requested_at_idx ON handovers(requested_at);
 
 -- Create lead_activities table
-CREATE TABLE lead_activities (
+CREATE TABLE IF NOT EXISTS lead_activities (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
     user_id INTEGER REFERENCES users(id),
@@ -269,10 +269,10 @@ CREATE TABLE lead_activities (
 );
 
 -- Create indexes for lead_activities
-CREATE INDEX lead_activities_lead_idx ON lead_activities(lead_id);
-CREATE INDEX lead_activities_type_idx ON lead_activities(type);
-CREATE INDEX lead_activities_user_idx ON lead_activities(user_id);
-CREATE INDEX lead_activities_created_at_idx ON lead_activities(created_at);
+CREATE INDEX IF NOT EXISTS lead_activities_lead_idx ON lead_activities(lead_id);
+CREATE INDEX IF NOT EXISTS lead_activities_type_idx ON lead_activities(type);
+CREATE INDEX IF NOT EXISTS lead_activities_user_idx ON lead_activities(user_id);
+CREATE INDEX IF NOT EXISTS lead_activities_created_at_idx ON lead_activities(created_at);
 
 -- Create triggers for updated_at columns
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -375,34 +375,37 @@ $$ LANGUAGE plpgsql;
 
 -- Insert default lead sources for existing dealerships
 INSERT INTO lead_sources (dealership_id, name, type, description, is_active)
-SELECT 
+SELECT
     id,
     'ADF Email',
     'adf_email',
     'Leads from ADF email processing system',
     true
 FROM dealerships
-WHERE active = true;
+WHERE active = true
+ON CONFLICT (dealership_id, name) DO NOTHING;
 
 INSERT INTO lead_sources (dealership_id, name, type, description, is_active)
-SELECT 
+SELECT
     id,
     'Website Form',
     'website_form',
     'Leads from website contact forms',
     true
 FROM dealerships
-WHERE active = true;
+WHERE active = true
+ON CONFLICT (dealership_id, name) DO NOTHING;
 
 INSERT INTO lead_sources (dealership_id, name, type, description, is_active)
-SELECT 
+SELECT
     id,
     'Phone Inquiry',
     'phone_call',
     'Leads from phone calls',
     true
 FROM dealerships
-WHERE active = true;
+WHERE active = true
+ON CONFLICT (dealership_id, name) DO NOTHING;
 
 -- Create view for lead pipeline analytics
 CREATE OR REPLACE VIEW lead_pipeline_summary AS

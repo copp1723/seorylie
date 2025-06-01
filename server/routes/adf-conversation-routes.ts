@@ -9,7 +9,7 @@ import { authenticateSession, requireDealershipAccess } from '../middleware/auth
 import { conversationService } from '../services/conversation-service';
 import logger from '../utils/logger';
 import { ApiError } from '../utils/error-handler';
-import { formatApiResponse } from '../utils/api-response';
+import { sendError, sendValidationError, sendSuccess, sendNotFound, sendForbidden } from '../utils/api-response';
 import { wsServer } from '../ws-server';
 
 const router = Router();
@@ -41,11 +41,11 @@ router.get(
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json(formatApiResponse({
-          success: false,
-          error: 'validation_error',
-          details: errors.array()
-        }));
+        return sendValidationError(res, errors.array().map(err => ({
+          field: err.path || 'unknown',
+          message: err.msg,
+          code: err.type
+        })));
       }
 
       // Get dealership ID from authenticated user
@@ -142,11 +142,11 @@ router.get(
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json(formatApiResponse({
-          success: false,
-          error: 'validation_error',
-          details: errors.array()
-        }));
+        return sendValidationError(res, errors.array().map(err => ({
+          field: err.path || 'unknown',
+          message: err.msg,
+          code: err.type
+        })));
       }
 
       // Get dealership ID from authenticated user
@@ -196,11 +196,11 @@ router.get(
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json(formatApiResponse({
-          success: false,
-          error: 'validation_error',
-          details: errors.array()
-        }));
+        return sendValidationError(res, errors.array().map(err => ({
+          field: err.path || 'unknown',
+          message: err.msg,
+          code: err.type
+        })));
       }
 
       // Get dealership ID from authenticated user
@@ -272,11 +272,11 @@ router.get(
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json(formatApiResponse({
-          success: false,
-          error: 'validation_error',
-          details: errors.array()
-        }));
+        return sendValidationError(res, errors.array().map(err => ({
+          field: err.path || 'unknown',
+          message: err.msg,
+          code: err.type
+        })));
       }
 
       // Get dealership ID from authenticated user
@@ -355,11 +355,11 @@ router.get(
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json(formatApiResponse({
-          success: false,
-          error: 'validation_error',
-          details: errors.array()
-        }));
+        return sendValidationError(res, errors.array().map(err => ({
+          field: err.path || 'unknown',
+          message: err.msg,
+          code: err.type
+        })));
       }
 
       // Get dealership ID from authenticated user
@@ -449,11 +449,11 @@ router.post(
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json(formatApiResponse({
-          success: false,
-          error: 'validation_error',
-          details: errors.array()
-        }));
+        return sendValidationError(res, errors.array().map(err => ({
+          field: err.path || 'unknown',
+          message: err.msg,
+          code: err.type
+        })));
       }
 
       // Get dealership ID and user ID from authenticated user
@@ -538,11 +538,11 @@ router.post(
       // Validate request
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json(formatApiResponse({
-          success: false,
-          error: 'validation_error',
-          details: errors.array()
-        }));
+        return sendValidationError(res, errors.array().map(err => ({
+          field: err.path || 'unknown',
+          message: err.msg,
+          code: err.type
+        })));
       }
 
       // Get dealership ID and user ID from authenticated user

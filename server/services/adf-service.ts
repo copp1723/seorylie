@@ -716,3 +716,9 @@ export class AdfService extends EventEmitter {
     }
   }
 }
+
+// Export the class as default
+export default AdfService;
+
+// Export a singleton instance for easy use
+export const adfService = new AdfService();

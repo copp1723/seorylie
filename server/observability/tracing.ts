@@ -289,8 +289,12 @@ export async function withSpan<T>(
   }
 }
 
+// Add the setupTracing alias for compatibility with enhanced-index.ts
+export const setupTracing = initTracing;
+
 export default {
   initTracing,
+  setupTracing,
   createSandboxSpan,
   createToolSpan,
   createAgentSpan,

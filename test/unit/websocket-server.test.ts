@@ -69,12 +69,13 @@ describe('WebSocket Server with Observability', () => {
   let httpServer: HttpServer;
   let port: number;
   let wsUrl: string;
+  let activeConnections: WebSocket[] = [];
 
   beforeAll(async () => {
     // Create test HTTP server
     app = express();
     httpServer = createServer(app);
-    
+
     // Find available port
     await new Promise<void>((resolve) => {
       httpServer.listen(0, () => {
@@ -90,9 +91,17 @@ describe('WebSocket Server with Observability', () => {
   });
 
   afterAll(async () => {
+    // Close all active connections
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    });
+    activeConnections = [];
+
     // Cleanup
     await webSocketServer.gracefulShutdown();
-    
+
     await new Promise<void>((resolve) => {
       httpServer.close(() => resolve());
     });
@@ -103,17 +112,28 @@ describe('WebSocket Server with Observability', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    // Close any connections created during the test
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    });
+    activeConnections = [];
+  });
+
   test('should establish WebSocket connection successfully', async () => {
     const ws = new WebSocket(wsUrl);
-    
+    activeConnections.push(ws);
+
     await new Promise<void>((resolve, reject) => {
       ws.on('open', () => {
         expect(webSocketServer.getConnectionCount()).toBeGreaterThan(0);
         resolve();
       });
-      
+
       ws.on('error', reject);
-      
+
       // Set timeout to avoid hanging
       setTimeout(() => reject(new Error('Connection timeout')), 5000);
     });
@@ -131,11 +151,9 @@ describe('WebSocket Server with Observability', () => {
           reject(error);
         }
       });
-      
+
       setTimeout(() => reject(new Error('Welcome message timeout')), 2000);
     });
-
-    ws.close();
   });
 
   test('should handle ping/pong echo functionality', async () => {

@@ -9,6 +9,7 @@ services:
     plan: starter # Can be upgraded to standard/pro as needed
     buildCommand: npm install && npm run build
     startCommand: npm run start
+    preDeployCommand: npm run db:migrate
     envVars:
       - key: NODE_ENV
         value: production
@@ -116,6 +117,7 @@ services:
     plan: starter
     buildCommand: npm install && npm run build
     startCommand: npm run start:adf-worker
+    healthCheckPath: /healthz
     envVars:
       - key: NODE_ENV
         value: production

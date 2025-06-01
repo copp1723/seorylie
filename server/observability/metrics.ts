@@ -339,6 +339,9 @@ export function initMetrics(app: Express) {
   }
 }
 
+// Add the setupMetrics alias for compatibility with enhanced-index.ts
+export const setupMetrics = initMetrics;
+
 export default {
   register,
   recordToolExecution,
@@ -351,6 +354,7 @@ export default {
   updateActiveSessions,
   updateActiveSandboxes,
   initMetrics,
+  setupMetrics,
   metricsHandler,
   createMetricsMiddleware
 };

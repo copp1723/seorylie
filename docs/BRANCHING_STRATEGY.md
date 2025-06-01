@@ -1,35 +1,45 @@
-# Branching Strategy after the Platform Integration Sprint
+# CleanRylie Stabilization Branching Strategy
 
-> Last updated: **v1.0-rc1** (post-INT-015)
+> Last updated: **v2.0-stabilization** (post-STAB-502)
 
 ---
 
 ## 1. Overview
 
-The repository now follows a **three-tier branch model**:
+CleanRylie follows a **stabilization git strategy** for controlled feature development and production readiness:
 
 ```
 main ─┬─► (production)
       │
-      ├─ droid/platform-integration-tasks ─► (golden baseline)
-      │
-      └─ integration/production-readiness-phase1 ─► (active integration)
+      └─ stabilization ─► (long-lived integration branch)
+          ├─ feature/stab-101/bundle-size-guard
+          ├─ feature/stab-102/performance-tracker
+          ├─ feature/stab-103/schema-versioning
+          └─ feature/stab-<ID>/<description>
 ```
 
-All day-to-day work happens on short-lived feature branches that merge into the *integration* branch. Only validated, release-ready code is fast-forwarded to **main**.
+All feature development happens on `feature/stab-<ID>/<desc>` branches that merge into `stabilization`. Only when STAB-502 production readiness passes does code move to **main**.
 
 ---
 
-## 2. Golden Branch – `droid/platform-integration-tasks`
+## 2. Stabilization Branch – `stabilization`
 
-* **Purpose**: Immutable baseline that aggregates *completed* integration phases.  
-* **Permissions**: _READ-ONLY_ for all contributors.  
-* **Update cadence**: Maintainers fast-forward after each green integration sprint.  
-* **Never** commit, merge or rebase directly.
+* **Purpose**: Long-lived integration branch for all stabilization features
+* **Permissions**: Protected - requires PR review and CI passing
+* **Update cadence**: Feature branches merge after quality gates pass
+* **Quality gates**: TypeScript compilation, tests, linting, security checks
 
 ---
 
-## 3. Integration Branch – `integration/production-readiness-phase1`
+## 3. Feature Branches – `feature/stab-<ID>/<description>`
+
+* **Naming convention**: `feature/stab-<ID>/<short-description>`
+* **Examples**:
+  - `feature/stab-101/bundle-size-guard`
+  - `feature/stab-102/performance-tracker`
+  - `feature/stab-103/schema-versioning`
+* **Lifespan**: ≤ 5 days, ≤ 500 LOC diff
+* **Base branch**: Always branch from `stabilization`
 
 * **Role**: Staging area for all feature and bug-fix work.  
 * **Usage rules**

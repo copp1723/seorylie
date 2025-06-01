@@ -129,6 +129,8 @@ export class ConversationOrchestrator extends EventEmitter {
   private metricsCollector: MetricsCollector;
   private redis: any;
   private isInitialized = false;
+  private isShuttingDown = false;
+  private healthMonitorInterval?: NodeJS.Timeout;
   private processingStats = {
     totalProcessed: 0,
     successfulTurns: 0,
@@ -368,23 +370,35 @@ export class ConversationOrchestrator extends EventEmitter {
   private async processLeadStream(consumerGroup: string, consumerId: string): Promise<void> {
     let retryDelay = 1000; // Start with 1 second retry delay
 
-    while (true) {
+    while (!this.isShuttingDown) {
       try {
+        // Exit early if shutting down
+        if (this.isShuttingDown) {
+          logger.info('Lead stream processing stopped due to shutdown');
+          break;
+        }
+
         if (!this.redis) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          await new Promise(resolve => setTimeout(resolve, Math.min(retryDelay, 1000)));
           continue;
         }
 
         const messages = await this.redis.xreadgroup(
           'GROUP', consumerGroup, consumerId,
           'COUNT', 10,
-          'BLOCK', 5000,
+          'BLOCK', 1000, // Reduced block time for faster shutdown
           'STREAMS', 'adf.lead.created', '>'
         );
 
         if (messages && messages.length > 0) {
           for (const [streamName, streamMessages] of messages) {
             for (const [messageId, fields] of streamMessages) {
+              // Check shutdown flag before processing each message
+              if (this.isShuttingDown) {
+                logger.info('Stopping lead processing due to shutdown');
+                return;
+              }
+
               try {
                 await this.handleNewLead(messageId, fields);
                 await this.redis.xack('adf.lead.created', consumerGroup, messageId);
@@ -401,15 +415,23 @@ export class ConversationOrchestrator extends EventEmitter {
         }
 
       } catch (error) {
-        logger.error('Error in lead stream processing loop', {
-          error: error instanceof Error ? error.message : String(error)
-        });
-        
+        // Don't log errors if we're shutting down
+        if (!this.isShuttingDown) {
+          logger.error('Error in lead stream processing loop', {
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+
         // Exponential backoff with max delay of 30 seconds
         retryDelay = Math.min(retryDelay * 2, 30000);
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+
+        // Shorter delay during shutdown
+        const delayTime = this.isShuttingDown ? 100 : retryDelay;
+        await new Promise(resolve => setTimeout(resolve, delayTime));
       }
     }
+
+    logger.info('Lead stream processing loop exited');
   }
 
   /**
@@ -1003,20 +1025,32 @@ export class ConversationOrchestrator extends EventEmitter {
   }
 
   private startHealthMonitoring(): void {
+    // Clear any existing interval
+    if (this.healthMonitorInterval) {
+      clearInterval(this.healthMonitorInterval);
+    }
+
     // Report health metrics every 30 seconds
-    setInterval(async () => {
+    this.healthMonitorInterval = setInterval(async () => {
       try {
+        // Skip health monitoring if shutting down
+        if (this.isShuttingDown) {
+          return;
+        }
+
         const health = await this.getHealthStatus();
         this.metricsCollector.recordHealthMetrics(health);
-        
+
         if (health.status !== 'healthy') {
           logger.warn('ConversationOrchestrator health degraded', { health });
           this.emit('health:degraded', health);
         }
       } catch (error) {
-        logger.error('Health monitoring error', {
-          error: error instanceof Error ? error.message : String(error)
-        });
+        if (!this.isShuttingDown) {
+          logger.error('Health monitoring error', {
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
       }
     }, 30000);
   }
@@ -1132,20 +1166,48 @@ export class ConversationOrchestrator extends EventEmitter {
    * Graceful shutdown
    */
   async shutdown(): Promise<void> {
+    if (this.isShuttingDown) {
+      logger.debug('Shutdown already in progress');
+      return;
+    }
+
+    this.isShuttingDown = true;
     logger.info('Shutting down ConversationOrchestrator...');
 
     try {
-      // Close queue gracefully
-      if (this.conversationQueue) {
-        await this.conversationQueue.close();
+      // Clear health monitoring interval
+      if (this.healthMonitorInterval) {
+        clearInterval(this.healthMonitorInterval);
+        this.healthMonitorInterval = undefined;
       }
+
+      // Close queue gracefully with timeout
+      if (this.conversationQueue) {
+        const closePromise = this.conversationQueue.close();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Queue close timeout')), 5000)
+        );
+
+        try {
+          await Promise.race([closePromise, timeoutPromise]);
+        } catch (error) {
+          logger.warn('Queue close timeout, forcing shutdown');
+        }
+      }
+
+      // Emit shutdown event before removing listeners
+      this.emit('shutdown');
 
       // Close Redis connection if we own it
       if (this.redis) {
         // Note: Redis connection is managed by lib/redis.ts
+        // Just clear our reference
+        this.redis = null;
       }
 
-      this.emit('shutdown');
+      // Remove all event listeners to prevent memory leaks (after emitting shutdown)
+      this.removeAllListeners();
+
       logger.info('ConversationOrchestrator shutdown complete');
     } catch (error) {
       logger.error('Error during shutdown', {

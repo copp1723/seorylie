@@ -105,6 +105,7 @@ export function authenticationMiddleware(req: Request, res: Response, next: Next
     logger.debug('Authentication bypass active (development mode)');
 
     req.user = {
+      id: '1',
       userId: '1',
       dealershipId: 1,
       role: 'super_admin',
@@ -135,6 +136,7 @@ export function authenticationMiddleware(req: Request, res: Response, next: Next
   // Convert session user to JWT payload format for consistency
   const sessionUser = req.session.user;
   req.user = {
+    id: sessionUser.id?.toString() || '0',
     userId: sessionUser.id?.toString() || '0',
     dealershipId: sessionUser.dealership_id || 0,
     role: sessionUser.role || 'user',

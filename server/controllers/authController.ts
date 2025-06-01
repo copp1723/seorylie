@@ -53,7 +53,7 @@ export const loginUser = async (req: Request, res: Response) => {
         name: user.username || '',
         email: user.email || '',
         role: user.role || 'user',
-        dealership_id: user.dealership_id
+        dealership_id: user.dealershipId
       }
     });
   } catch (error) {
@@ -86,10 +86,7 @@ export const registerUser = async (req: Request, res: Response) => {
       password: password, // In production, hash this with bcrypt
       // name: name || username,  // Remove this line, since User type does not have 'name'
       role: 'user',
-      dealership_id: null,
-      active: 1,
-      created_at: new Date(),
-      updated_at: new Date()
+      dealershipId: null
     }).returning();
 
     // Create session
@@ -99,7 +96,7 @@ export const registerUser = async (req: Request, res: Response) => {
       name: newUser[0].username || '', // Use username as name since there is no name property
       email: newUser[0].email || '',
       role: newUser[0].role || 'user',
-      dealership_id: newUser[0].dealership_id
+      dealership_id: newUser[0].dealershipId
     };
 
     logger.info(`User registered: ${username}`);
@@ -112,7 +109,7 @@ export const registerUser = async (req: Request, res: Response) => {
         name: newUser[0].username || '', // Use username as name since there is no name property
         email: newUser[0].email || '',
         role: newUser[0].role || 'user',
-        dealership_id: newUser[0].dealership_id
+        dealership_id: newUser[0].dealershipId
       }
     });
   } catch (error) {

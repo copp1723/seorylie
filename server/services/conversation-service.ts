@@ -47,6 +47,12 @@ export interface ConversationDetails {
 }
 
 export class ConversationService {
+  private db: any;
+
+  constructor(database?: any) {
+    this.db = database || db;
+  }
+
   /**
    * Send a reply message to a conversation
    */
@@ -64,7 +70,7 @@ export class ConversationService {
       });
 
       // Verify conversation exists and belongs to dealership
-      const conversationResults = await db
+      const conversationResults = await this.db
         .select()
         .from(conversations)
         .where(and(
@@ -114,13 +120,13 @@ export class ConversationService {
         isRead: replyData.sender !== 'customer' // Mark as read if not from customer
       };
 
-      const [newMessage] = await db
+      const [newMessage] = await this.db
         .insert(messages)
         .values(messageData)
         .returning();
 
       // Update conversation metadata
-      await db
+      await this.db
         .update(conversations)
         .set({
           lastMessageAt: new Date(),
@@ -132,7 +138,7 @@ export class ConversationService {
         .where(eq(conversations.id, replyData.conversationId));
 
       // Log activity on the lead
-      await db.insert(leadActivities).values({
+      await this.db.insert(leadActivities).values({
         leadId: conversation.leadId,
         userId: replyData.senderUserId,
         type: 'message_sent',
@@ -161,13 +167,13 @@ export class ConversationService {
               isRead: true
             };
 
-            const [aiMessage] = await db
+            const [aiMessage] = await this.db
               .insert(messages)
               .values(aiMessageData)
               .returning();
 
             // Update conversation after AI response
-            await db
+            await this.db
               .update(conversations)
               .set({
                 lastMessageAt: new Date(),
@@ -178,7 +184,7 @@ export class ConversationService {
               .where(eq(conversations.id, replyData.conversationId));
 
             // Log AI response activity
-            await db.insert(leadActivities).values({
+            await this.db.insert(leadActivities).values({
               leadId: conversation.leadId,
               type: 'ai_response',
               description: `AI generated intelligent response: ${aiResponse.substring(0, 100)}${aiResponse.length > 100 ? '...' : ''}`,
@@ -247,7 +253,7 @@ export class ConversationService {
       const { includeMessages = true, messageLimit = 50, messageOffset = 0 } = options;
 
       // Get conversation
-      const conversationResults = await db
+      const conversationResults = await this.db
         .select()
         .from(conversations)
         .where(and(
@@ -266,7 +272,7 @@ export class ConversationService {
 
       if (includeMessages) {
         // Get messages for the conversation
-        conversationMessages = await db
+        conversationMessages = await this.db
           .select()
           .from(messages)
           .where(eq(messages.conversationId, conversationId))
@@ -275,7 +281,7 @@ export class ConversationService {
           .offset(messageOffset);
 
         // Get total message count
-        const messageCountResults = await db
+        const messageCountResults = await this.db
           .select({ count: messages.id })
           .from(messages)
           .where(eq(messages.conversationId, conversationId));
@@ -369,7 +375,7 @@ export class ConversationService {
   ): Promise<{ success: boolean; updatedCount: number }> {
     try {
       // Verify conversation belongs to dealership
-      const conversationExists = await db
+      const conversationExists = await this.db
         .select({ id: conversations.id })
         .from(conversations)
         .where(and(
@@ -383,7 +389,7 @@ export class ConversationService {
       }
 
       // Mark unread messages as read
-      const updateResult = await db
+      const updateResult = await this.db
         .update(messages)
         .set({
           isRead: true,
@@ -420,7 +426,7 @@ export class ConversationService {
     userId?: number
   ): Promise<{ success: boolean; conversation?: Conversation }> {
     try {
-      const updateResult = await db
+      const updateResult = await this.db
         .update(conversations)
         .set({
           status: status as any,
@@ -440,7 +446,7 @@ export class ConversationService {
       const conversation = updateResult[0];
 
       // Log activity
-      await db.insert(leadActivities).values({
+      await this.db.insert(leadActivities).values({
         leadId: conversation.leadId,
         userId,
         type: 'conversation_status_changed',
@@ -459,6 +465,226 @@ export class ConversationService {
       });
 
       return { success: false };
+    }
+  }
+
+  /**
+   * List conversations - alias for getConversations
+   */
+  async listConversations(
+    dealershipId: number,
+    options: {
+      limit?: number;
+      offset?: number;
+      status?: string;
+      leadId?: string;
+      customerId?: string;
+    } = {}
+  ): Promise<Conversation[]> {
+    return this.getConversations(dealershipId, options);
+  }
+
+  /**
+   * Get conversation by ID - alias for getConversation
+   */
+  async getConversationById(
+    conversationId: string,
+    dealershipId: number
+  ): Promise<ConversationDetails | null> {
+    return this.getConversation(dealershipId, conversationId);
+  }
+
+  /**
+   * Get conversation statistics
+   */
+  async getConversationStats(
+    dealershipId: number,
+    timeframe: string = '24h'
+  ): Promise<{
+    total: number;
+    active: number;
+    resolved: number;
+    averageResponseTime: number;
+  }> {
+    try {
+      // Calculate date range based on timeframe
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (timeframe) {
+        case '1h':
+          startDate.setHours(now.getHours() - 1);
+          break;
+        case '24h':
+          startDate.setDate(now.getDate() - 1);
+          break;
+        case '7d':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case '30d':
+          startDate.setDate(now.getDate() - 30);
+          break;
+        default:
+          startDate.setDate(now.getDate() - 1);
+      }
+
+      // Get conversation counts
+      const totalConversations = await this.db
+        .select()
+        .from(conversations)
+        .where(and(
+          eq(conversations.dealershipId, dealershipId),
+          // Add date filter if needed
+        ));
+
+      const activeConversations = totalConversations.filter(c => c.status === 'active');
+      const resolvedConversations = totalConversations.filter(c => c.status === 'resolved');
+
+      return {
+        total: totalConversations.length,
+        active: activeConversations.length,
+        resolved: resolvedConversations.length,
+        averageResponseTime: 0 // TODO: Calculate actual response time
+      };
+
+    } catch (error) {
+      logger.error('Get conversation stats failed', { error, dealershipId, timeframe });
+      return { total: 0, active: 0, resolved: 0, averageResponseTime: 0 };
+    }
+  }
+
+  /**
+   * Verify conversation access
+   */
+  async verifyConversationAccess(
+    conversationId: string,
+    dealershipId: number
+  ): Promise<boolean> {
+    try {
+      const conversation = await this.db
+        .select({ id: conversations.id })
+        .from(conversations)
+        .where(and(
+          eq(conversations.id, conversationId),
+          eq(conversations.dealershipId, dealershipId)
+        ))
+        .limit(1);
+
+      return conversation.length > 0;
+    } catch (error) {
+      logger.error('Verify conversation access failed', { error, conversationId, dealershipId });
+      return false;
+    }
+  }
+
+  /**
+   * Get conversation messages with cursor-based pagination
+   */
+  async getConversationMessagesWithCursor(
+    conversationId: string,
+    dealershipId: number,
+    cursor?: string,
+    limit: number = 50
+  ): Promise<{
+    messages: Message[];
+    nextCursor?: string;
+    hasMore: boolean;
+  }> {
+    try {
+      // Verify access
+      const hasAccess = await this.verifyConversationAccess(conversationId, dealershipId);
+      if (!hasAccess) {
+        return { messages: [], hasMore: false };
+      }
+
+      let query = db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId))
+        .orderBy(desc(messages.createdAt))
+        .limit(limit + 1); // Get one extra to check if there are more
+
+      if (cursor) {
+        // Add cursor-based filtering if needed
+        // For now, just use simple pagination
+      }
+
+      const results = await query;
+      const hasMore = results.length > limit;
+      const messages = hasMore ? results.slice(0, -1) : results;
+
+      const nextCursor = hasMore ? messages[messages.length - 1]?.id : undefined;
+
+      return {
+        messages,
+        nextCursor,
+        hasMore
+      };
+
+    } catch (error) {
+      logger.error('Get conversation messages with cursor failed', { error, conversationId });
+      return { messages: [], hasMore: false };
+    }
+  }
+
+  /**
+   * Get lead context for a conversation
+   */
+  async getLeadContext(adfLeadId?: string): Promise<any> {
+    if (!adfLeadId) {
+      return null;
+    }
+
+    try {
+      const lead = await this.db
+        .select()
+        .from(leads)
+        .where(eq(leads.id, adfLeadId))
+        .limit(1);
+
+      return lead[0] || null;
+    } catch (error) {
+      logger.error('Get lead context failed', { error, adfLeadId });
+      return null;
+    }
+  }
+
+  /**
+   * Log conversation event
+   */
+  async logConversationEvent(
+    conversationId: string,
+    eventType: string,
+    eventData: any,
+    userId?: number
+  ): Promise<string> {
+    try {
+      // Find the conversation to get leadId
+      const conversation = await this.db
+        .select({ leadId: conversations.leadId })
+        .from(conversations)
+        .where(eq(conversations.id, conversationId))
+        .limit(1);
+
+      if (conversation.length === 0) {
+        throw new Error('Conversation not found');
+      }
+
+      const [activity] = await this.db
+        .insert(leadActivities)
+        .values({
+          leadId: conversation[0].leadId,
+          userId,
+          type: eventType,
+          description: `Event: ${eventType}`,
+          metadata: eventData
+        })
+        .returning();
+
+      return activity.id;
+    } catch (error) {
+      logger.error('Log conversation event failed', { error, conversationId, eventType });
+      throw error;
     }
   }
 }

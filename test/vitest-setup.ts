@@ -1,5 +1,6 @@
 import { beforeAll, afterAll, vi } from 'vitest';
 import dotenv from 'dotenv';
+import './setup/database-setup';
 
 // Load environment variables for testing
 dotenv.config();
