@@ -9,7 +9,7 @@ import { featureFlagsService, FeatureFlagNames } from '../services/feature-flags
 import { monitoringService } from '../services/monitoring';
 import { AppError, ErrorCode } from '../utils/error-codes';
 import { generateTraceId } from '../utils/error-handler';
-import { WEBSOCKET_CONFIG, REDIS_CONFIG } from '../config/constants.js';
+import { WEBSOCKET_CONFIG, REDIS_CONFIG } from '../config/constants';
 
 // Message types for our WebSocket communication
 export enum MessageType {

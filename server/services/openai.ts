@@ -4,7 +4,7 @@ import db from '../db';
 import { vehicles, type Vehicle } from '../../shared/schema';
 import { eq, and, ilike, or, sql } from 'drizzle-orm';
 import logger from '../utils/logger';
-import { AI_CONFIG } from '../config/constants.js';
+import { AI_CONFIG } from '../config/constants';
 
 // Initialize OpenAI with the API key from environment variables
 let openai: OpenAI | null = null;
@@ -461,6 +461,8 @@ export async function generateResponseAnalysis(prompt: string, customerScenario:
     throw error;
   }
 }
+
+export { openai };
 
 export default {
   generateAIResponse,

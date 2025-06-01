@@ -32,7 +32,7 @@ import sendgridRoutes from './routes/sendgrid-webhook-routes';
 // import traceRoutes from './routes/trace-routes';
 // import { traceCorrelation } from './services/trace-correlation';
 
-import { SERVER_CONFIG, validateRequiredEnvVars } from './config/constants.js';
+import { SERVER_CONFIG, validateRequiredEnvVars } from './config/constants';
 
 // Validate required environment variables
 validateRequiredEnvVars();
