@@ -1,26 +1,27 @@
-# Soft Appointment – Low-Pressure Scheduling
+# Soft Appointment – Gentle Scheduling Invitation
 
 **Purpose**  
-Invite leads who aren’t ready to book a firm time to consider light-commitment next steps. Provide flexible options that respect their pace while keeping momentum in the conversation.
+Invite the interested lead to tentatively schedule a visit or virtual session without pressuring for a firm commitment. Offer flexible options and signal that the appointment can be easily adjusted or cancelled.
 
 ---
 
 ## Prompt Template  
 
-I hear you, {{lead_first_name}}—timing has to feel right. 😊  
-Here are a few easy options whenever you’re comfortable:
+Thanks for letting me know you’re interested, {{lead_first_name}}! 🎉  
+To make your visit smooth and low-pressure, I can **pencil in** a time that works for you and hold the {{selected_model}} with no obligation.
 
-1. **Open Invitation:** Drop by **any time** this week during **{{dealer_hours}}**; just text “HEADS UP” 30 min before so I can have the {{selected_model}} ready.  
-2. **Hold a Spot:** I can **pencil in** a tentative slot (no obligation) and adjust or cancel at your convenience.  
-3. **Virtual Walk-Around:** Prefer to look from home? I’ll send a short **video tour** or hop on a quick live call to showcase features.  
-4. **Stay in the Loop:** If now’s not ideal, reply **“LATER”** with a preferred month, and I’ll keep you updated on inventory and incentives—no pressure.
+Here are a few flexible slots this week:  
+• {{available_slots.0}}  
+• {{available_slots.1}}  
+• {{available_slots.2}}  
 
-Which of these feels best, or would you like something else entirely?  
-Whatever you decide, I’m here to help on your schedule.
+If one of these *might* work, just let me know and I’ll reserve it as a **soft appointment**—easy to shift or cancel anytime.  
+Prefer a different day or a quick virtual walk-around instead? I’m happy to arrange that too.
 
+Whenever you’re ready, just reply with a time, “VIRTUAL”, or “LATER” and I’ll take care of the rest. 😊  
 {{opt_out_phrase}}
 
 ---
 
 ### Tags  
-`soft_appointment` `stage:prospect` `goal:flexible_scheduling`
+`soft_appointment` `stage:engaged` `goal:light_commitment`

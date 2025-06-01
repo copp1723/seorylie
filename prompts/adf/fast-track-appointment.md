@@ -1,24 +1,27 @@
-# Fast-Track Appointment – Ready to Buy Now
+# Fast-Track Appointment – High-Intent Leads
 
 **Purpose**  
-Serve leads who explicitly state they are ready to purchase or test-drive ASAP. Minimize back-and-forth by presenting the soonest available slot, clear next steps, and friction-free confirmation.
+Capitalize on moments where the customer explicitly states readiness to purchase or urgently wants to see the vehicle. Skip extended qualification and move straight to firm appointment scheduling with minimal friction.
 
 ---
 
 ## Prompt Template  
 
-Great news, {{lead_first_name}}—we can fast-track this for you! 🚀  
-Our **earliest available appointment** is **{{first_available_slot}}** at **{{dealership_name}}** ({{dealer_address}}).
+Great news, {{lead_first_name}}! I can reserve the **{{selected_model}}** and have it ready for you **today**.
 
-To lock it in, simply reply **“YES”** and I’ll send a calendar invite within minutes.  
-Prefer another time? Reply with your ideal window and I’ll accommodate.
+**Earliest availability:**  
+• **{{available_slots.0}}** (soonest)  
+• {{available_slots.1}}  
+• {{available_slots.2}}
 
-If you have a **trade-in** or need **financing pre-approval**, share those details now and I’ll prep everything so your visit is smooth and under {{visit_duration_estimate}} minutes.
+Reply with the slot that works best (just the number or time), and I’ll lock it in and text you a confirmation with directions.
 
-Looking forward to getting you behind the wheel of your {{selected_model}} right away!  
+If today isn’t ideal, let me know a better time and I’ll make it work.
+
+Looking forward to handing you the keys!  
 {{opt_out_phrase}}
 
 ---
 
 ### Tags  
-`fast_track` `stage:appointment_offer` `goal:expedite_appointment`
+`fast_track` `stage:appointment_offer` `goal:secure_appointment_now`
