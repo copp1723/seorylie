@@ -18,30 +18,44 @@ import logger from '../../server/utils/logger';
 
 // Mock dependencies
 vi.mock('../../server/db', () => {
+  // Create mock query builder with method chaining
+  const createMockQueryBuilder = (mockData: any[] = []) => ({
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue(mockData),
+    orderBy: vi.fn().mockReturnThis(),
+    execute: vi.fn().mockResolvedValue({ rows: mockData, rowCount: mockData.length })
+  });
+
+  // Create mock insert builder with method chaining
+  const createMockInsertBuilder = (mockData: any = { id: 1, externalId: 'test-123', dealershipId: 1 }) => ({
+    values: vi.fn().mockReturnThis(),
+    returning: vi.fn().mockResolvedValue([mockData]),
+    execute: vi.fn().mockResolvedValue({ rows: [mockData], rowCount: 1 })
+  });
+
+  // Create mock transaction
+  const createMockTransaction = () => ({
+    select: vi.fn(() => createMockQueryBuilder()),
+    insert: vi.fn(() => createMockInsertBuilder()),
+    update: vi.fn(() => createMockQueryBuilder()),
+    delete: vi.fn(() => createMockQueryBuilder()),
+    rollback: vi.fn().mockResolvedValue(undefined),
+    commit: vi.fn().mockResolvedValue(undefined)
+  });
+
   return {
     default: {
       transaction: vi.fn().mockImplementation(async (callback) => {
-        return callback({
-          select: vi.fn().mockReturnThis(),
-          from: vi.fn().mockReturnThis(),
-          where: vi.fn().mockReturnThis(),
-          limit: vi.fn().mockReturnValue([]),
-          insert: vi.fn().mockReturnThis(),
-          values: vi.fn().mockReturnThis(),
-          returning: vi.fn().mockResolvedValue([
-            { id: 1, externalId: 'test-123', dealershipId: 1 }
-          ])
-        });
+        const mockTx = createMockTransaction();
+        return await callback(mockTx);
       }),
-      select: vi.fn().mockReturnThis(),
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnValue([]),
-      insert: vi.fn().mockReturnThis(),
-      values: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockResolvedValue([
-        { id: 1, externalId: 'test-123', dealershipId: 1 }
-      ])
+      select: vi.fn(() => createMockQueryBuilder()),
+      insert: vi.fn(() => createMockInsertBuilder()),
+      update: vi.fn(() => createMockQueryBuilder()),
+      delete: vi.fn(() => createMockQueryBuilder()),
+      execute: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 })
     }
   };
 });
@@ -66,13 +80,22 @@ vi.mock('../../server/services/prometheus-metrics', () => {
 });
 
 vi.mock('../../server/utils/logger', () => {
+  const mockLogger = {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    fatal: vi.fn(),
+    child: vi.fn(() => mockLogger),
+    level: 'info',
+    silent: false
+  };
+
   return {
-    default: {
-      info: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      debug: vi.fn()
-    }
+    default: mockLogger,
+    logger: mockLogger,
+    ...mockLogger
   };
 });
 
@@ -143,13 +166,61 @@ const missingFieldsXml = `<?xml version="1.0" encoding="UTF-8"?>
 
 describe('AdfLeadProcessor', () => {
   let processor: AdfLeadProcessor;
+  let mockDb: any;
+  
+  // Helper function to create lead processing input
+  const createLeadInput = (adfXmlContent: string, emailFrom: string = 'test@example.com') => ({
+    emailMessageId: 'test-123',
+    emailSubject: 'New Lead',
+    emailFrom,
+    emailTo: 'dealer@example.com',
+    emailDate: new Date(),
+    adfXmlContent,
+    rawEmailContent: 'Raw email content',
+    attachmentInfo: []
+  });
   
   beforeEach(() => {
     // Reset mocks before each test
     vi.clearAllMocks();
     
-    // Create processor instance with mocked dealership lookup
-    processor = new AdfLeadProcessor();
+    // Create mock database
+    mockDb = {
+      insert: vi.fn().mockReturnThis(),
+      values: vi.fn().mockReturnThis(),
+      returning: vi.fn().mockResolvedValue([{ id: 1 }]),
+      update: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      from: vi.fn().mockReturnThis(),
+      transaction: vi.fn(),
+      query: {
+        adfLeads: {
+          findFirst: vi.fn().mockResolvedValue(null)
+        },
+        dealerships: {
+          findFirst: vi.fn().mockResolvedValue({ id: 1, name: 'Test Dealership' }),
+          findMany: vi.fn().mockResolvedValue([{ id: 1, name: 'Test Dealership' }])
+        },
+        adfEmailQueue: {
+          findFirst: vi.fn().mockResolvedValue({
+            id: 1,
+            emailMessageId: 'test-123',
+            emailSubject: 'Test Subject',
+            emailFrom: 'test@example.com',
+            emailTo: 'dealer@example.com',
+            emailDate: new Date(),
+            adfXmlContent: validAdfXml,
+            rawEmailContent: 'Raw email content',
+            attachmentInfo: []
+          })
+        }
+      }
+    };
+    
+    // Create processor instance with mocked database
+    processor = new AdfLeadProcessor(mockDb);
     
     // Mock the getDealershipByEmail method
     processor.getDealershipByEmail = vi.fn().mockResolvedValue({
@@ -163,7 +234,18 @@ describe('AdfLeadProcessor', () => {
   
   describe('XML Parsing and Validation', () => {
     it('should successfully parse valid ADF XML', async () => {
-      const result = await processor.processAdfXml(validAdfXml, 'test@example.com');
+      const input = {
+        emailMessageId: 'test-123',
+        emailSubject: 'New Lead',
+        emailFrom: 'test@example.com',
+        emailTo: 'dealer@example.com',
+        emailDate: new Date(),
+        adfXmlContent: validAdfXml,
+        rawEmailContent: 'Raw email content',
+        attachmentInfo: []
+      };
+      
+      const result = await processor.processAdfLead(input);
       
       expect(result).toBeDefined();
       expect(result.success).toBe(true);

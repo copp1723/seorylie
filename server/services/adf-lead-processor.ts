@@ -39,9 +39,11 @@ export interface LeadProcessingResult {
 
 export class AdfLeadProcessor {
   private adfParser: AdfParser;
+  public db: any;
 
-  constructor() {
+  constructor(database?: any) {
     this.adfParser = new AdfParser();
+    this.db = database || db;
   }
 
   /**
@@ -175,7 +177,7 @@ export class AdfLeadProcessor {
       maxRetries: 3
     };
 
-    const [queueEntry] = await db.insert(adfEmailQueue).values(queueData).returning({ id: adfEmailQueue.id });
+    const [queueEntry] = await this.db.insert(adfEmailQueue).values(queueData).returning({ id: adfEmailQueue.id });
     return queueEntry.id;
   }
 
@@ -204,7 +206,7 @@ export class AdfLeadProcessor {
       updateData.processingErrors = errors;
     }
 
-    await db.update(adfEmailQueue)
+    await this.db.update(adfEmailQueue)
       .set(updateData)
       .where(eq(adfEmailQueue.id, queueId));
   }
@@ -235,7 +237,7 @@ export class AdfLeadProcessor {
       return { isDuplicate: false };
     }
 
-    const existingLead = await db.query.adfLeads.findFirst({
+    const existingLead = await this.db.query.adfLeads.findFirst({
       where: eq(adfLeads.deduplicationHash, leadData.deduplicationHash),
       columns: { id: true, customerFullName: true, createdAt: true }
     });
@@ -267,7 +269,7 @@ export class AdfLeadProcessor {
 
       // If vendor name is provided, try to find matching dealership
       if (leadData.vendorName) {
-        const dealership = await db.query.dealerships.findFirst({
+        const dealership = await this.db.query.dealerships.findFirst({
           where: eq(dealerships.name, leadData.vendorName),
           columns: { id: true }
         });
@@ -277,7 +279,7 @@ export class AdfLeadProcessor {
         }
 
         // Try fuzzy matching on dealership name
-        const allDealerships = await db.query.dealerships.findMany({
+        const allDealerships = await this.db.query.dealerships.findMany({
           columns: { id: true, name: true }
         });
 
@@ -297,7 +299,7 @@ export class AdfLeadProcessor {
       if (leadData.vendorEmail) {
         const domain = leadData.vendorEmail.split('@')[1];
         if (domain) {
-          const dealership = await db.query.dealerships.findFirst({
+          const dealership = await this.db.query.dealerships.findFirst({
             where: eq(dealerships.website, `https://${domain}`),
             columns: { id: true }
           });
@@ -309,7 +311,7 @@ export class AdfLeadProcessor {
       }
 
       // Default to first dealership if no mapping found (fallback)
-      const defaultDealership = await db.query.dealerships.findFirst({
+      const defaultDealership = await this.db.query.dealerships.findFirst({
         columns: { id: true }
       });
 
@@ -363,7 +365,7 @@ export class AdfLeadProcessor {
       ...leadData
     } as InsertAdfLead;
 
-    const [lead] = await db.insert(adfLeads).values(completeLeadData).returning({ id: adfLeads.id });
+    const [lead] = await this.db.insert(adfLeads).values(completeLeadData).returning({ id: adfLeads.id });
     return lead.id;
   }
 
@@ -386,7 +388,7 @@ export class AdfLeadProcessor {
         errorDetails: details || {}
       };
 
-      await db.insert(adfProcessingLogs).values(logData);
+      await this.db.insert(adfProcessingLogs).values(logData);
     } catch (error) {
       // Don't let logging errors affect main processing
       logger.error('Failed to log processing step', {
@@ -511,7 +513,7 @@ export class AdfLeadProcessor {
     }
 
     // This would require more complex queries - simplified for now
-    const totalProcessed = await db.select({ count: sql`count(*)` })
+    const totalProcessed = await this.db.select({ count: sql`count(*)` })
       .from(adfEmailQueue)
       .where(and(
         eq(adfEmailQueue.processingStatus, 'processed'),
@@ -532,7 +534,7 @@ export class AdfLeadProcessor {
    */
   async retryFailedProcessing(queueId: number): Promise<LeadProcessingResult> {
     // Get email from queue
-    const queueEntry = await db.query.adfEmailQueue.findFirst({
+    const queueEntry = await this.db.query.adfEmailQueue.findFirst({
       where: eq(adfEmailQueue.id, queueId)
     });
 
@@ -545,7 +547,7 @@ export class AdfLeadProcessor {
     }
 
     // Update attempts count
-    await db.update(adfEmailQueue)
+    await this.db.update(adfEmailQueue)
       .set({
         processingAttempts: queueEntry.processingAttempts + 1,
         processingStatus: 'pending'
