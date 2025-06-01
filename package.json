@@ -160,6 +160,8 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "@jest/globals": "^29.5.0",
     "@playwright/test": "^1.38.0",
     "@storybook/addon-docs": "^9.0.2",
