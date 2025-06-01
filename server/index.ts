@@ -1,214 +1,144 @@
-import express, { type Request, Response, NextFunction } from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { createServer } from "http";
-import cookieParser from "cookie-parser";
-import csrf from "csurf";
-import { setupVite, serveStatic, log } from "./vite";
-import { setupRoutes } from "./routes";
-import { standardLimiter, authLimiter, strictLimiter, apiKeyLimiter } from './middleware/rate-limit';
-import logger from "./utils/logger";
-import monitoringRoutes from './routes/monitoring-routes';
-import escalationRoutes from './routes/escalation-routes';
-import leadManagementRoutes from './routes/lead-management-routes';
-import userManagementRoutes from './routes/user-management-routes';
-import apiV1Routes from './routes/api-v1';
-import customerInsightsRoutes from './routes/customer-insights-routes';
-import { initializeFollowUpScheduler } from './services/follow-up-scheduler';
-import { monitoring } from './services/monitoring';
-import { validateProductionSafety } from './utils/production-safety-checks';
+import { config } from 'dotenv';
+// Load environment variables first
+config();
 
-// Load environment variables
-dotenv.config();
+import express from 'express';
+import session from 'express-session';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createServer } from 'http';
 
-// Initialize Express app and create HTTP server
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+import { setupWebSocketServer } from './ws-server';
+import logger from './logger';
+import { setupRoutes } from './routes';
+import { checkDatabaseConnection } from './db';
+import { initMetrics } from './observability/metrics';
+// import { setupTracing } from './observability/tracing'; // Disabled - missing dependencies
+import { initializeRedis } from './lib/redis';
+import adfRoutes from './routes/adf-routes';
+import adminRoutes from './routes/admin-routes';
+// import authRoutes from './routes/auth-routes'; // Commented out - auth service not implemented
+import conversationLogsRoutes from './routes/conversation-logs-routes';
+// import agentSquadRoutes from './routes/agent-squad-routes'; // Commented out - missing dependencies
+import adfConversationRoutes from './routes/adf-conversation-routes';
+import sendgridRoutes from './routes/sendgrid-webhook-routes';
+// TODO: Re-enable when trace services are available
+// import traceRoutes from './routes/trace-routes';
+// import { traceCorrelation } from './services/trace-correlation';
+
+// Initialize Express app
 const app = express();
-const server = createServer(app);
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
 
-// Basic middleware
+// Setup observability
+initMetrics(app);
+// setupTracing(); // Disabled - missing dependencies
+
+// Middleware
 app.use(cors());
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
-// Security middleware
-// app.use(csrf({ cookie: true })); // Uncomment if CSRF protection is needed
+// TODO: Re-enable when trace correlation service is available
+// Add trace correlation middleware (before other routes)
+// if (traceCorrelation.isEnabled()) {
+//   app.use(traceCorrelation.middleware());
+//   logger.info('Trace correlation middleware enabled');
+// }
 
-// Add request tracking middleware for monitoring
-app.use((req, res, next) => {
-  const start = performance.now();
-  res.on('finish', () => {
-    const duration = performance.now() - start;
-    monitoring.trackRequest(req.path, duration, res.statusCode);
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Static files - serve from dist/public where Vite builds the frontend
+app.use(express.static(path.join(__dirname, '../dist/public')));
+
+// API routes
+// app.use('/api/auth', authRoutes); // Commented out - auth service not implemented
+app.use('/api/admin', adminRoutes);
+app.use('/api/adf', adfRoutes);
+app.use('/api/conversations', conversationLogsRoutes);
+// app.use('/api/agent-squad', agentSquadRoutes); // Commented out - missing dependencies
+app.use('/api/adf/conversations', adfConversationRoutes);
+// TODO: Re-enable when trace services are available
+// app.use('/api/trace', traceRoutes);
+// app.use('/api/agents', agentOrchestrationRoutes);
+
+// SendGrid webhook routes (safe to enable - doesn't affect existing system)
+app.use('/api/sendgrid', sendgridRoutes);
+
+// Add basic test route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Kunes RV Dealership Server Running!', 
+    timestamp: new Date().toISOString(),
+    status: 'ok'
   });
-  next();
 });
 
-// Structured logging middleware for API requests
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      // Use our structured logger instead of basic logging
-      const context = {
-        method: req.method,
-        path: path,
-        statusCode: res.statusCode,
-        duration: `${duration}ms`,
-        ip: req.ip,
-        userAgent: req.get('user-agent')
-      };
-
-      // Add response data to logs for non-success status codes or in development
-      if (res.statusCode >= 400 || process.env.NODE_ENV !== 'production') {
-        if (capturedJsonResponse) {
-          context['response'] = capturedJsonResponse;
-        }
-      }
-
-      // Log with appropriate level based on status code
-      if (res.statusCode >= 500) {
-        logger.error(`API error: ${req.method} ${path}`, null, context);
-      } else if (res.statusCode >= 400) {
-        logger.warn(`API warning: ${req.method} ${path}`, context);
-      } else {
-        logger.info(`API request: ${req.method} ${path}`, context);
-      }
-    }
-  });
-
-  next();
-});
-
-// Setup routes
+// Setup additional routes
 setupRoutes(app);
 
-// Register additional routes
-app.use('/api/monitoring', monitoringRoutes);
-app.use('/api/metrics', monitoringRoutes);
-app.use('/api/escalation', escalationRoutes);
-app.use('/api/leads', leadManagementRoutes);
-app.use('/api/users', userManagementRoutes);
-app.use('/api/v1', apiV1Routes);
-app.use('/api/insights', customerInsightsRoutes);
-
-// Global error handler
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-
-  // In production, don't expose detailed error messages
-  const isProduction = process.env.NODE_ENV === 'production';
-  const responseMessage = isProduction && status === 500
-    ? 'An unexpected error occurred. Our team has been notified.'
-    : message;
-
-  // Log the full error details for debugging
-  if (status >= 500) {
-    logger.error(`[ERROR] ${new Date().toISOString()} - ${err.stack || err}`);
-  } else {
-    logger.warn(`[WARN] ${new Date().toISOString()} - ${err.message || 'Unknown error'}`);
-  }
-
-  res.status(status).json({
-    message: responseMessage,
-    success: false,
-    code: isProduction ? undefined : err.code
-  });
-
-  // Only re-throw in development for better debugging
-  if (!isProduction) {
-    throw err;
-  }
+// Catch-all route for SPA
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/public/index.html'));
 });
 
-// Initialize services with production safety checks
-(async () => {
+// Create HTTP server
+const server = createServer(app);
+
+// Setup WebSocket server
+// setupWebSocketServer(server); // Commented out for now
+
+// Start server
+async function startServer() {
   try {
-    // Run production safety checks before starting any services
-    logger.info('Running production safety checks...');
-    await validateProductionSafety();
-    logger.info('Production safety checks passed successfully');
+    // Check database connection
+    await checkDatabaseConnection();
     
-    // Initialize services
-    await initializeFollowUpScheduler();
-    monitoring.initialize();
+    // Initialize Redis
+    logger.info('Initializing Redis connection');
+    await initializeRedis();
     
-    // Initialize queue consumers with in-memory fallback
-    try {
-      const { initializeQueueConsumers } = await import('./services/queue-consumers');
-      await initializeQueueConsumers();
-      logger.info('Queue consumers successfully initialized');
-    } catch (error) {
-      logger.warn('Failed to initialize queue consumers, will use in-memory fallback', error);
-    }
-
-    // Setup Vite in development or serve static files in production
-    if (process.env.NODE_ENV === "production") {
-      serveStatic(app);
-    } else {
-      await setupVite(app, server);
-    }
-
-    // Configure port and host for proper deployment
-    const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-    const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
-
-    server.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
-      log(`Server running on port ${PORT}`);
+    // Start HTTP server
+    server.listen(PORT, HOST, () => {
+      logger.info(`Server running on http://${HOST}:${PORT}`);
+      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
     });
-
-    // Implement graceful shutdown for production scaling
-    const handleShutdown = () => {
-      logger.info('Shutting down application gracefully...');
-
-      // Import necessary shutdown functions
-      Promise.all([
-        import('./db').then(({ closeDbConnections }) => closeDbConnections()),
-        import('./utils/cache').then(({ shutdownCache }) => shutdownCache())
-      ]).then(() => {
-        logger.info('All resources released, shutting down cleanly');
-
-        // Close HTTP server with a timeout
-        server.close((err) => {
-          if (err) {
-            logger.error('Error closing HTTP server:', err);
-            return;
-          }
-          logger.info('HTTP server closed successfully');
-          process.exit(0);
-        });
-      }).catch((err) => {
-        logger.error('Error during resource cleanup:', err);
-        process.exit(1);
-      });
-
-      // Force shutdown after 10 seconds if graceful shutdown fails
-      setTimeout(() => {
-        logger.error('Forced shutdown after timeout');
-        process.exit(1);
-      }, 10000);
-    };
-
-    // Setup signal handlers for graceful shutdown
-    process.on('SIGTERM', handleShutdown);
-    process.on('SIGINT', handleShutdown);
-    
   } catch (error) {
-    logger.error('Failed to initialize server:', error);
+    if (error instanceof Error) {
+      logger.error('Failed to start server', { error: error.message, stack: error.stack });
+    } else {
+      logger.error('Failed to start server with unknown error', { error });
+    }
     process.exit(1);
   }
-})();
+}
 
-export default server;
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught exception', { error });
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled rejection', { reason, promise });
+});
+
+// Start the server
+startServer();
+
+export { app, server };

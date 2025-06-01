@@ -10,7 +10,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle, AlertTriangle, Info, CheckCircle, Copy, RotateCw, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Tooltip } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 
 // Error categories for better organization and handling
@@ -342,14 +342,17 @@ Timestamp: ${new Date().toISOString()}
               </ToastAction>
             )}
             
-            <Tooltip content="Copy error details">
-              <button
-                onClick={handleCopyDetails}
-                className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                aria-label="Copy error details to clipboard"
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleCopyDetails}
+                  className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                  aria-label="Copy error details to clipboard"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Copy error details</TooltipContent>
             </Tooltip>
             
             {/* Additional custom actions */}

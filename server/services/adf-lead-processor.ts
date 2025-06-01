@@ -1,14 +1,14 @@
 import db from '../db';
-import { eq, and } from 'drizzle-orm';
-import { 
-  adfLeads, 
-  adfEmailQueue, 
+import { eq, and, sql } from 'drizzle-orm';
+import {
+  adfLeads,
+  adfEmailQueue,
   adfProcessingLogs,
   type InsertAdfLead,
   type InsertAdfEmailQueue,
   type InsertAdfProcessingLog,
   type AdfProcessingStatus
-} from '@shared/adf-schema';
+} from '../../shared/adf-schema';
 import { AdfParser } from './adf-parser';
 import logger from '../utils/logger';
 
@@ -67,7 +67,7 @@ export class AdfLeadProcessor {
     try {
       // Step 2: Parse ADF XML
       const parseResult = await this.adfParser.parseAdfXml(input.adfXmlContent);
-      
+
       if (!parseResult.success || !parseResult.mappedLead) {
         errors.push(...parseResult.errors);
         await this.updateQueueStatus(queueId, 'failed', parseResult.errors);
@@ -83,7 +83,7 @@ export class AdfLeadProcessor {
 
       // Step 4: Check for duplicates
       const duplicateCheck = await this.checkForDuplicates(leadData);
-      
+
       if (duplicateCheck.isDuplicate) {
         warnings.push(`Duplicate lead detected. Existing lead ID: ${duplicateCheck.existingLeadId}`);
         await this.updateQueueStatus(queueId, 'processed', [], duplicateCheck.existingLeadId);
@@ -91,15 +91,15 @@ export class AdfLeadProcessor {
           existingLeadId: duplicateCheck.existingLeadId,
           deduplicationHash: leadData.deduplicationHash
         });
-        
-        return { 
-          success: true, 
-          queueId, 
+
+        return {
+          success: true,
+          queueId,
           leadId: duplicateCheck.existingLeadId,
           isDuplicate: true,
-          errors, 
-          warnings, 
-          processingTime: Date.now() - startTime 
+          errors,
+          warnings,
+          processingTime: Date.now() - startTime
         };
       }
 
@@ -143,10 +143,10 @@ export class AdfLeadProcessor {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       errors.push(`Processing error: ${errorMessage}`);
-      
+
       await this.updateQueueStatus(queueId, 'failed', [errorMessage]);
       await this.logProcessingStep(null, 'processing', 'error', errorMessage, { error: errorMessage });
-      
+
       logger.error('ADF lead processing failed', {
         error: errorMessage,
         queueId,
@@ -183,8 +183,8 @@ export class AdfLeadProcessor {
    * Update email queue status
    */
   private async updateQueueStatus(
-    queueId: number, 
-    status: AdfProcessingStatus, 
+    queueId: number,
+    status: AdfProcessingStatus,
     errors: string[] = [],
     resultingLeadId?: number
   ): Promise<void> {
@@ -261,55 +261,67 @@ export class AdfLeadProcessor {
    * Map lead to dealership based on vendor information
    */
   private async mapToDealership(leadData: Partial<InsertAdfLead>): Promise<number | null> {
-    // If vendor name is provided, try to find matching dealership
-    if (leadData.vendorName) {
-      const dealership = await db.query.dealerships.findFirst({
-        where: eq(db.select().from(db.$schema.dealerships).$schema.name, leadData.vendorName),
-        columns: { id: true }
-      });
+    try {
+      // Import dealerships table
+      const { dealerships } = await import('@shared/schema-resolver');
 
-      if (dealership) {
-        return dealership.id;
-      }
-
-      // Try fuzzy matching on dealership name
-      const dealerships = await db.query.dealerships.findMany({
-        columns: { id: true, name: true }
-      });
-
-      for (const dealership of dealerships) {
-        if (this.fuzzyMatchDealershipName(leadData.vendorName, dealership.name)) {
-          logger.info('Fuzzy matched dealership', {
-            vendorName: leadData.vendorName,
-            dealershipName: dealership.name,
-            dealershipId: dealership.id
-          });
-          return dealership.id;
-        }
-      }
-    }
-
-    // If vendor email is provided, try to match domain
-    if (leadData.vendorEmail) {
-      const domain = leadData.vendorEmail.split('@')[1];
-      if (domain) {
+      // If vendor name is provided, try to find matching dealership
+      if (leadData.vendorName) {
         const dealership = await db.query.dealerships.findFirst({
-          where: eq(db.select().from(db.$schema.dealerships).$schema.website, `https://${domain}`),
+          where: eq(dealerships.name, leadData.vendorName),
           columns: { id: true }
         });
 
         if (dealership) {
           return dealership.id;
         }
+
+        // Try fuzzy matching on dealership name
+        const allDealerships = await db.query.dealerships.findMany({
+          columns: { id: true, name: true }
+        });
+
+        for (const dealership of allDealerships) {
+          if (this.fuzzyMatchDealershipName(leadData.vendorName, dealership.name)) {
+            logger.info('Fuzzy matched dealership', {
+              vendorName: leadData.vendorName,
+              dealershipName: dealership.name,
+              dealershipId: dealership.id
+            });
+            return dealership.id;
+          }
+        }
       }
+
+      // If vendor email is provided, try to match domain
+      if (leadData.vendorEmail) {
+        const domain = leadData.vendorEmail.split('@')[1];
+        if (domain) {
+          const dealership = await db.query.dealerships.findFirst({
+            where: eq(dealerships.website, `https://${domain}`),
+            columns: { id: true }
+          });
+
+          if (dealership) {
+            return dealership.id;
+          }
+        }
+      }
+
+      // Default to first dealership if no mapping found (fallback)
+      const defaultDealership = await db.query.dealerships.findFirst({
+        columns: { id: true }
+      });
+
+      return defaultDealership?.id || null;
+    } catch (error) {
+      logger.error('Error mapping lead to dealership', {
+        error: error instanceof Error ? error.message : String(error),
+        vendorName: leadData.vendorName,
+        vendorEmail: leadData.vendorEmail
+      });
+      return null;
     }
-
-    // Default to first dealership if no mapping found (fallback)
-    const defaultDealership = await db.query.dealerships.findFirst({
-      columns: { id: true }
-    });
-
-    return defaultDealership?.id || null;
   }
 
   /**
@@ -330,7 +342,7 @@ export class AdfLeadProcessor {
     const dealershipWords = normalizedDealership.split(/\s+/).filter(w => w.length >= 3);
 
     const commonWords = vendorWords.filter(word => dealershipWords.includes(word));
-    
+
     // Consider it a match if there are at least 2 common words or 1 word that's > 5 characters
     return commonWords.length >= 2 || commonWords.some(word => word.length > 5);
   }
@@ -377,7 +389,7 @@ export class AdfLeadProcessor {
       await db.insert(adfProcessingLogs).values(logData);
     } catch (error) {
       // Don't let logging errors affect main processing
-      logger.error('Failed to log processing step', { 
+      logger.error('Failed to log processing step', {
         error: error instanceof Error ? error.message : String(error),
         processStep,
         status,
@@ -412,11 +424,11 @@ export class AdfLeadProcessor {
     }
 
     // This would require more complex queries - simplified for now
-    const totalProcessed = await db.select({ count: db.count() })
+    const totalProcessed = await db.select({ count: sql`count(*)` })
       .from(adfEmailQueue)
       .where(and(
         eq(adfEmailQueue.processingStatus, 'processed'),
-        db.gte(adfEmailQueue.processedAt, startDate)
+        sql`${adfEmailQueue.processedAt} >= ${startDate}`
       ));
 
     return {
@@ -447,7 +459,7 @@ export class AdfLeadProcessor {
 
     // Update attempts count
     await db.update(adfEmailQueue)
-      .set({ 
+      .set({
         processingAttempts: queueEntry.processingAttempts + 1,
         processingStatus: 'pending'
       })
@@ -469,4 +481,8 @@ export class AdfLeadProcessor {
   }
 }
 
+// Export the class as default
 export default AdfLeadProcessor;
+
+// Export a singleton instance for easy use
+export const adfLeadProcessor = new AdfLeadProcessor();

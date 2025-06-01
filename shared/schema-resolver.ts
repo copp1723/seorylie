@@ -106,31 +106,27 @@ export type {
 
 // Re-export from adf-schema.ts
 export {
-  adfLeadStatuses,
-  adfRequestTypes,
-  adfProcessingStatuses,
   adfLeads,
-  adfProcessingLogs,
   adfEmailQueue,
+  adfProcessingLogs,
   adfLeadsRelations,
-  adfProcessingLogsRelations,
   adfEmailQueueRelations,
+  adfProcessingLogsRelations,
   insertAdfLeadSchema,
-  insertAdfProcessingLogSchema,
-  insertAdfEmailQueueSchema
+  insertAdfEmailQueueSchema,
+  insertAdfProcessingLogSchema
 } from './adf-schema';
 
 // Re-export types from adf-schema.ts
 export type {
-  AdfLeadStatus,
-  AdfRequestType,
   AdfProcessingStatus,
+  AdfLeadStatus,
   AdfLead,
   InsertAdfLead,
-  AdfProcessingLog,
-  InsertAdfProcessingLog,
   AdfEmailQueue,
   InsertAdfEmailQueue,
+  AdfProcessingLog,
+  InsertAdfProcessingLog,
   AdfXmlStructure
 } from './adf-schema';
 

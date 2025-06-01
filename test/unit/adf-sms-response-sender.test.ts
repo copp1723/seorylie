@@ -3,7 +3,7 @@ import { jest } from '@jest/globals';
 import crypto from 'crypto';
 
 // Mock dependencies
-jest.mock('../../../server/utils/logger', () => ({
+jest.mock('../../server/utils/logger', () => ({
   __esModule: true,
   default: {
     info: jest.fn(),
@@ -13,7 +13,7 @@ jest.mock('../../../server/utils/logger', () => ({
   }
 }));
 
-jest.mock('../../../server/db', () => ({
+jest.mock('../../server/db', () => ({
   __esModule: true,
   default: {
     execute: jest.fn()
@@ -27,7 +27,7 @@ jest.mock('drizzle-orm', () => ({
   }
 }));
 
-jest.mock('../../../server/services/twilio-sms-service', () => ({
+jest.mock('../../server/services/twilio-sms-service', () => ({
   __esModule: true,
   twilioSMSService: {
     sendSMS: jest.fn(),
@@ -37,7 +37,7 @@ jest.mock('../../../server/services/twilio-sms-service', () => ({
   }
 }));
 
-jest.mock('../../../server/services/monitoring', () => ({
+jest.mock('../../server/services/monitoring', () => ({
   __esModule: true,
   monitoringService: {
     registerMetric: jest.fn(),
@@ -48,15 +48,15 @@ jest.mock('../../../server/services/monitoring', () => ({
 }));
 
 // Import mocked dependencies
-import logger from '../../../server/utils/logger';
-import db from '../../../server/db';
+import logger from '../../server/utils/logger';
+import db from '../../server/db';
 import { sql } from 'drizzle-orm';
-import { twilioSMSService } from '../../../server/services/twilio-sms-service';
-import { monitoringService } from '../../../server/services/monitoring';
+import { twilioSMSService } from '../../server/services/twilio-sms-service';
+import { monitoringService } from '../../server/services/monitoring';
 
 // Import the module under test
 // We need to import after the mocks are set up
-import { AdfSmsResponseSender } from '../../../server/services/adf-sms-response-sender';
+import { AdfSmsResponseSender } from '../../server/services/adf-sms-response-sender';
 
 describe('AdfSmsResponseSender', () => {
   let adfSmsResponseSender: AdfSmsResponseSender;

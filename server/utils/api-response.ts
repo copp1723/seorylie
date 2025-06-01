@@ -309,6 +309,36 @@ export function sendForbidden(
 }
 
 /**
+ * Format a standardized API response without sending it
+ * @param data Data to include in the response
+ * @param success Whether the operation was successful (defaults to true)
+ * @param message Optional success or error message
+ * @param pagination Optional pagination information
+ * @returns Formatted API response object
+ */
+export function formatApiResponse<T = any>(
+  data: T,
+  success: boolean = true,
+  message?: string,
+  pagination?: { limit: number; offset: number; total: number }
+): SuccessResponse<T> | ErrorResponse {
+  if (success) {
+    return {
+      success: true,
+      data,
+      ...(message && { message }),
+      ...(pagination && { pagination })
+    };
+  } else {
+    return {
+      success: false,
+      error: typeof data === 'string' ? data : message || 'An error occurred',
+      ...(typeof data !== 'string' && { details: data })
+    };
+  }
+}
+
+/**
  * HTTP status codes with descriptions
  * For consistent status code usage across the API
  */

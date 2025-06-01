@@ -99,8 +99,8 @@ export function getRandomVehicle() {
   };
 }
 
-export function generateChatMessage(): string {
-  const messages: string[] = [
+export function generateChatMessage() {
+  const messages[] = [
     "Hello, I'm interested in your vehicles",
     "Do you have any Toyota Camry available?",
     "What's the price range for used cars?",
@@ -115,16 +115,16 @@ export function generateChatMessage(): string {
   return messages[Math.floor(Math.random() * messages.length)];
 }
 
-export function sleep(seconds: number): Promise<void> {
+export function sleep(seconds) {
   return new Promise<void>((resolve: () => void) => setTimeout(resolve, seconds * 1000));
 }
 
 // Performance monitoring utilities
-export function startTimer(): number {
+export function startTimer() {
   return Date.now();
 }
 
-export function endTimer(startTime: number): number {
+export function endTimer(startTime) {
   return Date.now() - startTime;
 }
 

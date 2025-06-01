@@ -50,7 +50,7 @@ const SimpleTooltip: React.FC<SimpleTooltipProps> = ({
   className,
   contentClassName,
 }) => (
-  <Tooltip delayDuration={delayDuration} skipDelayDuration={skipDelayDuration}>
+  <Tooltip delayDuration={delayDuration}>
     <TooltipTrigger asChild className={className}>
       {children}
     </TooltipTrigger>

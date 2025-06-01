@@ -1,5 +1,6 @@
 import React from 'react';
 import { Route, Switch } from 'wouter';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from './components/ui/toaster';
 import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './hooks/useAuth';
@@ -12,8 +13,6 @@ import Login from './pages/login';
 import AuthPage from './pages/auth-page';
 import VerifyMagicLink from './pages/verify-magic-link';
 import SimplePromptTestPage from './pages/SimplePromptTestPage';
-import PromptTesting from './pages/prompt-testing';
-import ProtectedPromptTesting from './pages/protected-prompt-testing';
 import EnhancedPromptTesting from './pages/enhanced-prompt-testing';
 import Conversations from './pages/conversations';
 import Analytics from './pages/analytics';
@@ -24,10 +23,21 @@ import NotFound from './pages/not-found';
 import AgentStudio from './pages/agent-studio';
 import IntegrationDashboardPage from './pages/integration-dashboard';
 
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1,
+    },
+  },
+});
+
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <AuthProvider>
         <Toaster />
         <Switch>
           {/* Public routes */}
@@ -44,7 +54,7 @@ function App() {
                 <Route path="/dashboard" component={Dashboard} />
                 <Route path="/prompt-testing">
                   <ProtectedRoute>
-                    <ProtectedPromptTesting />
+                    <SimplePromptTestPage />
                   </ProtectedRoute>
                 </Route>
                 <Route path="/enhanced-prompt-testing">
@@ -95,8 +105,9 @@ function App() {
             </Layout>
           </Route>
         </Switch>
-      </AuthProvider>
-    </ThemeProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

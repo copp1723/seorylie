@@ -4,11 +4,11 @@ import { Redis } from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
 import { dealershipConfigService } from './dealership-config-service';
-// import { DealershipMode } from '../../shared/schema';
+import { DealershipMode } from '../../shared/schema';
 import { featureFlagsService, FeatureFlagNames } from '../services/feature-flags-service';
-// import { monitoringService } from '../services/monitoring';
-// import { AppError, ErrorCode } from '../utils/error-codes';
-// import { generateTraceId } from '../utils/error-handler';
+import { monitoringService } from '../services/monitoring';
+import { AppError, ErrorCode } from '../utils/error-codes';
+import { generateTraceId } from '../utils/error-handler';
 
 // Message types for our WebSocket communication
 export enum MessageType {

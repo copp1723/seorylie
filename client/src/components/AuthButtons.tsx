@@ -6,7 +6,7 @@ export function LoginButton() {
   return (
     <Button
       variant="outline"
-      onClick={() => (window.location.href = "/api/login")}
+      onClick={() => { window.location.href = "/api/login"; }}
       className="gap-2"
     >
       <LogIn className="h-4 w-4" />
@@ -19,7 +19,7 @@ export function LogoutButton() {
   return (
     <Button
       variant="outline"
-      onClick={() => (window.location.href = "/api/logout")}
+      onClick={() => { window.location.href = "/api/logout"; }}
       className="gap-2"
     >
       <LogOut className="h-4 w-4" />

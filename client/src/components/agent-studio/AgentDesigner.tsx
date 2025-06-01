@@ -210,7 +210,7 @@ export const AgentDesigner: React.FC<AgentDesignerProps> = ({
                         <Checkbox
                           id={`tool-${tool.id}`}
                           checked={agentConfig.tools.includes(tool.name)}
-                          onCheckedChange={(checked) => handleToolToggle(tool.name, checked === true)}
+                          onCheckedChange={(checked: boolean) => handleToolToggle(tool.name, checked === true)}
                           disabled={!tool.is_active || readOnly}
                         />
                         <div className="grid gap-1.5 leading-none">

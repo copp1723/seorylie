@@ -10,6 +10,7 @@
 
 import logger from './logger';
 import { db } from '../db';
+import { sql } from 'drizzle-orm';
 
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -143,7 +144,7 @@ async function validateDatabaseConnection(): Promise<void> {
   
   try {
     // Test database connection
-    const result = await db.execute('SELECT NOW()');
+    const result = await db.execute(sql`SELECT NOW()`);
     if (!result) {
       throw new Error('Database query returned no result');
     }
@@ -178,12 +179,12 @@ async function validateRowLevelSecurity(): Promise<void> {
   
   try {
     // Check if RLS functions exist
-    const rlsFunctionResult = await db.execute(`
+    const rlsFunctionResult = await db.execute(sql`
       SELECT COUNT(*) as count FROM pg_proc 
       WHERE proname = 'set_tenant_context'
     `);
     
-    const rlsFunctionCount = parseInt(rlsFunctionResult?.rows?.[0]?.count || '0', 10);
+    const rlsFunctionCount = parseInt(String(rlsFunctionResult?.[0]?.count || '0'), 10);
     
     if (rlsFunctionCount === 0) {
       const errorMsg = `
@@ -202,12 +203,12 @@ async function validateRowLevelSecurity(): Promise<void> {
     const criticalTables = ['conversations', 'leads', 'customers', 'vehicles', 'users'];
     
     for (const table of criticalTables) {
-      const rlsResult = await db.execute(`
+      const rlsResult = await db.execute(sql`
         SELECT relrowsecurity FROM pg_class 
-        WHERE relname = $1 AND relkind = 'r'
-      `, [table]);
+        WHERE relname = ${table} AND relkind = 'r'
+      `);
       
-      const rlsEnabled = rlsResult?.rows?.[0]?.relrowsecurity === true;
+      const rlsEnabled = rlsResult?.[0]?.relrowsecurity === true;
       
       if (!rlsEnabled) {
         const errorMsg = `

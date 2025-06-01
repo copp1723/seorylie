@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Trash2, AlertTriangle, Settings, Eye } from 'lucide-react';
+import { Trash2, AlertTriangle, Settings } from 'lucide-react';
 
 interface FeatureFlag {
   name: string;
@@ -250,7 +250,7 @@ export const FeatureFlagManager: React.FC = () => {
                     </span>
                     <Switch
                       checked={status[flag.name] || false}
-                      onCheckedChange={(enabled) => toggleFlag(flag.name, enabled)}
+                      onCheckedChange={(enabled: boolean) => toggleFlag(flag.name, enabled)}
                     />
                   </div>
                   

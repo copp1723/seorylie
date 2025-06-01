@@ -4,7 +4,7 @@ import db from '../db';
 import { sql } from 'drizzle-orm';
 import { twilioSMSService, SMSMessage } from './twilio-sms-service';
 import { messageDeliveryService } from './message-delivery-service';
-import { AdfLead } from '../shared/adf-schema';
+import { AdfLead } from '../../shared/adf-schema';
 import { monitoringService } from './monitoring.ts';
 
 // Constants

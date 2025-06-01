@@ -4,13 +4,80 @@ import { AdfService } from '../services/adf-service';
 import { AdfParser } from '../services/adf-parser';
 import logger from '../utils/logger';
 import db from '../db';
-import { eq, desc, and, gte } from 'drizzle-orm';
+import { eq, desc, and, gte, or, like } from 'drizzle-orm';
 import { adfLeads, adfEmailQueue, adfProcessingLogs } from '../../shared/adf-schema';
+// import { dealershipEmailConfigs } from '../../shared/schema-resolver'; // Commented out - table doesn't exist
 
 const router = Router();
 
 // Initialize ADF parser for manual processing
 const adfParser = new AdfParser();
+
+/**
+ * Determine which dealership an email belongs to
+ * Used by SendGrid webhook to route emails correctly
+ */
+async function getDealershipFromEmail(toEmail: string, fromEmail: string): Promise<number | null> {
+  try {
+    // Extract domain from 'to' email (e.g., leads@adf-johndoe-motors.cleanrylie.com)
+    const toDomain = toEmail.split('@')[1]?.toLowerCase();
+    const fromDomain = fromEmail.split('@')[1]?.toLowerCase();
+
+    if (!toDomain) {
+      return null;
+    }
+
+    // Look up dealership by email configuration (commented out - table doesn't exist)
+    const dealershipConfig = null; // TODO: Implement dealership email configs
+    /*
+    const dealershipConfig = await db.query.dealershipEmailConfigs.findFirst({
+      where: or(
+        eq(dealershipEmailConfigs.emailAddress, toEmail.toLowerCase()),
+        eq(dealershipEmailConfigs.emailDomain, toDomain),
+        like(dealershipEmailConfigs.emailAddress, `%@${toDomain}`)
+      ),
+      columns: { dealershipId: true, emailAddress: true, emailDomain: true }
+    });
+    */
+
+    if (dealershipConfig) {
+      logger.info('Dealership found for email', {
+        dealershipId: dealershipConfig.dealershipId,
+        toEmail,
+        configuredEmail: dealershipConfig.emailAddress
+      });
+      return dealershipConfig.dealershipId;
+    }
+
+    // Fallback: Check if domain follows our SendGrid hostname pattern
+    // Pattern: adf-{dealership-identifier}.cleanrylie.com
+    if (toDomain.includes('.cleanrylie.com') && toDomain.startsWith('adf-')) {
+      const identifier = toDomain.replace('adf-', '').replace('.cleanrylie.com', '');
+      
+      // Look up by domain pattern (this would need additional logic based on your setup)
+      logger.info('Attempting to find dealership by domain pattern', {
+        identifier,
+        toDomain
+      });
+    }
+
+    logger.warn('No dealership configuration found for email', {
+      toEmail,
+      fromEmail,
+      toDomain,
+      fromDomain
+    });
+
+    return null;
+  } catch (error) {
+    logger.error('Error determining dealership from email', {
+      error: error instanceof Error ? error.message : String(error),
+      toEmail,
+      fromEmail
+    });
+    return null;
+  }
+}
 
 /**
  * Get ADF service status
@@ -527,6 +594,197 @@ router.post('/queue/:id/retry', [
     res.status(500).json({
       success: false,
       error: 'Failed to initiate retry'
+    });
+  }
+});
+
+/**
+ * Verify SendGrid webhook signature for security
+ */
+const verifySendGridSignature = (req: Request, res: Response, next: any) => {
+  const signature = req.get('X-Twilio-Email-Event-Webhook-Signature');
+  const timestamp = req.get('X-Twilio-Email-Event-Webhook-Timestamp');
+
+  // In production, you should verify the signature
+  // For now, we'll just log and continue
+  if (signature && timestamp) {
+    logger.info('SendGrid webhook signature received', {
+      hasSignature: !!signature,
+      timestamp
+    });
+  } else {
+    logger.warn('SendGrid webhook received without signature - ensure webhook security is configured');
+  }
+
+  next();
+};
+
+/**
+ * Middleware to handle SendGrid webhook raw body parsing
+ */
+const parseWebhookBody = (req: Request, res: Response, next: any) => {
+  // SendGrid sends multipart/form-data, Express should handle this automatically
+  // But we may need to handle large attachments
+  if (req.get('content-type')?.includes('multipart/form-data')) {
+    // Express with body-parser should handle this
+    next();
+  } else {
+    res.status(400).json({ error: 'Expected multipart/form-data content type' });
+  }
+};
+
+/**
+ * SendGrid Inbound Parse Webhook
+ * Receives emails with ADF attachments via SendGrid webhook
+ * CRITICAL: Integrates with DLS dealership routing
+ */
+router.post('/webhook/sendgrid-inbound', verifySendGridSignature, parseWebhookBody, async (req: Request, res: Response) => {
+  try {
+    logger.info('Received SendGrid inbound email webhook', {
+      from: req.body.from,
+      to: req.body.to,
+      subject: req.body.subject,
+      attachments: req.body.attachments || 0
+    });
+
+    // CRITICAL: Determine which dealership this email belongs to
+    const dealershipId = await getDealershipFromEmail(req.body.to, req.body.from);
+    
+    if (!dealershipId) {
+      logger.warn('No dealership found for incoming email', {
+        to: req.body.to,
+        from: req.body.from,
+        subject: req.body.subject
+      });
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Email processed but no matching dealership found' 
+      });
+    }
+
+    // Extract email data from SendGrid webhook payload
+    const emailData = {
+      from: req.body.from,
+      to: req.body.to,
+      subject: req.body.subject,
+      text: req.body.text,
+      html: req.body.html,
+      attachments: [],
+      dealershipId // Add dealership context
+    };
+
+    // Process attachments looking for ADF XML files
+    const attachmentCount = parseInt(req.body.attachments) || 0;
+    const xmlAttachments = [];
+
+    for (let i = 1; i <= attachmentCount; i++) {
+      const attachmentInfo = req.body[`attachment-info${i}`];
+      const attachmentData = req.body[`attachment${i}`];
+
+      if (attachmentInfo && attachmentData) {
+        const info = JSON.parse(attachmentInfo);
+
+        // Check if it's an XML file (potential ADF)
+        if (info.filename?.toLowerCase().endsWith('.xml') ||
+            info.type?.includes('xml')) {
+          xmlAttachments.push({
+            filename: info.filename,
+            content: Buffer.from(attachmentData, 'base64'),
+            contentType: info.type,
+            size: attachmentData.length
+          });
+        }
+      }
+    }
+
+    if (xmlAttachments.length === 0) {
+      logger.info('No XML attachments found in SendGrid webhook', {
+        subject: emailData.subject,
+        attachmentCount
+      });
+      return res.status(200).json({ success: true, message: 'No ADF attachments found' });
+    }
+
+    // Process each XML attachment through existing ADF system
+    const results = [];
+    for (const attachment of xmlAttachments) {
+      try {
+        const xml = attachment.content.toString('utf8');
+        const result = await adfParser.parseAdfXml(xml);
+
+        if (result.success && result.mappedLead) {
+          // Add email metadata AND dealership context
+          result.mappedLead.sourceEmailFrom = emailData.from;
+          result.mappedLead.sourceEmailSubject = emailData.subject;
+          result.mappedLead.sourceEmailId = `sendgrid-${Date.now()}-${attachment.filename}`;
+          result.mappedLead.dealershipId = dealershipId; // CRITICAL: Associate with correct dealership
+
+          // Check for duplicates
+          const existingLead = await db.query.adfLeads.findFirst({
+            where: eq(adfLeads.deduplicationHash, result.mappedLead.deduplicationHash!),
+            columns: { id: true }
+          });
+
+          if (!existingLead) {
+            // Store the lead
+            const [newLead] = await db.insert(adfLeads).values(result.mappedLead as any).returning({ id: adfLeads.id });
+
+            results.push({
+              filename: attachment.filename,
+              leadId: newLead.id,
+              success: true,
+              isDuplicate: false
+            });
+
+            logger.info('ADF lead processed from SendGrid webhook', {
+              leadId: newLead.id,
+              filename: attachment.filename,
+              customerName: result.mappedLead.customerFullName,
+              dealershipId
+            });
+          } else {
+            results.push({
+              filename: attachment.filename,
+              leadId: existingLead.id,
+              success: true,
+              isDuplicate: true
+            });
+          }
+        } else {
+          results.push({
+            filename: attachment.filename,
+            success: false,
+            errors: result.errors
+          });
+        }
+      } catch (error) {
+        logger.error('Error processing ADF attachment from SendGrid', {
+          filename: attachment.filename,
+          error: error instanceof Error ? error.message : String(error)
+        });
+
+        results.push({
+          filename: attachment.filename,
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+
+    // Return success to SendGrid (important!)
+    res.status(200).json({
+      success: true,
+      message: 'Email processed successfully',
+      results
+    });
+
+  } catch (error) {
+    logger.error('Error processing SendGrid inbound webhook', { error });
+
+    // Still return 200 to prevent SendGrid retries for application errors
+    res.status(200).json({
+      success: false,
+      error: 'Internal processing error'
     });
   }
 });

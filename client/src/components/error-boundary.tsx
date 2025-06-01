@@ -85,7 +85,7 @@ export interface ErrorBoundaryProps {
 // Error fallback props
 export interface ErrorFallbackProps {
   error: ExtendedError;
-  errorInfo?: React.ErrorInfo;
+  errorInfo?: React.ErrorInfo | null | undefined;
   resetErrorBoundary: () => void;
   context?: ErrorContext;
   featureFlags?: Partial<Record<ErrorFeatureFlag, boolean>>;
@@ -298,7 +298,13 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
         errorCode: error.code,
         traceId: error.traceId,
         category: ErrorCategory.CLIENT,
-        onRetry: retryError || resetErrorBoundary,
+        onRetry: async () => { 
+          if (retryError) {
+            await retryError();
+          } else {
+            resetErrorBoundary();
+          }
+        },
         onContactSupport: supportEmail || supportUrl ? handleContactSupport : undefined,
         showTechnicalDetails: featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS],
         technicalDetails: error.stack
@@ -621,7 +627,7 @@ export const FormErrorFallback: React.FC<ErrorFallbackProps> = (props) => {
 // Main Error Boundary component
 export class ErrorBoundary extends React.Component<
   ErrorBoundaryProps,
-  { error: ExtendedError | null; errorInfo: React.ErrorInfo | null; retryCount: number; isRetrying: boolean }
+  { error: ExtendedError | null; errorInfo: React.ErrorInfo | null | undefined; retryCount: number; isRetrying: boolean }
 > {
   constructor(props: ErrorBoundaryProps) {
     super(props);
@@ -637,7 +643,7 @@ export class ErrorBoundary extends React.Component<
     return { error: classifyError(error) };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Classify the error
     const extendedError = classifyError(error);
     
@@ -675,7 +681,7 @@ export class ErrorBoundary extends React.Component<
     console.error("Component stack:", errorInfo.componentStack);
   }
 
-  componentDidUpdate(prevProps: ErrorBoundaryProps) {
+  override componentDidUpdate(prevProps: ErrorBoundaryProps) {
     // Reset error state if resetKeys change
     if (this.props.resetKeys && 
         prevProps.resetKeys && 
@@ -717,7 +723,7 @@ export class ErrorBoundary extends React.Component<
     }
   };
 
-  render() {
+  override render() {
     const { children, fallback, context, featureFlags, maxRetries, supportEmail, supportUrl, homeUrl, className } = this.props;
     const { error, errorInfo, retryCount, isRetrying } = this.state;
     

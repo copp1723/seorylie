@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LoaderCircle, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import { Loader2 as LoaderCircle, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
 
 export default function VerifyMagicLinkPage() {
   const [, setLocation] = useLocation();

@@ -1,7 +1,8 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { sendVerificationEmail, verifyEmail, sendPasswordReset, resetPassword } from '../services/auth';
+// import { sendVerificationEmail, verifyEmail, sendPasswordReset, resetPassword } from '../services/auth';
+import { sendInvitation, verifyInvitation } from '../services/magic-link-auth';
 
 const router = Router();
 
