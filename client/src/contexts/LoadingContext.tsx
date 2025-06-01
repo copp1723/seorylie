@@ -184,7 +184,7 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({
       {state.isLoading && (
         <div
           className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-${
-            theme === 'dark' ? 'black' : 'white'
+'black'
           }/80 backdrop-blur-sm transition-all duration-300`}
         >
           <div className="w-full max-w-md p-6 rounded-lg shadow-lg bg-background">
