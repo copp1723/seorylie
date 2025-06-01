@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { client } from '../db';
 import logger from './logger';
 
@@ -108,7 +109,6 @@ export class MigrationRunner {
    * Calculate checksum of migration file
    */
   private calculateChecksum(content: string): string {
-    const crypto = require('crypto');
     return crypto.createHash('sha256').update(content).digest('hex');
   }
 

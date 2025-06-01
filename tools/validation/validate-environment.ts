@@ -386,6 +386,12 @@ class EnvironmentValidator {
       return;
     }
 
+    // Check if Redis is explicitly disabled
+    if (process.env.SKIP_REDIS === 'true') {
+      this.addResult('Redis Connection', 'pass', 'Redis disabled for staging environment (SKIP_REDIS=true)');
+      return;
+    }
+
     console.log(chalk.blue('🔍 Testing Redis Connection...'));
 
     const redisUrl = process.env.REDIS_URL;
