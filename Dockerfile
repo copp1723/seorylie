@@ -84,11 +84,11 @@ ENV TEST_MODE=true
 # Default command runs all tests with mocks
 CMD ["npm", "run", "test:ci"]
 
-# Build stage
-FROM base AS build
+# Production stage for deployment
+FROM base AS production
 WORKDIR /app
 
-# Install all dependencies for building
+# Install all dependencies first (needed for build)
 RUN npm ci
 
 # Copy source files needed for build
@@ -100,21 +100,13 @@ COPY --chown=appuser:appgroup tsconfig.json ./
 COPY --chown=appuser:appgroup client ./client
 COPY --chown=appuser:appgroup assets ./assets
 COPY --chown=appuser:appgroup config ./config
+COPY --chown=appuser:appgroup migrations ./migrations
 
 # Build the application
 RUN npm run build
 
-# Production stage for deployment
-FROM base AS production
-WORKDIR /app
-
-# Install only production dependencies
-RUN npm ci --omit=dev
-
-# Copy built files and runtime dependencies
-COPY --from=build --chown=appuser:appgroup /app/dist ./dist
-COPY --from=build --chown=appuser:appgroup /app/database ./database
-COPY --chown=appuser:appgroup migrations ./migrations
+# Remove dev dependencies after build
+RUN npm prune --omit=dev
 
 # Set production environment
 ENV NODE_ENV=production
