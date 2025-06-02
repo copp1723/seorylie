@@ -3,12 +3,11 @@ FROM node:20-slim AS base
 WORKDIR /app
 
 # Create a non-root user
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser -m
 RUN chown -R appuser:appgroup /app
-USER appuser
 
 # Copy package files for dependency installation
-COPY --chown=appuser:appgroup package*.json ./
+COPY package*.json ./
 
 # Server stage
 FROM base AS server
@@ -89,7 +88,7 @@ FROM base AS production
 WORKDIR /app
 
 # Install all dependencies first (needed for build)
-RUN npm ci
+RUN npm ci && chown -R appuser:appgroup /app
 
 # Copy source files needed for build
 COPY --chown=appuser:appgroup server ./server
@@ -102,11 +101,18 @@ COPY --chown=appuser:appgroup assets ./assets
 COPY --chown=appuser:appgroup config ./config
 COPY --chown=appuser:appgroup migrations ./migrations
 
+# Switch to app user for build
+USER appuser
+
 # Build the application
 RUN npm run build
 
-# Remove dev dependencies after build
-RUN npm prune --omit=dev
+# Switch back to root to prune dependencies
+USER root
+RUN npm prune --omit=dev && chown -R appuser:appgroup /app
+
+# Switch back to app user
+USER appuser
 
 # Set production environment
 ENV NODE_ENV=production
