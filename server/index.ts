@@ -53,7 +53,8 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com", "fonts.googleapis.com"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
+      imgSrc: ["'self'", "data:", "https:", "images.unsplash.com"],
+      connectSrc: ["'self'", "https:"],
     },
   },
 }));
@@ -95,6 +96,7 @@ logger.info(`NODE_ENV: ${process.env.NODE_ENV}`);
 app.use(express.static(publicPath));
 
 // API routes
+logger.info('Setting up API routes...');
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/adf', adfRoutes);
@@ -108,6 +110,13 @@ app.use('/api/adf/conversations', adfConversationRoutes);
 // SendGrid webhook routes (safe to enable - doesn't affect existing system)
 app.use('/api/sendgrid', sendgridRoutes);
 
+// Add a test API route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working', timestamp: new Date().toISOString() });
+});
+
+logger.info('API routes configured');
+
 // Add basic test route
 app.get('/', (req, res) => {
   res.json({ 
@@ -120,8 +129,14 @@ app.get('/', (req, res) => {
 // Setup additional routes
 setupRoutes(app);
 
-// Catch-all route for SPA
+// Catch-all route for SPA (but not API routes)
 app.get('*', (req, res) => {
+  // Don't serve SPA for API routes
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({ error: 'API endpoint not found' });
+    return;
+  }
+  
   const indexPath = process.env.NODE_ENV === 'production'
     ? path.join(__dirname, 'public/index.html')
     : path.join(__dirname, '../dist/public/index.html');
