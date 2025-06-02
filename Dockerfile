@@ -68,9 +68,9 @@ COPY --chown=appuser:appgroup client ./client
 COPY --chown=appuser:appgroup test ./test
 COPY --chown=appuser:appgroup scripts ./scripts
 COPY --chown=appuser:appgroup migrations ./migrations
-COPY --chown=appuser:appgroup drizzle.config.ts ./
+COPY --chown=appuser:appgroup database/schema/drizzle.config.ts ./drizzle.config.ts
 COPY --chown=appuser:appgroup tsconfig.json ./
-COPY --chown=appuser:appgroup jest.config.js ./
+COPY --chown=appuser:appgroup config/build/jest.config.js ./jest.config.js
 COPY --chown=appuser:appgroup .env.test ./.env
 
 # Create directories for test results and artifacts
