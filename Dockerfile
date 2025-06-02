@@ -83,3 +83,27 @@ ENV TEST_MODE=true
 
 # Default command runs all tests with mocks
 CMD ["npm", "run", "test:ci"]
+
+# Production stage for deployment
+FROM base AS production
+WORKDIR /app
+
+# Install only production dependencies
+RUN npm ci --only=production
+
+# Copy built application files
+COPY --chown=appuser:appgroup server ./server
+COPY --chown=appuser:appgroup shared ./shared
+COPY --chown=appuser:appgroup database/schema/drizzle.config.ts ./drizzle.config.ts
+COPY --chown=appuser:appgroup migrations ./migrations
+COPY --chown=appuser:appgroup scripts ./scripts
+COPY --chown=appuser:appgroup tsconfig.json ./
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Expose port
+EXPOSE 3000
+
+# Start the application
+CMD ["npm", "run", "start"]

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: cleanrylie-web
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerBuildTarget: production
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: ""
+    startCommand: ""
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000

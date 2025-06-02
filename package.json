@@ -5,7 +5,6 @@
   "description": "CleanRylie - Automotive Dealership AI Platform",
   "main": "index.js",
   "scripts": {
-    "postinstall": "npm run build",
     "setup": "bash scripts/setup-dev.sh full",
     "setup:verify": "bash scripts/setup-dev.sh verify",
     "setup:install": "bash scripts/setup-dev.sh install",
