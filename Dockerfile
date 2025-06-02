@@ -101,6 +101,7 @@ WORKDIR /app
 # Install all dependencies first (needed for build)
 RUN npm config set cache /tmp/.npm && \
     npm ci && \
+    npm install @rollup/rollup-linux-x64-gnu --no-save && \
     chown -R appuser:appgroup /app
 
 # Copy source files needed for build
