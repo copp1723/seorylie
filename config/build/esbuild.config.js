@@ -80,7 +80,12 @@ const commonConfig = {
     'express-validator', 'cookie-parser', 'csurf', 'dotenv',
     'zod', 'zod-to-json-schema', 'csv-writer', 'gray-matter',
     'colors', 'bottleneck', 'opossum', 'postgres', 'pg',
-    '@opentelemetry/api'
+    '@opentelemetry/api',
+    
+    // AWS SDK v3 packages - problematic with bundling
+    '@aws-sdk/client-s3', '@aws-sdk/lib-storage', '@aws-sdk/s3-request-presigner',
+    '@smithy/types', '@smithy/util-utf8', '@smithy/util-base64',
+    '@smithy/util-buffer-from', '@smithy/util-stream', '@smithy/core'
   ],
   plugins: [aliasPlugin],
   define: {
