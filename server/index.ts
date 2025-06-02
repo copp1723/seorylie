@@ -45,22 +45,31 @@ const { PORT, HOST } = SERVER_CONFIG;
 initMetrics(app);
 // setupTracing(); // Disabled - missing dependencies
 
-// Security middleware - configure helmet to allow local assets
+// Security middleware - configure helmet to allow React/Vite apps
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com", "fonts.googleapis.com"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow unsafe-eval for React
       imgSrc: ["'self'", "data:", "https:", "images.unsplash.com"],
-      connectSrc: ["'self'", "https:"],
+      connectSrc: ["'self'", "https:", "ws:", "wss:", "https://*.onrender.com"], // Allow WebSocket and API connections
+      objectSrc: ["'none'"], // Security best practice
+      baseUri: ["'self'"] // Security best practice
     },
   },
 }));
 
-// Middleware
-app.use(cors());
+// Middleware - Configure CORS properly for production
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? [process.env.FRONTEND_URL, process.env.RENDER_EXTERNAL_URL].filter(Boolean)
+    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -93,6 +102,14 @@ logger.info(`Static files serving from: ${publicPath}`);
 logger.info(`__dirname: ${__dirname}`);
 logger.info(`NODE_ENV: ${process.env.NODE_ENV}`);
 
+// Add debugging middleware for static files
+app.use((req, res, next) => {
+  if (req.path.startsWith('/assets/') || req.path.endsWith('.js') || req.path.endsWith('.css')) {
+    logger.info(`Static file request: ${req.path}`);
+  }
+  next();
+});
+
 app.use(express.static(publicPath));
 
 // API routes
@@ -113,6 +130,17 @@ app.use('/api/sendgrid', sendgridRoutes);
 // Add a test API route
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working', timestamp: new Date().toISOString() });
+});
+
+// CORS debugging endpoint
+app.get('/api/cors-test', (req, res) => {
+  res.json({
+    message: 'CORS test successful',
+    origin: req.get('Origin'),
+    userAgent: req.get('User-Agent'),
+    timestamp: new Date().toISOString(),
+    headers: req.headers
+  });
 });
 
 // Add user endpoint that frontend is calling
@@ -141,12 +169,16 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Add basic test route
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Kunes RV Dealership Server Running!', 
+// Add basic test route for API
+app.get('/api/status', (req, res) => {
+  res.json({
+    message: 'Kunes RV Dealership Server Running!',
     timestamp: new Date().toISOString(),
-    status: 'ok'
+    status: 'ok',
+    environment: process.env.NODE_ENV,
+    staticPath: process.env.NODE_ENV === 'production'
+      ? path.join(__dirname, 'public')
+      : path.join(__dirname, '../dist/public')
   });
 });
 

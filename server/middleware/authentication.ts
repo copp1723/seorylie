@@ -308,14 +308,16 @@ export function securityHeadersMiddleware(_req: Request, res: Response, next: Ne
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
 
-  // Content Security Policy
+  // Content Security Policy - Relaxed for React/Vite apps
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-eval needed for React dev tools and some bundlers
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https:",
-    "connect-src 'self'"
+    "connect-src 'self' ws: wss:", // Allow WebSocket connections
+    "object-src 'none'", // Security best practice
+    "base-uri 'self'" // Security best practice
   ].join('; ');
 
   res.setHeader('Content-Security-Policy', csp);
