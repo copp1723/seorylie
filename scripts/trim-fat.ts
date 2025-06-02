@@ -322,7 +322,7 @@ const trimDependencies = async (): Promise<void> => {
     '@bull-board/api',
     '@bull-board/express',
     '@trpc/client',
-    '@trpc/react-query',
+    '@trpc/tanstack-react-query',
     '@trpc/server',
     'compression',
     'express-jwt',
