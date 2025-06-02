@@ -1,4 +1,11 @@
 // Mock implementations for agent-squad-stub
+interface ConversationMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp?: string;
+  metadata?: Record<string, any>;
+}
+
 class InMemoryChatStorage {
   private conversations: Map<string, ConversationMessage[]> = new Map();
 
@@ -175,6 +182,7 @@ export class RylieAgentSquad {
         voiceProvider: this.config.strandsConfig.voiceProvider
       });
     }
+
     this.analyticsEnabled = this.config.enableAnalytics ?? true;
     this.storage = new InMemoryChatStorage();
     this.orchestrator = new AgentSquad({ storage: this.storage });
@@ -194,7 +202,140 @@ export class RylieAgentSquad {
       advancedRouting: this.config.enableAdvancedRouting
     });
   }
-  
+
+  /**
+   * Execute tool - main integration point for workflow system
+   */
+  async executeTool(
+    toolName: string,
+    parameters: Record<string, any>,
+    sessionId: string,
+    context?: Record<string, any>
+  ): Promise<any> {
+    try {
+      logger.info('Executing tool:', { toolName, sessionId });
+
+      // Check if this is a Strands agent tool
+      if (toolName.startsWith('strands_agent:')) {
+        return this.executeStrandsTool(toolName, parameters, sessionId, context);
+      }
+
+      // Handle existing tools (preserve current functionality)
+      if (toolName === 'watchdog_analysis') {
+        // Existing watchdog analysis logic would go here
+        return { success: true, result: 'Watchdog analysis completed' };
+      }
+
+      if (toolName === 'google_ads.createCampaign') {
+        // Existing Google Ads logic would go here
+        return { success: true, result: 'Campaign created' };
+      }
+
+      // Handle other existing tools through tool registry
+      // This preserves existing functionality
+      return { success: false, error: `Unknown tool: ${toolName}` };
+
+    } catch (error) {
+      logger.error('Tool execution failed:', { toolName, error });
+      return { success: false, error: (error as Error).message };
+    }
+  }
+
+  /**
+   * Execute Strands agent tool
+   */
+  private async executeStrandsTool(
+    toolName: string,
+    parameters: Record<string, any>,
+    sessionId: string,
+    context?: Record<string, any>
+  ): Promise<AgentResponse> {
+    if (!this.strandsExecutor) {
+      logger.error('Strands executor not initialized');
+      return {
+        success: false,
+        response: 'Strands integration not available',
+        selectedAgent: 'fallback',
+        fallback: true
+      };
+    }
+
+    try {
+      // Parse agent persona from tool name (e.g., 'strands_agent:general-agent')
+      const agentPersona = toolName.replace('strands_agent:', '');
+      
+      // Validate agent persona
+      if (!this.isValidAgentType(agentPersona)) {
+        logger.warn('Invalid agent persona:', agentPersona);
+        return {
+          success: false,
+          response: `Invalid agent type: ${agentPersona}`,
+          selectedAgent: 'error'
+        };
+      }
+
+      // Extract required parameters
+      const rawPrompt = parameters.rawPrompt || parameters.message || '';
+      const conversationHistory = parameters.conversationHistory || [];
+      const dealershipId = parameters.dealershipId?.toString() || context?.dealershipId?.toString() || '';
+      const userId = parameters.userId?.toString() || context?.userId?.toString() || '';
+      const sandboxId = parameters.sandboxId?.toString() || context?.sandboxId?.toString();
+
+      if (!rawPrompt) {
+        return {
+          success: false,
+          response: 'Missing required parameter: rawPrompt',
+          selectedAgent: agentPersona
+        };
+      }
+
+      const startTime = Date.now();
+
+      // Process message through Strands executor
+      const response = await this.strandsExecutor.processMessage(
+        rawPrompt,
+        agentPersona,
+        dealershipId,
+        sessionId,
+        userId,
+        sandboxId,
+        conversationHistory
+      );
+
+      // Track analytics for Strands requests
+      if (this.analyticsEnabled && dealershipId) {
+        await this.trackAnalytics({
+          dealershipId: parseInt(dealershipId),
+          conversationId: sessionId,
+          messageId: context?.messageId,
+          selectedAgent: `strands:${agentPersona}`,
+          classificationConfidence: response.confidence || 0.8,
+          responseTimeMs: Date.now() - startTime,
+          escalatedToHuman: false
+        });
+      }
+
+      return response;
+
+    } catch (error) {
+      logger.error('Strands tool execution failed:', error);
+      return {
+        success: false,
+        response: 'Failed to process request through Strands agent',
+        selectedAgent: 'error',
+        error: true
+      };
+    }
+  }
+
+  /**
+   * Validate agent type against enum
+   */
+  private isValidAgentType(agentPersona: string): boolean {
+    const validTypes = Object.values(AgentType);
+    return validTypes.includes(agentPersona as AgentType);
+  }
+
   private getAutomotiveClassificationExamples() {
     // Use enhanced classification examples from configurations
     return ENHANCED_CLASSIFICATION_EXAMPLES;
@@ -315,7 +456,7 @@ ${template.specializedSkills}
 ${template.escalationGuidelines}
 
 CAPABILITIES:
-${config.capabilities.map(cap => `- ${cap}`).join('\n')}
+${config.capabilities.map((cap: string) => `- ${cap}`).join('\n')}
 
 TRAINING EXAMPLES:
 ${template.examples}`;
@@ -338,7 +479,7 @@ ${template.examples}`;
           specializedSkills: '',
           escalationGuidelines: '',
           examples: AGENT_CONFIGURATIONS['credit-agent'].trainingExamples
-            .map(ex => `Customer: "${ex.userMessage}"\nSpecialist: "${ex.expectedResponse}"`)
+            .map((ex: any) => `Customer: "${ex.userMessage}"\nSpecialist: "${ex.expectedResponse}"`)
             .join('\n\n')
         }
       ),
@@ -359,7 +500,7 @@ ${template.examples}`;
           specializedSkills: '',
           escalationGuidelines: '',
           examples: AGENT_CONFIGURATIONS['lease-agent'].trainingExamples
-            .map(ex => `Customer: "${ex.userMessage}"\nSpecialist: "${ex.expectedResponse}"`)
+            .map((ex: any) => `Customer: "${ex.userMessage}"\nSpecialist: "${ex.expectedResponse}"`)
             .join('\n\n')
         }
       ),
@@ -566,6 +707,24 @@ ${template.examples}`;
       };
     }
   }
+
+  /**
+   * Handle requests routed to Strands agents (legacy method)
+   */
+  private async handleStrandsRequest(
+    message: string,
+    userId: string,
+    sessionId: string,
+    context: Record<string, any>
+  ): Promise<any> {
+    // This method is now handled by executeTool, but kept for backward compatibility
+    return this.executeStrandsTool(
+      context.toolName,
+      { rawPrompt: message, conversationHistory: context.conversationHistory },
+      sessionId,
+      { ...context, userId }
+    );
+  }
   
   async getConversationHistory(sessionId: string): Promise<ConversationMessage[]> {
     try {
@@ -588,157 +747,6 @@ ${template.examples}`;
   /**
    * Track analytics data to database
    */
-  /**
-   * Execute tool - main integration point for workflow system
-   */
-  async executeTool(
-    toolName: string,
-    parameters: Record<string, any>,
-    sessionId: string,
-    context?: Record<string, any>
-  ): Promise<any> {
-    try {
-      logger.info('Executing tool:', { toolName, sessionId });
-
-      // Check if this is a Strands agent tool
-      if (toolName.startsWith('strands_agent:')) {
-        return this.executeStrandsTool(toolName, parameters, sessionId, context);
-      }
-
-      // Handle existing tools (preserve current functionality)
-      if (toolName === 'watchdog_analysis') {
-        // Existing watchdog analysis logic would go here
-        return { success: true, result: 'Watchdog analysis completed' };
-      }
-
-      if (toolName === 'google_ads.createCampaign') {
-        // Existing Google Ads logic would go here
-        return { success: true, result: 'Campaign created' };
-      }
-
-      // Handle other existing tools through tool registry
-      // This preserves existing functionality
-      return { success: false, error: `Unknown tool: ${toolName}` };
-
-    } catch (error) {
-      logger.error('Tool execution failed:', { toolName, error });
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * Execute Strands agent tool
-   */
-  private async executeStrandsTool(
-    toolName: string,
-    parameters: Record<string, any>,
-    sessionId: string,
-    context?: Record<string, any>
-  ): Promise<AgentResponse> {
-    if (!this.strandsExecutor) {
-      logger.error('Strands executor not initialized');
-      return {
-        success: false,
-        response: 'Strands integration not available',
-        selectedAgent: 'fallback',
-        fallback: true
-      };
-    }
-
-    try {
-      // Parse agent persona from tool name (e.g., 'strands_agent:general-agent')
-      const agentPersona = toolName.replace('strands_agent:', '');
-      
-      // Validate agent persona
-      if (!this.isValidAgentType(agentPersona)) {
-        logger.warn('Invalid agent persona:', agentPersona);
-        return {
-          success: false,
-          response: `Invalid agent type: ${agentPersona}`,
-          selectedAgent: 'error'
-        };
-      }
-
-      // Extract required parameters
-      const rawPrompt = parameters.rawPrompt || parameters.message || '';
-      const conversationHistory = parameters.conversationHistory || [];
-      const dealershipId = parameters.dealershipId?.toString() || context?.dealershipId?.toString() || '';
-      const userId = parameters.userId?.toString() || context?.userId?.toString() || '';
-      const sandboxId = parameters.sandboxId?.toString() || context?.sandboxId?.toString();
-
-      if (!rawPrompt) {
-        return {
-          success: false,
-          response: 'Missing required parameter: rawPrompt',
-          selectedAgent: agentPersona
-        };
-      }
-
-      const startTime = Date.now();
-
-      // Process message through Strands executor
-      const response = await this.strandsExecutor.processMessage(
-        rawPrompt,
-        agentPersona,
-        dealershipId,
-        sessionId,
-        userId,
-        sandboxId,
-        conversationHistory
-      );
-
-      // Track analytics for Strands requests
-      if (this.analyticsEnabled && dealershipId) {
-        await this.trackAnalytics({
-          dealershipId: parseInt(dealershipId),
-          conversationId: sessionId,
-          messageId: context?.messageId,
-          selectedAgent: `strands:${agentPersona}`,
-          classificationConfidence: response.confidence || 0.8,
-          responseTimeMs: Date.now() - startTime,
-          escalatedToHuman: false
-        });
-      }
-
-      return response;
-
-    } catch (error) {
-      logger.error('Strands tool execution failed:', error);
-      return {
-        success: false,
-        response: 'Failed to process request through Strands agent',
-        selectedAgent: 'error',
-        error: true
-      };
-    }
-  }
-
-  /**
-   * Validate agent type against enum
-   */
-  private isValidAgentType(agentPersona: string): boolean {
-    const validTypes = Object.values(AgentType);
-    return validTypes.includes(agentPersona as AgentType);
-  }
-
-  /**
-   * Handle requests routed to Strands agents (legacy method)
-   */
-  private async handleStrandsRequest(
-    message: string,
-    userId: string,
-    sessionId: string,
-    context: Record<string, any>
-  ): Promise<any> {
-    // This method is now handled by executeTool, but kept for backward compatibility
-    return this.executeStrandsTool(
-      context.toolName,
-      { rawPrompt: message, conversationHistory: context.conversationHistory },
-      sessionId,
-      { ...context, userId }
-    );
-  }
-
   private async trackAnalytics(analytics: AgentSquadAnalytics): Promise<void> {
     if (!this.analyticsEnabled) return;
     
@@ -799,11 +807,11 @@ ${template.examples}`;
       await client`
         UPDATE agent_squad_config 
         SET 
-          enabled = COALESCE(${config.enabled}, enabled),
-          fallback_enabled = COALESCE(${config.fallbackEnabled}, fallback_enabled),
-          confidence_threshold = COALESCE(${config.confidenceThreshold}, confidence_threshold),
-          preferred_agents = COALESCE(${JSON.stringify(config.preferredAgents)}, preferred_agents),
-          agent_personalities = COALESCE(${JSON.stringify(config.agentPersonalities)}, agent_personalities),
+          enabled = COALESCE(${config.enabled || null}, enabled),
+          fallback_enabled = COALESCE(${config.fallbackEnabled || null}, fallback_enabled),
+          confidence_threshold = COALESCE(${config.confidenceThreshold || null}, confidence_threshold),
+          preferred_agents = COALESCE(${JSON.stringify(config.preferredAgents) || null}, preferred_agents),
+          agent_personalities = COALESCE(${JSON.stringify(config.agentPersonalities) || null}, agent_personalities),
           updated_at = NOW()
         WHERE dealership_id = ${dealershipId}
       `;
@@ -899,11 +907,11 @@ ${template.examples}`;
       
       const config = result[0];
       return {
-        enabled: config.enabled,
-        fallbackEnabled: config.fallback_enabled,
-        confidenceThreshold: parseFloat(config.confidence_threshold),
-        preferredAgents: config.preferred_agents || [],
-        agentPersonalities: config.agent_personalities || {}
+        enabled: config?.enabled || false,
+        fallbackEnabled: config?.fallback_enabled || false,
+        confidenceThreshold: parseFloat(config?.confidence_threshold || '0.8'),
+        preferredAgents: config?.preferred_agents || [],
+        agentPersonalities: config?.agent_personalities || {}
       };
       
     } catch (error) {

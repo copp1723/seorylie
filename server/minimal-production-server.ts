@@ -6,8 +6,9 @@ import helmet from 'helmet';
 import path from 'path';
 import { createServer } from 'http';
 
-// __dirname is available in CommonJS after bundling
-const __dirname = process.cwd();
+// In production Docker, the bundled server is at /app/dist/minimal-production-server.js
+// So __dirname should be /app/dist, and static files are at /app/dist/public
+const __dirname = path.dirname(process.argv[1]);
 
 // Initialize Express app
 const app = express();
@@ -48,7 +49,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static files - CRITICAL PATH RESOLUTION
-const publicPath = process.env.NODE_ENV === 'production' 
+// In production Docker: __dirname = /app/dist, so public files are at ./public
+// In development: __dirname = /app/server, so public files are at ../dist/public
+const publicPath = process.env.NODE_ENV === 'production'
   ? path.join(__dirname, 'public')
   : path.join(__dirname, '../dist/public');
 
@@ -138,9 +141,7 @@ app.get('*', (req, res) => {
     return;
   }
   
-  const indexPath = process.env.NODE_ENV === 'production'
-    ? path.join(__dirname, 'public/index.html')
-    : path.join(__dirname, '../dist/public/index.html');
+  const indexPath = path.join(publicPath, 'index.html');
     
   console.log(`📄 Serving SPA for: ${req.path} from ${indexPath}`);
   res.sendFile(indexPath);
