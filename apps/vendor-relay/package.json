@@ -1,0 +1,43 @@
+{
+  "name": "@rylie-seo/vendor-relay",
+  "version": "1.0.0",
+  "description": "FastAPI service for secure white-label communication with CustomerScout",
+  "private": true,
+  "scripts": {
+    "setup": "python -m pip install -r requirements.txt",
+    "dev": "uvicorn src.main:app --reload --port 8000",
+    "start": "uvicorn src.main:app --host 0.0.0.0 --port 8000",
+    "test": "pytest",
+    "lint": "flake8 src tests",
+    "format": "black src tests",
+    "create-requirements": "pip freeze > requirements.txt"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "python": {
+    "dependencies": [
+      "fastapi==0.104.1",
+      "uvicorn==0.23.2",
+      "pydantic==2.4.2",
+      "httpx==0.25.0",
+      "python-dotenv==1.0.0",
+      "python-multipart==0.0.6",
+      "sqlalchemy==2.0.22",
+      "psycopg2-binary==2.9.9",
+      "pytest==7.4.2",
+      "black==23.9.1",
+      "flake8==6.1.0",
+      "pyjwt==2.8.0",
+      "redis==5.0.1",
+      "boto3==1.28.57",
+      "hmac==0.8.0"
+    ]
+  }
+}
