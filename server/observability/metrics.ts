@@ -273,34 +273,27 @@ export function updateActiveSandboxes(count: number) {
 
 /**
  * Create Express middleware for metrics collection
- * Using basic prometheus client without express-prom-bundle
+ * Using existing prometheus service to avoid duplicate registrations
  */
 export function createMetricsMiddleware() {
-  const httpDuration = new promClient.Histogram({
-    name: 'http_request_duration_seconds',
-    help: 'Duration of HTTP requests in seconds',
-    labelNames: ['method', 'status_code', 'path'],
-    registers: [register]
-  });
-
-  const httpCounter = new promClient.Counter({
-    name: 'http_requests_total', 
-    help: 'Total number of HTTP requests',
-    labelNames: ['method', 'status_code', 'path'],
-    registers: [register]
-  });
+  // Import the existing prometheus service to avoid duplicate registrations
+  const { prometheusMetrics } = require('../services/prometheus-metrics');
 
   return (req: Request, res: Response, next: NextFunction) => {
     const start = Date.now();
-    const path = req.route?.path || req.path || 'unknown';
     
     const originalEnd = res.end;
     res.end = function(...args: any[]) {
-      const duration = (Date.now() - start) / 1000;
-      const statusCode = res.statusCode.toString();
+      const duration = Date.now() - start;
+      const route = req.route?.path || req.path || 'unknown';
       
-      httpDuration.labels(req.method, statusCode, path).observe(duration);
-      httpCounter.labels(req.method, statusCode, path).inc();
+      // Use existing prometheus service to record HTTP metrics
+      prometheusMetrics.recordHttpRequest(
+        req.method,
+        route,
+        res.statusCode,
+        duration
+      );
       
       originalEnd.apply(this, args);
     };
@@ -313,8 +306,11 @@ export function createMetricsMiddleware() {
  * Create a metrics endpoint handler
  */
 export function metricsHandler(_req: Request, res: Response) {
+  // Use the consolidated prometheus service for metrics endpoint
+  const { prometheusMetrics } = require('../services/prometheus-metrics');
+  
   res.set('Content-Type', register.contentType);
-  register.metrics().then(metrics => res.end(metrics));
+  prometheusMetrics.getMetrics().then((metrics: string) => res.end(metrics));
 }
 
 /**

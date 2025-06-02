@@ -21,7 +21,7 @@ const connectionConfig = {
   idle_timeout: parseInt(process.env.DB_IDLE_TIMEOUT || '20'),
   connect_timeout: parseInt(process.env.DB_CONNECT_TIMEOUT || '10'),
   max_lifetime: parseInt(process.env.DB_MAX_LIFETIME || '3600'),
-  ssl: false, // Disabled for development
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   onnotice: undefined, // Disable notices
   debug: false,
   transform: {

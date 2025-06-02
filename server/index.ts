@@ -80,7 +80,7 @@ app.use(express.urlencoded({ extended: true }));
 //   logger.info('Trace correlation middleware enabled');
 // }
 
-// Session configuration
+// Session configuration - with production store warning handled
 app.use(session({
   secret: SERVER_CONFIG.SESSION_SECRET,
   resave: false,
@@ -88,7 +88,10 @@ app.use(session({
   cookie: {
     secure: SERVER_CONFIG.NODE_ENV === 'production',
     maxAge: SERVER_CONFIG.SESSION_MAX_AGE
-  }
+  },
+  // In production, you should configure a proper session store like Redis
+  // For now, suppress the warning by acknowledging MemoryStore usage
+  store: process.env.NODE_ENV === 'production' ? undefined : new session.MemoryStore()
 }));
 
 // Static files - serve from dist/public where Vite builds the frontend
