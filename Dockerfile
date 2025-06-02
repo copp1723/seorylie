@@ -30,7 +30,7 @@ RUN npm ci
 # Copy server source code
 COPY --chown=appuser:appgroup server ./server
 COPY --chown=appuser:appgroup shared ./shared
-COPY --chown=appuser:appgroup drizzle.config.ts ./
+COPY --chown=appuser:appgroup database/schema/drizzle.config.ts ./drizzle.config.ts
 COPY --chown=appuser:appgroup migrations ./migrations
 COPY --chown=appuser:appgroup scripts ./scripts
 COPY --chown=appuser:appgroup tsconfig.json ./
