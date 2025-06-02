@@ -134,8 +134,9 @@ ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV UV_THREADPOOL_SIZE=4
 ENV DATABASE_URL=${DATABASE_URL:-postgresql://localhost:5432/cleanrylie}
-ENV SESSION_SECRET=${SESSION_SECRET:-change-me-in-production}
-ENV JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+ENV SESSION_SECRET=${SESSION_SECRET:-demo-session-secret-change-in-production}
+ENV JWT_SECRET=${JWT_SECRET:-demo-jwt-secret-change-in-production}
+ENV OPENAI_API_KEY=${OPENAI_API_KEY:-sk-demo-key-for-development}
 ENV FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
 ENV CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
 

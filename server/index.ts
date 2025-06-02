@@ -132,6 +132,15 @@ app.get('/api/user', (req, res) => {
 
 logger.info('API routes configured');
 
+// Health check endpoint for Docker
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Add basic test route
 app.get('/', (req, res) => {
   res.json({ 
