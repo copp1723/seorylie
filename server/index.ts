@@ -72,7 +72,12 @@ app.use(session({
 }));
 
 // Static files - serve from dist/public where Vite builds the frontend
-app.use(express.static(path.join(__dirname, '../dist/public')));
+// In production (bundled), __dirname is /app/dist, so we need ./public
+// In development, __dirname is /app/server, so we need ../dist/public
+const publicPath = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, 'public')
+  : path.join(__dirname, '../dist/public');
+app.use(express.static(publicPath));
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -102,7 +107,10 @@ setupRoutes(app);
 
 // Catch-all route for SPA
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/public/index.html'));
+  const indexPath = process.env.NODE_ENV === 'production'
+    ? path.join(__dirname, 'public/index.html')
+    : path.join(__dirname, '../dist/public/index.html');
+  res.sendFile(indexPath);
 });
 
 // Create HTTP server
