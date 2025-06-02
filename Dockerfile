@@ -1,9 +1,9 @@
 # Base stage for common dependencies
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 WORKDIR /app
 
 # Create a non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 RUN chown -R appuser:appgroup /app
 USER appuser
 
