@@ -11,9 +11,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Create a non-root user
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser -m
-RUN chown -R appuser:appgroup /app
+# Create a non-root user with home directory
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser -m -d /home/appuser
+RUN mkdir -p /home/appuser/.npm && \
+    chown -R appuser:appgroup /home/appuser && \
+    chown -R appuser:appgroup /app
 
 # Copy package files for dependency installation
 COPY package*.json ./
@@ -97,7 +99,9 @@ FROM base AS production
 WORKDIR /app
 
 # Install all dependencies first (needed for build)
-RUN npm ci && chown -R appuser:appgroup /app
+RUN npm config set cache /tmp/.npm && \
+    npm ci && \
+    chown -R appuser:appgroup /app
 
 # Copy source files needed for build
 COPY --chown=appuser:appgroup server ./server
