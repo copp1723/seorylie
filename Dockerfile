@@ -94,7 +94,7 @@ RUN npm ci
 # Copy source files needed for build
 COPY --chown=appuser:appgroup server ./server
 COPY --chown=appuser:appgroup shared ./shared
-COPY --chown=appuser:appgroup drizzle.config.ts ./drizzle.config.ts
+COPY --chown=appuser:appgroup database ./database
 COPY --chown=appuser:appgroup scripts ./scripts
 COPY --chown=appuser:appgroup tsconfig.json ./
 COPY --chown=appuser:appgroup client ./client
@@ -113,7 +113,7 @@ RUN npm ci --omit=dev
 
 # Copy built files and runtime dependencies
 COPY --from=build --chown=appuser:appgroup /app/dist ./dist
-COPY --chown=appuser:appgroup drizzle.config.ts ./drizzle.config.ts
+COPY --from=build --chown=appuser:appgroup /app/database ./database
 COPY --chown=appuser:appgroup migrations ./migrations
 
 # Set production environment
