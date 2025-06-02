@@ -4,7 +4,7 @@ import { AdfService } from '../services/adf-service';
 import { AdfParser } from '../services/adf-parser';
 import logger from '../utils/logger';
 import db from '../db';
-import { eq, desc, and, gte, or, like, count } from 'drizzle-orm';
+import { eq, desc, and, gte, or, like, sql } from 'drizzle-orm';
 import { adfLeads, adfEmailQueue, adfProcessingLogs } from '../../shared/index';
 import { validateBodySize, validateContentType } from '../middleware/validation';
 import rateLimit from 'express-rate-limit';
@@ -131,17 +131,17 @@ router.get('/status', async (req: Request, res: Response) => {
     };
 
     // Get actual queue size
-    const queueSize = await db.select({ count: count() })
+    const queueSize = await db.select({ count: sql`COUNT(*)`.as('count') })
       .from(adfEmailQueue)
       .where(eq(adfEmailQueue.processingStatus, 'pending'));
 
-    status.currentQueueSize = queueSize[0]?.count || 0;
+    status.currentQueueSize = Number(queueSize[0]?.count) || 0;
 
     // Get total processed leads
-    const totalProcessed = await db.select({ count: count() })
+    const totalProcessed = await db.select({ count: sql`COUNT(*)`.as('count') })
       .from(adfLeads);
 
-    status.totalLeadsProcessed = totalProcessed[0]?.count || 0;
+    status.totalLeadsProcessed = Number(totalProcessed[0]?.count) || 0;
 
     // Get last processed lead
     const lastLead = await db.query.adfLeads.findFirst({
