@@ -8,6 +8,8 @@ import ProtectedRoute from './components/protected-route';
 import Layout from './components/layout/layout';
 import DebugTest from './components/debug-test';
 import SimpleErrorBoundary from './components/simple-error-boundary';
+import CSSDebug from './components/css-debug';
+import EmergencyCSSFix from './components/emergency-css-fix';
 
 // Page imports
 import Dashboard from './pages/dashboard';
@@ -42,7 +44,9 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
+          <EmergencyCSSFix />
           <DebugTest />
+          <CSSDebug />
           <Toaster />
         <Switch>
           {/* Public routes */}
