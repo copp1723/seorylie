@@ -115,6 +115,21 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working', timestamp: new Date().toISOString() });
 });
 
+// Add user endpoint that frontend is calling
+app.get('/api/user', (req, res) => {
+  // For now, return a mock user since authentication isn't fully set up
+  const mockUser = {
+    id: 1,
+    email: 'demo@example.com',
+    name: 'Demo User',
+    role: 'admin',
+    dealership_id: 1,
+    isAuthenticated: true
+  };
+  
+  res.json(mockUser);
+});
+
 logger.info('API routes configured');
 
 // Add basic test route
