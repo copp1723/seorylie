@@ -5,7 +5,7 @@
 
 // Server Configuration
 export const SERVER_CONFIG = {
-  PORT: parseInt(process.env.PORT || '5000', 10),
+  PORT: parseInt(process.env.PORT || (process.env.NODE_ENV === 'production' ? '3000' : '5000'), 10),
   HOST: process.env.HOST || '0.0.0.0',
   NODE_ENV: process.env.NODE_ENV || 'development',
   

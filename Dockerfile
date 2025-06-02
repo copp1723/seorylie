@@ -1,5 +1,14 @@
 # Base stage for common dependencies
 FROM node:20-slim AS base
+
+# Install system dependencies for native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Create a non-root user
@@ -107,15 +116,28 @@ USER appuser
 # Build the application
 RUN npm run build
 
-# Switch back to root to prune dependencies
+# Switch back to root to prune dependencies and create directories
 USER root
-RUN npm prune --omit=dev && chown -R appuser:appgroup /app
+RUN npm prune --omit=dev && \
+    mkdir -p logs && \
+    chown -R appuser:appgroup /app
 
 # Switch back to app user
 USER appuser
 
-# Set production environment
+# Set production environment and required variables
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV UV_THREADPOOL_SIZE=4
+ENV DATABASE_URL=${DATABASE_URL:-postgresql://localhost:5432/cleanrylie}
+ENV SESSION_SECRET=${SESSION_SECRET:-change-me-in-production}
+ENV JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+ENV FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+ENV CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
 
 # Expose port
 EXPOSE 3000
