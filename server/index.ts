@@ -109,6 +109,13 @@ logger.info(`NODE_ENV: ${process.env.NODE_ENV}`);
 app.use((req, res, next) => {
   if (req.path.startsWith('/assets/') || req.path.endsWith('.js') || req.path.endsWith('.css')) {
     logger.info(`Static file request: ${req.path}`);
+
+    // Log response status after file is served
+    const originalSend = res.send;
+    res.send = function(data) {
+      logger.info(`Static file response: ${req.path} - Status: ${res.statusCode}`);
+      return originalSend.call(this, data);
+    };
   }
   next();
 });
@@ -157,8 +164,39 @@ app.get('/api/user', (req, res) => {
     dealership_id: 1,
     isAuthenticated: true
   };
-  
+
   res.json(mockUser);
+});
+
+// Debug endpoint to check static file serving
+app.get('/api/debug/static', (req, res) => {
+  const fs = require('fs');
+  const publicPath = process.env.NODE_ENV === 'production'
+    ? path.join(__dirname, 'public')
+    : path.join(__dirname, '../dist/public');
+
+  try {
+    const files = fs.readdirSync(publicPath, { recursive: true });
+    const assetsDir = path.join(publicPath, 'assets');
+    const assetsExist = fs.existsSync(assetsDir);
+    const assetsFiles = assetsExist ? fs.readdirSync(assetsDir) : [];
+
+    res.json({
+      publicPath,
+      publicPathExists: fs.existsSync(publicPath),
+      assetsDir,
+      assetsExist,
+      totalFiles: files.length,
+      assetsFiles,
+      sampleFiles: files.slice(0, 10)
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to read static files',
+      publicPath,
+      message: error instanceof Error ? error.message : String(error)
+    });
+  }
 });
 
 logger.info('API routes configured');

@@ -1,5 +1,27 @@
-import { Agent, AgentResult } from '@strands/agents';
-import { Tool } from '@strands/agents/tools';
+// Temporary type definitions until @strands/agents is installed
+interface Agent {
+  process: (message: string, options: any) => Promise<any>;
+  executeTool: (name: string, parameters: any) => Promise<any>;
+}
+
+interface AgentResult {
+  message: {
+    content: string;
+  };
+  tools?: Array<{
+    name: string;
+    result?: any;
+  }>;
+  confidence?: number;
+}
+
+interface Tool {
+  name: string;
+  description: string;
+  parameters: Record<string, any>;
+  handler: (params: any) => Promise<any>;
+}
+
 import logger from '../../utils/logger';
 import { 
   AgentType, 
@@ -77,20 +99,18 @@ export class StrandsAgentExecutor {
       ...(options.tools || [])
     ];
 
-    const agent = new Agent({
-      name: agentType,
-      systemPrompt,
-      tools,
-      config: {
-        openAiApiKey: this.config.openAiApiKey,
-        anthropicApiKey: this.config.anthropicApiKey,
-        awsAccessKeyId: this.config.awsAccessKeyId,
-        awsSecretAccessKey: this.config.awsSecretAccessKey,
-        awsRegion: this.config.awsRegion,
-        defaultModel: this.config.defaultModel || 'gpt-4',
-        enableMultiModel: true
+    // Temporary mock Agent implementation until @strands/agents is installed
+    const agent = {
+      process: async (message: string, options: any) => {
+        return {
+          message: { content: "This is a mock response until Strands SDK is integrated" },
+          confidence: 0.8
+        };
+      },
+      executeTool: async (name: string, parameters: any) => {
+        return { success: true };
       }
-    });
+    };
 
     this.agents.set(agentType, agent);
   }

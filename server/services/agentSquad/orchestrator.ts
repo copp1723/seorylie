@@ -19,6 +19,8 @@ import {
   type AgentConfiguration 
 } from './agent-configurations';
 import { AGENT_PROMPT_TEMPLATES } from './agent-prompt-templates';
+import { StrandsAgentExecutor } from '../strandsAgentExecutor';
+import { AgentType, AgentResponse, ConversationMessage as StrandsConversationMessage } from '../../types';
 
 interface RylieAgentSquadConfig {
   openaiApiKey: string;
@@ -26,6 +28,14 @@ interface RylieAgentSquadConfig {
   enableAnalytics?: boolean;
   enableAdvancedRouting?: boolean;
   fallbackToGeneral?: boolean;
+  strandsConfig?: {
+    anthropicApiKey?: string;
+    awsAccessKeyId?: string;
+    awsSecretAccessKey?: string;
+    awsRegion?: string;
+    enableVoice?: boolean;
+    voiceProvider?: 'polly' | 'elevenlabs';
+  };
 }
 
 interface AgentSquadAnalytics {
@@ -47,6 +57,7 @@ export class RylieAgentSquad {
   private retriever: any; // Will be set per dealership
   private config: RylieAgentSquadConfig;
   private analyticsEnabled: boolean;
+  private strandsExecutor?: StrandsAgentExecutor;
   
   constructor(config: RylieAgentSquadConfig) {
     this.config = {
@@ -55,6 +66,27 @@ export class RylieAgentSquad {
       fallbackToGeneral: true,
       ...config
     };
+
+    // Initialize Strands executor if config is provided
+    if (this.config.strandsConfig) {
+      this.strandsExecutor = new StrandsAgentExecutor({
+        config: {
+          openAiApiKey: this.config.openaiApiKey,
+          anthropicApiKey: this.config.strandsConfig.anthropicApiKey,
+          awsAccessKeyId: this.config.strandsConfig.awsAccessKeyId,
+          awsSecretAccessKey: this.config.strandsConfig.awsSecretAccessKey,
+          awsRegion: this.config.strandsConfig.awsRegion,
+          enableVoice: this.config.strandsConfig.enableVoice,
+          voiceProvider: this.config.strandsConfig.voiceProvider
+        },
+        defaultAgentType: AgentType.GENERAL
+      });
+      
+      logger.info('Strands executor initialized with configuration', {
+        voiceEnabled: this.config.strandsConfig.enableVoice,
+        voiceProvider: this.config.strandsConfig.voiceProvider
+      });
+    }
     this.analyticsEnabled = this.config.enableAnalytics ?? true;
     this.storage = new InMemoryChatStorage();
     this.orchestrator = new AgentSquad({ storage: this.storage });
@@ -269,6 +301,10 @@ ${template.examples}`;
     sessionId: string,
     context?: Record<string, any>
   ) {
+    // Check if this is a Strands agent request from context
+    if (context?.toolName?.startsWith('strands_agent:')) {
+      return this.handleStrandsRequest(message, userId, sessionId, context);
+    }
     const startTime = Date.now();
     let routingDecision: RoutingDecision | null = null;
     let sentiment: SentimentAnalysis | null = null;
@@ -464,6 +500,65 @@ ${template.examples}`;
   /**
    * Track analytics data to database
    */
+  /**
+   * Handle requests routed to Strands agents
+   */
+  private async handleStrandsRequest(
+    message: string,
+    userId: string,
+    sessionId: string,
+    context: Record<string, any>
+  ): Promise<any> {
+    if (!this.strandsExecutor) {
+      logger.error('Strands executor not initialized');
+      return {
+        success: false,
+        response: 'Strands integration not available',
+        selectedAgent: 'fallback',
+        fallback: true
+      };
+    }
+
+    try {
+      const agentType = context.toolName.replace('strands_agent:', '');
+      const startTime = Date.now();
+
+      const response = await this.strandsExecutor.processMessage(
+        message,
+        agentType,
+        context.dealershipId?.toString() || '',
+        sessionId,
+        userId,
+        context.sandboxId?.toString(),
+        context.conversationHistory
+      );
+
+      // Track analytics for Strands requests
+      if (this.analyticsEnabled && context.dealershipId) {
+        await this.trackAnalytics({
+          dealershipId: context.dealershipId,
+          conversationId: sessionId,
+          messageId: context.messageId,
+          selectedAgent: `strands:${agentType}`,
+          classificationConfidence: response.confidence || 0.8,
+          responseTimeMs: Date.now() - startTime,
+          escalatedToHuman: false
+        });
+      }
+
+      return response;
+
+    } catch (error) {
+      logger.error('Strands request failed:', error);
+      return {
+        success: false,
+        response: 'Failed to process request through Strands agent',
+        selectedAgent: 'error',
+        error: true
+      };
+    }
+  }
+
   private async trackAnalytics(analytics: AgentSquadAnalytics): Promise<void> {
     if (!this.analyticsEnabled) return;
     
