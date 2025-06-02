@@ -1,5 +1,5 @@
 # Base stage for common dependencies
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 WORKDIR /app
 
 # Create a non-root user
@@ -84,20 +84,37 @@ ENV TEST_MODE=true
 # Default command runs all tests with mocks
 CMD ["npm", "run", "test:ci"]
 
+# Build stage
+FROM base AS build
+WORKDIR /app
+
+# Install all dependencies for building
+RUN npm ci
+
+# Copy source files needed for build
+COPY --chown=appuser:appgroup server ./server
+COPY --chown=appuser:appgroup shared ./shared
+COPY --chown=appuser:appgroup drizzle.config.ts ./drizzle.config.ts
+COPY --chown=appuser:appgroup scripts ./scripts
+COPY --chown=appuser:appgroup tsconfig.json ./
+COPY --chown=appuser:appgroup client ./client
+COPY --chown=appuser:appgroup assets ./assets
+COPY --chown=appuser:appgroup config ./config
+
+# Build the application
+RUN npm run build
+
 # Production stage for deployment
 FROM base AS production
 WORKDIR /app
 
 # Install only production dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
-# Copy built application files
-COPY --chown=appuser:appgroup server ./server
-COPY --chown=appuser:appgroup shared ./shared
-COPY --chown=appuser:appgroup database/schema/drizzle.config.ts ./drizzle.config.ts
+# Copy built files and runtime dependencies
+COPY --from=build --chown=appuser:appgroup /app/dist ./dist
+COPY --chown=appuser:appgroup drizzle.config.ts ./drizzle.config.ts
 COPY --chown=appuser:appgroup migrations ./migrations
-COPY --chown=appuser:appgroup scripts ./scripts
-COPY --chown=appuser:appgroup tsconfig.json ./
 
 # Set production environment
 ENV NODE_ENV=production
