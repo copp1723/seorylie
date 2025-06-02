@@ -13,7 +13,6 @@
     "setup:orchestrator": "tsx scripts/setup-conversation-orchestrator.ts",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "npm run build:web && npm run build:server",
-    "postinstall": "npm run build",
     "build:web": "vite build --config config/build/vite.config.ts",
     "build:server": "node config/build/esbuild.config.js",
     "start": "NODE_ENV=production node dist/index.js",
