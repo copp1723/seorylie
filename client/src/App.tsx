@@ -6,6 +6,8 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/protected-route';
 import Layout from './components/layout/layout';
+import DebugTest from './components/debug-test';
+import SimpleErrorBoundary from './components/simple-error-boundary';
 
 // Page imports
 import Dashboard from './pages/dashboard';
@@ -36,10 +38,12 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-        <Toaster />
+    <SimpleErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+          <DebugTest />
+          <Toaster />
         <Switch>
           {/* Public routes */}
           <Route path="/login" component={Login} />
@@ -115,6 +119,7 @@ function App() {
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
+    </SimpleErrorBoundary>
   );
 }
 
