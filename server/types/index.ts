@@ -26,6 +26,7 @@ export interface AgentResponse {
   priority?: string;
   escalated?: boolean;
   fallback?: boolean;
+  error?: boolean;
   audioOutput?: {
     url?: string;
     data?: string;

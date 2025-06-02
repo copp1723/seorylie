@@ -121,10 +121,19 @@ export async function buildMaintenance() {
   });
 }
 
+export async function buildMinimalServer() {
+  await build({
+    ...commonConfig,
+    entryPoints: [path.join(rootDir, 'server/minimal-production-server.ts')],
+    outfile: path.join(rootDir, 'dist/minimal-production-server.js'),
+  });
+}
+
 export async function buildAll() {
   console.log('🔨 Building server bundles...');
   await Promise.all([
     buildServer(),
+    buildMinimalServer(),
     buildAdfWorker(),
     buildMaintenance()
   ]);
