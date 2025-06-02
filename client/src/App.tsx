@@ -9,7 +9,8 @@ import Layout from './components/layout/layout';
 import DebugTest from './components/debug-test';
 import SimpleErrorBoundary from './components/simple-error-boundary';
 import CSSDebug from './components/css-debug';
-// import EmergencyCSSFix from './components/emergency-css-fix'; // Disabled - static file path fixed
+import EmergencyCSSFix from './components/emergency-css-fix'; // Re-enabled to fix white screen issue
+import { VerifyCSSLoading } from './components/VerifyCSSLoading'; // Added CSS verification component
 
 // Page imports
 import Dashboard from './pages/dashboard';
@@ -44,9 +45,10 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-          {/* <EmergencyCSSFix /> */}
+          <EmergencyCSSFix />
           <DebugTest />
           <CSSDebug />
+          <VerifyCSSLoading /> {/* Added CSS verification component to diagnose Tailwind issues */}
           <Toaster />
         <Switch>
           {/* Public routes */}

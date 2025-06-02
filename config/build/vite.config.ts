@@ -1,30 +1,56 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
-import { fileURLToPath } from "url";
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
+// Enhanced Vite config with explicit Tailwind CSS processing
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "..", "..", "client", "src"),
-      "@shared": path.resolve(__dirname, "..", "..", "shared"),
-      "@assets": path.resolve(__dirname, "..", "..", "assets"),
+  root: path.resolve(__dirname, '../../client'),
+  plugins: [react()],
+  css: {
+    postcss: {
+      plugins: [
+        require('tailwindcss')({
+          config: path.resolve(__dirname, '../../tailwind.config.ts')
+        }),
+        require('autoprefixer')(),
+      ],
     },
   },
-  root: path.resolve(__dirname, "..", "..", "client"),
   build: {
-    outDir: path.resolve(__dirname, "..", "..", "dist/public"),
+    outDir: path.resolve(__dirname, '../../dist/public'),
     emptyOutDir: true,
     rollupOptions: {
-      external: [],
+      input: path.resolve(__dirname, '../../client/index.html'),
+    },
+    sourcemap: true,
+    // Optimize CSS to ensure Tailwind styles are properly included
+    cssCodeSplit: true,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false, // Keep console logs for debugging
+      },
     },
   },
-  optimizeDeps: {
-    include: ["@tanstack/react-query"],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '../../client/src'),
+      '@shared': path.resolve(__dirname, '../../shared'),
+      '@components': path.resolve(__dirname, '../../client/src/components'),
+      '@hooks': path.resolve(__dirname, '../../client/src/hooks'),
+      '@pages': path.resolve(__dirname, '../../client/src/pages'),
+      '@utils': path.resolve(__dirname, '../../client/src/utils'),
+    },
   },
-});
+  // Enable HMR in development
+  server: {
+    hmr: true,
+    watch: {
+      usePolling: true,
+    },
+  },
+  // Ensure proper loading of CSS files
+  optimizeDeps: {
+    include: ['tailwindcss', 'autoprefixer'],
+  },
+})
