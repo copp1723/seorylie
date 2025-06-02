@@ -9,7 +9,7 @@ import Layout from './components/layout/layout';
 import DebugTest from './components/debug-test';
 import SimpleErrorBoundary from './components/simple-error-boundary';
 import CSSDebug from './components/css-debug';
-import EmergencyCSSFix from './components/emergency-css-fix';
+// import EmergencyCSSFix from './components/emergency-css-fix'; // Disabled - static file path fixed
 
 // Page imports
 import Dashboard from './pages/dashboard';
@@ -44,7 +44,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-          <EmergencyCSSFix />
+          {/* <EmergencyCSSFix /> */}
           <DebugTest />
           <CSSDebug />
           <Toaster />
