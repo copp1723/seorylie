@@ -45,8 +45,18 @@ const { PORT, HOST } = SERVER_CONFIG;
 initMetrics(app);
 // setupTracing(); // Disabled - missing dependencies
 
-// Security middleware
-app.use(helmet());
+// Security middleware - configure helmet to allow local assets
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+      fontSrc: ["'self'", "fonts.gstatic.com", "fonts.googleapis.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+}));
 
 // Middleware
 app.use(cors());
@@ -77,6 +87,11 @@ app.use(session({
 const publicPath = process.env.NODE_ENV === 'production' 
   ? path.join(__dirname, 'public')
   : path.join(__dirname, '../dist/public');
+
+logger.info(`Static files serving from: ${publicPath}`);
+logger.info(`__dirname: ${__dirname}`);
+logger.info(`NODE_ENV: ${process.env.NODE_ENV}`);
+
 app.use(express.static(publicPath));
 
 // API routes
