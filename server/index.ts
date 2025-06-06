@@ -28,6 +28,7 @@ import conversationLogsRoutes from './routes/conversation-logs-routes';
 // import agentSquadRoutes from './routes/agent-squad-routes'; // Commented out - missing dependencies
 import adfConversationRoutes from './routes/adf-conversation-routes';
 import sendgridRoutes from './routes/sendgrid-webhook-routes';
+import vendorCallbackRoutes from './routes/vendor-callback-routes';
 // TODO: Re-enable when trace services are available
 // import traceRoutes from './routes/trace-routes';
 // import { traceCorrelation } from './services/trace-correlation';
@@ -136,6 +137,7 @@ app.use('/api/adf/conversations', adfConversationRoutes);
 
 // SendGrid webhook routes (safe to enable - doesn't affect existing system)
 app.use('/api/sendgrid', sendgridRoutes);
+app.use('/api/internal', vendorCallbackRoutes);
 
 // Add a test API route
 app.get('/api/test', (req, res) => {
