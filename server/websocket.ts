@@ -65,7 +65,14 @@ interface WebSocketConnection {
 }
 
 interface WebSocketMessage {
-  type: 'ping' | 'pong' | 'echo' | 'error' | 'welcome';
+  type:
+    | 'ping'
+    | 'pong'
+    | 'echo'
+    | 'error'
+    | 'welcome'
+    | 'seo_task_request'
+    | 'task_complete';
   message?: string;
   timestamp: string;
   traceId: string;
@@ -353,6 +360,21 @@ class ObservableWebSocketServer {
             originalMessage: message.message,
             processingTime: new Date().toISOString()
           }
+        });
+        break;
+
+      case 'seo_task_request':
+        logger.info('Received SEO task request', {
+          connectionId,
+          traceId: connection.traceId,
+          metadata: message.metadata,
+        });
+        // For MVP just acknowledge and echo back completion immediately
+        this.sendMessage(connection.ws, {
+          type: 'task_complete',
+          message: `Your SEO task has been queued: ${message.metadata?.topic}`,
+          timestamp: new Date().toISOString(),
+          traceId: connection.traceId,
         });
         break;
 

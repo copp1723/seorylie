@@ -531,6 +531,19 @@ async def receive_vendor_file(
     
     return {"success": True, "message": "File received successfully"}
 
+@app.post("/api/v1/task/complete")
+async def task_complete(payload: Dict, db: Session = Depends(get_db)):
+    """Webhook from vendor indicating task completion"""
+    await log_communication(
+        db=db,
+        direction="inbound",
+        message_type="task_complete",
+        payload=payload,
+        request_id=payload.get("request_id"),
+        ip_address="webhook",
+    )
+    return {"success": True}
+
 # -------------------- Error Handlers --------------------
 
 @app.exception_handler(HTTPException)
