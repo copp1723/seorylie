@@ -2,12 +2,13 @@
  * Routes for managing escalation triggers
  */
 import express from 'express';
-import { 
-  getEscalationTriggers, 
-  createEscalationTrigger, 
-  updateEscalationTrigger, 
-  deleteEscalationTrigger 
+import {
+  getEscalationTriggers,
+  createEscalationTrigger,
+  updateEscalationTrigger,
+  deleteEscalationTrigger
 } from '../services/escalation-triggers';
+import { hasDealershipAccess } from '../utils/helpers/permissions';
 import { logAuditEvent } from '../services/user-management';
 
 const router = express.Router();
@@ -18,7 +19,7 @@ router.get('/dealerships/:dealershipId/escalation-triggers', async (req, res) =>
     const dealershipId = parseInt(req.params.dealershipId);
     
     // Check permissions
-    if (!req.user || (req.user.dealership_id !== dealershipId && req.user.role !== 'super_admin')) {
+    if (!hasDealershipAccess(req.user, dealershipId)) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
@@ -36,7 +37,7 @@ router.post('/dealerships/:dealershipId/escalation-triggers', async (req, res) =
     const dealershipId = parseInt(req.params.dealershipId);
     
     // Check permissions
-    if (!req.user || (req.user.dealership_id !== dealershipId && req.user.role !== 'super_admin')) {
+    if (!hasDealershipAccess(req.user, dealershipId)) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
@@ -78,7 +79,7 @@ router.put('/dealerships/:dealershipId/escalation-triggers/:triggerId', async (r
     const triggerId = parseInt(req.params.triggerId);
     
     // Check permissions
-    if (!req.user || (req.user.dealership_id !== dealershipId && req.user.role !== 'super_admin')) {
+    if (!hasDealershipAccess(req.user, dealershipId)) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
@@ -115,7 +116,7 @@ router.delete('/dealerships/:dealershipId/escalation-triggers/:triggerId', async
     const triggerId = parseInt(req.params.triggerId);
     
     // Check permissions
-    if (!req.user || (req.user.dealership_id !== dealershipId && req.user.role !== 'super_admin')) {
+    if (!hasDealershipAccess(req.user, dealershipId)) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     

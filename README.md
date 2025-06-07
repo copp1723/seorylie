@@ -309,6 +309,7 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) provides:
 cleanrylie/
 ├── client/           # React frontend (Vite)
 ├── server/           # Express.js backend (TypeScript)
+│   └── utils/helpers/  # Authorization and other shared utilities
 ├── shared/           # Shared TypeScript schemas, types, and Drizzle ORM schema
 ├── migrations/       # Database migration files (Drizzle Kit)
 ├── test/             # Test suite (Vitest, Jest for specific cases)
