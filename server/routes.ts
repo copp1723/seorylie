@@ -1,5 +1,6 @@
 import { type Express } from "express";
 import adfRoutes from "./routes/adf-routes";
+import personasRoutes from "./routes/personas";
 import { updateDeliveryStatus } from "./services/email-service";
 import logger from "./utils/logger";
 
@@ -78,4 +79,5 @@ export function setupRoutes(app: Express) {
 
   // ADF routes
   app.use("/api/adf", adfRoutes);
+  app.use("/api", personasRoutes);
 }

@@ -21,7 +21,8 @@
     "migrate": "drizzle-kit migrate",
     "generate": "drizzle-kit generate:pg",
     "studio": "drizzle-kit studio",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "ingest:leads": "ts-node scripts/ingest-leads.ts"
   },
   "dependencies": {
     "@fastify/jwt": "^7.0.0",

@@ -8,14 +8,16 @@ export default defineConfig({
     setupFiles: ['./test/vitest-setup.ts'],
     include: [
       'test/unit/adf-lead-processor.test.ts',
-      'test/unit/email-service.test.ts', 
+      'test/unit/email-service.test.ts',
       'test/unit/environment-validator.test.ts',
       'test/conversation-orchestrator.test.ts',
       'test/unit/adf-response-orchestrator.test.ts',
       'test/websocket-init.test.ts',
       'test/utility-types.test.ts',
       'test/integration/websocket-observability.test.ts',
-      'test/schema-versions.test.ts'
+      'test/schema-versions.test.ts',
+      'test/unit/ai-service.test.ts',
+      'test/unit/handoff-service.test.ts'
     ],
     exclude: [
       '**/node_modules/**',
