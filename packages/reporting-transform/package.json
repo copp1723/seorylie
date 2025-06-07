@@ -1,0 +1,39 @@
+{
+  "name": "@rylie-seo/reporting-transform",
+  "version": "1.0.0",
+  "description": "Report transformation utilities for white-labeling vendor reports in Rylie SEO platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1413.0",
+    "csv-parser": "^3.2.0",
+    "csv-writer": "^1.6.0",
+    "exiftool-vendored": "^30.2.0",
+    "pdf-lib": "^1.17.1",
+    "pino": "^8.14.1",
+    "sharp": "^0.32.6",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.5",
+    "@types/uuid": "^9.0.2",
+    "typescript": "^5.1.6"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "publishConfig": {
+    "access": "restricted"
+  }
+}
