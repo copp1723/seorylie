@@ -107,8 +107,8 @@ export class CSVTransformer {
    * @param options Configuration options for CSV transformation
    */
   constructor(options: CSVTransformOptions) {
-    this.options = {
-      // Default options
+    // Set default options first, then override with provided options
+    const defaultOptions = {
       whiteLabelName: 'Rylie SEO',
       whiteLabelDomain: 'rylie-seo.com',
       whiteLabelEmail: 'support@rylie-seo.com',
@@ -124,7 +124,11 @@ export class CSVTransformer {
       delimiter: ',',
       quoteChar: '"',
       escapeChar: '"',
-      encoding: 'utf8',
+      encoding: 'utf8' as BufferEncoding,
+    };
+
+    this.options = {
+      ...defaultOptions,
       ...options,
     };
     

@@ -103,8 +103,8 @@ export class PDFTransformer {
    * @param options Configuration options for PDF transformation
    */
   constructor(options: PDFTransformOptions) {
-    this.options = {
-      // Default options
+    // Set default options first, then override with provided options
+    const defaultOptions = {
       whiteLabelName: 'Rylie SEO',
       vendorNames: ['CustomerScout', 'Customer Scout', 'CS SEO', 'CS Analytics'],
       vendorDomains: ['customerscout.com', 'cs-seo.com', 'cs-analytics.com'],
@@ -117,6 +117,10 @@ export class PDFTransformer {
       addFooter: true,
       addHeader: true,
       tempDir: path.join(process.cwd(), 'tmp'),
+    };
+
+    this.options = {
+      ...defaultOptions,
       ...options,
     };
     
@@ -161,7 +165,7 @@ export class PDFTransformer {
       const processedDoc = await this.processPdf(pdfDoc, result);
       
       // Save the transformed PDF
-      const transformedPdfBuffer = await processedDoc.save();
+      const transformedPdfBuffer = Buffer.from(await processedDoc.save());
       
       // Handle output
       await this.handleOutput(transformedPdfBuffer, result);
@@ -225,7 +229,12 @@ export class PDFTransformer {
    */
   private async sanitizeMetadata(pdfDoc: PDFDocument, result: PDFTransformResult): Promise<void> {
     // Get current metadata
-    const { author, creator, producer, subject, title, keywords } = pdfDoc.getMetadata();
+    const author = pdfDoc.getAuthor();
+    const creator = pdfDoc.getCreator();
+    const producer = pdfDoc.getProducer();
+    const subject = pdfDoc.getSubject();
+    const title = pdfDoc.getTitle();
+    const keywords = pdfDoc.getKeywords();
     
     // Store detected metadata fields
     result.metadataFields = [];
@@ -266,7 +275,7 @@ export class PDFTransformer {
     pdfDoc.setProducer(checkAndReplace(producer) || this.options.whiteLabelName);
     pdfDoc.setSubject(checkAndReplace(subject) || 'SEO Report');
     pdfDoc.setTitle(checkAndReplace(title) || `${this.options.whiteLabelName} Report`);
-    pdfDoc.setKeywords(checkAndReplace(keywords?.join(',')) || 'SEO,Report,Analytics');
+    pdfDoc.setKeywords((checkAndReplace(keywords) || 'SEO,Report,Analytics').split(','));
   }
   
   /**
@@ -410,7 +419,7 @@ export class PDFTransformer {
     const whiteLabelLogoImage = await pdfDoc.embedPng(whiteLabelLogoBuffer);
     
     // Create a new page at the beginning
-    const [firstPage] = pdfDoc.insertPages(0, 1);
+    const firstPage = pdfDoc.insertPage(0);
     const { width, height } = firstPage.getSize();
     
     // Get fonts
