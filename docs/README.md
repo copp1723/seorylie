@@ -23,6 +23,7 @@
 Rylie AI is a specialized conversational AI platform designed for automotive dealerships. The platform enables seamless communication between potential customers and dealerships through AI-powered conversations, with intelligent handover to human representatives when appropriate.
 
 The system features include:
+
 - Customizable AI personas for each dealership
 - Automated inventory integration through email attachments
 - Lead qualification and intent detection
@@ -38,12 +39,14 @@ The system features include:
 Rylie AI follows a modern full-stack architecture with the following components:
 
 ### Frontend
+
 - React-based single-page application (SPA)
 - TanStack Query for data fetching
 - Wouter for lightweight routing
 - Shadcn/UI components with TailwindCSS for styling
 
 ### Backend
+
 - Express.js API server in TypeScript
 - PostgreSQL database with Drizzle ORM
 - OpenAI integration for AI conversation capabilities
@@ -51,7 +54,9 @@ Rylie AI follows a modern full-stack architecture with the following components:
 - Replit Auth for secure authentication
 
 ### Database Schema
+
 The database includes the following main entities:
+
 - Users: Staff members with access to the platform
 - Dealerships: Automotive dealership information
 - Vehicles: Dealership inventory
@@ -64,7 +69,9 @@ The database includes the following main entities:
 ## Features
 
 ### AI Conversation Flow
+
 Rylie AI manages the entire conversation flow:
+
 1. Customer inquiry comes in via API or SMS
 2. AI analyzes message intent and customer needs
 3. AI responds based on dealership-specific persona configuration
@@ -73,21 +80,25 @@ Rylie AI manages the entire conversation flow:
 6. Conversation can be escalated to human representatives
 
 ### Inventory Management
+
 - Daily inventory updates via email attachments (TSV format)
 - Automatic parsing and database updates
 - Intelligent vehicle matching in conversations
 
 ### Persona Customization
+
 - Each dealership can customize their AI's personality
 - Configure tone, priority features, and behavior
 - Set up automatic handover triggers and recipients
 
 ### A/B Testing
+
 - Test different prompt variations
 - Track performance metrics
 - Optimize AI responses continuously
 
 ### Reporting
+
 - Scheduled email reports
 - Conversion analytics
 - Performance metrics and insights
@@ -95,6 +106,7 @@ Rylie AI manages the entire conversation flow:
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - PostgreSQL database server
 - PostgreSQL client tools (psql) for database management
@@ -103,6 +115,7 @@ Rylie AI manages the entire conversation flow:
 - SendGrid API key (for email functionality)
 
 ### Installation
+
 The application is configured to run on Replit with the following steps:
 
 1. Clone the repository
@@ -118,6 +131,7 @@ The application is configured to run on Replit with the following steps:
 6. Access the application at http://localhost:5000
 
 ### Environment Variables
+
 ```
 DATABASE_URL=postgresql://username:password@host:port/database
 OPENAI_API_KEY=sk-...
@@ -128,17 +142,22 @@ SESSION_SECRET=your-secure-session-secret
 ## API Reference
 
 ### Authentication
+
 All API endpoints require authentication using either:
+
 1. API key in the `X-API-Key` header (for dealership integration)
 2. Session-based authentication (for internal staff)
 
 ### Conversation Endpoints
 
 #### Start a conversation
+
 ```
 POST /api/inbound
 ```
+
 Request body:
+
 ```json
 {
   "customerMessage": "I'm interested in the new SUV models",
@@ -152,10 +171,13 @@ Request body:
 ```
 
 #### Reply to a message
+
 ```
 POST /api/reply
 ```
+
 Request body:
+
 ```json
 {
   "conversationId": 123,
@@ -164,10 +186,13 @@ Request body:
 ```
 
 #### Handover to human
+
 ```
 POST /api/handover
 ```
+
 Request body:
+
 ```json
 {
   "conversationId": 123,
@@ -179,26 +204,31 @@ Request body:
 ### Persona Management Endpoints
 
 #### List personas
+
 ```
 GET /api/personas
 ```
 
 #### Get persona details
+
 ```
 GET /api/personas/:id
 ```
 
 #### Create persona
+
 ```
 POST /api/personas
 ```
 
 #### Update persona
+
 ```
 PATCH /api/personas/:id
 ```
 
 #### Delete persona
+
 ```
 DELETE /api/personas/:id
 ```
@@ -206,16 +236,19 @@ DELETE /api/personas/:id
 ### Inventory Management Endpoints
 
 #### List vehicles
+
 ```
 GET /api/inventory
 ```
 
 #### Search vehicles
+
 ```
 GET /api/inventory/search?query=suv
 ```
 
 #### Import inventory
+
 ```
 POST /api/inventory/import
 ```
@@ -223,10 +256,12 @@ POST /api/inventory/import
 ## User Management
 
 Rylie AI supports two types of users:
+
 1. Staff members: Internal dealership staff with access to the dashboard
 2. API users: External systems that integrate via API keys
 
 ### User Roles
+
 - Admin: Full access to all features
 - Manager: Access to dealership configuration and reporting
 - Sales: Access to conversations and handovers
@@ -235,6 +270,7 @@ Rylie AI supports two types of users:
 ## Dealership Configuration
 
 Each dealership in the system has:
+
 - Basic information (name, location, contact details)
 - Custom domain settings
 - Default handover email
@@ -245,6 +281,7 @@ Each dealership in the system has:
 Personas define how the AI assistant behaves for each dealership:
 
 ### Persona Attributes
+
 - **Name**: Identifying name for the persona
 - **Description**: Purpose and behavior description
 - **Prompt Template**: System prompt that defines AI behavior
@@ -255,6 +292,7 @@ Personas define how the AI assistant behaves for each dealership:
 - **Handover Email**: Where to send handover dossiers
 
 ### Default Persona
+
 Each dealership must have one default persona that is used for conversations unless otherwise specified.
 
 ## Conversation Management
@@ -262,13 +300,16 @@ Each dealership must have one default persona that is used for conversations unl
 Conversations represent ongoing interactions between customers and the dealership:
 
 ### Conversation States
+
 - **Active**: Ongoing conversation with the AI
 - **Waiting**: Awaiting customer response
 - **Escalated**: Handed over to human representative
 - **Completed**: Conversation ended
 
 ### Handover Process
+
 When a conversation requires human intervention:
+
 1. AI detects handover trigger (keywords, intent, or explicit request)
 2. System creates comprehensive handover dossier
 3. Dossier is emailed to designated recipient
@@ -276,6 +317,7 @@ When a conversation requires human intervention:
 5. Human representative can view full conversation history
 
 ### Handover Dossier Contents
+
 - Customer information
 - Conversation summary
 - Detected intent and interests
@@ -289,11 +331,13 @@ When a conversation requires human intervention:
 The system maintains an up-to-date inventory of vehicles:
 
 ### Inventory Import Methods
+
 1. **Email Attachment**: TSV files sent to a designated email
 2. **API Import**: Direct API call with inventory data
 3. **Manual Upload**: Through the dashboard interface
 
 ### Vehicle Information
+
 - Make, model, year
 - VIN
 - Exterior/interior colors
@@ -306,11 +350,13 @@ The system maintains an up-to-date inventory of vehicles:
 The platform includes a sophisticated A/B testing infrastructure:
 
 ### Test Components
+
 - **Experiments**: Test configurations
 - **Variants**: Different prompt versions
 - **Metrics**: Performance measurements
 
 ### Metrics Tracked
+
 - Response quality
 - Conversation length
 - Handover rate
@@ -322,6 +368,7 @@ The platform includes a sophisticated A/B testing infrastructure:
 Rylie AI integrates with email systems for:
 
 ### Email Features
+
 - **Inventory Import**: Processing TSV attachments
 - **Handover Dossiers**: Sending detailed lead information
 - **Scheduled Reports**: Automated performance reports
@@ -332,6 +379,7 @@ Rylie AI integrates with email systems for:
 The platform provides comprehensive analytics:
 
 ### Report Types
+
 - Conversation volume and outcomes
 - Handover reasons and effectiveness
 - Response quality metrics
@@ -339,7 +387,9 @@ The platform provides comprehensive analytics:
 - Inventory engagement metrics
 
 ### Scheduled Reports
+
 Configure automated reports to be sent:
+
 - Daily, weekly, or monthly
 - To multiple recipients
 - With customizable content
@@ -349,6 +399,7 @@ Configure automated reports to be sent:
 Rylie AI uses Replit Auth for secure internal staff authentication:
 
 ### Authentication Features
+
 - Secure login with Replit credentials
 - Role-based access control
 - Session management
@@ -359,21 +410,25 @@ Rylie AI uses Replit Auth for secure internal staff authentication:
 ### Common Issues
 
 #### API Integration Problems
+
 - Verify API key is valid and active
 - Ensure required parameters are provided
 - Check request format matches documentation
 
 #### Conversation Not Working
+
 - Verify OpenAI API key is valid
 - Check dealership has a default persona configured
 - Examine logs for specific error messages
 
 #### Inventory Import Failures
+
 - Verify TSV format matches expected schema
 - Check email integration is properly configured
 - Ensure database connection is working properly
 
 #### Authentication Issues
+
 - Clear browser cookies and try again
 - Verify user has appropriate permissions
 - Check session configuration in server settings

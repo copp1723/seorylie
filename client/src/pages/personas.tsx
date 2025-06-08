@@ -151,7 +151,7 @@ export default function Personas() {
   const [personas, setPersonas] = useState<PersonaFormValues[]>([]);
   const [personasLoading, setPersonasLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  
+
   // TODO: Re-enable React Query
   // const {
   //   data: personas = [],
@@ -186,15 +186,15 @@ export default function Personas() {
   // Create persona mutation - TEMPORARILY DISABLED
   const createPersonaMutation = {
     mutate: (data: PersonaFormValues) => {
-      console.log('Would create persona:', data);
+      console.log("Would create persona:", data);
       toast({
         title: "Info",
         description: "Persona creation temporarily disabled",
       });
     },
-    isPending: false
+    isPending: false,
   };
-  
+
   // TODO: Re-enable React Query
   // const createPersonaMutation = useMutation({
   //   mutationFn: (data: PersonaFormValues) =>
@@ -223,15 +223,15 @@ export default function Personas() {
   // Update persona mutation - TEMPORARILY DISABLED
   const updatePersonaMutation = {
     mutate: (data: PersonaFormValues) => {
-      console.log('Would update persona:', data);
+      console.log("Would update persona:", data);
       toast({
         title: "Info",
         description: "Persona update temporarily disabled",
       });
     },
-    isPending: false
+    isPending: false,
   };
-  
+
   // TODO: Re-enable React Query
   // const updatePersonaMutation = useMutation({
   //   mutationFn: (data: PersonaFormValues) => {
@@ -262,15 +262,15 @@ export default function Personas() {
   // Delete persona mutation - TEMPORARILY DISABLED
   const deletePersonaMutation = {
     mutate: (id: number) => {
-      console.log('Would delete persona:', id);
+      console.log("Would delete persona:", id);
       toast({
         title: "Info",
         description: "Persona deletion temporarily disabled",
       });
     },
-    isPending: false
+    isPending: false,
   };
-  
+
   // TODO: Re-enable React Query
   // const deletePersonaMutation = useMutation({
   //   mutationFn: (id: number) =>

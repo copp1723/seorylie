@@ -62,12 +62,12 @@ interface IntegrationMetrics {
 
 interface BranchStatus {
   name: string;
-  type: 'C' | 'H' | 'I' | 'U' | 'T';
-  status: 'pending' | 'in-progress' | 'integrated' | 'failed' | 'conflicted';
+  type: "C" | "H" | "I" | "U" | "T";
+  status: "pending" | "in-progress" | "integrated" | "failed" | "conflicted";
   conflicts: number;
-  testStatus: 'passing' | 'failing' | 'pending';
+  testStatus: "passing" | "failing" | "pending";
   lastUpdated: string;
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
   effort: number;
   dependencies: string[];
 }
@@ -76,7 +76,7 @@ interface ConflictHeatMap {
   source: string;
   target: string;
   intensity: number;
-  conflictType: 'merge' | 'semantic' | 'style' | 'dependency';
+  conflictType: "merge" | "semantic" | "style" | "dependency";
 }
 
 interface VelocityData {
@@ -90,9 +90,9 @@ interface VelocityData {
 interface KnownIssue {
   id: string;
   title: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  severity: "critical" | "high" | "medium" | "low";
   affectedBranches: string[];
-  status: 'open' | 'investigating' | 'resolved';
+  status: "open" | "investigating" | "resolved";
   assignee: string;
   createdAt: string;
 }
@@ -275,7 +275,10 @@ export function IntegrationDashboard() {
           id: "ISS-003",
           title: "Schema validation breaking UI components",
           severity: "critical",
-          affectedBranches: ["I1-event-schema-validation", "U1-loading-progress-ui"],
+          affectedBranches: [
+            "I1-event-schema-validation",
+            "U1-loading-progress-ui",
+          ],
           status: "resolved",
           assignee: "frontend-team",
           createdAt: "2025-05-28T08:30:00Z",
@@ -298,38 +301,54 @@ export function IntegrationDashboard() {
     fetchIntegrationData();
   }, [timeRange]);
 
-  const getStatusColor = (status: BranchStatus['status']) => {
+  const getStatusColor = (status: BranchStatus["status"]) => {
     switch (status) {
-      case 'integrated': return 'text-green-600';
-      case 'in-progress': return 'text-blue-600';
-      case 'pending': return 'text-yellow-600';
-      case 'failed': return 'text-red-600';
-      case 'conflicted': return 'text-orange-600';
-      default: return 'text-gray-600';
+      case "integrated":
+        return "text-green-600";
+      case "in-progress":
+        return "text-blue-600";
+      case "pending":
+        return "text-yellow-600";
+      case "failed":
+        return "text-red-600";
+      case "conflicted":
+        return "text-orange-600";
+      default:
+        return "text-gray-600";
     }
   };
 
-  const getStatusIcon = (status: BranchStatus['status']) => {
+  const getStatusIcon = (status: BranchStatus["status"]) => {
     switch (status) {
-      case 'integrated': return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'in-progress': return <Activity className="h-4 w-4 text-blue-600" />;
-      case 'pending': return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'failed': return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'conflicted': return <AlertTriangle className="h-4 w-4 text-orange-600" />;
-      default: return <Clock className="h-4 w-4 text-gray-600" />;
+      case "integrated":
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "in-progress":
+        return <Activity className="h-4 w-4 text-blue-600" />;
+      case "pending":
+        return <Clock className="h-4 w-4 text-yellow-600" />;
+      case "failed":
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case "conflicted":
+        return <AlertTriangle className="h-4 w-4 text-orange-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-600" />;
     }
   };
 
   const getRiskBadgeVariant = (risk: string) => {
     switch (risk) {
-      case 'low': return 'default';
-      case 'medium': return 'secondary';
-      case 'high': return 'destructive';
-      default: return 'default';
+      case "low":
+        return "default";
+      case "medium":
+        return "secondary";
+      case "high":
+        return "destructive";
+      default:
+        return "default";
     }
   };
 
-  const HEAT_COLORS = ['#00ff00', '#ffff00', '#ff8000', '#ff0000'];
+  const HEAT_COLORS = ["#00ff00", "#ffff00", "#ff8000", "#ff0000"];
 
   if (loading) {
     return (
@@ -347,7 +366,8 @@ export function IntegrationDashboard() {
         <div>
           <h1 className="text-3xl font-bold">🎯 Integration Dashboard</h1>
           <p className="text-muted-foreground">
-            Platform Integration & Consolidation - Sprint 4: Stabilization & Cleanup
+            Platform Integration & Consolidation - Sprint 4: Stabilization &
+            Cleanup
           </p>
         </div>
         <div className="flex gap-2">
@@ -373,27 +393,37 @@ export function IntegrationDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Integration Progress</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Integration Progress
+              </CardTitle>
               <GitMerge className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {metrics.integratedBranches}/{metrics.totalBranches}
               </div>
-              <Progress 
-                value={(metrics.integratedBranches / metrics.totalBranches) * 100} 
+              <Progress
+                value={
+                  (metrics.integratedBranches / metrics.totalBranches) * 100
+                }
                 className="w-full mt-2"
               />
               <div className="flex items-center text-xs text-muted-foreground mt-1">
                 <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-                {((metrics.integratedBranches / metrics.totalBranches) * 100).toFixed(1)}% complete
+                {(
+                  (metrics.integratedBranches / metrics.totalBranches) *
+                  100
+                ).toFixed(1)}
+                % complete
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Test Pass Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Test Pass Rate
+              </CardTitle>
               <TestTube className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -409,7 +439,9 @@ export function IntegrationDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Integration Time</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Avg Integration Time
+              </CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -429,12 +461,22 @@ export function IntegrationDashboard() {
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {metrics.riskScore}
-              </div>
+              <div className="text-2xl font-bold">{metrics.riskScore}</div>
               <div className="flex items-center text-xs text-muted-foreground">
-                <Badge variant={metrics.riskScore < 30 ? "default" : metrics.riskScore < 60 ? "secondary" : "destructive"}>
-                  {metrics.riskScore < 30 ? "🟢 Low" : metrics.riskScore < 60 ? "🟡 Medium" : "🔴 High"}
+                <Badge
+                  variant={
+                    metrics.riskScore < 30
+                      ? "default"
+                      : metrics.riskScore < 60
+                        ? "secondary"
+                        : "destructive"
+                  }
+                >
+                  {metrics.riskScore < 30
+                    ? "🟢 Low"
+                    : metrics.riskScore < 60
+                      ? "🟡 Medium"
+                      : "🔴 High"}
                 </Badge>
               </div>
             </CardContent>
@@ -455,7 +497,8 @@ export function IntegrationDashboard() {
             <CardHeader>
               <CardTitle>Feature Branch Integration Status</CardTitle>
               <CardDescription>
-                Track progress of all feature branches in the integration pipeline
+                Track progress of all feature branches in the integration
+                pipeline
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -468,13 +511,17 @@ export function IntegrationDashboard() {
                         <div>
                           <h4 className="font-medium">{branch.name}</h4>
                           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                            <Badge variant="outline">{branch.type} Branch</Badge>
+                            <Badge variant="outline">
+                              {branch.type} Branch
+                            </Badge>
                             <span>•</span>
                             <span>{branch.effort}h effort</span>
                             {branch.dependencies.length > 0 && (
                               <>
                                 <span>•</span>
-                                <span>{branch.dependencies.length} dependencies</span>
+                                <span>
+                                  {branch.dependencies.length} dependencies
+                                </span>
                               </>
                             )}
                           </div>
@@ -484,46 +531,70 @@ export function IntegrationDashboard() {
                         <Badge variant={getRiskBadgeVariant(branch.riskLevel)}>
                           {branch.riskLevel} risk
                         </Badge>
-                        <Badge variant={branch.testStatus === 'passing' ? 'default' : 
-                               branch.testStatus === 'failing' ? 'destructive' : 'secondary'}>
+                        <Badge
+                          variant={
+                            branch.testStatus === "passing"
+                              ? "default"
+                              : branch.testStatus === "failing"
+                                ? "destructive"
+                                : "secondary"
+                          }
+                        >
                           {branch.testStatus}
                         </Badge>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-4 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Status:</span>
-                        <div className={`font-medium ${getStatusColor(branch.status)}`}>
-                          {branch.status.replace('-', ' ')}
+                        <div
+                          className={`font-medium ${getStatusColor(branch.status)}`}
+                        >
+                          {branch.status.replace("-", " ")}
                         </div>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Conflicts:</span>
-                        <div className={`font-medium ${branch.conflicts > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                        <span className="text-muted-foreground">
+                          Conflicts:
+                        </span>
+                        <div
+                          className={`font-medium ${branch.conflicts > 0 ? "text-orange-600" : "text-green-600"}`}
+                        >
                           {branch.conflicts}
                         </div>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Test Status:</span>
-                        <div className="font-medium">
-                          {branch.testStatus}
-                        </div>
+                        <span className="text-muted-foreground">
+                          Test Status:
+                        </span>
+                        <div className="font-medium">{branch.testStatus}</div>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Last Updated:</span>
+                        <span className="text-muted-foreground">
+                          Last Updated:
+                        </span>
                         <div className="font-medium">
-                          {format(new Date(branch.lastUpdated), "MMM dd, HH:mm")}
+                          {format(
+                            new Date(branch.lastUpdated),
+                            "MMM dd, HH:mm",
+                          )}
                         </div>
                       </div>
                     </div>
 
                     {branch.dependencies.length > 0 && (
                       <div className="mt-3 pt-3 border-t">
-                        <span className="text-sm text-muted-foreground">Dependencies: </span>
+                        <span className="text-sm text-muted-foreground">
+                          Dependencies:{" "}
+                        </span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {branch.dependencies.map((dep) => (
-                            <Badge key={dep} variant="outline" className="text-xs">
+                            <Badge
+                              key={dep}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {dep}
                             </Badge>
                           ))}
@@ -555,10 +626,16 @@ export function IntegrationDashboard() {
                           {conflict.source} → {conflict.target}
                         </div>
                         <div className="flex items-center space-x-2">
-                          <div 
+                          <div
                             className="w-4 h-4 rounded"
-                            style={{ 
-                              backgroundColor: HEAT_COLORS[Math.min(Math.floor(conflict.intensity / 3), 3)]
+                            style={{
+                              backgroundColor:
+                                HEAT_COLORS[
+                                  Math.min(
+                                    Math.floor(conflict.intensity / 3),
+                                    3,
+                                  )
+                                ],
                             }}
                           />
                           <span className="text-sm font-medium">
@@ -569,9 +646,14 @@ export function IntegrationDashboard() {
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <Badge variant="outline">{conflict.conflictType}</Badge>
                         <span>
-                          {conflict.intensity < 3 ? "Low" : 
-                           conflict.intensity < 6 ? "Medium" : 
-                           conflict.intensity < 8 ? "High" : "Critical"} priority
+                          {conflict.intensity < 3
+                            ? "Low"
+                            : conflict.intensity < 6
+                              ? "Medium"
+                              : conflict.intensity < 8
+                                ? "High"
+                                : "Critical"}{" "}
+                          priority
                         </span>
                       </div>
                     </div>
@@ -583,12 +665,16 @@ export function IntegrationDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Conflict Resolution Guide</CardTitle>
-                <CardDescription>Recommended actions for conflict types</CardDescription>
+                <CardDescription>
+                  Recommended actions for conflict types
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <h4 className="font-medium text-red-800 mb-2">🔴 High Priority Conflicts</h4>
+                    <h4 className="font-medium text-red-800 mb-2">
+                      🔴 High Priority Conflicts
+                    </h4>
                     <ul className="text-sm text-red-700 space-y-1">
                       <li>• Review H4-redis-websocket-scaling dependencies</li>
                       <li>• Coordinate with infrastructure team</li>
@@ -597,7 +683,9 @@ export function IntegrationDashboard() {
                   </div>
 
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h4 className="font-medium text-yellow-800 mb-2">🟡 Medium Priority</h4>
+                    <h4 className="font-medium text-yellow-800 mb-2">
+                      🟡 Medium Priority
+                    </h4>
                     <ul className="text-sm text-yellow-700 space-y-1">
                       <li>• Semantic conflicts require code review</li>
                       <li>• Schedule integration meeting</li>
@@ -606,7 +694,9 @@ export function IntegrationDashboard() {
                   </div>
 
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <h4 className="font-medium text-green-800 mb-2">🟢 Monitoring</h4>
+                    <h4 className="font-medium text-green-800 mb-2">
+                      🟢 Monitoring
+                    </h4>
                     <ul className="text-sm text-green-700 space-y-1">
                       <li>• Automated conflict detection active</li>
                       <li>• Daily progress notifications enabled</li>
@@ -630,15 +720,21 @@ export function IntegrationDashboard() {
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={velocity}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="date" 
+                    <XAxis
+                      dataKey="date"
                       tickFormatter={(date) => format(new Date(date), "MM/dd")}
                     />
                     <YAxis />
-                    <Tooltip 
-                      labelFormatter={(date) => format(new Date(date), "MMM dd, yyyy")}
+                    <Tooltip
+                      labelFormatter={(date) =>
+                        format(new Date(date), "MMM dd, yyyy")
+                      }
                     />
-                    <Bar dataKey="branchesIntegrated" fill="#8884d8" name="Branches Integrated" />
+                    <Bar
+                      dataKey="branchesIntegrated"
+                      fill="#8884d8"
+                      name="Branches Integrated"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -653,24 +749,26 @@ export function IntegrationDashboard() {
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={velocity}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="date" 
+                    <XAxis
+                      dataKey="date"
                       tickFormatter={(date) => format(new Date(date), "MM/dd")}
                     />
                     <YAxis />
-                    <Tooltip 
-                      labelFormatter={(date) => format(new Date(date), "MMM dd, yyyy")}
+                    <Tooltip
+                      labelFormatter={(date) =>
+                        format(new Date(date), "MMM dd, yyyy")
+                      }
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="testsRun" 
-                      stroke="#82ca9d" 
+                    <Line
+                      type="monotone"
+                      dataKey="testsRun"
+                      stroke="#82ca9d"
                       name="Tests Run"
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="conflictsResolved" 
-                      stroke="#ffc658" 
+                    <Line
+                      type="monotone"
+                      dataKey="conflictsResolved"
+                      stroke="#ffc658"
                       name="Conflicts Resolved"
                     />
                   </LineChart>
@@ -682,27 +780,41 @@ export function IntegrationDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Integration Performance Summary</CardTitle>
-              <CardDescription>Key velocity and efficiency metrics</CardDescription>
+              <CardDescription>
+                Key velocity and efficiency metrics
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">
-                    {velocity.reduce((sum, day) => sum + day.branchesIntegrated, 0)}
+                    {velocity.reduce(
+                      (sum, day) => sum + day.branchesIntegrated,
+                      0,
+                    )}
                   </div>
-                  <div className="text-sm text-blue-700">Total Branches Integrated</div>
+                  <div className="text-sm text-blue-700">
+                    Total Branches Integrated
+                  </div>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">
                     {velocity.reduce((sum, day) => sum + day.testsRun, 0)}
                   </div>
-                  <div className="text-sm text-green-700">Total Tests Executed</div>
+                  <div className="text-sm text-green-700">
+                    Total Tests Executed
+                  </div>
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
                   <div className="text-2xl font-bold text-orange-600">
-                    {velocity.reduce((sum, day) => sum + day.conflictsResolved, 0)}
+                    {velocity.reduce(
+                      (sum, day) => sum + day.conflictsResolved,
+                      0,
+                    )}
                   </div>
-                  <div className="text-sm text-orange-700">Conflicts Resolved</div>
+                  <div className="text-sm text-orange-700">
+                    Conflicts Resolved
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -725,11 +837,17 @@ export function IntegrationDashboard() {
                       <div>
                         <div className="flex items-center space-x-2 mb-1">
                           <h4 className="font-medium">{issue.title}</h4>
-                          <Badge variant={
-                            issue.severity === 'critical' ? 'destructive' :
-                            issue.severity === 'high' ? 'destructive' :
-                            issue.severity === 'medium' ? 'secondary' : 'default'
-                          }>
+                          <Badge
+                            variant={
+                              issue.severity === "critical"
+                                ? "destructive"
+                                : issue.severity === "high"
+                                  ? "destructive"
+                                  : issue.severity === "medium"
+                                    ? "secondary"
+                                    : "default"
+                            }
+                          >
                             {issue.severity}
                           </Badge>
                         </div>
@@ -737,27 +855,42 @@ export function IntegrationDashboard() {
                           {issue.id} • Assigned to {issue.assignee}
                         </div>
                       </div>
-                      <Badge variant={
-                        issue.status === 'resolved' ? 'default' :
-                        issue.status === 'investigating' ? 'secondary' : 'outline'
-                      }>
+                      <Badge
+                        variant={
+                          issue.status === "resolved"
+                            ? "default"
+                            : issue.status === "investigating"
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
                         {issue.status}
                       </Badge>
                     </div>
 
                     <div className="space-y-2">
                       <div>
-                        <span className="text-sm text-muted-foreground">Affected Branches:</span>
+                        <span className="text-sm text-muted-foreground">
+                          Affected Branches:
+                        </span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {issue.affectedBranches.map((branch) => (
-                            <Badge key={branch} variant="outline" className="text-xs">
+                            <Badge
+                              key={branch}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {branch}
                             </Badge>
                           ))}
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        Created {format(new Date(issue.createdAt), "MMM dd, yyyy 'at' HH:mm")}
+                        Created{" "}
+                        {format(
+                          new Date(issue.createdAt),
+                          "MMM dd, yyyy 'at' HH:mm",
+                        )}
                       </div>
                     </div>
                   </div>

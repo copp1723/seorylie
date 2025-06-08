@@ -1,22 +1,22 @@
 /**
  * Setup script to create database tables for new features
  */
-import { db } from '../server/db';
-import { eq } from 'drizzle-orm';
-import { dealerships } from '../shared/schema';
-import { 
-  escalationTriggers, 
-  leadScores, 
-  followUps, 
-  userInvitations, 
-  auditLogs, 
-  customerProfiles, 
-  customerInteractions 
-} from '../shared/schema-extensions';
+import { db } from "../server/db";
+import { eq } from "drizzle-orm";
+import { dealerships } from "../shared/schema";
+import {
+  escalationTriggers,
+  leadScores,
+  followUps,
+  userInvitations,
+  auditLogs,
+  customerProfiles,
+  customerInteractions,
+} from "../shared/schema-extensions";
 
 async function setupNewFeatures() {
-  console.log('Setting up new feature tables...');
-  
+  console.log("Setting up new feature tables...");
+
   try {
     // Create all new tables
     await db.execute(`
@@ -122,78 +122,97 @@ async function setupNewFeatures() {
       
       CREATE INDEX IF NOT EXISTS interaction_profile_idx ON customer_interactions(profile_id);
     `);
-    
-    console.log('Successfully created all new feature tables');
-    
+
+    console.log("Successfully created all new feature tables");
+
     // Add default escalation triggers for each dealership
     const dealershipsList = await db.select().from(dealerships);
-    
+
     for (const dealership of dealershipsList) {
       // Check if dealership already has triggers
-      const existingTriggers = await db.select()
+      const existingTriggers = await db
+        .select()
         .from(escalationTriggers)
         .where(eq(escalationTriggers.dealershipId, dealership.id));
-      
+
       if (existingTriggers.length === 0) {
         // Add default triggers
         await db.insert(escalationTriggers).values([
           {
             dealershipId: dealership.id,
-            name: 'Negative Sentiment',
-            description: 'Escalate when customer shows negative sentiment',
-            conditions: [{ type: 'sentiment', threshold: 0.3, value: 'negative' }],
-            isActive: true
+            name: "Negative Sentiment",
+            description: "Escalate when customer shows negative sentiment",
+            conditions: [
+              { type: "sentiment", threshold: 0.3, value: "negative" },
+            ],
+            isActive: true,
           },
           {
             dealershipId: dealership.id,
-            name: 'Urgent Request',
-            description: 'Escalate when customer expresses urgency',
-            conditions: [{ 
-              type: 'keyword', 
-              value: ['urgent', 'immediately', 'asap', 'right now', 'today'] 
-            }],
-            isActive: true
+            name: "Urgent Request",
+            description: "Escalate when customer expresses urgency",
+            conditions: [
+              {
+                type: "keyword",
+                value: ["urgent", "immediately", "asap", "right now", "today"],
+              },
+            ],
+            isActive: true,
           },
           {
             dealershipId: dealership.id,
-            name: 'Repeated Questions',
-            description: 'Escalate when customer repeats questions multiple times',
-            conditions: [{ type: 'repeated_questions', threshold: 2, value: 2 }],
-            isActive: true
+            name: "Repeated Questions",
+            description:
+              "Escalate when customer repeats questions multiple times",
+            conditions: [
+              { type: "repeated_questions", threshold: 2, value: 2 },
+            ],
+            isActive: true,
           },
           {
             dealershipId: dealership.id,
-            name: 'Human Request',
-            description: 'Escalate when customer explicitly asks for a human',
-            conditions: [{ 
-              type: 'keyword', 
-              value: ['speak to a human', 'talk to a person', 'real person', 'human agent', 'sales rep'] 
-            }],
-            isActive: true
-          }
+            name: "Human Request",
+            description: "Escalate when customer explicitly asks for a human",
+            conditions: [
+              {
+                type: "keyword",
+                value: [
+                  "speak to a human",
+                  "talk to a person",
+                  "real person",
+                  "human agent",
+                  "sales rep",
+                ],
+              },
+            ],
+            isActive: true,
+          },
         ]);
-        
-        console.log(`Added default escalation triggers for dealership: ${dealership.name}`);
+
+        console.log(
+          `Added default escalation triggers for dealership: ${dealership.name}`,
+        );
       }
     }
-    
-    console.log('Setup complete!');
-    
+
+    console.log("Setup complete!");
   } catch (error) {
-    console.error('Error setting up new features:', error);
+    console.error("Error setting up new features:", error);
     throw error;
   }
 }
 
 // Run the setup if this script is executed directly
 if (require.main === module) {
-  setupNewFeatures().then(() => {
-    console.log('New features setup completed successfully');
-    process.exit(0);
-  }).catch(error => {
-    console.error('Failed to set up new features:', error);
-    process.exit(1);
-  });
+  setupNewFeatures()
+    .then(() => {
+      console.log("New features setup completed successfully");
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error("Failed to set up new features:", error);
+      process.exit(1);
+    });
 }
 
 export { setupNewFeatures };

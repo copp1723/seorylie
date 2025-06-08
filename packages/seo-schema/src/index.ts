@@ -4,14 +4,14 @@
  */
 
 // Export all schemas and types
-export * from './schemas';
+export * from "./schemas";
 
 // Export all prompt functions
-export * from './prompts';
+export * from "./prompts";
 
 // Import for default export
-import * as Schemas from './schemas';
-import * as Prompts from './prompts';
+import * as Schemas from "./schemas";
+import * as Prompts from "./prompts";
 
 // Default export with all components
 export default {
@@ -25,7 +25,7 @@ export default {
   VendorResponseSchema: Schemas.VendorResponseSchema,
   InstallProfileSchema: Schemas.InstallProfileSchema,
   GA4ReportSchema: Schemas.GA4ReportSchema,
-  
+
   // Types
   SeoRequest: {} as Schemas.SeoRequest,
   PageRequest: {} as Schemas.PageRequest,
@@ -36,7 +36,7 @@ export default {
   VendorResponse: {} as Schemas.VendorResponse,
   InstallProfile: {} as Schemas.InstallProfile,
   GA4Report: {} as Schemas.GA4Report,
-  
+
   // Prompts
   SeoPrompts: Prompts.SeoPrompts,
   SEO_AGENT_BASE_PROMPT: Prompts.SEO_AGENT_BASE_PROMPT,
@@ -49,5 +49,5 @@ export default {
   generateGenericSeoRequestPrompt: Prompts.generateGenericSeoRequestPrompt,
   generateInstallFormPrompt: Prompts.generateInstallFormPrompt,
   generateGA4ReportPrompt: Prompts.generateGA4ReportPrompt,
-  generatePublishNotificationPrompt: Prompts.generatePublishNotificationPrompt
+  generatePublishNotificationPrompt: Prompts.generatePublishNotificationPrompt,
 };

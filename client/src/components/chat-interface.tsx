@@ -154,7 +154,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     (data: WebSocketMessage) => {
       switch (data.type) {
         case "connection_established":
-
           // If we have history, load it
           if (data.messageHistory && Array.isArray(data.messageHistory)) {
             setMessages(data.messageHistory);

@@ -5,12 +5,12 @@
 
 // Validation error codes for enhanced error handling
 export enum ValidationErrorCode {
-  XML_SYNTAX_ERROR = 'XML_SYNTAX_ERROR',
-  XSD_VALIDATION_FAILED = 'XSD_VALIDATION_FAILED',
-  MISSING_REQUIRED_FIELD = 'MISSING_REQUIRED_FIELD',
-  INVALID_DATA_FORMAT = 'INVALID_DATA_FORMAT',
-  UNSUPPORTED_ADF_VERSION = 'UNSUPPORTED_ADF_VERSION',
-  PARSING_ERROR = 'PARSING_ERROR'
+  XML_SYNTAX_ERROR = "XML_SYNTAX_ERROR",
+  XSD_VALIDATION_FAILED = "XSD_VALIDATION_FAILED",
+  MISSING_REQUIRED_FIELD = "MISSING_REQUIRED_FIELD",
+  INVALID_DATA_FORMAT = "INVALID_DATA_FORMAT",
+  UNSUPPORTED_ADF_VERSION = "UNSUPPORTED_ADF_VERSION",
+  PARSING_ERROR = "PARSING_ERROR",
 }
 
 // Enhanced ADF parser configuration
@@ -36,7 +36,7 @@ export interface AdfParseResult {
     minimumFieldsPresent: boolean;
     missingRequiredFields: string[];
   };
-  parserUsed: 'v1' | 'v2';
+  parserUsed: "v1" | "v2";
   parseTimeMs: number;
 }
 
@@ -45,9 +45,9 @@ export class AdfValidationError extends Error {
   constructor(
     message: string,
     public code: ValidationErrorCode,
-    public details?: any
+    public details?: any,
   ) {
     super(message);
-    this.name = 'AdfValidationError';
+    this.name = "AdfValidationError";
   }
 }

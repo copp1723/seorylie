@@ -9,12 +9,14 @@ The Bundle-Size Guard automatically fails CI builds if the JavaScript bundle siz
 ### Components
 
 1. **Bundle Size Checker Script** (`scripts/check-bundle-size.ts`)
+
    - Analyzes both client and server bundle sizes
    - Compares against baseline stored in `.stabilization/perf.baseline.json`
    - Provides detailed reporting and suggestions
    - Exits with status 1 if size exceeds limits
 
 2. **CI Integration** (`.github/workflows/stabilization-gates.yml`)
+
    - Runs after the build step
    - Uses the TypeScript script for consistent checking
    - Fails the build if bundle size exceeds limits
@@ -44,6 +46,7 @@ The bundle size limits are configured in `.stabilization/perf.baseline.json`:
 ### Bundle Analysis
 
 The script analyzes:
+
 - **Client Bundle**: All files in `dist/public/assets/`
 - **Server Bundle**: The `dist/index.js` file
 - **Total Bundle**: Combined size of client and server bundles
@@ -51,6 +54,7 @@ The script analyzes:
 ### Output Example
 
 **Success Case:**
+
 ```
 📊 Bundle Size Analysis
 ========================
@@ -71,6 +75,7 @@ Remaining: 403.09 KB before limit
 ```
 
 **Failure Case:**
+
 ```
 ❌ Bundle Size Check Failed
 Bundle size (2.13 MB) exceeds maximum allowed (1.95 MB)
@@ -126,6 +131,7 @@ npm run test:bundle-size-guard
 ```
 
 The test:
+
 1. Verifies normal bundle size passes
 2. Adds dummy content to trigger failure
 3. Confirms the check fails with exit code 1
@@ -144,10 +150,12 @@ The test:
 ### Common Issues
 
 1. **Build artifacts not found**
+
    - Ensure `npm run build` completes successfully before running the check
    - Verify `dist/` directory exists and contains expected files
 
 2. **Baseline file missing**
+
    - Ensure `.stabilization/perf.baseline.json` exists
    - Check that the file contains valid JSON with required fields
 

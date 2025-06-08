@@ -1,78 +1,78 @@
 /**
  * Metrics Collection Service for Conversation Orchestrator
- * 
+ *
  * Handles comprehensive metrics collection, aggregation, and reporting for
  * conversation orchestration performance monitoring and observability.
  */
 
-import { EventEmitter } from 'events';
-import client from 'prom-client';
-import db from '../db';
-import { sql } from 'drizzle-orm';
-import logger from '../utils/logger';
-import type { HealthStatus } from './conversation-orchestrator';
+import { EventEmitter } from "events";
+import client from "prom-client";
+import db from "../db";
+import { sql } from "drizzle-orm";
+import logger from "../utils/logger";
+import type { HealthStatus } from "./conversation-orchestrator";
 
 // Prometheus metrics
 const conversationTurnsTotal = new client.Counter({
-  name: 'conversation_turns_total',
-  help: 'Total number of conversation turns processed',
-  labelNames: ['dealership_id', 'turn_number', 'outcome', 'ai_model']
+  name: "conversation_turns_total",
+  help: "Total number of conversation turns processed",
+  labelNames: ["dealership_id", "turn_number", "outcome", "ai_model"],
 });
 
 const conversationTurnDuration = new client.Histogram({
-  name: 'conversation_turn_duration_seconds',
-  help: 'Duration of conversation turn processing',
-  labelNames: ['dealership_id', 'turn_number', 'ai_model'],
-  buckets: [0.1, 0.5, 1, 2, 5, 10, 30]
+  name: "conversation_turn_duration_seconds",
+  help: "Duration of conversation turn processing",
+  labelNames: ["dealership_id", "turn_number", "ai_model"],
+  buckets: [0.1, 0.5, 1, 2, 5, 10, 30],
 });
 
 const conversationQueueDepth = new client.Gauge({
-  name: 'conversation_queue_depth',
-  help: 'Number of conversations in processing queue',
-  labelNames: ['queue_type']
+  name: "conversation_queue_depth",
+  help: "Number of conversations in processing queue",
+  labelNames: ["queue_type"],
 });
 
 const aiServiceRequests = new client.Counter({
-  name: 'ai_service_requests_total',
-  help: 'Total AI service requests',
-  labelNames: ['model', 'status']
+  name: "ai_service_requests_total",
+  help: "Total AI service requests",
+  labelNames: ["model", "status"],
 });
 
 const aiServiceDuration = new client.Histogram({
-  name: 'ai_service_duration_seconds',
-  help: 'AI service request duration',
-  labelNames: ['model'],
-  buckets: [0.5, 1, 2, 5, 10, 30, 60]
+  name: "ai_service_duration_seconds",
+  help: "AI service request duration",
+  labelNames: ["model"],
+  buckets: [0.5, 1, 2, 5, 10, 30, 60],
 });
 
 const aiTokensUsed = new client.Counter({
-  name: 'ai_tokens_used_total',
-  help: 'Total AI tokens consumed',
-  labelNames: ['model', 'type']
+  name: "ai_tokens_used_total",
+  help: "Total AI tokens consumed",
+  labelNames: ["model", "type"],
 });
 
 const aiCostTotal = new client.Counter({
-  name: 'ai_cost_total_usd',
-  help: 'Total AI cost in USD',
-  labelNames: ['model', 'dealership_id']
+  name: "ai_cost_total_usd",
+  help: "Total AI cost in USD",
+  labelNames: ["model", "dealership_id"],
 });
 
 const circuitBreakerState = new client.Gauge({
-  name: 'circuit_breaker_state',
-  help: 'Circuit breaker state (0=closed, 1=half-open, 2=open)',
-  labelNames: ['service']
+  name: "circuit_breaker_state",
+  help: "Circuit breaker state (0=closed, 1=half-open, 2=open)",
+  labelNames: ["service"],
 });
 
 const conversationOutcomes = new client.Counter({
-  name: 'conversation_outcomes_total',
-  help: 'Total conversation outcomes',
-  labelNames: ['dealership_id', 'outcome', 'source']
+  name: "conversation_outcomes_total",
+  help: "Total conversation outcomes",
+  labelNames: ["dealership_id", "outcome", "source"],
 });
 
 const promptTemplateUsage = new client.Counter({
-  name: 'prompt_template_usage_total',
-  help: 'Prompt template usage count',
-  labelNames: ['template_id', 'template_name', 'dealership_id']
+  name: "prompt_template_usage_total",
+  help: "Prompt template usage count",
+  labelNames: ["template_id", "template_name", "dealership_id"],
 });
 
 // Performance tracking interfaces
@@ -106,7 +106,7 @@ export interface AIServiceMetrics {
   duration: number;
   tokensUsed: number;
   cost: number;
-  status: 'success' | 'error';
+  status: "success" | "error";
   errorType?: string;
 }
 
@@ -134,39 +134,38 @@ export class MetricsCollector extends EventEmitter {
     try {
       // Update Prometheus metrics
       conversationTurnsTotal.inc({
-        dealership_id: metrics.dealershipId?.toString() || 'unknown',
+        dealership_id: metrics.dealershipId?.toString() || "unknown",
         turn_number: metrics.turnNumber.toString(),
         outcome: metrics.outcome,
-        ai_model: metrics.aiModel || 'unknown'
+        ai_model: metrics.aiModel || "unknown",
       });
 
       conversationTurnDuration.observe(
         {
-          dealership_id: metrics.dealershipId?.toString() || 'unknown',
+          dealership_id: metrics.dealershipId?.toString() || "unknown",
           turn_number: metrics.turnNumber.toString(),
-          ai_model: metrics.aiModel || 'unknown'
+          ai_model: metrics.aiModel || "unknown",
         },
-        metrics.processingTime / 1000 // Convert to seconds
+        metrics.processingTime / 1000, // Convert to seconds
       );
 
       // Buffer for database storage
       this.bufferMetric({
-        type: 'turn_processed',
+        type: "turn_processed",
         timestamp: new Date(),
-        data: metrics
+        data: metrics,
       });
 
-      logger.debug('Turn metrics recorded', {
+      logger.debug("Turn metrics recorded", {
         conversationId: metrics.conversationId,
         turnNumber: metrics.turnNumber,
         processingTime: metrics.processingTime,
-        outcome: metrics.outcome
+        outcome: metrics.outcome,
       });
-
     } catch (error) {
-      logger.error('Failed to record turn metrics', {
+      logger.error("Failed to record turn metrics", {
         error: error instanceof Error ? error.message : String(error),
-        metrics
+        metrics,
       });
     }
   }
@@ -177,24 +176,23 @@ export class MetricsCollector extends EventEmitter {
   recordTurnFailed(failure: { conversationId: string; error: string }): void {
     try {
       conversationTurnsTotal.inc({
-        dealership_id: 'unknown',
-        turn_number: 'unknown',
-        outcome: 'failed',
-        ai_model: 'unknown'
+        dealership_id: "unknown",
+        turn_number: "unknown",
+        outcome: "failed",
+        ai_model: "unknown",
       });
 
       this.bufferMetric({
-        type: 'turn_failed',
+        type: "turn_failed",
         timestamp: new Date(),
-        data: failure
+        data: failure,
       });
 
-      logger.debug('Turn failure recorded', failure);
-
+      logger.debug("Turn failure recorded", failure);
     } catch (error) {
-      logger.error('Failed to record turn failure', {
+      logger.error("Failed to record turn failure", {
         error: error instanceof Error ? error.message : String(error),
-        failure
+        failure,
       });
     }
   }
@@ -206,24 +204,30 @@ export class MetricsCollector extends EventEmitter {
     try {
       // Update Prometheus metrics
       if (metrics.tokensUsed) {
-        aiTokensUsed.inc({
-          model: metrics.aiModel || 'unknown',
-          type: 'completion'
-        }, metrics.tokensUsed);
+        aiTokensUsed.inc(
+          {
+            model: metrics.aiModel || "unknown",
+            type: "completion",
+          },
+          metrics.tokensUsed,
+        );
       }
 
       if (metrics.cost) {
-        aiCostTotal.inc({
-          model: metrics.aiModel || 'unknown',
-          dealership_id: metrics.dealershipId.toString()
-        }, metrics.cost);
+        aiCostTotal.inc(
+          {
+            model: metrics.aiModel || "unknown",
+            dealership_id: metrics.dealershipId.toString(),
+          },
+          metrics.cost,
+        );
       }
 
       if (metrics.promptTemplate) {
         promptTemplateUsage.inc({
           template_id: metrics.promptTemplate,
           template_name: metrics.promptTemplate,
-          dealership_id: metrics.dealershipId.toString()
+          dealership_id: metrics.dealershipId.toString(),
         });
       }
 
@@ -231,29 +235,28 @@ export class MetricsCollector extends EventEmitter {
       conversationOutcomes.inc({
         dealership_id: metrics.dealershipId.toString(),
         outcome: metrics.nextAction,
-        source: 'orchestrator'
+        source: "orchestrator",
       });
 
       // Buffer for detailed database storage
       this.bufferMetric({
-        type: 'conversation_metrics',
+        type: "conversation_metrics",
         timestamp: new Date(),
-        data: metrics
+        data: metrics,
       });
 
       // Update daily aggregates
       this.updateDailyAggregates(metrics);
 
-      logger.debug('Conversation metrics recorded', {
+      logger.debug("Conversation metrics recorded", {
         conversationId: metrics.conversationId,
         turnNumber: metrics.turnNumber,
-        nextAction: metrics.nextAction
+        nextAction: metrics.nextAction,
       });
-
     } catch (error) {
-      logger.error('Failed to record conversation metrics', {
+      logger.error("Failed to record conversation metrics", {
         error: error instanceof Error ? error.message : String(error),
-        metrics
+        metrics,
       });
     }
   }
@@ -265,37 +268,39 @@ export class MetricsCollector extends EventEmitter {
     try {
       aiServiceRequests.inc({
         model: metrics.model,
-        status: metrics.status
+        status: metrics.status,
       });
 
       aiServiceDuration.observe(
         { model: metrics.model },
-        metrics.duration / 1000 // Convert to seconds
+        metrics.duration / 1000, // Convert to seconds
       );
 
       if (metrics.tokensUsed > 0) {
-        aiTokensUsed.inc({
-          model: metrics.model,
-          type: 'total'
-        }, metrics.tokensUsed);
+        aiTokensUsed.inc(
+          {
+            model: metrics.model,
+            type: "total",
+          },
+          metrics.tokensUsed,
+        );
       }
 
       this.bufferMetric({
-        type: 'ai_service_metrics',
+        type: "ai_service_metrics",
         timestamp: new Date(),
-        data: metrics
+        data: metrics,
       });
 
-      logger.debug('AI service metrics recorded', {
+      logger.debug("AI service metrics recorded", {
         model: metrics.model,
         duration: metrics.duration,
-        status: metrics.status
+        status: metrics.status,
       });
-
     } catch (error) {
-      logger.error('Failed to record AI service metrics', {
+      logger.error("Failed to record AI service metrics", {
         error: error instanceof Error ? error.message : String(error),
-        metrics
+        metrics,
       });
     }
   }
@@ -303,24 +308,26 @@ export class MetricsCollector extends EventEmitter {
   /**
    * Record circuit breaker state
    */
-  recordCircuitBreakerState(service: string, state: 'closed' | 'half-open' | 'open'): void {
+  recordCircuitBreakerState(
+    service: string,
+    state: "closed" | "half-open" | "open",
+  ): void {
     try {
-      const stateValue = state === 'closed' ? 0 : state === 'half-open' ? 1 : 2;
+      const stateValue = state === "closed" ? 0 : state === "half-open" ? 1 : 2;
       circuitBreakerState.set({ service }, stateValue);
 
       this.bufferMetric({
-        type: 'circuit_breaker_state',
+        type: "circuit_breaker_state",
         timestamp: new Date(),
-        data: { service, state }
+        data: { service, state },
       });
 
-      logger.debug('Circuit breaker state recorded', { service, state });
-
+      logger.debug("Circuit breaker state recorded", { service, state });
     } catch (error) {
-      logger.error('Failed to record circuit breaker state', {
+      logger.error("Failed to record circuit breaker state", {
         error: error instanceof Error ? error.message : String(error),
         service,
-        state
+        state,
       });
     }
   }
@@ -335,21 +342,26 @@ export class MetricsCollector extends EventEmitter {
     failed: number;
   }): void {
     try {
-      conversationQueueDepth.set({ queue_type: 'waiting' }, queueCounts.waiting);
-      conversationQueueDepth.set({ queue_type: 'active' }, queueCounts.active);
-      conversationQueueDepth.set({ queue_type: 'completed' }, queueCounts.completed);
-      conversationQueueDepth.set({ queue_type: 'failed' }, queueCounts.failed);
+      conversationQueueDepth.set(
+        { queue_type: "waiting" },
+        queueCounts.waiting,
+      );
+      conversationQueueDepth.set({ queue_type: "active" }, queueCounts.active);
+      conversationQueueDepth.set(
+        { queue_type: "completed" },
+        queueCounts.completed,
+      );
+      conversationQueueDepth.set({ queue_type: "failed" }, queueCounts.failed);
 
       this.bufferMetric({
-        type: 'queue_metrics',
+        type: "queue_metrics",
         timestamp: new Date(),
-        data: queueCounts
+        data: queueCounts,
       });
-
     } catch (error) {
-      logger.error('Failed to record queue metrics', {
+      logger.error("Failed to record queue metrics", {
         error: error instanceof Error ? error.message : String(error),
-        queueCounts
+        queueCounts,
       });
     }
   }
@@ -363,18 +375,20 @@ export class MetricsCollector extends EventEmitter {
       this.recordQueueMetrics(health.queue);
 
       // Update circuit breaker state
-      this.recordCircuitBreakerState('ai-service', health.circuitBreaker.state as any);
+      this.recordCircuitBreakerState(
+        "ai-service",
+        health.circuitBreaker.state as any,
+      );
 
       // Buffer health status
       this.bufferMetric({
-        type: 'health_status',
+        type: "health_status",
         timestamp: new Date(),
-        data: health
+        data: health,
       });
-
     } catch (error) {
-      logger.error('Failed to record health metrics', {
-        error: error instanceof Error ? error.message : String(error)
+      logger.error("Failed to record health metrics", {
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -416,15 +430,14 @@ export class MetricsCollector extends EventEmitter {
         await this.storeMetricInDatabase(metric);
       }
 
-      logger.debug('Metrics flushed to database', {
+      logger.debug("Metrics flushed to database", {
         count: metricsToFlush.length,
-        component: this.componentName
+        component: this.componentName,
       });
-
     } catch (error) {
-      logger.error('Failed to flush metrics to database', {
+      logger.error("Failed to flush metrics to database", {
         error: error instanceof Error ? error.message : String(error),
-        count: metricsToFlush.length
+        count: metricsToFlush.length,
       });
 
       // Re-add failed metrics to buffer for retry
@@ -453,9 +466,9 @@ export class MetricsCollector extends EventEmitter {
       `);
     } catch (error) {
       // Log but don't throw to avoid breaking the flush process
-      logger.error('Failed to store individual metric', {
+      logger.error("Failed to store individual metric", {
         error: error instanceof Error ? error.message : String(error),
-        metricType: metric.type
+        metricType: metric.type,
       });
     }
   }
@@ -476,7 +489,7 @@ export class MetricsCollector extends EventEmitter {
    * Update daily aggregates for reporting
    */
   private updateDailyAggregates(metrics: ConversationMetrics): void {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     const key = `${today}:${metrics.dealershipId}`;
 
     if (!this.dailyAggregates.has(key)) {
@@ -491,29 +504,31 @@ export class MetricsCollector extends EventEmitter {
         outcomes: {
           completed: 0,
           escalated: 0,
-          failed: 0
-        }
+          failed: 0,
+        },
       });
     }
 
     const aggregate = this.dailyAggregates.get(key);
-    
+
     // Update counters
     if (metrics.turnNumber === 1) {
       aggregate.totalConversations++;
     }
     aggregate.totalTurns++;
-    
+
     if (metrics.cost) {
       aggregate.totalCost += metrics.cost;
     }
-    
+
     if (metrics.tokensUsed) {
       aggregate.totalTokens += metrics.tokensUsed;
     }
 
     // Update processing time average
-    const totalProcessingTime = aggregate.avgProcessingTime * (aggregate.totalTurns - 1) + metrics.processingTime;
+    const totalProcessingTime =
+      aggregate.avgProcessingTime * (aggregate.totalTurns - 1) +
+      metrics.processingTime;
     aggregate.avgProcessingTime = totalProcessingTime / aggregate.totalTurns;
 
     // Update outcomes
@@ -526,7 +541,7 @@ export class MetricsCollector extends EventEmitter {
    * Get daily aggregates for reporting
    */
   getDailyAggregates(date?: string): any[] {
-    const targetDate = date || new Date().toISOString().split('T')[0];
+    const targetDate = date || new Date().toISOString().split("T")[0];
     const results = [];
 
     for (const [key, aggregate] of this.dailyAggregates.entries()) {
@@ -567,7 +582,7 @@ export class MetricsCollector extends EventEmitter {
       `);
 
       const row = result.rows[0] as any;
-      
+
       return {
         period: `${hours} hours`,
         dealershipId,
@@ -578,21 +593,30 @@ export class MetricsCollector extends EventEmitter {
         escalatedConversations: parseInt(row.escalated_conversations) || 0,
         totalCost: parseFloat(row.total_cost) || 0,
         totalTokens: parseInt(row.total_tokens) || 0,
-        completionRate: row.total_conversations > 0 ? 
-          (row.completed_conversations / row.total_conversations * 100).toFixed(2) + '%' : '0%',
-        escalationRate: row.total_conversations > 0 ? 
-          (row.escalated_conversations / row.total_conversations * 100).toFixed(2) + '%' : '0%'
+        completionRate:
+          row.total_conversations > 0
+            ? (
+                (row.completed_conversations / row.total_conversations) *
+                100
+              ).toFixed(2) + "%"
+            : "0%",
+        escalationRate:
+          row.total_conversations > 0
+            ? (
+                (row.escalated_conversations / row.total_conversations) *
+                100
+              ).toFixed(2) + "%"
+            : "0%",
       };
-
     } catch (error) {
-      logger.error('Failed to get performance summary', {
-        error: error instanceof Error ? error.message : String(error)
+      logger.error("Failed to get performance summary", {
+        error: error instanceof Error ? error.message : String(error),
       });
-      
+
       return {
         period: `${hours} hours`,
         dealershipId,
-        error: 'Failed to retrieve metrics'
+        error: "Failed to retrieve metrics",
       };
     }
   }
@@ -607,14 +631,13 @@ export class MetricsCollector extends EventEmitter {
         WHERE timestamp < NOW() - INTERVAL '${daysToKeep} days'
       `);
 
-      logger.info('Old metrics cleaned up', {
+      logger.info("Old metrics cleaned up", {
         daysToKeep,
-        deletedRows: result.rowCount
+        deletedRows: result.rowCount,
       });
-
     } catch (error) {
-      logger.error('Failed to cleanup old metrics', {
-        error: error instanceof Error ? error.message : String(error)
+      logger.error("Failed to cleanup old metrics", {
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -626,11 +649,11 @@ export class MetricsCollector extends EventEmitter {
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
     }
-    
+
     // Final flush
     this.flushMetrics();
 
-    logger.info('MetricsCollector shutdown complete');
+    logger.info("MetricsCollector shutdown complete");
   }
 }
 

@@ -5,9 +5,9 @@
  * and sets the appropriate PostgreSQL session variables to enforce RLS policies.
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import logger from '../utils/logger';
+import logger from "../utils/logger";
 
 // Extend Express Request interface to include dealership context
 declare global {
@@ -26,7 +26,11 @@ declare global {
  * Middleware to establish dealership context for the current request
  * This version bypasses authentication for development purposes
  */
-export const tenantContextMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+export const tenantContextMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     // Skip for public routes that don't require authentication
     if (isPublicRoute(req.path)) {
@@ -43,7 +47,7 @@ export const tenantContextMiddleware = async (req: Request, res: Response, next:
     // Set PostgreSQL session variables to enforce RLS policies
     // This code is unreachable but keeping it for future reference
     // We're fixing the TypeScript errors to maintain code quality
-    if (req.method !== 'GET' && req.dealershipContext) {
+    if (req.method !== "GET" && req.dealershipContext) {
       const context = req.dealershipContext;
 
       // This code is unreachable, so we're adding a type assertion
@@ -55,11 +59,11 @@ export const tenantContextMiddleware = async (req: Request, res: Response, next:
         SELECT set_tenant_context(
           ${context!.userId},
           '${context!.userRole}',
-          ${context!.dealershipId || 'NULL'}
+          ${context!.dealershipId || "NULL"}
         );
       `);
 
-      logger.debug('Tenant context set for database session', {
+      logger.debug("Tenant context set for database session", {
         userId: context!.userId,
         userRole: context!.userRole,
         dealershipId: context!.dealershipId,
@@ -67,17 +71,20 @@ export const tenantContextMiddleware = async (req: Request, res: Response, next:
     }
 
     // Add dealership information to response headers for debugging (in development)
-    if (process.env.NODE_ENV === 'development' && req.dealershipContext) {
+    if (process.env.NODE_ENV === "development" && req.dealershipContext) {
       // Using non-null assertion since we already checked the condition
       const context = req.dealershipContext!;
-      res.setHeader('X-Dealership-ID', context.dealershipId?.toString() || 'none');
-      res.setHeader('X-User-Role', context.userRole);
+      res.setHeader(
+        "X-Dealership-ID",
+        context.dealershipId?.toString() || "none",
+      );
+      res.setHeader("X-User-Role", context.userRole);
     }
 
     next();
   } catch (error) {
-    logger.error('Error establishing tenant context:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    logger.error("Error establishing tenant context:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -86,17 +93,17 @@ export const tenantContextMiddleware = async (req: Request, res: Response, next:
  */
 function isPublicRoute(path: string): boolean {
   const publicRoutes = [
-    '/api/login',
-    '/api/register',
-    '/api/forgot-password',
-    '/api/reset-password',
-    '/api/magic-link/verify',
-    '/api/health',
-    '/api/status',
+    "/api/login",
+    "/api/register",
+    "/api/forgot-password",
+    "/api/reset-password",
+    "/api/magic-link/verify",
+    "/api/health",
+    "/api/status",
   ];
 
   // Check if the route matches any public routes
-  return publicRoutes.some(route => path.startsWith(route));
+  return publicRoutes.some((route) => path.startsWith(route));
 }
 
 /**

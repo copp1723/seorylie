@@ -1,14 +1,14 @@
 /**
  * Base Service Class
- * 
+ *
  * Provides common patterns and functionality for all services in the application.
  * Implements standardized error handling, logging, health checks, and lifecycle management.
  */
 
-import { EventEmitter } from 'events';
-import { v4 as uuidv4 } from 'uuid';
-import logger from '../utils/logger';
-import { CustomError } from '../utils/error-handler';
+import { EventEmitter } from "events";
+import { v4 as uuidv4 } from "uuid";
+import logger from "../utils/logger";
+import { CustomError } from "../utils/error-handler";
 
 export interface ServiceConfig {
   name: string;
@@ -24,7 +24,7 @@ export interface ServiceConfig {
 }
 
 export interface ServiceHealth {
-  status: 'healthy' | 'unhealthy' | 'degraded';
+  status: "healthy" | "unhealthy" | "degraded";
   lastCheck: Date;
   uptime: number;
   dependencies: Record<string, ServiceHealth>;
@@ -52,27 +52,27 @@ export abstract class BaseService extends EventEmitter {
   constructor(config: ServiceConfig) {
     super();
     this.config = {
-      version: '1.0.0',
+      version: "1.0.0",
       enabled: true,
       healthCheckInterval: 30000, // 30 seconds
       retryConfig: {
         maxRetries: 3,
         retryDelay: 1000,
-        backoffMultiplier: 2
+        backoffMultiplier: 2,
       },
-      ...config
+      ...config,
     };
-    
+
     this.serviceId = uuidv4();
     this.startTime = new Date();
     this.metrics = {
       requestCount: 0,
       errorCount: 0,
-      averageResponseTime: 0
+      averageResponseTime: 0,
     };
 
     // Set up error handling
-    this.on('error', this.handleServiceError.bind(this));
+    this.on("error", this.handleServiceError.bind(this));
   }
 
   /**
@@ -87,12 +87,14 @@ export abstract class BaseService extends EventEmitter {
     try {
       logger.info(`Initializing service: ${this.config.name}`, {
         serviceId: this.serviceId,
-        version: this.config.version
+        version: this.config.version,
       });
 
       // Check if service is enabled
       if (!this.config.enabled) {
-        logger.info(`Service ${this.config.name} is disabled, skipping initialization`);
+        logger.info(
+          `Service ${this.config.name} is disabled, skipping initialization`,
+        );
         return;
       }
 
@@ -110,27 +112,31 @@ export abstract class BaseService extends EventEmitter {
 
       logger.info(`Service ${this.config.name} initialized successfully`, {
         serviceId: this.serviceId,
-        uptime: this.getUptime()
+        uptime: this.getUptime(),
       });
 
-      this.emit('initialized');
+      this.emit("initialized");
     } catch (error) {
       this.isHealthy = false;
       const serviceError = new CustomError(
         `Failed to initialize service ${this.config.name}`,
         500,
         {
-          code: 'SERVICE_INITIALIZATION_FAILED',
-          context: { serviceId: this.serviceId, serviceName: this.config.name }
-        }
+          code: "SERVICE_INITIALIZATION_FAILED",
+          context: { serviceId: this.serviceId, serviceName: this.config.name },
+        },
       );
 
-      logger.error(`Service initialization failed: ${this.config.name}`, serviceError, {
-        serviceId: this.serviceId,
-        originalError: error
-      });
+      logger.error(
+        `Service initialization failed: ${this.config.name}`,
+        serviceError,
+        {
+          serviceId: this.serviceId,
+          originalError: error,
+        },
+      );
 
-      this.emit('error', serviceError);
+      this.emit("error", serviceError);
       throw serviceError;
     }
   }
@@ -142,7 +148,7 @@ export abstract class BaseService extends EventEmitter {
     try {
       logger.info(`Shutting down service: ${this.config.name}`, {
         serviceId: this.serviceId,
-        uptime: this.getUptime()
+        uptime: this.getUptime(),
       });
 
       // Stop health checks
@@ -157,11 +163,15 @@ export abstract class BaseService extends EventEmitter {
       this.isHealthy = false;
 
       logger.info(`Service ${this.config.name} shut down successfully`);
-      this.emit('shutdown');
+      this.emit("shutdown");
     } catch (error) {
-      logger.error(`Error during service shutdown: ${this.config.name}`, error, {
-        serviceId: this.serviceId
-      });
+      logger.error(
+        `Error during service shutdown: ${this.config.name}`,
+        error,
+        {
+          serviceId: this.serviceId,
+        },
+      );
       throw error;
     }
   }
@@ -171,7 +181,7 @@ export abstract class BaseService extends EventEmitter {
    */
   async getHealth(): Promise<ServiceHealth> {
     const dependencyHealth: Record<string, ServiceHealth> = {};
-    
+
     // Check dependency health if any
     if (this.config.dependencies) {
       for (const dep of this.config.dependencies) {
@@ -179,25 +189,26 @@ export abstract class BaseService extends EventEmitter {
           dependencyHealth[dep] = await this.checkDependencyHealth(dep);
         } catch (error) {
           dependencyHealth[dep] = {
-            status: 'unhealthy',
+            status: "unhealthy",
             lastCheck: new Date(),
             uptime: 0,
             dependencies: {},
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           };
         }
       }
     }
 
     // Determine overall health
-    const hasUnhealthyDependencies = Object.values(dependencyHealth)
-      .some(health => health.status === 'unhealthy');
-    
-    let status: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
+    const hasUnhealthyDependencies = Object.values(dependencyHealth).some(
+      (health) => health.status === "unhealthy",
+    );
+
+    let status: "healthy" | "unhealthy" | "degraded" = "healthy";
     if (!this.isHealthy) {
-      status = 'unhealthy';
+      status = "unhealthy";
     } else if (hasUnhealthyDependencies) {
-      status = 'degraded';
+      status = "degraded";
     }
 
     return {
@@ -205,7 +216,7 @@ export abstract class BaseService extends EventEmitter {
       lastCheck: new Date(),
       uptime: this.getUptime(),
       dependencies: dependencyHealth,
-      metrics: this.getMetrics()
+      metrics: this.getMetrics(),
     };
   }
 
@@ -228,7 +239,7 @@ export abstract class BaseService extends EventEmitter {
    */
   protected async executeWithMetrics<T>(
     operation: () => Promise<T>,
-    operationName: string
+    operationName: string,
   ): Promise<T> {
     const startTime = Date.now();
     this.metrics.requestCount++;
@@ -236,7 +247,7 @@ export abstract class BaseService extends EventEmitter {
 
     try {
       const result = await operation();
-      
+
       // Update response time metrics
       const responseTime = Date.now() - startTime;
       this.updateAverageResponseTime(responseTime);
@@ -245,7 +256,7 @@ export abstract class BaseService extends EventEmitter {
         serviceId: this.serviceId,
         serviceName: this.config.name,
         responseTime,
-        operationName
+        operationName,
       });
 
       return result;
@@ -253,23 +264,22 @@ export abstract class BaseService extends EventEmitter {
       this.metrics.errorCount++;
       this.metrics.lastErrorTime = new Date();
 
-      const serviceError = error instanceof CustomError ? error : new CustomError(
-        `Operation failed: ${operationName}`,
-        500,
-        {
-          code: 'SERVICE_OPERATION_FAILED',
-          context: { 
-            serviceId: this.serviceId, 
-            serviceName: this.config.name,
-            operationName 
-          }
-        }
-      );
+      const serviceError =
+        error instanceof CustomError
+          ? error
+          : new CustomError(`Operation failed: ${operationName}`, 500, {
+              code: "SERVICE_OPERATION_FAILED",
+              context: {
+                serviceId: this.serviceId,
+                serviceName: this.config.name,
+                operationName,
+              },
+            });
 
       logger.error(`Service operation failed: ${operationName}`, serviceError, {
         serviceId: this.serviceId,
         serviceName: this.config.name,
-        originalError: error
+        originalError: error,
       });
 
       throw serviceError;
@@ -279,22 +289,30 @@ export abstract class BaseService extends EventEmitter {
   // Abstract methods to be implemented by concrete services
   protected abstract onInitialize(): Promise<void>;
   protected abstract onShutdown(): Promise<void>;
-  protected abstract checkDependencyHealth(dependency: string): Promise<ServiceHealth>;
+  protected abstract checkDependencyHealth(
+    dependency: string,
+  ): Promise<ServiceHealth>;
 
   // Private methods
   private startHealthChecks(): void {
-    if (this.config.healthCheckInterval && this.config.healthCheckInterval > 0) {
+    if (
+      this.config.healthCheckInterval &&
+      this.config.healthCheckInterval > 0
+    ) {
       this.healthCheckTimer = setInterval(async () => {
         try {
           const health = await this.getHealth();
-          this.isHealthy = health.status !== 'unhealthy';
-          
-          if (health.status === 'unhealthy') {
-            this.emit('unhealthy', health);
+          this.isHealthy = health.status !== "unhealthy";
+
+          if (health.status === "unhealthy") {
+            this.emit("unhealthy", health);
           }
         } catch (error) {
           this.isHealthy = false;
-          logger.error(`Health check failed for service: ${this.config.name}`, error);
+          logger.error(
+            `Health check failed for service: ${this.config.name}`,
+            error,
+          );
         }
       }, this.config.healthCheckInterval);
     }
@@ -306,21 +324,21 @@ export abstract class BaseService extends EventEmitter {
     }
 
     logger.debug(`Checking dependencies for service: ${this.config.name}`, {
-      dependencies: this.config.dependencies
+      dependencies: this.config.dependencies,
     });
 
     // This would integrate with the service registry to check dependencies
     // For now, we'll just log the dependencies
     for (const dependency of this.config.dependencies) {
       logger.debug(`Dependency check: ${dependency}`, {
-        serviceName: this.config.name
+        serviceName: this.config.name,
       });
     }
   }
 
   private handleServiceError(error: Error): void {
     logger.error(`Service error in ${this.config.name}`, error, {
-      serviceId: this.serviceId
+      serviceId: this.serviceId,
     });
     this.isHealthy = false;
   }
@@ -328,9 +346,9 @@ export abstract class BaseService extends EventEmitter {
   private updateAverageResponseTime(responseTime: number): void {
     const totalRequests = this.metrics.requestCount;
     const currentAverage = this.metrics.averageResponseTime;
-    
+
     // Calculate new average using incremental formula
-    this.metrics.averageResponseTime = 
-      ((currentAverage * (totalRequests - 1)) + responseTime) / totalRequests;
+    this.metrics.averageResponseTime =
+      (currentAverage * (totalRequests - 1) + responseTime) / totalRequests;
   }
 }

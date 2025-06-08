@@ -1,12 +1,12 @@
-import { EventEmitter } from 'events';
-import Imap from 'imap';
-import { simpleParser, ParsedMail, Attachment } from 'mailparser';
-import logger from '../utils/logger';
-import db from '../db';
-import { eq } from 'drizzle-orm';
-import { dealerships } from '@shared/index';
-import { monitoring } from './monitoring';
-import { addEmailJob } from './queue';
+import { EventEmitter } from "events";
+import Imap from "imap";
+import { simpleParser, ParsedMail, Attachment } from "mailparser";
+import logger from "../utils/logger";
+import db from "../db";
+import { eq } from "drizzle-orm";
+import { dealerships } from "@shared/index";
+import { monitoring } from "./monitoring";
+import { addEmailJob } from "./queue";
 
 export interface AdfEmailConfig {
   host: string;
@@ -49,7 +49,7 @@ interface ImapConnection {
 // Dead Letter Queue entry
 interface DLQEntry {
   id: string;
-  type: 'email_processing' | 'imap_connection' | 'email_parsing';
+  type: "email_processing" | "imap_connection" | "email_parsing";
   data: any;
   error: string;
   timestamp: Date;
@@ -101,29 +101,31 @@ export class AdfEmailListener extends EventEmitter {
    */
   async start(): Promise<void> {
     if (this.isListening) {
-      logger.warn('ADF Email Listener is already running');
+      logger.warn("ADF Email Listener is already running");
       return;
     }
 
     try {
       // Get email configurations from database
       const emailConfigs = await this.getEmailConfigurations();
-      
+
       if (emailConfigs.length === 0) {
-        logger.warn('No email configurations found for ADF listening');
+        logger.warn("No email configurations found for ADF listening");
         return;
       }
 
       // Start with the primary configuration
-      const primaryConfig = emailConfigs.find(config => config.isPrimary) || emailConfigs[0];
+      const primaryConfig =
+        emailConfigs.find((config) => config.isPrimary) || emailConfigs[0];
       await this.connectToEmail(primaryConfig);
-      
+
       this.isListening = true;
-      logger.info('ADF Email Listener started successfully');
-      
+      logger.info("ADF Email Listener started successfully");
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to start ADF Email Listener', { error: err.message });
+      logger.error("Failed to start ADF Email Listener", {
+        error: err.message,
+      });
       throw err;
     }
   }
@@ -138,7 +140,7 @@ export class AdfEmailListener extends EventEmitter {
 
     try {
       this.isListening = false;
-      
+
       if (this.pollingTimer) {
         clearTimeout(this.pollingTimer);
         this.pollingTimer = null;
@@ -148,12 +150,11 @@ export class AdfEmailListener extends EventEmitter {
         this.imap.end();
       }
 
-      logger.info('ADF Email Listener stopped');
-      this.emit('stopped');
-      
+      logger.info("ADF Email Listener stopped");
+      this.emit("stopped");
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Error stopping ADF Email Listener', { error: err.message });
+      logger.error("Error stopping ADF Email Listener", { error: err.message });
       throw err;
     }
   }
@@ -165,22 +166,24 @@ export class AdfEmailListener extends EventEmitter {
     try {
       // For now, return mock configuration for testing
       // TODO: Implement proper dealership email configs table
-      return [{
-        id: 1,
-        dealershipId: 1,
-        dealershipName: 'Test Dealership',
-        emailAddress: process.env.IMAP_EMAIL || 'test@example.com',
-        host: process.env.IMAP_HOST || 'imap.gmail.com',
-        port: parseInt(process.env.IMAP_PORT || '993', 10),
-        user: process.env.IMAP_USER || 'test@example.com',
-        password: process.env.IMAP_PASSWORD || 'password',
-        tls: true,
-        isPrimary: true,
-        pollingInterval: 300000 // 5 minutes default
-      }];
+      return [
+        {
+          id: 1,
+          dealershipId: 1,
+          dealershipName: "Test Dealership",
+          emailAddress: process.env.IMAP_EMAIL || "test@example.com",
+          host: process.env.IMAP_HOST || "imap.gmail.com",
+          port: parseInt(process.env.IMAP_PORT || "993", 10),
+          user: process.env.IMAP_USER || "test@example.com",
+          password: process.env.IMAP_PASSWORD || "password",
+          tls: true,
+          isPrimary: true,
+          pollingInterval: 300000, // 5 minutes default
+        },
+      ];
     } catch (error) {
-      logger.error('Failed to get email configurations', { 
-        error: error instanceof Error ? error.message : String(error) 
+      logger.error("Failed to get email configurations", {
+        error: error instanceof Error ? error.message : String(error),
       });
       return [];
     }
@@ -200,51 +203,52 @@ export class AdfEmailListener extends EventEmitter {
           tls: config.tls,
           tlsOptions: { rejectUnauthorized: false },
           authTimeout: 30000,
-          connTimeout: 30000
+          connTimeout: 30000,
         });
 
-        this.imap.once('ready', () => {
+        this.imap.once("ready", () => {
           this.isConnected = true;
           this.reconnectAttempts = 0;
-          logger.info('Connected to email server', { 
-            host: config.host, 
+          logger.info("Connected to email server", {
+            host: config.host,
             user: config.user,
-            dealership: config.dealershipName 
+            dealership: config.dealershipName,
           });
-          
-          this.emit('connected');
+
+          this.emit("connected");
           this.startPolling(config.pollingInterval);
           resolve();
         });
 
-        this.imap.once('error', (error) => {
+        this.imap.once("error", (error) => {
           this.isConnected = false;
-          logger.error('IMAP connection error', { 
+          logger.error("IMAP connection error", {
             error: error.message,
             host: config.host,
-            user: config.user 
+            user: config.user,
           });
-          
-          this.emit('error', error);
+
+          this.emit("error", error);
           this.handleReconnection(config);
           reject(error);
         });
 
-        this.imap.once('end', () => {
+        this.imap.once("end", () => {
           this.isConnected = false;
-          logger.info('IMAP connection ended');
-          this.emit('disconnected');
-          
+          logger.info("IMAP connection ended");
+          this.emit("disconnected");
+
           if (this.isListening) {
             this.handleReconnection(config);
           }
         });
 
         this.imap.connect();
-        
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
-        logger.error('Failed to create IMAP connection', { error: err.message });
+        logger.error("Failed to create IMAP connection", {
+          error: err.message,
+        });
         reject(err);
       }
     });
@@ -262,11 +266,11 @@ export class AdfEmailListener extends EventEmitter {
       try {
         await this.checkForNewEmails();
       } catch (error) {
-        logger.error('Error during email polling', { 
-          error: error instanceof Error ? error.message : String(error) 
+        logger.error("Error during email polling", {
+          error: error instanceof Error ? error.message : String(error),
         });
       }
-      
+
       // Schedule next poll
       if (this.isListening) {
         this.startPolling(interval);
@@ -283,17 +287,17 @@ export class AdfEmailListener extends EventEmitter {
     }
 
     return new Promise((resolve, reject) => {
-      this.imap!.openBox('INBOX', false, (error, box) => {
+      this.imap!.openBox("INBOX", false, (error, box) => {
         if (error) {
-          logger.error('Failed to open inbox', { error: error.message });
+          logger.error("Failed to open inbox", { error: error.message });
           reject(error);
           return;
         }
 
         // Search for unseen emails
-        this.imap!.search(['UNSEEN'], (searchError, results) => {
+        this.imap!.search(["UNSEEN"], (searchError, results) => {
           if (searchError) {
-            logger.error('Email search failed', { error: searchError.message });
+            logger.error("Email search failed", { error: searchError.message });
             reject(searchError);
             return;
           }
@@ -319,60 +323,65 @@ export class AdfEmailListener extends EventEmitter {
     }
 
     const fetch = this.imap.fetch(emailIds, {
-      bodies: '',
+      bodies: "",
       markSeen: true,
-      struct: true
+      struct: true,
     });
 
-    fetch.on('message', (msg, seqno) => {
-      let buffer = '';
-      
-      msg.on('body', (stream) => {
-        stream.on('data', (chunk) => {
-          buffer += chunk.toString('utf8');
+    fetch.on("message", (msg, seqno) => {
+      let buffer = "";
+
+      msg.on("body", (stream) => {
+        stream.on("data", (chunk) => {
+          buffer += chunk.toString("utf8");
         });
       });
 
-      msg.once('end', async () => {
+      msg.once("end", async () => {
         try {
           const parsed = await simpleParser(buffer);
           await this.handleParsedEmail(parsed, seqno);
         } catch (error) {
-          logger.error('Failed to parse email', { 
+          logger.error("Failed to parse email", {
             error: error instanceof Error ? error.message : String(error),
-            seqno 
+            seqno,
           });
         }
       });
     });
 
-    fetch.once('error', (error) => {
-      logger.error('Email fetch error', { error: error.message });
+    fetch.once("error", (error) => {
+      logger.error("Email fetch error", { error: error.message });
     });
 
-    fetch.once('end', () => {
-      logger.debug('Email fetch completed');
+    fetch.once("end", () => {
+      logger.debug("Email fetch completed");
     });
   }
 
   /**
    * Handle parsed email and check for ADF attachments
    */
-  private async handleParsedEmail(parsed: ParsedMail, seqno: number): Promise<void> {
+  private async handleParsedEmail(
+    parsed: ParsedMail,
+    seqno: number,
+  ): Promise<void> {
     const startTime = Date.now();
 
     try {
       // Check if email has XML attachments (potential ADF)
-      const xmlAttachments = parsed.attachments?.filter(att =>
-        att.filename?.toLowerCase().endsWith('.xml') ||
-        att.contentType?.includes('application/xml') ||
-        att.contentType?.includes('text/xml')
-      ) || [];
+      const xmlAttachments =
+        parsed.attachments?.filter(
+          (att) =>
+            att.filename?.toLowerCase().endsWith(".xml") ||
+            att.contentType?.includes("application/xml") ||
+            att.contentType?.includes("text/xml"),
+        ) || [];
 
       if (xmlAttachments.length === 0) {
-        logger.debug('No XML attachments found', {
+        logger.debug("No XML attachments found", {
           subject: parsed.subject,
-          from: parsed.from?.text
+          from: parsed.from?.text,
         });
         return;
       }
@@ -381,55 +390,61 @@ export class AdfEmailListener extends EventEmitter {
       for (const attachment of xmlAttachments) {
         const emailData: AdfEmailData = {
           id: `${seqno}-${Date.now()}`,
-          subject: parsed.subject || '',
-          from: parsed.from?.text || '',
-          to: parsed.to?.text || '',
+          subject: parsed.subject || "",
+          from: parsed.from?.text || "",
+          to: parsed.to?.text || "",
           date: parsed.date || new Date(),
-          attachments: [{
-            filename: attachment.filename || 'unknown.xml',
-            content: attachment.content,
-            contentType: attachment.contentType || 'application/xml',
-            size: attachment.size || attachment.content.length
-          }],
-          rawContent: parsed.html || parsed.text || ''
+          attachments: [
+            {
+              filename: attachment.filename || "unknown.xml",
+              content: attachment.content,
+              contentType: attachment.contentType || "application/xml",
+              size: attachment.size || attachment.content.length,
+            },
+          ],
+          rawContent: parsed.html || parsed.text || "",
         };
 
-        logger.info('Processing ADF email', {
+        logger.info("Processing ADF email", {
           subject: emailData.subject,
           from: emailData.from,
-          attachmentCount: emailData.attachments.length
+          attachmentCount: emailData.attachments.length,
         });
 
         // Track metrics
-        monitoring.incrementCounter('imap_emails_processed_total', {
-          has_attachments: 'true',
-          attachment_count: xmlAttachments.length.toString()
+        monitoring.incrementCounter("imap_emails_processed_total", {
+          has_attachments: "true",
+          attachment_count: xmlAttachments.length.toString(),
         });
 
-        this.emit('email', emailData);
+        this.emit("email", emailData);
       }
 
       // Record processing time
       const processingTime = Date.now() - startTime;
-      monitoring.recordHistogram('imap_email_processing_duration_ms', processingTime, {
-        attachment_count: xmlAttachments.length.toString()
-      });
-
+      monitoring.recordHistogram(
+        "imap_email_processing_duration_ms",
+        processingTime,
+        {
+          attachment_count: xmlAttachments.length.toString(),
+        },
+      );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
 
-      logger.error('Error handling parsed email', {
+      logger.error("Error handling parsed email", {
         error: errorMessage,
-        seqno
+        seqno,
       });
 
       // Track error metrics
-      monitoring.incrementCounter('imap_emails_failed_total', {
-        error_type: 'processing_error'
+      monitoring.incrementCounter("imap_emails_failed_total", {
+        error_type: "processing_error",
       });
 
       // Add to DLQ for retry
-      this.addToDlq('email_processing', { parsed, seqno }, errorMessage);
+      this.addToDlq("email_processing", { parsed, seqno }, errorMessage);
     }
   }
 
@@ -438,20 +453,24 @@ export class AdfEmailListener extends EventEmitter {
    */
   private handleReconnection(config: any): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      logger.error('Max reconnection attempts reached, stopping email listener');
+      logger.error(
+        "Max reconnection attempts reached, stopping email listener",
+      );
       this.stop();
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * this.reconnectAttempts;
-    
-    logger.info(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    
+
+    logger.info(
+      `Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+    );
+
     setTimeout(() => {
       if (this.isListening) {
-        this.connectToEmail(config).catch(error => {
-          logger.error('Reconnection failed', { error: error.message });
+        this.connectToEmail(config).catch((error) => {
+          logger.error("Reconnection failed", { error: error.message });
         });
       }
     }, delay);
@@ -461,10 +480,10 @@ export class AdfEmailListener extends EventEmitter {
    * Setup error handling
    */
   private setupErrorHandling(): void {
-    this.on('error', (error) => {
-      logger.error('ADF Email Listener error', { error: error.message });
-      monitoring.incrementCounter('adf_email_listener_errors_total', {
-        error_type: error.name || 'unknown'
+    this.on("error", (error) => {
+      logger.error("ADF Email Listener error", { error: error.message });
+      monitoring.incrementCounter("adf_email_listener_errors_total", {
+        error_type: error.name || "unknown",
       });
     });
   }
@@ -474,26 +493,56 @@ export class AdfEmailListener extends EventEmitter {
    */
   private setupMetrics(): void {
     // Register custom metrics for IMAP operations
-    monitoring.registerCounter('imap_connections_total', 'Total IMAP connections created');
-    monitoring.registerCounter('imap_connection_failures_total', 'Total IMAP connection failures');
-    monitoring.registerCounter('imap_emails_processed_total', 'Total emails processed');
-    monitoring.registerCounter('imap_emails_failed_total', 'Total email processing failures');
-    monitoring.registerUpDownCounter('imap_active_connections', 'Number of active IMAP connections');
-    monitoring.registerHistogram('imap_connection_duration_ms', 'IMAP connection establishment time');
-    monitoring.registerHistogram('imap_email_processing_duration_ms', 'Email processing time');
+    monitoring.registerCounter(
+      "imap_connections_total",
+      "Total IMAP connections created",
+    );
+    monitoring.registerCounter(
+      "imap_connection_failures_total",
+      "Total IMAP connection failures",
+    );
+    monitoring.registerCounter(
+      "imap_emails_processed_total",
+      "Total emails processed",
+    );
+    monitoring.registerCounter(
+      "imap_emails_failed_total",
+      "Total email processing failures",
+    );
+    monitoring.registerUpDownCounter(
+      "imap_active_connections",
+      "Number of active IMAP connections",
+    );
+    monitoring.registerHistogram(
+      "imap_connection_duration_ms",
+      "IMAP connection establishment time",
+    );
+    monitoring.registerHistogram(
+      "imap_email_processing_duration_ms",
+      "Email processing time",
+    );
 
     // DLQ metrics
-    monitoring.registerCounter('dlq_entries_total', 'Total entries added to Dead Letter Queue');
-    monitoring.registerCounter('dlq_retries_total', 'Total DLQ retry attempts');
-    monitoring.registerCounter('dlq_successes_total', 'Total successful DLQ retries');
-    monitoring.registerUpDownCounter('dlq_pending_entries', 'Number of pending DLQ entries');
+    monitoring.registerCounter(
+      "dlq_entries_total",
+      "Total entries added to Dead Letter Queue",
+    );
+    monitoring.registerCounter("dlq_retries_total", "Total DLQ retry attempts");
+    monitoring.registerCounter(
+      "dlq_successes_total",
+      "Total successful DLQ retries",
+    );
+    monitoring.registerUpDownCounter(
+      "dlq_pending_entries",
+      "Number of pending DLQ entries",
+    );
   }
 
   /**
    * Setup health checks
    */
   private setupHealthChecks(): void {
-    monitoring.registerHealthCheck('adf_email_listener', async () => {
+    monitoring.registerHealthCheck("adf_email_listener", async () => {
       try {
         const poolStats = this.getConnectionPoolStats();
         const dlqStats = this.getDlqStats();
@@ -506,10 +555,10 @@ export class AdfEmailListener extends EventEmitter {
           return {
             status: monitoring.ComponentHealthStatus.DEGRADED,
             details: {
-              message: 'No IMAP connections configured',
+              message: "No IMAP connections configured",
               poolStats,
-              dlqStats
-            }
+              dlqStats,
+            },
           };
         }
 
@@ -517,10 +566,10 @@ export class AdfEmailListener extends EventEmitter {
           return {
             status: monitoring.ComponentHealthStatus.UNHEALTHY,
             details: {
-              message: 'No healthy IMAP connections available',
+              message: "No healthy IMAP connections available",
               poolStats,
-              dlqStats
-            }
+              dlqStats,
+            },
           };
         }
 
@@ -529,10 +578,10 @@ export class AdfEmailListener extends EventEmitter {
           return {
             status: monitoring.ComponentHealthStatus.DEGRADED,
             details: {
-              message: 'High number of pending DLQ entries',
+              message: "High number of pending DLQ entries",
               poolStats,
-              dlqStats
-            }
+              dlqStats,
+            },
           };
         }
 
@@ -541,15 +590,15 @@ export class AdfEmailListener extends EventEmitter {
           details: {
             poolStats,
             dlqStats,
-            isListening: this.isListening
-          }
+            isListening: this.isListening,
+          },
         };
       } catch (error) {
         return {
           status: monitoring.ComponentHealthStatus.UNHEALTHY,
           details: {
-            error: error instanceof Error ? error.message : String(error)
-          }
+            error: error instanceof Error ? error.message : String(error),
+          },
         };
       }
     });
@@ -582,10 +631,10 @@ export class AdfEmailListener extends EventEmitter {
       connected: 0,
       inUse: 0,
       idle: 0,
-      failed: 0
+      failed: 0,
     };
 
-    this.connectionPool.forEach(conn => {
+    this.connectionPool.forEach((conn) => {
       if (conn.isConnected) {
         stats.connected++;
         if (conn.isInUse) {
@@ -610,10 +659,10 @@ export class AdfEmailListener extends EventEmitter {
       total: this.dlq.size,
       pending: 0,
       retryable: 0,
-      expired: 0
+      expired: 0,
     };
 
-    this.dlq.forEach(entry => {
+    this.dlq.forEach((entry) => {
       if (entry.attempts >= entry.maxAttempts) {
         stats.expired++;
       } else if (entry.nextRetryAt <= now) {
@@ -643,20 +692,20 @@ export class AdfEmailListener extends EventEmitter {
           try {
             conn.imap.end();
           } catch (error) {
-            logger.warn('Error closing idle IMAP connection', {
+            logger.warn("Error closing idle IMAP connection", {
               connectionId: id,
-              error: error instanceof Error ? error.message : String(error)
+              error: error instanceof Error ? error.message : String(error),
             });
           }
         }
 
-        monitoring.decrementUpDownCounter('imap_active_connections');
+        monitoring.decrementUpDownCounter("imap_active_connections");
       }
     });
 
-    connectionsToRemove.forEach(id => {
+    connectionsToRemove.forEach((id) => {
       this.connectionPool.delete(id);
-      logger.debug('Removed idle IMAP connection', { connectionId: id });
+      logger.debug("Removed idle IMAP connection", { connectionId: id });
     });
   }
 
@@ -665,46 +714,50 @@ export class AdfEmailListener extends EventEmitter {
    */
   private async processDlqEntries(): Promise<void> {
     const now = new Date();
-    const retryableEntries = Array.from(this.dlq.values())
-      .filter(entry => entry.nextRetryAt <= now && entry.attempts < entry.maxAttempts);
+    const retryableEntries = Array.from(this.dlq.values()).filter(
+      (entry) => entry.nextRetryAt <= now && entry.attempts < entry.maxAttempts,
+    );
 
     for (const entry of retryableEntries) {
       try {
-        monitoring.incrementCounter('dlq_retries_total', {
+        monitoring.incrementCounter("dlq_retries_total", {
           type: entry.type,
-          attempt: entry.attempts.toString()
+          attempt: entry.attempts.toString(),
         });
 
         await this.retryDlqEntry(entry);
 
         // Remove from DLQ on success
         this.dlq.delete(entry.id);
-        monitoring.decrementUpDownCounter('dlq_pending_entries');
-        monitoring.incrementCounter('dlq_successes_total', { type: entry.type });
-
-        logger.info('Successfully processed DLQ entry', {
-          entryId: entry.id,
+        monitoring.decrementUpDownCounter("dlq_pending_entries");
+        monitoring.incrementCounter("dlq_successes_total", {
           type: entry.type,
-          attempts: entry.attempts
         });
 
+        logger.info("Successfully processed DLQ entry", {
+          entryId: entry.id,
+          type: entry.type,
+          attempts: entry.attempts,
+        });
       } catch (error) {
         entry.attempts++;
-        entry.nextRetryAt = new Date(now.getTime() + this.calculateBackoffDelay(entry.attempts));
+        entry.nextRetryAt = new Date(
+          now.getTime() + this.calculateBackoffDelay(entry.attempts),
+        );
 
-        logger.warn('DLQ entry retry failed', {
+        logger.warn("DLQ entry retry failed", {
           entryId: entry.id,
           type: entry.type,
           attempts: entry.attempts,
           maxAttempts: entry.maxAttempts,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
 
         if (entry.attempts >= entry.maxAttempts) {
-          logger.error('DLQ entry exceeded max attempts, marking as expired', {
+          logger.error("DLQ entry exceeded max attempts, marking as expired", {
             entryId: entry.id,
             type: entry.type,
-            attempts: entry.attempts
+            attempts: entry.attempts,
           });
         }
       }
@@ -716,13 +769,13 @@ export class AdfEmailListener extends EventEmitter {
    */
   private async retryDlqEntry(entry: DLQEntry): Promise<void> {
     switch (entry.type) {
-      case 'email_processing':
+      case "email_processing":
         await this.handleParsedEmail(entry.data.parsed, entry.data.seqno);
         break;
-      case 'imap_connection':
+      case "imap_connection":
         await this.connectToEmail(entry.data.config);
         break;
-      case 'email_parsing':
+      case "email_parsing":
         const parsed = await simpleParser(entry.data.buffer);
         await this.handleParsedEmail(parsed, entry.data.seqno);
         break;
@@ -735,14 +788,20 @@ export class AdfEmailListener extends EventEmitter {
    * Calculate exponential backoff delay
    */
   private calculateBackoffDelay(attempts: number): number {
-    const delay = this.baseRetryDelay * Math.pow(this.retryMultiplier, attempts - 1);
+    const delay =
+      this.baseRetryDelay * Math.pow(this.retryMultiplier, attempts - 1);
     return Math.min(delay, this.maxRetryDelay);
   }
 
   /**
    * Add entry to Dead Letter Queue
    */
-  private addToDlq(type: DLQEntry['type'], data: any, error: string, originalJobId?: string): void {
+  private addToDlq(
+    type: DLQEntry["type"],
+    data: any,
+    error: string,
+    originalJobId?: string,
+  ): void {
     const id = `dlq_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const entry: DLQEntry = {
       id,
@@ -753,18 +812,18 @@ export class AdfEmailListener extends EventEmitter {
       attempts: 0,
       maxAttempts: this.maxDlqAttempts,
       nextRetryAt: new Date(Date.now() + this.baseRetryDelay),
-      originalJobId
+      originalJobId,
     };
 
     this.dlq.set(id, entry);
-    monitoring.incrementUpDownCounter('dlq_pending_entries');
-    monitoring.incrementCounter('dlq_entries_total', { type });
+    monitoring.incrementUpDownCounter("dlq_pending_entries");
+    monitoring.incrementCounter("dlq_entries_total", { type });
 
-    logger.warn('Added entry to Dead Letter Queue', {
+    logger.warn("Added entry to Dead Letter Queue", {
       entryId: id,
       type,
       error,
-      originalJobId
+      originalJobId,
     });
   }
 
@@ -773,8 +832,8 @@ export class AdfEmailListener extends EventEmitter {
    */
   private decryptPassword(encryptedPassword: string): string {
     // This is a simplified decryption - in production, use proper encryption
-    if (encryptedPassword.startsWith('encrypted:')) {
-      return encryptedPassword.replace('encrypted:', '');
+    if (encryptedPassword.startsWith("encrypted:")) {
+      return encryptedPassword.replace("encrypted:", "");
     }
     return encryptedPassword;
   }
@@ -802,9 +861,9 @@ export class AdfEmailListener extends EventEmitter {
         try {
           conn.imap.end();
         } catch (error) {
-          logger.warn('Error closing pooled connection during shutdown', {
+          logger.warn("Error closing pooled connection during shutdown", {
             connectionId: id,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
         }
       }
@@ -812,7 +871,7 @@ export class AdfEmailListener extends EventEmitter {
 
     this.connectionPool.clear();
 
-    logger.info('Enhanced ADF Email Listener stopped with full cleanup');
+    logger.info("Enhanced ADF Email Listener stopped with full cleanup");
   }
 
   /**
@@ -823,7 +882,7 @@ export class AdfEmailListener extends EventEmitter {
       isListening: this.isListening,
       connectionPool: this.getConnectionPoolStats(),
       dlq: this.getDlqStats(),
-      uptime: Date.now() - this.startTime
+      uptime: Date.now() - this.startTime,
     };
   }
 

@@ -3,26 +3,32 @@
  * This script sends a test email to validate email configuration before deployment
  */
 
-import { sendEmail, emailService, initializeEmailService } from '../server/services/email-service';
-import * as dotenv from 'dotenv';
+import {
+  sendEmail,
+  emailService,
+  initializeEmailService,
+} from "../server/services/email-service";
+import * as dotenv from "dotenv";
 
 // Load environment variables
 dotenv.config();
 
 async function testEmailFunctionality() {
-  console.log('🧪 Testing email functionality with SendGrid...');
-  
+  console.log("🧪 Testing email functionality with SendGrid...");
+
   if (!process.env.SENDGRID_API_KEY) {
-    console.error('❌ SendGrid API Key is missing. Please set the SENDGRID_API_KEY environment variable.');
+    console.error(
+      "❌ SendGrid API Key is missing. Please set the SENDGRID_API_KEY environment variable.",
+    );
     return false;
   }
-  
+
   // Test email parameters
   const testParams = {
-    to: 'admin@rylie-ai.com', // Replace with your actual test email
-    from: 'noreply@rylie-ai.com',
-    subject: 'Rylie AI - Pre-deployment Email Test',
-    text: 'This is a test email to verify the SendGrid integration before deployment.',
+    to: "admin@rylie-ai.com", // Replace with your actual test email
+    from: "noreply@rylie-ai.com",
+    subject: "Rylie AI - Pre-deployment Email Test",
+    text: "This is a test email to verify the SendGrid integration before deployment.",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background-color: #0056b3; color: white; padding: 20px; text-align: center;">
@@ -34,7 +40,7 @@ async function testEmailFunctionality() {
           
           <h2>System Information:</h2>
           <ul>
-            <li><strong>Environment:</strong> ${process.env.NODE_ENV || 'development'}</li>
+            <li><strong>Environment:</strong> ${process.env.NODE_ENV || "development"}</li>
             <li><strong>Timestamp:</strong> ${new Date().toISOString()}</li>
           </ul>
           
@@ -52,50 +58,56 @@ async function testEmailFunctionality() {
           </p>
         </div>
       </div>
-    `
+    `,
   };
-  
+
   try {
-    console.log('🔧 Initializing email service...');
+    console.log("🔧 Initializing email service...");
     await initializeEmailService();
-    
+
     console.log(`📧 Sending test email to: ${testParams.to}`);
     const result = await sendEmail({
       to: testParams.to,
       subject: testParams.subject,
       html: testParams.html,
       text: testParams.text,
-      from: testParams.from
+      from: testParams.from,
     });
-    
+
     if (result.success) {
-      console.log('✅ Test email sent successfully!');
+      console.log("✅ Test email sent successfully!");
       console.log(`📧 Message ID: ${result.messageId}`);
       return true;
     } else {
-      console.error('❌ Failed to send test email:', result.error);
+      console.error("❌ Failed to send test email:", result.error);
       return false;
     }
   } catch (error) {
-    console.error('❌ Error sending test email:', error);
+    console.error("❌ Error sending test email:", error);
     return false;
   }
 }
 
 // Run the test if this script is executed directly
 testEmailFunctionality()
-  .then(success => {
-    console.log(`\n📋 EMAIL TEST SUMMARY: ${success ? 'PASSED ✅' : 'FAILED ❌'}`);
-    
+  .then((success) => {
+    console.log(
+      `\n📋 EMAIL TEST SUMMARY: ${success ? "PASSED ✅" : "FAILED ❌"}`,
+    );
+
     if (success) {
-      console.log('The email system is configured correctly and ready for deployment.');
+      console.log(
+        "The email system is configured correctly and ready for deployment.",
+      );
     } else {
-      console.log('The email system needs attention before deployment. Check the error messages above.');
+      console.log(
+        "The email system needs attention before deployment. Check the error messages above.",
+      );
     }
-    
+
     process.exit(success ? 0 : 1);
   })
-  .catch(error => {
-    console.error('Unexpected error during email testing:', error);
+  .catch((error) => {
+    console.error("Unexpected error during email testing:", error);
     process.exit(1);
   });

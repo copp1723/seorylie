@@ -11,8 +11,8 @@ import {
   GA4ReportType,
   GA4MetricType,
   GA4DimensionType,
-  GA4ReportResult
-} from './ga4-client';
+  GA4ReportResult,
+} from "./ga4-client";
 
 // Export all components
 export {
@@ -23,11 +23,11 @@ export {
   GA4ReportType,
   GA4MetricType,
   GA4DimensionType,
-  GA4ReportResult
+  GA4ReportResult,
 };
 
 // Re-export types from schema
-import type { GA4Report } from '@rylie-seo/seo-schema';
+import type { GA4Report } from "@rylie-seo/seo-schema";
 export type { GA4Report };
 
 /**
@@ -41,7 +41,7 @@ export async function generateWeeklyGA4Report(
   sandboxId: string,
   propertyId: string,
   options: {
-    dateRange?: 'last7days' | 'last30days' | 'last90days' | 'custom';
+    dateRange?: "last7days" | "last30days" | "last90days" | "custom";
     customStartDate?: string;
     customEndDate?: string;
     reportTypes?: GA4ReportType[];
@@ -51,24 +51,28 @@ export async function generateWeeklyGA4Report(
       project_id: string;
     };
     keyFilePath?: string;
-  } = {}
+  } = {},
 ): Promise<GA4Report> {
   // Create GA4 client
   const ga4Client = createGA4Client({
     propertyId,
     credentials: options.credentials,
     keyFilePath: options.keyFilePath,
-    whiteLabelName: 'Rylie SEO',
-    whiteLabelColorPrimary: '#4A90E2',
-    whiteLabelColorSecondary: '#50E3C2'
+    whiteLabelName: "Rylie SEO",
+    whiteLabelColorPrimary: "#4A90E2",
+    whiteLabelColorSecondary: "#50E3C2",
   });
-  
+
   // Generate weekly report
   return await ga4Client.generateWeeklyReport(sandboxId, {
-    dateRange: options.dateRange || 'last7days',
+    dateRange: options.dateRange || "last7days",
     customStartDate: options.customStartDate,
     customEndDate: options.customEndDate,
-    reportTypes: options.reportTypes || [GA4ReportType.OVERVIEW, GA4ReportType.TRAFFIC, GA4ReportType.PAGES]
+    reportTypes: options.reportTypes || [
+      GA4ReportType.OVERVIEW,
+      GA4ReportType.TRAFFIC,
+      GA4ReportType.PAGES,
+    ],
   });
 }
 
@@ -79,5 +83,5 @@ export default {
   GA4ReportType,
   GA4MetricType,
   GA4DimensionType,
-  generateWeeklyGA4Report
+  generateWeeklyGA4Report,
 };

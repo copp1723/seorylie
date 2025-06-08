@@ -2,7 +2,7 @@
 
 **Status**: ⚠️ **SETUP REQUIRED**  
 **Time Estimate**: 20-30 minutes  
-**Complexity**: Medium  
+**Complexity**: Medium
 
 ---
 
@@ -13,10 +13,12 @@ After comprehensive analysis, several **critical setup steps are missing** befor
 ### 🔴 **BLOCKING ISSUES** (Must Fix First)
 
 1. **❌ NO .env FILE EXISTS**
+
    - The `.env` file is missing completely
    - Application will fail to start without environment variables
 
-2. **❌ NO NODE_MODULES INSTALLED** 
+2. **❌ NO NODE_MODULES INSTALLED**
+
    - Dependencies are not installed
    - `npm install` has not been run
 
@@ -31,11 +33,13 @@ After comprehensive analysis, several **critical setup steps are missing** befor
 ### **PHASE 1: Basic Environment Setup** ⚠️ **REQUIRED**
 
 #### 1. **Navigate to Project Directory**
+
 ```bash
 cd /Users/copp1723/Downloads/cleanrylie-main
 ```
 
 #### 2. **Install Dependencies** 🔴 **CRITICAL**
+
 ```bash
 # Install all required packages
 npm install
@@ -43,9 +47,11 @@ npm install
 # Verify installation
 npm ls --depth=0
 ```
+
 **Expected Result**: Should show ~200+ packages installed without errors
 
 #### 3. **Create Environment File** 🔴 **CRITICAL**
+
 ```bash
 # Copy the example file
 cp .env.example .env
@@ -67,7 +73,7 @@ Edit your `.env` file with these **MINIMUM REQUIRED** values:
 DATABASE_URL=postgres://username:password@localhost:5432/cleanrylie
 
 # =============================================================================
-# CRITICAL: SECURITY & AUTHENTICATION  
+# CRITICAL: SECURITY & AUTHENTICATION
 # =============================================================================
 # Generate with: openssl rand -base64 32
 SESSION_SECRET=your-super-secret-session-key-here-CHANGE-THIS
@@ -104,6 +110,7 @@ FRONTEND_URL=http://localhost:5000
 #### 5. **Set Up PostgreSQL Database** 🔴 **CRITICAL**
 
 **Option A: Local PostgreSQL (Recommended for Testing)**
+
 ```bash
 # Install PostgreSQL (if not installed)
 # macOS:
@@ -118,12 +125,14 @@ DATABASE_URL=postgres://postgres:password@localhost:5432/cleanrylie
 ```
 
 **Option B: Use Supabase (Cloud)**
+
 1. Go to [supabase.com](https://supabase.com)
 2. Create new project named "cleanrylie"
 3. Get connection string from Settings > Database
 4. Update DATABASE_URL in .env with Supabase connection string
 
 #### 6. **Apply Database Schema** 🔴 **CRITICAL**
+
 ```bash
 # Apply the complete schema
 psql $DATABASE_URL -f supabase-schema.sql
@@ -135,6 +144,7 @@ psql -d cleanrylie -f supabase-schema.sql
 **Expected Result**: Should create ~29 tables without errors
 
 #### 7. **Validate Environment** 🔴 **CRITICAL**
+
 ```bash
 # Run comprehensive validation
 npm run env:validate
@@ -145,6 +155,7 @@ npm run env:validate
 ### **PHASE 3: Application Testing** ⚠️ **VERIFICATION**
 
 #### 8. **Test TypeScript Compilation**
+
 ```bash
 # Check for TypeScript errors
 npm run check
@@ -153,18 +164,21 @@ npm run check
 **Expected Result**: No compilation errors
 
 #### 9. **Test Application Startup**
+
 ```bash
 # Start development server
 npm run dev
 ```
 
 **Expected Results**:
+
 - ✅ Database connection successful
 - ✅ Server starts on port 5000
 - ✅ No critical errors in console
 - ✅ Frontend accessible at http://localhost:5000
 
 #### 10. **Test Database Connection**
+
 ```bash
 # In another terminal, test database
 npm run test:quick
@@ -177,21 +191,24 @@ npm run test:quick
 ## 🔧 **Service Dependencies Setup** (Optional but Recommended)
 
 ### **OpenAI API Key** (Required for AI Features)
+
 1. Go to [platform.openai.com](https://platform.openai.com)
 2. Create API key
 3. Add to `.env`: `OPENAI_API_KEY=sk-...`
 
 ### **SendGrid Email** (Required for Email Features)
+
 1. Go to [sendgrid.com](https://sendgrid.com)
 2. Create API key
 3. Add to `.env`: `SENDGRID_API_KEY=SG.xxx`
 
 ### **Generate Secure Keys**
+
 ```bash
 # Generate session secret
 openssl rand -base64 32
 
-# Generate credentials encryption key  
+# Generate credentials encryption key
 openssl rand -base64 32
 ```
 
@@ -202,6 +219,7 @@ openssl rand -base64 32
 Before manual testing, ensure all these are ✅:
 
 ### **Environment Setup**
+
 - [ ] ✅ `npm install` completed successfully
 - [ ] ✅ `.env` file created and configured
 - [ ] ✅ Database URL configured
@@ -209,18 +227,21 @@ Before manual testing, ensure all these are ✅:
 - [ ] ✅ `npm run env:validate` passes
 
 ### **Database Setup**
+
 - [ ] ✅ PostgreSQL running
 - [ ] ✅ Database created (cleanrylie)
 - [ ] ✅ Schema applied successfully
 - [ ] ✅ No database connection errors
 
 ### **Application Startup**
+
 - [ ] ✅ `npm run check` passes (no TypeScript errors)
 - [ ] ✅ `npm run dev` starts without errors
 - [ ] ✅ Server accessible at http://localhost:5000
 - [ ] ✅ Database connection test passes
 
 ### **Optional Services**
+
 - [ ] 🔄 OpenAI API key configured (for AI features)
 - [ ] 🔄 SendGrid API key configured (for email features)
 - [ ] 🔄 Twilio configured (for SMS features)
@@ -230,6 +251,7 @@ Before manual testing, ensure all these are ✅:
 ## 🚨 **Common Issues & Solutions**
 
 ### **"Cannot connect to database"**
+
 ```bash
 # Check if PostgreSQL is running
 brew services list | grep postgresql
@@ -242,6 +264,7 @@ psql $DATABASE_URL -c "SELECT NOW();"
 ```
 
 ### **"Module not found" errors**
+
 ```bash
 # Clean install
 rm -rf node_modules package-lock.json
@@ -249,6 +272,7 @@ npm install
 ```
 
 ### **"Environment validation failed"**
+
 ```bash
 # Check .env file exists
 ls -la .env
@@ -258,6 +282,7 @@ npm run env:validate
 ```
 
 ### **Port already in use**
+
 ```bash
 # Kill process on port 5000
 lsof -ti:5000 | xargs kill -9
@@ -273,18 +298,21 @@ PORT=3000 npm run dev
 Once setup is complete, you can manually test:
 
 ### **Core Features**
+
 - ✅ Application loads at http://localhost:5000
 - ✅ Database connectivity and health endpoints
 - ✅ Authentication system (login/logout)
 - ✅ Basic navigation and UI components
 
 ### **Advanced Features** (with API keys)
+
 - ✅ AI conversation system (with OpenAI key)
 - ✅ Email notifications (with SendGrid key)
 - ✅ Inventory management
 - ✅ Multi-tenant dealership features
 
 ### **API Endpoints**
+
 - ✅ `GET /api/health` - System health
 - ✅ `GET /api/dealerships` - Dealership data
 - ✅ `GET /api/vehicles` - Inventory
@@ -295,7 +323,7 @@ Once setup is complete, you can manually test:
 ## ⏱️ **Estimated Setup Time**
 
 - **Basic Setup**: 10-15 minutes
-- **Database Setup**: 5-10 minutes  
+- **Database Setup**: 5-10 minutes
 - **Service Configuration**: 5-10 minutes
 - **Testing & Verification**: 5-10 minutes
 

@@ -3,91 +3,102 @@
  * Main router for external API v1 endpoints
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import conversationRoutes from './conversation-api';
-import handoverRoutes from './handover-api';
-import { apiAuth } from '../middleware/api-auth';
-import logger from '../utils/logger';
-import { trackPerformance, trackPerformanceMiddleware } from '../monitoring/performance-tracker';
+import { Router, Request, Response, NextFunction } from "express";
+import cors from "cors";
+import conversationRoutes from "./conversation-api";
+import handoverRoutes from "./handover-api";
+import { apiAuth } from "../middleware/api-auth";
+import logger from "../utils/logger";
+import {
+  trackPerformance,
+  trackPerformanceMiddleware,
+} from "../monitoring/performance-tracker";
 
 const router = Router();
 
 // Apply performance tracking middleware to all API v1 routes
-router.use(trackPerformanceMiddleware('/api/v1'));
+router.use(trackPerformanceMiddleware("/api/v1"));
 
 // CORS configuration for API endpoints
-router.use(cors({
-  origin: process.env.API_CORS_ORIGINS ? 
-    process.env.API_CORS_ORIGINS.split(',') : 
-    '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'X-API-Key', 'Authorization'],
-  maxAge: 86400 // 24 hours
-}));
+router.use(
+  cors({
+    origin: process.env.API_CORS_ORIGINS
+      ? process.env.API_CORS_ORIGINS.split(",")
+      : "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "X-API-Key", "Authorization"],
+    maxAge: 86400, // 24 hours
+  }),
+);
 
 // API request logging middleware
 router.use((req: Request, res: Response, next: NextFunction) => {
   const startTime = Date.now();
-  
-  res.on('finish', () => {
+
+  res.on("finish", () => {
     const duration = Date.now() - startTime;
-    
-    logger.info('API request completed', {
+
+    logger.info("API request completed", {
       method: req.method,
       url: req.originalUrl,
       statusCode: res.statusCode,
       duration,
-      clientId: req.apiClient?.clientId || 'unknown'
+      clientId: req.apiClient?.clientId || "unknown",
     });
   });
-  
+
   next();
 });
 
 // Health check endpoint (no auth required)
-router.get('/health', trackPerformance((req: Request, res: Response) => {
-  res.json({
-    status: 'healthy',
-    version: process.env.npm_package_version || '1.0.0',
-    timestamp: new Date().toISOString()
-  });
-}));
+router.get(
+  "/health",
+  trackPerformance((req: Request, res: Response) => {
+    res.json({
+      status: "healthy",
+      version: process.env.npm_package_version || "1.0.0",
+      timestamp: new Date().toISOString(),
+    });
+  }),
+);
 
 // API key validation endpoint
-router.get('/validate', trackPerformance(apiAuth(), (req: Request, res: Response) => {
-  res.json({
-    valid: true,
-    clientId: req.apiClient?.clientId,
-    clientName: req.apiClient?.clientName,
-    scopes: req.apiClient?.scopes
-  });
-}));
+router.get(
+  "/validate",
+  trackPerformance(apiAuth(), (req: Request, res: Response) => {
+    res.json({
+      valid: true,
+      clientId: req.apiClient?.clientId,
+      clientName: req.apiClient?.clientName,
+      scopes: req.apiClient?.scopes,
+    });
+  }),
+);
 
 // Mount API routes
-router.use('/conversation', conversationRoutes);
-router.use('/handover', handoverRoutes);
+router.use("/conversation", conversationRoutes);
+router.use("/handover", handoverRoutes);
 
 // Catch-all 404 handler for API routes
 router.use((req: Request, res: Response) => {
   res.status(404).json({
-    error: 'not_found',
-    message: `API endpoint not found: ${req.method} ${req.originalUrl}`
+    error: "not_found",
+    message: `API endpoint not found: ${req.method} ${req.originalUrl}`,
   });
 });
 
 // API error handler
 router.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  logger.error('API error', {
+  logger.error("API error", {
     error: err.message,
     stack: err.stack,
     method: req.method,
-    url: req.originalUrl
+    url: req.originalUrl,
   });
-  
+
   res.status(500).json({
-    error: 'server_error',
-    message: 'An unexpected error occurred'
+    error: "server_error",
+    message: "An unexpected error occurred",
   });
 });
 

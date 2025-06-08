@@ -37,7 +37,7 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
 
 export interface ButtonProps
@@ -51,10 +51,25 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, isLoading = false, loadingText, leftIcon, rightIcon, children, disabled, ...props }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      isLoading = false,
+      loadingText,
+      leftIcon,
+      rightIcon,
+      children,
+      disabled,
+      ...props
+    },
+    ref,
+  ) => {
     const Comp = asChild ? Slot : "button";
     const isDisabled = disabled || isLoading;
-    
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, isLoading, className }))}
@@ -89,7 +104,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {rightIcon && !isLoading && <span className="ml-2">{rightIcon}</span>}
       </Comp>
     );
-  }
+  },
 );
 Button.displayName = "Button";
 

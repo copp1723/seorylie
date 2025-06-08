@@ -56,14 +56,16 @@ export default function InvitationsPage() {
   const [, setLocation] = useLocation();
 
   // Fetch invitations - TEMPORARILY DISABLED
-  const [data, setData] = useState<InvitationsApiResponse | undefined>(undefined);
+  const [data, setData] = useState<InvitationsApiResponse | undefined>(
+    undefined,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const refetch = () => {
-    console.log('Refetch temporarily disabled');
+    console.log("Refetch temporarily disabled");
   };
-  
+
   // TODO: Re-enable React Query
   // const { data, isLoading, isError, error, refetch } =
   //   useQuery<InvitationsApiResponse>({
@@ -74,15 +76,15 @@ export default function InvitationsPage() {
   // Mutation for resending an invitation - TEMPORARILY DISABLED
   const resendMutation = {
     mutateAsync: async (invitationId: number) => {
-      console.log('Would resend invitation:', invitationId);
+      console.log("Would resend invitation:", invitationId);
       toast({
         title: "Info",
         description: "Invitation resend temporarily disabled",
       });
     },
-    isPending: false
+    isPending: false,
   };
-  
+
   // TODO: Re-enable React Query
   // const resendMutation = useMutation({
   //   mutationFn: async (invitationId: number) => {

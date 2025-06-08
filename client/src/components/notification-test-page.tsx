@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FormField, FormValidation, validators, composeValidators, FormErrors } from "@/components/ui/form-field";
+import {
+  FormField,
+  FormValidation,
+  validators,
+  composeValidators,
+  FormErrors,
+} from "@/components/ui/form-field";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useToast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -17,7 +23,7 @@ export default function NotificationTestPage() {
     password: "",
     name: "",
     phone: "",
-    message: ""
+    message: "",
   });
 
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -29,33 +35,38 @@ export default function NotificationTestPage() {
 
     errors.email = composeValidators(
       validators.required,
-      validators.email
+      validators.email,
     )(formData.email);
 
     errors.password = composeValidators(
       validators.required,
-      validators.minLength(8)
+      validators.minLength(8),
     )(formData.password);
 
     errors.name = validators.required(formData.name);
 
-    errors.phone = formData.phone ? validators.phone(formData.phone) : undefined;
+    errors.phone = formData.phone
+      ? validators.phone(formData.phone)
+      : undefined;
 
     errors.message = composeValidators(
       validators.required,
       validators.minLength(10),
-      validators.maxLength(500)
+      validators.maxLength(500),
     )(formData.message);
 
     setFormErrors(errors);
-    return !Object.values(errors).some(error => Boolean(error));
+    return !Object.values(errors).some((error) => Boolean(error));
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      notifications.error("Form Validation Failed", "Please fix the errors below");
+      notifications.error(
+        "Form Validation Failed",
+        "Please fix the errors below",
+      );
       return;
     }
 
@@ -63,12 +74,24 @@ export default function NotificationTestPage() {
 
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      notifications.success("Form Submitted", "Your information has been saved successfully");
-      setFormData({ email: "", password: "", name: "", phone: "", message: "" });
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      notifications.success(
+        "Form Submitted",
+        "Your information has been saved successfully",
+      );
+      setFormData({
+        email: "",
+        password: "",
+        name: "",
+        phone: "",
+        message: "",
+      });
       setFormErrors({});
     } catch (error) {
-      notifications.error("Submission Failed", "Unable to save your information. Please try again.");
+      notifications.error(
+        "Submission Failed",
+        "Unable to save your information. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -81,114 +104,152 @@ export default function NotificationTestPage() {
       tests: [
         {
           name: "Vehicle Added",
-          action: () => notifications.success("Vehicle Added", "2024 Honda Civic has been added to inventory"),
+          action: () =>
+            notifications.success(
+              "Vehicle Added",
+              "2024 Honda Civic has been added to inventory",
+            ),
         },
         {
           name: "User Login",
-          action: () => success({
-            title: "Login Successful",
-            description: "Welcome back to CleanRylie!",
-          }),
+          action: () =>
+            success({
+              title: "Login Successful",
+              description: "Welcome back to CleanRylie!",
+            }),
         },
         {
           name: "Data Saved",
-          action: () => notifications.success("Changes Saved", "Your dealership settings have been updated"),
+          action: () =>
+            notifications.success(
+              "Changes Saved",
+              "Your dealership settings have been updated",
+            ),
         },
-      ]
+      ],
     },
     {
       title: "Error Scenarios",
       tests: [
         {
           name: "Import Failed",
-          action: () => notifications.error(
-            "Import Failed",
-            "Unable to process inventory file. Please check the format and try again.",
-            {
-              action: {
-                label: "Retry Import",
-                onClick: () => notifications.info("Retry Triggered", "Retrying import...")
-              }
-            }
-          ),
+          action: () =>
+            notifications.error(
+              "Import Failed",
+              "Unable to process inventory file. Please check the format and try again.",
+              {
+                action: {
+                  label: "Retry Import",
+                  onClick: () =>
+                    notifications.info("Retry Triggered", "Retrying import..."),
+                },
+              },
+            ),
         },
         {
           name: "Session Expired",
-          action: () => error({
-            title: "Session Expired",
-            description: "Your session has expired. Please log in again.",
-            action: (
-              <ToastAction 
-                altText="Log In" 
-                onClick={() => window.location.href = "/auth"}
-              >
-                Log In
-              </ToastAction>
-            )
-          }),
+          action: () =>
+            error({
+              title: "Session Expired",
+              description: "Your session has expired. Please log in again.",
+              action: (
+                <ToastAction
+                  altText="Log In"
+                  onClick={() => (window.location.href = "/auth")}
+                >
+                  Log In
+                </ToastAction>
+              ),
+            }),
         },
         {
           name: "Network Error",
-          action: () => notifications.error(
-            "Network Error",
-            "Unable to connect to the server. Please check your internet connection.",
-            {
-              action: {
-                label: "Retry",
-                onClick: () => notifications.info("Retrying", "Attempting to reconnect...")
-              }
-            }
-          ),
+          action: () =>
+            notifications.error(
+              "Network Error",
+              "Unable to connect to the server. Please check your internet connection.",
+              {
+                action: {
+                  label: "Retry",
+                  onClick: () =>
+                    notifications.info(
+                      "Retrying",
+                      "Attempting to reconnect...",
+                    ),
+                },
+              },
+            ),
         },
-      ]
+      ],
     },
     {
       title: "Warning Scenarios",
       tests: [
         {
           name: "Low Inventory",
-          action: () => notifications.warning("Low Inventory", "You have less than 5 vehicles in stock for Honda Civic"),
+          action: () =>
+            notifications.warning(
+              "Low Inventory",
+              "You have less than 5 vehicles in stock for Honda Civic",
+            ),
         },
         {
           name: "Unsaved Changes",
-          action: () => warning({
-            title: "Unsaved Changes",
-            description: "You have unsaved changes. Save before leaving?",
-            action: (
-              <ToastAction 
-                altText="Save Changes" 
-                onClick={() => notifications.success("Saved", "Changes saved successfully")}
-              >
-                Save Changes
-              </ToastAction>
-            )
-          }),
+          action: () =>
+            warning({
+              title: "Unsaved Changes",
+              description: "You have unsaved changes. Save before leaving?",
+              action: (
+                <ToastAction
+                  altText="Save Changes"
+                  onClick={() =>
+                    notifications.success("Saved", "Changes saved successfully")
+                  }
+                >
+                  Save Changes
+                </ToastAction>
+              ),
+            }),
         },
         {
           name: "Rate Limit Warning",
-          action: () => notifications.warning("Rate Limit", "You're approaching your API rate limit"),
+          action: () =>
+            notifications.warning(
+              "Rate Limit",
+              "You're approaching your API rate limit",
+            ),
         },
-      ]
+      ],
     },
     {
       title: "Info Scenarios",
       tests: [
         {
           name: "Feature Update",
-          action: () => notifications.info("New Feature", "Chat analytics are now available in your dashboard"),
+          action: () =>
+            notifications.info(
+              "New Feature",
+              "Chat analytics are now available in your dashboard",
+            ),
         },
         {
           name: "Maintenance Notice",
-          action: () => info({
-            title: "Scheduled Maintenance",
-            description: "System maintenance scheduled for tonight 2-4 AM EST",
-          }),
+          action: () =>
+            info({
+              title: "Scheduled Maintenance",
+              description:
+                "System maintenance scheduled for tonight 2-4 AM EST",
+            }),
         },
         {
           name: "Tip",
-          action: () => notifications.info("Pro Tip", "Use keyboard shortcuts Ctrl+S to save your work quickly"),
+          action: () =>
+            notifications.info(
+              "Pro Tip",
+              "Use keyboard shortcuts Ctrl+S to save your work quickly",
+            ),
         },
-      ]
+      ],
     },
     {
       title: "Loading Scenarios",
@@ -196,10 +257,16 @@ export default function NotificationTestPage() {
         {
           name: "Processing Import",
           action: () => {
-            const id = notifications.loading("Processing", "Importing inventory data...");
+            const id = notifications.loading(
+              "Processing",
+              "Importing inventory data...",
+            );
             setTimeout((): void => {
               notifications.removeNotification(id);
-              notifications.success("Import Complete", "Successfully imported 150 vehicles");
+              notifications.success(
+                "Import Complete",
+                "Successfully imported 150 vehicles",
+              );
             }, 3000);
           },
         },
@@ -219,7 +286,7 @@ export default function NotificationTestPage() {
             }, 4000);
           },
         },
-      ]
+      ],
     },
     {
       title: "API Error Scenarios",
@@ -228,7 +295,7 @@ export default function NotificationTestPage() {
           name: "Test 401 Unauthorized",
           action: async () => {
             try {
-              await apiClient.get('/test-401');
+              await apiClient.get("/test-401");
             } catch (error) {
               console.log("Expected 401 error caught:", error);
             }
@@ -238,7 +305,7 @@ export default function NotificationTestPage() {
           name: "Test 404 Not Found",
           action: async () => {
             try {
-              await apiClient.get('/test-404');
+              await apiClient.get("/test-404");
             } catch (error) {
               console.log("Expected 404 error caught:", error);
             }
@@ -248,14 +315,14 @@ export default function NotificationTestPage() {
           name: "Test Network Error",
           action: async () => {
             try {
-              await apiClient.get('/invalid-endpoint-12345');
+              await apiClient.get("/invalid-endpoint-12345");
             } catch (error) {
               console.log("Expected network error caught:", error);
             }
           },
         },
-      ]
-    }
+      ],
+    },
   ];
 
   return (
@@ -274,16 +341,31 @@ export default function NotificationTestPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => notifications.clearAllNotifications()} variant="outline">
+            <Button
+              onClick={() => notifications.clearAllNotifications()}
+              variant="outline"
+            >
               Clear All Notifications
             </Button>
-            <Button onClick={() => notifications.success("Test", "Quick success message")}>
+            <Button
+              onClick={() =>
+                notifications.success("Test", "Quick success message")
+              }
+            >
               Quick Success
             </Button>
-            <Button onClick={() => notifications.error("Test", "Quick error message")} variant="destructive">
+            <Button
+              onClick={() => notifications.error("Test", "Quick error message")}
+              variant="destructive"
+            >
               Quick Error
             </Button>
-            <Button onClick={() => notifications.warning("Test", "Quick warning message")} variant="secondary">
+            <Button
+              onClick={() =>
+                notifications.warning("Test", "Quick warning message")
+              }
+              variant="secondary"
+            >
               Quick Warning
             </Button>
           </div>
@@ -307,7 +389,9 @@ export default function NotificationTestPage() {
                 name="email"
                 type="email"
                 value={formData.email}
-                onChange={(value) => setFormData(prev => ({ ...prev, email: value }))}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, email: value }))
+                }
                 onBlur={validateForm}
                 error={formErrors.email}
                 required
@@ -319,7 +403,9 @@ export default function NotificationTestPage() {
                 name="password"
                 type="password"
                 value={formData.password}
-                onChange={(value) => setFormData(prev => ({ ...prev, password: value }))}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, password: value }))
+                }
                 onBlur={validateForm}
                 error={formErrors.password}
                 required
@@ -331,7 +417,9 @@ export default function NotificationTestPage() {
                 label="Full Name"
                 name="name"
                 value={formData.name}
-                onChange={(value) => setFormData(prev => ({ ...prev, name: value }))}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, name: value }))
+                }
                 onBlur={validateForm}
                 error={formErrors.name}
                 required
@@ -343,7 +431,9 @@ export default function NotificationTestPage() {
                 name="phone"
                 type="tel"
                 value={formData.phone}
-                onChange={(value) => setFormData(prev => ({ ...prev, phone: value }))}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, phone: value }))
+                }
                 onBlur={validateForm}
                 error={formErrors.phone}
                 placeholder="+1 (555) 123-4567"
@@ -357,7 +447,9 @@ export default function NotificationTestPage() {
               variant="textarea"
               rows={4}
               value={formData.message}
-              onChange={(value) => setFormData(prev => ({ ...prev, message: value }))}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, message: value }))
+              }
               onBlur={validateForm}
               error={formErrors.message}
               required
@@ -406,7 +498,9 @@ export default function NotificationTestPage() {
       {/* Current Notifications Display */}
       <Card>
         <CardHeader>
-          <CardTitle>Active Notifications ({notifications.notifications.length})</CardTitle>
+          <CardTitle>
+            Active Notifications ({notifications.notifications.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {notifications.notifications.length === 0 ? (
@@ -433,7 +527,9 @@ export default function NotificationTestPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => notifications.removeNotification(notification.id)}
+                      onClick={() =>
+                        notifications.removeNotification(notification.id)
+                      }
                     >
                       Dismiss
                     </Button>

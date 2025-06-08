@@ -1,7 +1,7 @@
-import { Router, Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import { sendInvitation } from '../services/magic-link-auth';
-import { logger } from '../logger';
+import { Router, Request, Response } from "express";
+import { body, validationResult } from "express-validator";
+import { sendInvitation } from "../services/magic-link-auth";
+import { logger } from "../logger";
 
 const router = Router();
 
@@ -10,10 +10,10 @@ const router = Router();
  * This endpoint generates and sends a magic link for authentication
  */
 router.post(
-  '/request',
+  "/request",
   [
-    body('email').isEmail().notEmpty().withMessage('Valid email is required'),
-    body('baseUrl').isString().notEmpty().withMessage('Base URL is required'),
+    body("email").isEmail().notEmpty().withMessage("Valid email is required"),
+    body("baseUrl").isString().notEmpty().withMessage("Base URL is required"),
   ],
   async (req: Request, res: Response) => {
     // Validate request
@@ -40,13 +40,16 @@ router.post(
         inviteOptions.dealershipId = user.dealershipId || undefined;
 
         // Only admins can set custom roles
-        if (req.body.role && user.role === 'admin') {
+        if (req.body.role && user.role === "admin") {
           inviteOptions.role = req.body.role;
         }
       }
 
       // Custom expiration if provided and valid
-      if (req.body.expirationHours && !isNaN(parseInt(req.body.expirationHours))) {
+      if (
+        req.body.expirationHours &&
+        !isNaN(parseInt(req.body.expirationHours))
+      ) {
         inviteOptions.expirationHours = parseInt(req.body.expirationHours);
       }
 
@@ -60,24 +63,26 @@ router.post(
 
         return res.status(500).json({
           success: false,
-          message: result.error || 'Failed to send magic link',
+          message: result.error || "Failed to send magic link",
         });
       }
 
-      logger.info(`Magic link sent to ${email}${user ? ' by ' + user.email : ''}`);
+      logger.info(
+        `Magic link sent to ${email}${user ? " by " + user.email : ""}`,
+      );
 
       return res.status(200).json({
         success: true,
-        message: 'Magic link sent successfully',
+        message: "Magic link sent successfully",
       });
     } catch (error) {
-      logger.error('Error sending magic link:', error);
+      logger.error("Error sending magic link:", error);
       return res.status(500).json({
         success: false,
-        message: 'An error occurred while sending the magic link',
+        message: "An error occurred while sending the magic link",
       });
     }
-  }
+  },
 );
 
 /**
@@ -85,12 +90,12 @@ router.post(
  * This endpoint is used by admins to invite new users to the platform
  */
 router.post(
-  '/invite',
+  "/invite",
   [
-    body('email').isEmail().notEmpty().withMessage('Valid email is required'),
-    body('baseUrl').isString().notEmpty().withMessage('Base URL is required'),
-    body('role').isString().optional(),
-    body('dealershipId').isNumeric().optional(),
+    body("email").isEmail().notEmpty().withMessage("Valid email is required"),
+    body("baseUrl").isString().notEmpty().withMessage("Base URL is required"),
+    body("role").isString().optional(),
+    body("dealershipId").isNumeric().optional(),
   ],
   async (req: Request, res: Response) => {
     // Validate request
@@ -103,10 +108,10 @@ router.post(
     const user = req.session?.user;
 
     // Check if user is admin
-    if (!user || user.role !== 'admin') {
+    if (!user || user.role !== "admin") {
       return res.status(403).json({
         success: false,
-        message: 'Only administrators can send invitations',
+        message: "Only administrators can send invitations",
       });
     }
 
@@ -115,7 +120,7 @@ router.post(
       const inviteOptions = {
         invitedBy: user.id,
         dealershipId: dealershipId || user.dealershipId,
-        role: role || 'user',
+        role: role || "user",
       };
 
       // Send the invitation
@@ -128,7 +133,7 @@ router.post(
 
         return res.status(500).json({
           success: false,
-          message: result.error || 'Failed to send invitation',
+          message: result.error || "Failed to send invitation",
         });
       }
 
@@ -136,16 +141,16 @@ router.post(
 
       return res.status(200).json({
         success: true,
-        message: 'Invitation sent successfully',
+        message: "Invitation sent successfully",
       });
     } catch (error) {
-      logger.error('Error sending invitation:', error);
+      logger.error("Error sending invitation:", error);
       return res.status(500).json({
         success: false,
-        message: 'An error occurred while sending the invitation',
+        message: "An error occurred while sending the invitation",
       });
     }
-  }
+  },
 );
 
 export default router;

@@ -1,18 +1,20 @@
 /**
  * Service for managing customizable escalation triggers
  */
-import { db } from '../db';
-import { escalationTriggers } from '../../shared/schema-extensions';
-import { eq } from 'drizzle-orm';
-import OpenAI from 'openai';
+import { db } from "../db";
+import { escalationTriggers } from "../../shared/schema-extensions";
+import { eq } from "drizzle-orm";
+import OpenAI from "openai";
 
 // Initialize OpenAI conditionally
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-}) : null;
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export interface TriggerCondition {
-  type: 'sentiment' | 'urgency' | 'repeated_questions' | 'keyword' | 'custom';
+  type: "sentiment" | "urgency" | "repeated_questions" | "keyword" | "custom";
   value: string | number | string[];
   threshold?: number;
 }
@@ -21,7 +23,9 @@ export interface TriggerCondition {
  * Get all escalation triggers for a dealership
  */
 export async function getEscalationTriggers(dealershipId: number) {
-  return db.select().from(escalationTriggers)
+  return db
+    .select()
+    .from(escalationTriggers)
     .where(eq(escalationTriggers.dealershipId, dealershipId));
 }
 
@@ -35,13 +39,16 @@ export async function createEscalationTrigger(data: {
   conditions: TriggerCondition[];
   isActive?: boolean;
 }) {
-  const [trigger] = await db.insert(escalationTriggers).values({
-    dealershipId: data.dealershipId,
-    name: data.name,
-    description: data.description,
-    conditions: data.conditions,
-    isActive: data.isActive ?? true
-  }).returning();
+  const [trigger] = await db
+    .insert(escalationTriggers)
+    .values({
+      dealershipId: data.dealershipId,
+      name: data.name,
+      description: data.description,
+      conditions: data.conditions,
+      isActive: data.isActive ?? true,
+    })
+    .returning();
 
   return trigger;
 }
@@ -56,12 +63,13 @@ export async function updateEscalationTrigger(
     description: string;
     conditions: TriggerCondition[];
     isActive: boolean;
-  }>
+  }>,
 ) {
-  const [updatedTrigger] = await db.update(escalationTriggers)
+  const [updatedTrigger] = await db
+    .update(escalationTriggers)
     .set({
       ...data,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     })
     .where(eq(escalationTriggers.id, triggerId))
     .returning();
@@ -73,7 +81,8 @@ export async function updateEscalationTrigger(
  * Delete an escalation trigger
  */
 export async function deleteEscalationTrigger(triggerId: number) {
-  await db.delete(escalationTriggers)
+  await db
+    .delete(escalationTriggers)
     .where(eq(escalationTriggers.id, triggerId));
 
   return { success: true };
@@ -82,12 +91,14 @@ export async function deleteEscalationTrigger(triggerId: number) {
 /**
  * Analyze conversation sentiment
  */
-async function analyzeSentiment(messages: { content: string, isFromCustomer: boolean }[]): Promise<number> {
+async function analyzeSentiment(
+  messages: { content: string; isFromCustomer: boolean }[],
+): Promise<number> {
   // Only analyze customer messages
   const customerMessages = messages
-    .filter(msg => msg.isFromCustomer)
-    .map(msg => msg.content)
-    .join('\n');
+    .filter((msg) => msg.isFromCustomer)
+    .map((msg) => msg.content)
+    .join("\n");
 
   if (!customerMessages) return 0.5; // Neutral if no customer messages
 
@@ -102,13 +113,14 @@ async function analyzeSentiment(messages: { content: string, isFromCustomer: boo
       messages: [
         {
           role: "system",
-          content: "Analyze the sentiment of the following customer messages. Return a single number between 0 and 1, where 0 is extremely negative, 0.5 is neutral, and 1 is extremely positive."
+          content:
+            "Analyze the sentiment of the following customer messages. Return a single number between 0 and 1, where 0 is extremely negative, 0.5 is neutral, and 1 is extremely positive.",
         },
         {
           role: "user",
-          content: customerMessages
-        }
-      ]
+          content: customerMessages,
+        },
+      ],
     });
 
     const sentimentText = response.choices[0].message.content?.trim() || "0.5";
@@ -129,24 +141,31 @@ async function analyzeSentiment(messages: { content: string, isFromCustomer: boo
 /**
  * Detect repeated questions in conversation
  */
-function detectRepeatedQuestions(messages: { content: string, isFromCustomer: boolean }[]): number {
-  const customerMessages = messages.filter(msg => msg.isFromCustomer);
+function detectRepeatedQuestions(
+  messages: { content: string; isFromCustomer: boolean }[],
+): number {
+  const customerMessages = messages.filter((msg) => msg.isFromCustomer);
   const questions = customerMessages
-    .filter(msg => msg.content.includes('?'))
-    .map(msg => msg.content.toLowerCase());
+    .filter((msg) => msg.content.includes("?"))
+    .map((msg) => msg.content.toLowerCase());
 
   // Simple algorithm to detect similar questions
   const repeatedCount = questions.reduce((count, question, index) => {
     for (let i = 0; i < index; i++) {
       // Check for similarity (contains similar words)
-      const words1 = new Set(question.split(/\s+/).filter(w => w.length > 3));
-      const words2 = new Set(questions[i].split(/\s+/).filter(w => w.length > 3));
+      const words1 = new Set(question.split(/\s+/).filter((w) => w.length > 3));
+      const words2 = new Set(
+        questions[i].split(/\s+/).filter((w) => w.length > 3),
+      );
 
       // Count common words
-      const commonWords = [...words1].filter(word => words2.has(word));
+      const commonWords = [...words1].filter((word) => words2.has(word));
 
       // If enough common words, consider it a repeated question
-      if (commonWords.length >= 3 || (commonWords.length >= 2 && words1.size < 5)) {
+      if (
+        commonWords.length >= 3 ||
+        (commonWords.length >= 2 && words1.size < 5)
+      ) {
         count++;
         break;
       }
@@ -163,8 +182,8 @@ function detectRepeatedQuestions(messages: { content: string, isFromCustomer: bo
 export async function evaluateEscalationTriggers(
   dealershipId: number,
   conversationData: {
-    messages: { content: string, isFromCustomer: boolean }[]
-  }
+    messages: { content: string; isFromCustomer: boolean }[];
+  },
 ): Promise<{ shouldEscalate: boolean; reason?: string; description?: string }> {
   const triggers = await getEscalationTriggers(dealershipId);
 
@@ -180,7 +199,7 @@ export async function evaluateEscalationTriggers(
   const enhancedData = {
     ...conversationData,
     sentiment,
-    repeatedQuestions
+    repeatedQuestions,
   };
 
   // Evaluate each trigger
@@ -188,30 +207,36 @@ export async function evaluateEscalationTriggers(
     if (!trigger.isActive) continue;
 
     const conditions = trigger.conditions as TriggerCondition[];
-    const shouldEscalate = conditions.every(condition => {
-      switch(condition.type) {
-        case 'sentiment':
+    const shouldEscalate = conditions.every((condition) => {
+      switch (condition.type) {
+        case "sentiment":
           return enhancedData.sentiment <= (condition.threshold || 0.3);
 
-        case 'urgency':
-          return conversationData.messages.some(msg =>
-            msg.isFromCustomer &&
-            msg.content.toLowerCase().includes(condition.value as string)
+        case "urgency":
+          return conversationData.messages.some(
+            (msg) =>
+              msg.isFromCustomer &&
+              msg.content.toLowerCase().includes(condition.value as string),
           );
 
-        case 'repeated_questions':
+        case "repeated_questions":
           return enhancedData.repeatedQuestions >= (condition.threshold || 2);
 
-        case 'keyword':
-          const keywords = Array.isArray(condition.value) ? condition.value : [condition.value];
-          return conversationData.messages.some(msg =>
-            msg.isFromCustomer &&
-            keywords.some(keyword =>
-              msg.content.toLowerCase().includes((keyword as string).toLowerCase())
-            )
+        case "keyword":
+          const keywords = Array.isArray(condition.value)
+            ? condition.value
+            : [condition.value];
+          return conversationData.messages.some(
+            (msg) =>
+              msg.isFromCustomer &&
+              keywords.some((keyword) =>
+                msg.content
+                  .toLowerCase()
+                  .includes((keyword as string).toLowerCase()),
+              ),
           );
 
-        case 'custom':
+        case "custom":
           // Custom logic would go here
           return false;
 
@@ -224,7 +249,7 @@ export async function evaluateEscalationTriggers(
       return {
         shouldEscalate: true,
         reason: trigger.name,
-        description: trigger.description || undefined
+        description: trigger.description || undefined,
       };
     }
   }

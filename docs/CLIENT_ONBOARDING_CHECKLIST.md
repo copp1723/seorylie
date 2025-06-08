@@ -10,13 +10,16 @@
 ## Setup Process
 
 ### Phase 1: Preparation
+
 **Hybrid Approach (Recommended for Namecheap domains):**
+
 - [ ] **Domain:** Client's professional domain (e.g., `kunesrvfox.com`)
 - [ ] **Outbound Email:** Professional address (e.g., `kelseyb@kunesrvfox.com`)
 - [ ] **IMAP Processing:** Gmail account for reliable processing
 - [ ] **Email Forwarding:** Domain email → Gmail for IMAP
 
 **Setup Steps:**
+
 - [ ] Create Gmail account for IMAP: `clientname-internal@gmail.com`
 - [ ] Enable 2FA on Gmail account
 - [ ] Generate Gmail app password
@@ -24,27 +27,32 @@
 - [ ] Record dealership ID from database
 
 ### Phase 2: SendGrid Configuration
+
 - [ ] Add domain to SendGrid dashboard
 - [ ] Generate DNS records
 - [ ] Save DNS records for client
 
 ### Phase 3: Client Communication
+
 - [ ] Send DNS records to client
 - [ ] Provide email forwarding instructions
 - [ ] Set timeline expectations (24-48 hours)
 
 ### Phase 4: CleanRylie Configuration
+
 - [ ] Run setup script: `./scripts/setup-client-domain.sh`
 - [ ] Verify database configuration
 - [ ] Test IMAP connection
 
 ### Phase 5: Verification
+
 - [ ] Wait for DNS propagation (24-48 hours)
 - [ ] Verify domain in SendGrid dashboard
 - [ ] Update verification status in database
 - [ ] Test complete email flow
 
 ### Phase 6: Go Live
+
 - [ ] Send completion email to client
 - [ ] Monitor first few leads
 - [ ] Confirm professional email appearance
@@ -66,12 +74,13 @@ node scripts/setup-client-domain-node.js "Kunes RV Fox Valley" "kunesrvfox.com" 
 ## Client Communication Templates
 
 ### Initial Contact
+
 ```
 Subject: Professional Email Setup for [Client]
 
 Hi [Client],
 
-I'm setting up your professional email system for lead communication. 
+I'm setting up your professional email system for lead communication.
 
 Your leads will receive emails from: [Client] <leads@[domain].com>
 
@@ -89,6 +98,7 @@ Questions? Just reply!
 ```
 
 ### DNS Instructions
+
 ```
 Subject: DNS Setup Required - [Client] Email System
 
@@ -107,6 +117,7 @@ Let me know when complete!
 ```
 
 ### Completion Notice
+
 ```
 Subject: ✅ Professional Email System Live - [Client]
 
@@ -129,13 +140,13 @@ Welcome to professional lead communication!
 
 ## Troubleshooting Quick Reference
 
-| Issue | Solution |
-|-------|----------|
-| DNS not propagating | Wait 24-48 hours, use DNS checker tools |
-| SendGrid verification failed | Double-check DNS records match exactly |
+| Issue                        | Solution                                         |
+| ---------------------------- | ------------------------------------------------ |
+| DNS not propagating          | Wait 24-48 hours, use DNS checker tools          |
+| SendGrid verification failed | Double-check DNS records match exactly           |
 | Email forwarding not working | Check registrar settings, test with simple email |
-| IMAP connection failed | Verify Gmail credentials and app password |
-| Leads not receiving emails | Check SendGrid delivery logs |
+| IMAP connection failed       | Verify Gmail credentials and app password        |
+| Leads not receiving emails   | Check SendGrid delivery logs                     |
 
 ## Time Estimates
 

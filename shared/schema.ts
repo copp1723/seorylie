@@ -39,7 +39,7 @@ export const users = pgTable(
       usernameIdx: index("username_idx").on(table.username),
       dealershipIdIdx: index("dealership_id_idx").on(table.dealershipId),
     };
-  }
+  },
 );
 
 // Dealerships
@@ -67,7 +67,7 @@ export const dealerships = pgTable(
       subdomainIdx: index("subdomain_idx").on(table.subdomain),
       nameIdx: index("name_idx").on(table.name),
     };
-  }
+  },
 );
 
 // Conversations
@@ -94,11 +94,11 @@ export const conversations = pgTable(
       dealershipIdIdx: index("dealership_id_idx").on(table.dealershipId),
       customerIdIdx: index("customer_id_idx").on(table.customerId),
       assignedAgentIdIdx: index("assigned_agent_id_idx").on(
-        table.assignedAgentId
+        table.assignedAgentId,
       ),
       lastMessageAtIdx: index("last_message_at_idx").on(table.lastMessageAt),
     };
-  }
+  },
 );
 
 // Messages
@@ -122,7 +122,7 @@ export const messages = pgTable(
       senderIdx: index("sender_idx").on(table.sender),
       senderTypeIdx: index("sender_type_idx").on(table.senderType),
     };
-  }
+  },
 );
 
 // Customers
@@ -144,11 +144,11 @@ export const customers = pgTable(
       emailIdx: index("customer_email_idx").on(table.email),
       phoneIdx: index("phone_idx").on(table.phone),
       dealershipIdIdx: index("customer_dealership_id_idx").on(
-        table.dealershipId
+        table.dealershipId,
       ),
       nameIdx: index("name_idx").on(table.firstName, table.lastName),
     };
-  }
+  },
 );
 
 // Personas
@@ -170,10 +170,10 @@ export const personas = pgTable(
     return {
       nameIdx: index("persona_name_idx").on(table.name),
       dealershipIdIdx: index("persona_dealership_id_idx").on(
-        table.dealershipId
+        table.dealershipId,
       ),
     };
-  }
+  },
 );
 
 // Persona Arguments
@@ -194,7 +194,7 @@ export const personaArguments = pgTable(
       personaIdIdx: index("persona_id_idx").on(table.personaId),
       nameIdx: index("argument_name_idx").on(table.name),
     };
-  }
+  },
 );
 
 // Leads
@@ -223,14 +223,14 @@ export const leads = pgTable(
       sourceIdx: index("source_idx").on(table.source),
       statusIdx: index("lead_status_idx").on(table.status),
       assignedAgentIdIdx: index("lead_assigned_agent_id_idx").on(
-        table.assignedAgentId
+        table.assignedAgentId,
       ),
       conversationIdIdx: index("lead_conversation_id_idx").on(
-        table.conversationId
+        table.conversationId,
       ),
       nameIdx: index("lead_name_idx").on(table.firstName, table.lastName),
     };
-  }
+  },
 );
 
 // Lead Notes
@@ -249,7 +249,7 @@ export const leadNotes = pgTable(
       leadIdIdx: index("lead_id_idx").on(table.leadId),
       userIdIdx: index("note_user_id_idx").on(table.userId),
     };
-  }
+  },
 );
 
 // Vehicles
@@ -284,12 +284,12 @@ export const vehicles = pgTable(
       vinIdx: index("vin_idx").on(table.vin),
       makeModelIdx: index("make_model_idx").on(table.make, table.model),
       dealershipIdIdx: index("vehicle_dealership_id_idx").on(
-        table.dealershipId
+        table.dealershipId,
       ),
       statusIdx: index("vehicle_status_idx").on(table.status),
       yearIdx: index("year_idx").on(table.year),
     };
-  }
+  },
 );
 
 // Lead Vehicles (junction table for leads interested in vehicles)
@@ -309,7 +309,7 @@ export const leadVehicles = pgTable(
       leadIdIdx: index("lead_vehicles_lead_id_idx").on(table.leadId),
       vehicleIdIdx: index("lead_vehicles_vehicle_id_idx").on(table.vehicleId),
     };
-  }
+  },
 );
 
 // API Keys
@@ -335,7 +335,7 @@ export const apiKeys = pgTable(
       dealershipIdIdx: index("api_dealership_id_idx").on(table.dealershipId),
       isActiveIdx: index("is_active_idx").on(table.isActive),
     };
-  }
+  },
 );
 
 // Audit Logs
@@ -362,7 +362,7 @@ export const auditLogs = pgTable(
       dealershipIdIdx: index("audit_dealership_id_idx").on(table.dealershipId),
       createdAtIdx: index("audit_created_at_idx").on(table.createdAt),
     };
-  }
+  },
 );
 
 // Settings
@@ -383,7 +383,7 @@ export const settings = pgTable(
       scopeIdx: index("scope_idx").on(table.scope, table.scopeId),
       uniqueKey: unique("unique_key").on(table.key, table.scope, table.scopeId),
     };
-  }
+  },
 );
 
 // SMS Messages
@@ -413,11 +413,11 @@ export const smsMessages = pgTable(
       statusIdx: index("sms_status_idx").on(table.status),
       externalIdIdx: index("external_id_idx").on(table.externalId),
       conversationIdIdx: index("sms_conversation_id_idx").on(
-        table.conversationId
+        table.conversationId,
       ),
       dealershipIdIdx: index("sms_dealership_id_idx").on(table.dealershipId),
     };
-  }
+  },
 );
 
 // Email Messages
@@ -450,11 +450,11 @@ export const emailMessages = pgTable(
       statusIdx: index("email_status_idx").on(table.status),
       externalIdIdx: index("email_external_id_idx").on(table.externalId),
       conversationIdIdx: index("email_conversation_id_idx").on(
-        table.conversationId
+        table.conversationId,
       ),
       dealershipIdIdx: index("email_dealership_id_idx").on(table.dealershipId),
     };
-  }
+  },
 );
 
 // JWT Tokens
@@ -475,7 +475,7 @@ export const jwtTokens = pgTable(
       isRevokedIdx: index("is_revoked_idx").on(table.isRevoked),
       expiresAtIdx: index("expires_at_idx").on(table.expiresAt),
     };
-  }
+  },
 );
 
 // Prompt Templates
@@ -501,11 +501,11 @@ export const promptTemplates = pgTable(
       nameIdx: index("template_name_idx").on(table.name),
       templateTypeIdx: index("template_type_idx").on(table.templateType),
       dealershipIdIdx: index("template_dealership_id_idx").on(
-        table.dealershipId
+        table.dealershipId,
       ),
       createdByIdx: index("created_by_idx").on(table.createdBy),
     };
-  }
+  },
 );
 
 // Opt Out Records
@@ -529,12 +529,12 @@ export const optOutRecords = pgTable(
       phoneIdx: index("opt_out_phone_idx").on(table.phone),
       emailIdx: index("opt_out_email_idx").on(table.email),
       dealershipIdIdx: index("opt_out_dealership_id_idx").on(
-        table.dealershipId
+        table.dealershipId,
       ),
       channelIdx: index("channel_idx").on(table.channel),
       statusIdx: index("opt_out_status_idx").on(table.status),
     };
-  }
+  },
 );
 
 // Vehicle Lifecycle Events
@@ -562,10 +562,10 @@ export const vehicleLifecycleEvents = pgTable(
       leadIdIdx: index("lifecycle_lead_id_idx").on(table.leadId),
       customerIdIdx: index("lifecycle_customer_id_idx").on(table.customerId),
       dealershipIdIdx: index("lifecycle_dealership_id_idx").on(
-        table.dealershipId
+        table.dealershipId,
       ),
     };
-  }
+  },
 );
 
 // Sandboxes
@@ -580,7 +580,10 @@ export const sandboxes = pgTable(
     isActive: boolean("is_active").default(true).notNull(),
     hourlyTokenLimit: integer("hourly_token_limit").default(10000),
     dailyTokenLimit: integer("daily_token_limit").default(100000),
-    dailyCostLimit: decimal("daily_cost_limit", { precision: 10, scale: 2 }).default("5.0"),
+    dailyCostLimit: decimal("daily_cost_limit", {
+      precision: 10,
+      scale: 2,
+    }).default("5.0"),
     metadata: json("metadata").$type<Record<string, any>>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -590,11 +593,11 @@ export const sandboxes = pgTable(
       nameIdx: index("sandbox_name_idx").on(table.name),
       createdByIdx: index("sandbox_created_by_idx").on(table.createdBy),
       dealershipIdIdx: index("sandbox_dealership_id_idx").on(
-        table.dealershipId
+        table.dealershipId,
       ),
       isActiveIdx: index("sandbox_is_active_idx").on(table.isActive),
     };
-  }
+  },
 );
 
 // Sandbox Sessions
@@ -620,7 +623,7 @@ export const sandboxSessions = pgTable(
       statusIdx: index("session_status_idx").on(table.status),
       startedAtIdx: index("started_at_idx").on(table.startedAt),
     };
-  }
+  },
 );
 
 // Token Usage Logs
@@ -650,10 +653,10 @@ export const tokenUsageLogs = pgTable(
       // Composite index for querying hourly usage
       hourlyUsageIdx: index("hourly_usage_idx").on(
         table.sandboxId,
-        table.createdAt
+        table.createdAt,
       ),
     };
-  }
+  },
 );
 
 // Tools Registry
@@ -679,7 +682,7 @@ export const tools = pgTable(
       typeIdx: index("tool_type_idx").on(table.type),
       isActiveIdx: index("tool_is_active_idx").on(table.isActive),
     };
-  }
+  },
 );
 
 // Agent Tools (junction table)
@@ -700,10 +703,10 @@ export const agentTools = pgTable(
       toolIdIdx: index("tool_id_idx").on(table.toolId),
       uniqueAgentTool: unique("unique_agent_tool").on(
         table.agentId,
-        table.toolId
+        table.toolId,
       ),
     };
-  }
+  },
 );
 
 // Google Ads Accounts
@@ -735,7 +738,7 @@ export const gadsAccounts = pgTable(
       isActiveIdx: index("gads_is_active_idx").on(table.isActive),
       uniqueCid: unique("unique_cid").on(table.cid, table.dealershipId),
     };
-  }
+  },
 );
 
 // Google Ads Campaigns
@@ -746,7 +749,9 @@ export const gadsCampaigns = pgTable(
     gadsAccountId: integer("gads_account_id").notNull(),
     campaignId: varchar("campaign_id", { length: 50 }),
     campaignName: varchar("campaign_name", { length: 255 }).notNull(),
-    campaignType: varchar("campaign_type", { length: 50 }).default("SEARCH").notNull(),
+    campaignType: varchar("campaign_type", { length: 50 })
+      .default("SEARCH")
+      .notNull(),
     status: varchar("status", { length: 20 }).default("ENABLED").notNull(),
     budgetAmount: decimal("budget_amount", { precision: 10, scale: 2 }),
     isDryRun: boolean("is_dry_run").default(false).notNull(),
@@ -764,7 +769,7 @@ export const gadsCampaigns = pgTable(
       isDryRunIdx: index("is_dry_run_idx").on(table.isDryRun),
       createdByAgentIdx: index("created_by_agent_idx").on(table.createdByAgent),
     };
-  }
+  },
 );
 
 // Daily Spend Logs
@@ -779,7 +784,9 @@ export const dailySpendLogs = pgTable(
     impressions: integer("impressions").default(0),
     clicks: integer("clicks").default(0),
     costMicros: integer("cost_micros").default(0),
-    conversions: decimal("conversions", { precision: 10, scale: 2 }).default("0"),
+    conversions: decimal("conversions", { precision: 10, scale: 2 }).default(
+      "0",
+    ),
     conversionValueMicros: integer("conversion_value_micros").default(0),
     ctr: decimal("ctr", { precision: 5, scale: 4 }).default("0"),
     cpcMicros: integer("cpc_micros").default(0),
@@ -795,9 +802,13 @@ export const dailySpendLogs = pgTable(
       cidDateIdx: index("daily_spend_logs_cid_date").on(table.cid, table.date),
       dateIdx: index("daily_spend_logs_date").on(table.date),
       campaignIdIdx: index("daily_spend_logs_campaign_id").on(table.campaignId),
-      uniqueLog: unique("uq_daily_spend_logs_cid_campaign_date").on(table.cid, table.campaignId, table.date),
+      uniqueLog: unique("uq_daily_spend_logs_cid_campaign_date").on(
+        table.cid,
+        table.campaignId,
+        table.date,
+      ),
     };
-  }
+  },
 );
 
 // Magic Link Invitations
@@ -817,11 +828,13 @@ export const magicLinkInvitations = pgTable(
   },
   (table) => {
     return {
-      dealershipIdIdx: index("magic_link_dealership_id_idx").on(table.dealershipId),
+      dealershipIdIdx: index("magic_link_dealership_id_idx").on(
+        table.dealershipId,
+      ),
       tokenIdx: index("magic_link_token_idx").on(table.token),
       emailIdx: index("magic_link_email_idx").on(table.email),
     };
-  }
+  },
 );
 
 // Sessions
@@ -836,30 +849,24 @@ export const sessions = pgTable(
     return {
       expireIdx: index("sessions_expire_idx").on(table.expire),
     };
-  }
+  },
 );
 
 // Report Schedules
-export const reportSchedules = pgTable(
-  "report_schedules",
-  {
-    id: serial("id").primaryKey(),
-    active: boolean("active").default(true).notNull(),
-  }
-);
+export const reportSchedules = pgTable("report_schedules", {
+  id: serial("id").primaryKey(),
+  active: boolean("active").default(true).notNull(),
+});
 
 // User Roles
-export const userRoles = pgTable(
-  "user_roles",
-  {
-    id: serial("id").primaryKey(),
-    name: varchar("name", { length: 50 }).notNull(),
-    description: text("description"),
-    permissions: json("permissions").$type<string[]>(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  }
-);
+export const userRoles = pgTable("user_roles", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+  description: text("description"),
+  permissions: json("permissions").$type<string[]>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 // Dealership Variables
 export const dealershipVariables = pgTable(
@@ -876,10 +883,12 @@ export const dealershipVariables = pgTable(
   },
   (table) => {
     return {
-      dealershipIdIdx: index("dealership_variables_dealership_id_idx").on(table.dealershipId),
+      dealershipIdIdx: index("dealership_variables_dealership_id_idx").on(
+        table.dealershipId,
+      ),
       keyIdx: index("dealership_variables_key_idx").on(table.key),
     };
-  }
+  },
 );
 
 // A/B Testing Tables
@@ -897,7 +906,10 @@ export const promptExperiments = pgTable(
     status: varchar("status", { length: 20 }).default("draft").notNull(),
     primaryMetric: varchar("primary_metric", { length: 100 }).notNull(),
     secondaryMetrics: json("secondary_metrics").$type<string[]>(),
-    confidenceLevel: decimal("confidence_level", { precision: 3, scale: 2 }).default("0.95"),
+    confidenceLevel: decimal("confidence_level", {
+      precision: 3,
+      scale: 2,
+    }).default("0.95"),
     minimumSampleSize: integer("minimum_sample_size").default(100),
     results: json("results").$type<Record<string, any>>(),
     winnerVariantId: integer("winner_variant_id"),
@@ -906,10 +918,12 @@ export const promptExperiments = pgTable(
   },
   (table) => {
     return {
-      dealershipIdIdx: index("prompt_experiments_dealership_id_idx").on(table.dealershipId),
+      dealershipIdIdx: index("prompt_experiments_dealership_id_idx").on(
+        table.dealershipId,
+      ),
       statusIdx: index("prompt_experiments_status_idx").on(table.status),
     };
-  }
+  },
 );
 
 export const promptVariants = pgTable(
@@ -930,9 +944,11 @@ export const promptVariants = pgTable(
   (table) => {
     return {
       nameIdx: index("prompt_variants_name_idx").on(table.name),
-      dealershipIdIdx: index("prompt_variants_dealership_id_idx").on(table.dealershipId),
+      dealershipIdIdx: index("prompt_variants_dealership_id_idx").on(
+        table.dealershipId,
+      ),
     };
-  }
+  },
 );
 
 export const experimentVariants = pgTable(
@@ -948,15 +964,22 @@ export const experimentVariants = pgTable(
     totalMessages: integer("total_messages").default(0).notNull(),
     avgResponseTimeMs: integer("avg_response_time_ms"),
     handoverRate: decimal("handover_rate", { precision: 5, scale: 4 }),
-    customerSatisfaction: decimal("customer_satisfaction", { precision: 3, scale: 2 }),
+    customerSatisfaction: decimal("customer_satisfaction", {
+      precision: 3,
+      scale: 2,
+    }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => {
     return {
-      experimentIdIdx: index("experiment_variants_experiment_id_idx").on(table.experimentId),
-      personaIdIdx: index("experiment_variants_persona_id_idx").on(table.personaId),
+      experimentIdIdx: index("experiment_variants_experiment_id_idx").on(
+        table.experimentId,
+      ),
+      personaIdIdx: index("experiment_variants_persona_id_idx").on(
+        table.personaId,
+      ),
     };
-  }
+  },
 );
 
 export const promptMetrics = pgTable(
@@ -972,10 +995,12 @@ export const promptMetrics = pgTable(
   (table) => {
     return {
       variantIdIdx: index("prompt_metrics_variant_id_idx").on(table.variantId),
-      metricNameIdx: index("prompt_metrics_metric_name_idx").on(table.metricName),
+      metricNameIdx: index("prompt_metrics_metric_name_idx").on(
+        table.metricName,
+      ),
       timestampIdx: index("prompt_metrics_timestamp_idx").on(table.timestamp),
     };
-  }
+  },
 );
 
 // Webhook and Monitoring Tables
@@ -1003,12 +1028,16 @@ export const webhookDeliveryLogs = pgTable(
   },
   (table) => {
     return {
-      webhookIdIdx: index("webhook_delivery_logs_webhook_id_idx").on(table.webhookId),
+      webhookIdIdx: index("webhook_delivery_logs_webhook_id_idx").on(
+        table.webhookId,
+      ),
       eventIdIdx: index("webhook_delivery_logs_event_id_idx").on(table.eventId),
       statusIdx: index("webhook_delivery_logs_status_idx").on(table.status),
-      timestampIdx: index("webhook_delivery_logs_timestamp_idx").on(table.timestamp),
+      timestampIdx: index("webhook_delivery_logs_timestamp_idx").on(
+        table.timestamp,
+      ),
     };
-  }
+  },
 );
 
 export const webhookEvents = pgTable(
@@ -1027,7 +1056,7 @@ export const webhookEvents = pgTable(
       sourceIdx: index("webhook_events_source_idx").on(table.source),
       createdAtIdx: index("webhook_events_created_at_idx").on(table.createdAt),
     };
-  }
+  },
 );
 
 export const adsSpendLogs = pgTable(
@@ -1048,7 +1077,7 @@ export const adsSpendLogs = pgTable(
       dateIdx: index("ads_spend_logs_date_idx").on(table.date),
       sourceIdx: index("ads_spend_logs_source_idx").on(table.source),
     };
-  }
+  },
 );
 
 export const systemDiagnostics = pgTable(
@@ -1064,11 +1093,15 @@ export const systemDiagnostics = pgTable(
   },
   (table) => {
     return {
-      componentIdx: index("system_diagnostics_component_idx").on(table.component),
+      componentIdx: index("system_diagnostics_component_idx").on(
+        table.component,
+      ),
       statusIdx: index("system_diagnostics_status_idx").on(table.status),
-      timestampIdx: index("system_diagnostics_timestamp_idx").on(table.timestamp),
+      timestampIdx: index("system_diagnostics_timestamp_idx").on(
+        table.timestamp,
+      ),
     };
-  }
+  },
 );
 
 // Relations
@@ -1125,7 +1158,7 @@ export const conversationsRelations = relations(
     messages: many(messages),
     smsMessages: many(smsMessages),
     emailMessages: many(emailMessages),
-  })
+  }),
 );
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -1159,7 +1192,7 @@ export const personaArgumentsRelations = relations(
       fields: [personaArguments.personaId],
       references: [personas.id],
     }),
-  })
+  }),
 );
 
 export const leadsRelations = relations(leads, ({ one, many }) => ({
@@ -1273,7 +1306,7 @@ export const promptTemplatesRelations = relations(
       fields: [promptTemplates.createdBy],
       references: [users.id],
     }),
-  })
+  }),
 );
 
 export const optOutRecordsRelations = relations(optOutRecords, ({ one }) => ({
@@ -1306,7 +1339,7 @@ export const vehicleLifecycleEventsRelations = relations(
       fields: [vehicleLifecycleEvents.dealershipId],
       references: [dealerships.id],
     }),
-  })
+  }),
 );
 
 export const sandboxesRelations = relations(sandboxes, ({ one, many }) => ({
@@ -1335,7 +1368,7 @@ export const sandboxSessionsRelations = relations(
       references: [users.id],
     }),
     usageLogs: many(tokenUsageLogs),
-  })
+  }),
 );
 
 export const tokenUsageLogsRelations = relations(tokenUsageLogs, ({ one }) => ({
@@ -1364,22 +1397,25 @@ export const agentToolsRelations = relations(agentTools, ({ one }) => ({
   }),
 }));
 
-export const gadsAccountsRelations = relations(gadsAccounts, ({ one, many }) => ({
-  sandbox: one(sandboxes, {
-    fields: [gadsAccounts.sandboxId],
-    references: [sandboxes.id],
+export const gadsAccountsRelations = relations(
+  gadsAccounts,
+  ({ one, many }) => ({
+    sandbox: one(sandboxes, {
+      fields: [gadsAccounts.sandboxId],
+      references: [sandboxes.id],
+    }),
+    user: one(users, {
+      fields: [gadsAccounts.userId],
+      references: [users.id],
+    }),
+    dealership: one(dealerships, {
+      fields: [gadsAccounts.dealershipId],
+      references: [dealerships.id],
+    }),
+    campaigns: many(gadsCampaigns),
+    dailySpendLogs: many(dailySpendLogs, { relationName: "accountSpendLogs" }),
   }),
-  user: one(users, {
-    fields: [gadsAccounts.userId],
-    references: [users.id],
-  }),
-  dealership: one(dealerships, {
-    fields: [gadsAccounts.dealershipId],
-    references: [dealerships.id],
-  }),
-  campaigns: many(gadsCampaigns),
-  dailySpendLogs: many(dailySpendLogs, { relationName: "accountSpendLogs" }),
-}));
+);
 
 export const gadsCampaignsRelations = relations(gadsCampaigns, ({ one }) => ({
   account: one(gadsAccounts, {
@@ -1392,39 +1428,48 @@ export const dailySpendLogsRelations = relations(dailySpendLogs, ({ one }) => ({
   account: one(gadsAccounts, {
     fields: [dailySpendLogs.cid],
     references: [gadsAccounts.cid],
-    relationName: "accountSpendLogs"
+    relationName: "accountSpendLogs",
   }),
 }));
 
 // A/B Testing Relations
-export const promptExperimentsRelations = relations(promptExperiments, ({ one, many }) => ({
-  dealership: one(dealerships, {
-    fields: [promptExperiments.dealershipId],
-    references: [dealerships.id],
+export const promptExperimentsRelations = relations(
+  promptExperiments,
+  ({ one, many }) => ({
+    dealership: one(dealerships, {
+      fields: [promptExperiments.dealershipId],
+      references: [dealerships.id],
+    }),
+    variants: many(experimentVariants),
   }),
-  variants: many(experimentVariants),
-}));
+);
 
-export const promptVariantsRelations = relations(promptVariants, ({ one, many }) => ({
-  dealership: one(dealerships, {
-    fields: [promptVariants.dealershipId],
-    references: [dealerships.id],
+export const promptVariantsRelations = relations(
+  promptVariants,
+  ({ one, many }) => ({
+    dealership: one(dealerships, {
+      fields: [promptVariants.dealershipId],
+      references: [dealerships.id],
+    }),
+    experimentVariants: many(experimentVariants),
+    metrics: many(promptMetrics),
   }),
-  experimentVariants: many(experimentVariants),
-  metrics: many(promptMetrics),
-}));
+);
 
-export const experimentVariantsRelations = relations(experimentVariants, ({ one, many }) => ({
-  experiment: one(promptExperiments, {
-    fields: [experimentVariants.experimentId],
-    references: [promptExperiments.id],
+export const experimentVariantsRelations = relations(
+  experimentVariants,
+  ({ one, many }) => ({
+    experiment: one(promptExperiments, {
+      fields: [experimentVariants.experimentId],
+      references: [promptExperiments.id],
+    }),
+    persona: one(personas, {
+      fields: [experimentVariants.personaId],
+      references: [personas.id],
+    }),
+    metrics: many(promptMetrics),
   }),
-  persona: one(personas, {
-    fields: [experimentVariants.personaId],
-    references: [personas.id],
-  }),
-  metrics: many(promptMetrics),
-}));
+);
 
 export const promptMetricsRelations = relations(promptMetrics, ({ one }) => ({
   variant: one(promptVariants, {
@@ -1492,10 +1537,10 @@ export const insertOptOutRecordSchema = createInsertSchema(optOutRecords);
 export const selectOptOutRecordSchema = createSelectSchema(optOutRecords);
 
 export const insertVehicleLifecycleEventSchema = createInsertSchema(
-  vehicleLifecycleEvents
+  vehicleLifecycleEvents,
 );
 export const selectVehicleLifecycleEventSchema = createSelectSchema(
-  vehicleLifecycleEvents
+  vehicleLifecycleEvents,
 );
 
 export const insertSandboxSchema = createInsertSchema(sandboxes);
@@ -1522,8 +1567,10 @@ export const selectGadsCampaignSchema = createSelectSchema(gadsCampaigns);
 export const insertDailySpendLogSchema = createInsertSchema(dailySpendLogs);
 export const selectDailySpendLogSchema = createSelectSchema(dailySpendLogs);
 
-export const insertMagicLinkInvitationSchema = createInsertSchema(magicLinkInvitations);
-export const selectMagicLinkInvitationSchema = createSelectSchema(magicLinkInvitations);
+export const insertMagicLinkInvitationSchema =
+  createInsertSchema(magicLinkInvitations);
+export const selectMagicLinkInvitationSchema =
+  createSelectSchema(magicLinkInvitations);
 
 export const insertSessionSchema = createInsertSchema(sessions);
 export const selectSessionSchema = createSelectSchema(sessions);
@@ -1534,23 +1581,31 @@ export const selectReportScheduleSchema = createSelectSchema(reportSchedules);
 export const insertUserRoleSchema = createInsertSchema(userRoles);
 export const selectUserRoleSchema = createSelectSchema(userRoles);
 
-export const insertDealershipVariableSchema = createInsertSchema(dealershipVariables);
-export const selectDealershipVariableSchema = createSelectSchema(dealershipVariables);
+export const insertDealershipVariableSchema =
+  createInsertSchema(dealershipVariables);
+export const selectDealershipVariableSchema =
+  createSelectSchema(dealershipVariables);
 
-export const insertPromptExperimentSchema = createInsertSchema(promptExperiments);
-export const selectPromptExperimentSchema = createSelectSchema(promptExperiments);
+export const insertPromptExperimentSchema =
+  createInsertSchema(promptExperiments);
+export const selectPromptExperimentSchema =
+  createSelectSchema(promptExperiments);
 
 export const insertPromptVariantSchema = createInsertSchema(promptVariants);
 export const selectPromptVariantSchema = createSelectSchema(promptVariants);
 
-export const insertExperimentVariantSchema = createInsertSchema(experimentVariants);
-export const selectExperimentVariantSchema = createSelectSchema(experimentVariants);
+export const insertExperimentVariantSchema =
+  createInsertSchema(experimentVariants);
+export const selectExperimentVariantSchema =
+  createSelectSchema(experimentVariants);
 
 export const insertPromptMetricSchema = createInsertSchema(promptMetrics);
 export const selectPromptMetricSchema = createSelectSchema(promptMetrics);
 
-export const insertWebhookDeliveryLogSchema = createInsertSchema(webhookDeliveryLogs);
-export const selectWebhookDeliveryLogSchema = createSelectSchema(webhookDeliveryLogs);
+export const insertWebhookDeliveryLogSchema =
+  createInsertSchema(webhookDeliveryLogs);
+export const selectWebhookDeliveryLogSchema =
+  createSelectSchema(webhookDeliveryLogs);
 
 export const insertWebhookEventSchema = createInsertSchema(webhookEvents);
 export const selectWebhookEventSchema = createSelectSchema(webhookEvents);
@@ -1558,8 +1613,10 @@ export const selectWebhookEventSchema = createSelectSchema(webhookEvents);
 export const insertAdsSpendLogSchema = createInsertSchema(adsSpendLogs);
 export const selectAdsSpendLogSchema = createSelectSchema(adsSpendLogs);
 
-export const insertSystemDiagnosticSchema = createInsertSchema(systemDiagnostics);
-export const selectSystemDiagnosticSchema = createSelectSchema(systemDiagnostics);
+export const insertSystemDiagnosticSchema =
+  createInsertSchema(systemDiagnostics);
+export const selectSystemDiagnosticSchema =
+  createSelectSchema(systemDiagnostics);
 
 // Custom Zod Schemas
 export const userSchema = z.object({
@@ -2130,9 +2187,7 @@ export type EmailMessage = z.infer<typeof emailMessageSchema>;
 export type JwtToken = z.infer<typeof jwtTokenSchema>;
 export type PromptTemplate = z.infer<typeof promptTemplateSchema>;
 export type OptOutRecord = z.infer<typeof optOutRecordSchema>;
-export type VehicleLifecycleEvent = z.infer<
-  typeof vehicleLifecycleEventSchema
->;
+export type VehicleLifecycleEvent = z.infer<typeof vehicleLifecycleEventSchema>;
 export type Sandbox = z.infer<typeof sandboxSchema>;
 export type SandboxSession = z.infer<typeof sandboxSessionSchema>;
 export type TokenUsageLog = z.infer<typeof tokenUsageLogSchema>;
@@ -2148,8 +2203,8 @@ export type UserRole = z.infer<typeof userRoleSchema>;
 export type DealershipVariable = z.infer<typeof dealershipVariableSchema>;
 
 // Export dealership mode enum
-export const dealershipModes = ['rylie_ai', 'human_only', 'hybrid'] as const;
-export type DealershipMode = typeof dealershipModes[number];
+export const dealershipModes = ["rylie_ai", "human_only", "hybrid"] as const;
+export type DealershipMode = (typeof dealershipModes)[number];
 export type PromptExperiment = z.infer<typeof promptExperimentSchema>;
 export type PromptVariant = z.infer<typeof promptVariantSchema>;
 export type ExperimentVariant = z.infer<typeof experimentVariantSchema>;
@@ -2190,16 +2245,24 @@ export type NewAgentTool = z.infer<typeof insertAgentToolSchema>;
 export type NewGadsAccount = z.infer<typeof insertGadsAccountSchema>;
 export type NewGadsCampaign = z.infer<typeof insertGadsCampaignSchema>;
 export type NewDailySpendLog = z.infer<typeof insertDailySpendLogSchema>;
-export type NewMagicLinkInvitation = z.infer<typeof insertMagicLinkInvitationSchema>;
+export type NewMagicLinkInvitation = z.infer<
+  typeof insertMagicLinkInvitationSchema
+>;
 export type NewSession = z.infer<typeof insertSessionSchema>;
 export type NewReportSchedule = z.infer<typeof insertReportScheduleSchema>;
 export type NewUserRole = z.infer<typeof insertUserRoleSchema>;
-export type NewDealershipVariable = z.infer<typeof insertDealershipVariableSchema>;
+export type NewDealershipVariable = z.infer<
+  typeof insertDealershipVariableSchema
+>;
 export type NewPromptExperiment = z.infer<typeof insertPromptExperimentSchema>;
 export type NewPromptVariant = z.infer<typeof insertPromptVariantSchema>;
-export type NewExperimentVariant = z.infer<typeof insertExperimentVariantSchema>;
+export type NewExperimentVariant = z.infer<
+  typeof insertExperimentVariantSchema
+>;
 export type NewPromptMetric = z.infer<typeof insertPromptMetricSchema>;
-export type NewWebhookDeliveryLog = z.infer<typeof insertWebhookDeliveryLogSchema>;
+export type NewWebhookDeliveryLog = z.infer<
+  typeof insertWebhookDeliveryLogSchema
+>;
 export type NewWebhookEvent = z.infer<typeof insertWebhookEventSchema>;
 export type NewAdsSpendLog = z.infer<typeof insertAdsSpendLogSchema>;
 export type NewSystemDiagnostic = z.infer<typeof insertSystemDiagnosticSchema>;

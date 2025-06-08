@@ -1,12 +1,12 @@
 /**
  * Service for user management and invitations
  */
-import { db } from '../db';
-import { users } from '../../shared/schema';
-import { dealerships } from '../../shared/enhanced-schema';
-import { eq, and, gte } from 'drizzle-orm';
-import { sendEmail } from './email-service';
-import { randomBytes } from 'crypto';
+import { db } from "../db";
+import { users } from "../../shared/schema";
+import { dealerships } from "../../shared/enhanced-schema";
+import { eq, and, gte } from "drizzle-orm";
+import { sendEmail } from "./email-service";
+import { randomBytes } from "crypto";
 
 // Temporary interfaces until schema-extensions is fixed
 interface UserInvitation {
@@ -34,26 +34,26 @@ interface AuditLog {
 
 // Temporary table objects
 const userInvitations = {
-  id: 'id',
-  email: 'email',
-  role: 'role',
-  dealershipId: 'dealershipId',
-  invitedBy: 'invitedBy',
-  token: 'token',
-  expiresAt: 'expiresAt',
-  status: 'status'
+  id: "id",
+  email: "email",
+  role: "role",
+  dealershipId: "dealershipId",
+  invitedBy: "invitedBy",
+  token: "token",
+  expiresAt: "expiresAt",
+  status: "status",
 };
 
 const auditLogs = {
-  id: 'id',
-  userId: 'userId',
-  dealershipId: 'dealershipId',
-  action: 'action',
-  resourceType: 'resourceType',
-  resourceId: 'resourceId',
-  details: 'details',
-  ipAddress: 'ipAddress',
-  createdAt: 'createdAt'
+  id: "id",
+  userId: "userId",
+  dealershipId: "dealershipId",
+  action: "action",
+  resourceType: "resourceType",
+  resourceId: "resourceId",
+  details: "details",
+  ipAddress: "ipAddress",
+  createdAt: "createdAt",
 };
 
 /**
@@ -63,7 +63,7 @@ export async function createUserInvitation({
   email,
   role,
   dealershipId,
-  invitedBy
+  invitedBy,
 }: {
   email: string;
   role: string;
@@ -71,49 +71,58 @@ export async function createUserInvitation({
   invitedBy: number;
 }) {
   // Generate a secure token
-  const token = randomBytes(32).toString('hex');
+  const token = randomBytes(32).toString("hex");
 
   // Set expiration to 7 days from now
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
   // Create invitation record
-  const [invitation] = await db.insert(userInvitations).values({
-    email,
-    role,
-    dealershipId,
-    invitedBy,
-    token,
-    expiresAt,
-    status: 'pending'
-  }).returning();
+  const [invitation] = await db
+    .insert(userInvitations)
+    .values({
+      email,
+      role,
+      dealershipId,
+      invitedBy,
+      token,
+      expiresAt,
+      status: "pending",
+    })
+    .returning();
 
   // Log the action
   await logAuditEvent({
     userId: invitedBy,
     dealershipId,
-    action: 'create_invitation',
-    resourceType: 'user_invitation',
+    action: "create_invitation",
+    resourceType: "user_invitation",
     resourceId: invitation.id,
-    details: { email, role }
+    details: { email, role },
   });
 
   // Send invitation email
   const inviteUrl = `${process.env.APP_URL}/accept-invitation?token=${token}`;
 
   // Get inviter's name
-  const [inviter] = await db.select().from(users).where(eq(users.id, invitedBy));
+  const [inviter] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, invitedBy));
   if (!inviter) {
-    throw new Error('Inviter user not found');
+    throw new Error("Inviter user not found");
   }
-  const inviterName = inviter.name || 'A dealership administrator';
+  const inviterName = inviter.name || "A dealership administrator";
 
   // Get dealership name
-  const [dealership] = await db.select().from(dealerships).where(eq(dealerships.id, dealershipId));
+  const [dealership] = await db
+    .select()
+    .from(dealerships)
+    .where(eq(dealerships.id, dealershipId));
   if (!dealership) {
-    throw new Error('Dealership not found');
+    throw new Error("Dealership not found");
   }
-  const dealershipName = dealership.name || 'our dealership';
+  const dealershipName = dealership.name || "our dealership";
 
   await sendEmail({
     to: email,
@@ -136,7 +145,7 @@ export async function createUserInvitation({
         </p>
         <p style="color: #666; font-size: 14px;">This invitation will expire in 7 days.</p>
       </div>
-    `
+    `,
   });
 
   return invitation;
@@ -145,37 +154,48 @@ export async function createUserInvitation({
 /**
  * Verify and accept a user invitation
  */
-export async function acceptUserInvitation(token: string, userData: {
-  name: string;
-  password: string;
-}) {
+export async function acceptUserInvitation(
+  token: string,
+  userData: {
+    name: string;
+    password: string;
+  },
+) {
   // Find the invitation
-  const [invitation] = await db.select().from(userInvitations)
-    .where(and(
-      eq(userInvitations.token, token),
-      eq(userInvitations.status, 'pending'),
-      gte(userInvitations.expiresAt, new Date())
-    ));
+  const [invitation] = await db
+    .select()
+    .from(userInvitations)
+    .where(
+      and(
+        eq(userInvitations.token, token),
+        eq(userInvitations.status, "pending"),
+        gte(userInvitations.expiresAt, new Date()),
+      ),
+    );
 
   if (!invitation) {
-    throw new Error('Invalid or expired invitation');
+    throw new Error("Invalid or expired invitation");
   }
 
   // Create the user
-  const [user] = await db.insert(users).values({
-    email: invitation.email,
-    name: userData.name,
-    password: await hashPassword(userData.password),
-    role: invitation.role,
-    dealership_id: invitation.dealershipId,
-    is_verified: true
-  }).returning();
+  const [user] = await db
+    .insert(users)
+    .values({
+      email: invitation.email,
+      name: userData.name,
+      password: await hashPassword(userData.password),
+      role: invitation.role,
+      dealership_id: invitation.dealershipId,
+      is_verified: true,
+    })
+    .returning();
 
   // Update invitation status
-  await db.update(userInvitations)
+  await db
+    .update(userInvitations)
     .set({
-      status: 'accepted',
-      updatedAt: new Date()
+      status: "accepted",
+      updatedAt: new Date(),
     })
     .where(eq(userInvitations.id, invitation.id));
 
@@ -183,10 +203,10 @@ export async function acceptUserInvitation(token: string, userData: {
   await logAuditEvent({
     userId: user.id,
     dealershipId: invitation.dealershipId,
-    action: 'accept_invitation',
-    resourceType: 'user',
+    action: "accept_invitation",
+    resourceType: "user",
     resourceId: user.id,
-    details: { invitationId: invitation.id }
+    details: { invitationId: invitation.id },
   });
 
   return user;
@@ -196,21 +216,29 @@ export async function acceptUserInvitation(token: string, userData: {
  * Get pending invitations for a dealership
  */
 export async function getPendingInvitations(dealershipId: number) {
-  return db.select().from(userInvitations)
-    .where(and(
-      eq(userInvitations.dealershipId, dealershipId),
-      eq(userInvitations.status, 'pending')
-    ));
+  return db
+    .select()
+    .from(userInvitations)
+    .where(
+      and(
+        eq(userInvitations.dealershipId, dealershipId),
+        eq(userInvitations.status, "pending"),
+      ),
+    );
 }
 
 /**
  * Cancel a pending invitation
  */
-export async function cancelInvitation(invitationId: number, cancelledBy: number) {
-  const [invitation] = await db.update(userInvitations)
+export async function cancelInvitation(
+  invitationId: number,
+  cancelledBy: number,
+) {
+  const [invitation] = await db
+    .update(userInvitations)
     .set({
-      status: 'cancelled',
-      updatedAt: new Date()
+      status: "cancelled",
+      updatedAt: new Date(),
     })
     .where(eq(userInvitations.id, invitationId))
     .returning();
@@ -220,10 +248,10 @@ export async function cancelInvitation(invitationId: number, cancelledBy: number
     await logAuditEvent({
       userId: cancelledBy,
       dealershipId: invitation.dealershipId,
-      action: 'cancel_invitation',
-      resourceType: 'user_invitation',
+      action: "cancel_invitation",
+      resourceType: "user_invitation",
       resourceId: invitation.id,
-      details: { email: invitation.email }
+      details: { email: invitation.email },
     });
   }
 
@@ -240,7 +268,7 @@ export async function logAuditEvent({
   resourceType,
   resourceId,
   details,
-  ipAddress
+  ipAddress,
 }: {
   userId?: number;
   dealershipId?: number;
@@ -257,7 +285,7 @@ export async function logAuditEvent({
     resourceType,
     resourceId,
     details: details || {},
-    ipAddress
+    ipAddress,
   });
 }
 
@@ -265,7 +293,9 @@ export async function logAuditEvent({
  * Get audit logs for a dealership
  */
 export async function getAuditLogs(dealershipId: number, limit: number = 100) {
-  return db.select().from(auditLogs)
+  return db
+    .select()
+    .from(auditLogs)
     .where(eq(auditLogs.dealershipId, dealershipId))
     .orderBy(auditLogs.createdAt)
     .limit(limit);

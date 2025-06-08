@@ -7,29 +7,35 @@ This approach lets you **gradually migrate** to SendGrid webhooks **without brea
 ## 🎯 **Step-by-Step Implementation**
 
 ### **Step 1: Install SendGrid Dependencies**
+
 ```bash
 npm install @sendgrid/mail @sendgrid/webhook
 ```
 
 ### **Step 2: Run Migration Setup Script**
+
 ```bash
 npm run setup:sendgrid
 ```
 
 This interactive script will:
+
 - ✅ Gather SendGrid API key and webhook settings
 - ✅ Update your `.env` file safely
 - ✅ Generate migration plan and checklist
 - ✅ Provide DNS configuration instructions
 
-### **Step 3: Add Webhook Route to Server** 
+### **Step 3: Add Webhook Route to Server**
+
 Add to your `server/index.ts`:
+
 ```typescript
-import sendgridRoutes from './routes/sendgrid-webhook-routes';
-app.use('/api/sendgrid', sendgridRoutes);
+import sendgridRoutes from "./routes/sendgrid-webhook-routes";
+app.use("/api/sendgrid", sendgridRoutes);
 ```
 
 ### **Step 4: Test the Webhook (Safe Testing)**
+
 ```bash
 # Start your server
 npm run dev
@@ -48,38 +54,46 @@ curl http://localhost:5000/api/sendgrid/health
 ## 🔧 **Migration Modes**
 
 ### **Mode 1: Test Mode (Start Here)**
+
 ```env
 SENDGRID_WEBHOOK_ENABLED=true
 EMAIL_PROCESSOR=legacy
 LEGACY_EMAIL_ENABLED=true
 ```
+
 - ✅ Webhook endpoint active for testing
 - ✅ All production emails still use legacy system
 - ✅ Zero risk to production
 
 ### **Mode 2: Parallel Mode (Comparison)**
+
 ```env
 EMAIL_PROCESSOR=both
 EMAIL_COMPARISON_MODE=true
 ```
+
 - ✅ Both systems process emails
 - ✅ Compare results for validation
 - ✅ Identify any differences
 
 ### **Mode 3: Gradual Mode (Per-Dealership)**
+
 ```env
 EMAIL_PROCESSOR=legacy
 DEALERSHIP_EMAIL_ROUTING={"kunes-rv-fox-valley":"sendgrid"}
 ```
+
 - ✅ Migrate one dealership at a time
 - ✅ Easy rollback if issues occur
 - ✅ Production validation
 
 ### **Mode 4: Complete Migration**
+
 ```env
 EMAIL_PROCESSOR=sendgrid
 LEGACY_EMAIL_ENABLED=false
 ```
+
 - ✅ Full SendGrid processing
 - ✅ Legacy system disabled
 
@@ -88,6 +102,7 @@ LEGACY_EMAIL_ENABLED=false
 After testing, configure SendGrid inbound parse:
 
 ### **1. Add MX Records**
+
 ```
 Host: mail.yourdomain.com
 Type: MX
@@ -96,6 +111,7 @@ Value: mx.sendgrid.net
 ```
 
 ### **2. Configure SendGrid**
+
 1. Go to SendGrid → Settings → Inbound Parse
 2. Add hostname: `mail.yourdomain.com`
 3. Set URL: `https://yourdomain.com/api/sendgrid/webhook/inbound`
@@ -105,11 +121,13 @@ Value: mx.sendgrid.net
 ## 🏢 **Per-Dealership Migration Example**
 
 **Week 1: Test with Fox Valley**
+
 ```env
 DEALERSHIP_EMAIL_ROUTING={"kunes-rv-fox-valley":"sendgrid"}
 ```
 
 **Week 2: Add Freedom RV**
+
 ```env
 DEALERSHIP_EMAIL_ROUTING={"kunes-rv-fox-valley":"sendgrid","kunes-rv-freedom":"sendgrid"}
 ```
@@ -121,18 +139,21 @@ DEALERSHIP_EMAIL_ROUTING={"kunes-rv-fox-valley":"sendgrid","kunes-rv-freedom":"s
 If any issues occur:
 
 ### **Immediate Rollback**
+
 ```env
 SENDGRID_WEBHOOK_ENABLED=false
 EMAIL_PROCESSOR=legacy
 ```
 
 ### **Per-Dealership Rollback**
+
 ```env
 # Remove problematic dealership from routing
 DEALERSHIP_EMAIL_ROUTING={"kunes-rv-fox-valley":"legacy"}
 ```
 
 ### **Full Rollback**
+
 ```env
 EMAIL_PROCESSOR=legacy
 LEGACY_EMAIL_ENABLED=true
@@ -142,6 +163,7 @@ SENDGRID_WEBHOOK_ENABLED=false
 ## 📊 **Monitoring & Validation**
 
 ### **Check Logs**
+
 ```bash
 # Watch for SendGrid webhook processing
 npm run dev
@@ -152,6 +174,7 @@ npm run dev
 ```
 
 ### **Compare Performance**
+
 ```bash
 # Enable comparison mode to validate
 EMAIL_COMPARISON_MODE=true
@@ -160,6 +183,7 @@ EMAIL_COMPARISON_MODE=true
 ```
 
 ### **Health Endpoints**
+
 ```bash
 # Overall system health
 curl http://localhost:5000/api/health
@@ -174,16 +198,19 @@ curl http://localhost:5000/api/sendgrid/routing-status
 ## 🎁 **Benefits You'll Get**
 
 ### **Immediate Processing**
+
 - ⚡ **Emails processed instantly** (vs 5+ minute delays)
 - 🔄 **No polling overhead**
 - 📈 **Better scalability**
 
 ### **Better Reliability**
+
 - 🛡️ **99.9% uptime** vs connection issues
 - 🔐 **Webhook signature security**
 - 📊 **Built-in monitoring**
 
 ### **Simplified Operations**
+
 - 🏗️ **No email server maintenance**
 - 💰 **Reduced infrastructure costs**
 - 🔧 **Easier debugging**

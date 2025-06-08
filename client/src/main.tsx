@@ -3,38 +3,38 @@ import App from "@/App";
 import "@/index.css";
 
 // Global error handling for debugging
-window.addEventListener('error', (event) => {
-  console.error('🚨 Global JavaScript Error:', {
+window.addEventListener("error", (event) => {
+  console.error("🚨 Global JavaScript Error:", {
     message: event.message,
     filename: event.filename,
     lineno: event.lineno,
     colno: event.colno,
-    error: event.error
+    error: event.error,
   });
 });
 
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('🚨 Unhandled Promise Rejection:', event.reason);
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("🚨 Unhandled Promise Rejection:", event.reason);
 });
 
 // Log when React starts mounting
-console.log('🚀 Starting React app...');
+console.log("🚀 Starting React app...");
 
 try {
   const rootElement = document.getElementById("root");
   if (!rootElement) {
-    throw new Error('Root element not found');
+    throw new Error("Root element not found");
   }
 
-  console.log('✅ Root element found, creating React root...');
+  console.log("✅ Root element found, creating React root...");
   const root = createRoot(rootElement);
 
-  console.log('✅ React root created, rendering App...');
+  console.log("✅ React root created, rendering App...");
   root.render(<App />);
 
-  console.log('✅ React app rendered successfully');
+  console.log("✅ React app rendered successfully");
 } catch (error) {
-  console.error('❌ Failed to start React app:', error);
+  console.error("❌ Failed to start React app:", error);
 
   // Fallback error display
   const rootElement = document.getElementById("root");

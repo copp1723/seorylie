@@ -1,7 +1,11 @@
-import { Router, Request, Response } from 'express';
-import swaggerUi from 'swagger-ui-express';
-import { generateOpenApiSpec, getOpenApiJson, getOpenApiYaml } from '../utils/openapi-generator';
-import logger from '../utils/logger';
+import { Router, Request, Response } from "express";
+import swaggerUi from "swagger-ui-express";
+import {
+  generateOpenApiSpec,
+  getOpenApiJson,
+  getOpenApiYaml,
+} from "../utils/openapi-generator";
+import logger from "../utils/logger";
 
 const router = Router();
 
@@ -10,17 +14,18 @@ let openApiSpec: any;
 
 try {
   openApiSpec = generateOpenApiSpec();
-  logger.info('OpenAPI specification generated successfully');
+  logger.info("OpenAPI specification generated successfully");
 } catch (error) {
-  logger.error('Failed to generate OpenAPI specification', { error });
+  logger.error("Failed to generate OpenAPI specification", { error });
   openApiSpec = {
-    openapi: '3.0.0',
+    openapi: "3.0.0",
     info: {
-      title: 'Rylie AI API',
-      version: '1.0.0',
-      description: 'API documentation generation failed. Please check server logs.'
+      title: "Rylie AI API",
+      version: "1.0.0",
+      description:
+        "API documentation generation failed. Please check server logs.",
     },
-    paths: {}
+    paths: {},
   };
 }
 
@@ -28,23 +33,23 @@ try {
 const swaggerOptions = {
   explorer: true,
   swaggerOptions: {
-    url: '/api/docs/openapi.json',
+    url: "/api/docs/openapi.json",
     persistAuthorization: true,
     displayRequestDuration: true,
     tryItOutEnabled: true,
     filter: true,
-    supportedSubmitMethods: ['get', 'post', 'put', 'patch', 'delete'],
+    supportedSubmitMethods: ["get", "post", "put", "patch", "delete"],
     defaultModelsExpandDepth: 2,
-    defaultModelExpandDepth: 2
+    defaultModelExpandDepth: 2,
   },
-  customSiteTitle: 'Rylie AI API Documentation',
+  customSiteTitle: "Rylie AI API Documentation",
   customCss: `
     .swagger-ui .topbar { display: none; }
     .swagger-ui .info { margin: 20px 0; }
     .swagger-ui .info .title { color: #1f2937; }
     .swagger-ui .scheme-container { background: #f8fafc; padding: 20px; margin: 20px 0; border-radius: 8px; }
   `,
-  customfavIcon: '/favicon.ico'
+  customfavIcon: "/favicon.ico",
 };
 
 /**
@@ -69,8 +74,8 @@ const swaggerOptions = {
  *             schema:
  *               type: string
  */
-router.use('/', swaggerUi.serve);
-router.get('/', swaggerUi.setup(openApiSpec, swaggerOptions));
+router.use("/", swaggerUi.serve);
+router.get("/", swaggerUi.setup(openApiSpec, swaggerOptions));
 
 /**
  * @swagger
@@ -87,17 +92,17 @@ router.get('/', swaggerUi.setup(openApiSpec, swaggerOptions));
  *             schema:
  *               type: object
  */
-router.get('/openapi.json', (req: Request, res: Response) => {
+router.get("/openapi.json", (req: Request, res: Response) => {
   try {
     const spec = getOpenApiJson();
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
     res.json(spec);
   } catch (error) {
-    logger.error('Failed to serve OpenAPI JSON', { error });
+    logger.error("Failed to serve OpenAPI JSON", { error });
     res.status(500).json({
       success: false,
-      error: 'Failed to generate OpenAPI specification'
+      error: "Failed to generate OpenAPI specification",
     });
   }
 });
@@ -117,18 +122,21 @@ router.get('/openapi.json', (req: Request, res: Response) => {
  *             schema:
  *               type: string
  */
-router.get('/openapi.yaml', (req: Request, res: Response) => {
+router.get("/openapi.yaml", (req: Request, res: Response) => {
   try {
     const spec = getOpenApiYaml();
-    res.setHeader('Content-Type', 'application/x-yaml');
-    res.setHeader('Content-Disposition', 'attachment; filename="rylie-api-spec.yaml"');
-    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.setHeader("Content-Type", "application/x-yaml");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="rylie-api-spec.yaml"',
+    );
+    res.setHeader("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
     res.send(spec);
   } catch (error) {
-    logger.error('Failed to serve OpenAPI YAML', { error });
+    logger.error("Failed to serve OpenAPI YAML", { error });
     res.status(500).json({
       success: false,
-      error: 'Failed to generate OpenAPI specification'
+      error: "Failed to generate OpenAPI specification",
     });
   }
 });
@@ -160,7 +168,7 @@ router.get('/openapi.yaml', (req: Request, res: Response) => {
  *                   type: string
  *                   format: date-time
  */
-router.get('/spec', (req: Request, res: Response) => {
+router.get("/spec", (req: Request, res: Response) => {
   try {
     const spec = getOpenApiJson();
     const endpointsCount = Object.keys(spec.paths || {}).length;
@@ -169,21 +177,21 @@ router.get('/spec', (req: Request, res: Response) => {
     res.json({
       success: true,
       data: {
-        version: spec.info?.version || '1.0.0',
-        title: spec.info?.title || 'Rylie AI API',
-        description: spec.info?.description || '',
+        version: spec.info?.version || "1.0.0",
+        title: spec.info?.title || "Rylie AI API",
+        description: spec.info?.description || "",
         endpointsCount,
         schemasCount,
         lastUpdated: new Date().toISOString(),
         servers: spec.servers || [],
-        tags: spec.tags || []
-      }
+        tags: spec.tags || [],
+      },
     });
   } catch (error) {
-    logger.error('Failed to get specification metadata', { error });
+    logger.error("Failed to get specification metadata", { error });
     res.status(500).json({
       success: false,
-      error: 'Failed to get specification metadata'
+      error: "Failed to get specification metadata",
     });
   }
 });
@@ -211,12 +219,12 @@ router.get('/spec', (req: Request, res: Response) => {
  *                   type: string
  *                   format: date-time
  */
-router.get('/health', (req: Request, res: Response) => {
+router.get("/health", (req: Request, res: Response) => {
   res.json({
     success: true,
-    status: 'healthy',
-    service: 'api-documentation',
-    timestamp: new Date().toISOString()
+    status: "healthy",
+    service: "api-documentation",
+    timestamp: new Date().toISOString(),
   });
 });
 

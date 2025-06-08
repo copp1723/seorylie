@@ -1,4 +1,4 @@
-import { config } from 'dotenv';
+import { config } from "dotenv";
 // Load environment variables
 config();
 
@@ -8,25 +8,29 @@ import * as schema from "../shared/index";
 import logger from "./utils/logger";
 
 // Database connection configuration
-const connectionString = process.env.DATABASE_URL || 'postgresql://localhost:5432/dev_db';
+const connectionString =
+  process.env.DATABASE_URL || "postgresql://localhost:5432/dev_db";
 
-console.log('Database configuration:', { 
+console.log("Database configuration:", {
   hasConnectionString: !!process.env.DATABASE_URL,
-  defaultUsed: !process.env.DATABASE_URL
+  defaultUsed: !process.env.DATABASE_URL,
 });
 
 // Enhanced connection configuration with pooling
 const connectionConfig = {
-  max: parseInt(process.env.DB_POOL_MAX || '20'),
-  idle_timeout: parseInt(process.env.DB_IDLE_TIMEOUT || '20'),
-  connect_timeout: parseInt(process.env.DB_CONNECT_TIMEOUT || '10'),
-  max_lifetime: parseInt(process.env.DB_MAX_LIFETIME || '3600'),
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: parseInt(process.env.DB_POOL_MAX || "20"),
+  idle_timeout: parseInt(process.env.DB_IDLE_TIMEOUT || "20"),
+  connect_timeout: parseInt(process.env.DB_CONNECT_TIMEOUT || "10"),
+  max_lifetime: parseInt(process.env.DB_MAX_LIFETIME || "3600"),
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false,
   onnotice: undefined, // Disable notices
   debug: false,
   transform: {
-    undefined: null
-  }
+    undefined: null,
+  },
 };
 
 // Create postgres client with enhanced configuration
@@ -48,39 +52,40 @@ export async function checkDatabaseConnection(): Promise<{
   latency?: number;
 }> {
   const startTime = Date.now();
-  
+
   try {
     // Test basic connectivity
-    const result = await client`SELECT version() as version, current_database() as database, current_user as user`;
+    const result =
+      await client`SELECT version() as version, current_database() as database, current_user as user`;
 
     const info = result[0];
     const latency = Date.now() - startTime;
 
-    logger.info('Database health check passed', {
+    logger.info("Database health check passed", {
       database: info.database,
       user: info.user,
-      latency: `${latency}ms`
+      latency: `${latency}ms`,
     });
 
     return {
       isHealthy: true,
-      version: info.version.split(' ')[0] + ' ' + info.version.split(' ')[1],
+      version: info.version.split(" ")[0] + " " + info.version.split(" ")[1],
       database: info.database,
       user: info.user,
-      latency
+      latency,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
-    logger.warn('Database health check failed (development mode)', {
+
+    logger.warn("Database health check failed (development mode)", {
       error: errorMessage,
-      latency: `${Date.now() - startTime}ms`
+      latency: `${Date.now() - startTime}ms`,
     });
 
     return {
       isHealthy: false,
       error: errorMessage,
-      latency: Date.now() - startTime
+      latency: Date.now() - startTime,
     };
   }
 }
@@ -88,13 +93,15 @@ export async function checkDatabaseConnection(): Promise<{
 /**
  * Test database connection with retries
  */
-export async function testDatabaseConnection(maxRetries: number = 1): Promise<boolean> {
+export async function testDatabaseConnection(
+  maxRetries: number = 1,
+): Promise<boolean> {
   try {
     const health = await checkDatabaseConnection();
     return health.isHealthy;
   } catch (error) {
-    logger.warn('Database connection test failed', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.warn("Database connection test failed", {
+      error: error instanceof Error ? error.message : String(error),
     });
     return false;
   }
@@ -105,12 +112,12 @@ export async function testDatabaseConnection(maxRetries: number = 1): Promise<bo
  */
 export async function closeDatabaseConnections(): Promise<void> {
   try {
-    logger.info('Closing database connections...');
+    logger.info("Closing database connections...");
     await client.end();
-    logger.info('Database connections closed successfully');
+    logger.info("Database connections closed successfully");
   } catch (error) {
-    logger.error('Error closing database connections', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error("Error closing database connections", {
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -123,7 +130,7 @@ export function getDatabasePoolStats() {
     maxConnections: connectionConfig.max,
     idleTimeout: connectionConfig.idle_timeout,
     connectTimeout: connectionConfig.connect_timeout,
-    maxLifetime: connectionConfig.max_lifetime
+    maxLifetime: connectionConfig.max_lifetime,
   };
 }
 

@@ -2,13 +2,13 @@
  * This script sets up the database tables needed for authentication
  * Run with: npx tsx scripts/setup-db-auth.ts
  */
-import { db } from '../server/db';
-import { sql } from 'drizzle-orm';
-import { logger } from '../server/logger';
+import { db } from "../server/db";
+import { sql } from "drizzle-orm";
+import { logger } from "../server/logger";
 
 async function setupAuthTables() {
   try {
-    logger.info('Setting up authentication database tables...');
+    logger.info("Setting up authentication database tables...");
 
     // Create sessions table if it doesn't exist (for PostgreSQL session store)
     await db.execute(sql`
@@ -21,7 +21,7 @@ async function setupAuthTables() {
       CREATE INDEX IF NOT EXISTS "IDX_sessions_expire" ON "sessions" ("expire");
     `);
 
-    logger.info('Sessions table created or verified');
+    logger.info("Sessions table created or verified");
 
     // Check if users table exists, if not create a simple one
     // Note: This is a simple check - a more robust solution would use
@@ -35,7 +35,7 @@ async function setupAuthTables() {
     `);
 
     if (!userTableExists[0].exists) {
-      logger.info('Creating users table...');
+      logger.info("Creating users table...");
 
       // Create dealerships table first (since users reference it)
       await db.execute(sql`
@@ -71,15 +71,15 @@ async function setupAuthTables() {
         );
       `);
 
-      logger.info('Users and dealerships tables created');
+      logger.info("Users and dealerships tables created");
     } else {
-      logger.info('Users table already exists');
+      logger.info("Users table already exists");
     }
 
     // Check if we have any users, if not seed test users
     const userCount = await db.execute(sql`SELECT COUNT(*) FROM "users";`);
     if (parseInt(userCount[0].count) === 0) {
-      logger.info('No users found, seeding test users...');
+      logger.info("No users found, seeding test users...");
 
       // Insert test dealership
       const dealershipResult = await db.execute(sql`
@@ -99,14 +99,14 @@ async function setupAuthTables() {
           ('luxurysales', 'password123', 'sales@luxuryauto.example', 'Sales Representative', 'user', ${dealershipId}, 1);
       `);
 
-      logger.info('Test users created successfully');
+      logger.info("Test users created successfully");
     } else {
-      logger.info('Users already exist, skipping seed');
+      logger.info("Users already exist, skipping seed");
     }
 
-    logger.info('Database setup completed successfully');
+    logger.info("Database setup completed successfully");
   } catch (error) {
-    logger.error('Error setting up authentication tables:', error);
+    logger.error("Error setting up authentication tables:", error);
     throw error;
   }
 }
@@ -115,11 +115,11 @@ async function setupAuthTables() {
 if (require.main === module) {
   setupAuthTables()
     .then(() => {
-      logger.info('Auth database setup completed');
+      logger.info("Auth database setup completed");
       process.exit(0);
     })
     .catch((error) => {
-      logger.error('Auth database setup failed:', error);
+      logger.error("Auth database setup failed:", error);
       process.exit(1);
     });
 }

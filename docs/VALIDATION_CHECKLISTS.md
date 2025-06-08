@@ -22,6 +22,7 @@ npm run setup  # Automated validation
 ```
 
 **Manual Verification:**
+
 - [ ] **Node.js Version**: 18+ installed (`node --version`)
 - [ ] **Dependencies**: All packages installed (`npm list --depth=0`)
 - [ ] **Environment Variables**: Required vars set (`npm run env:validate`)
@@ -29,6 +30,7 @@ npm run setup  # Automated validation
 - [ ] **TypeScript**: Compilation passes (`npm run check`)
 
 ### Development Environment
+
 - [ ] **Git Configuration**: User name and email set
 - [ ] **Branch Strategy**: Working from `stabilization` branch
 - [ ] **IDE Setup**: TypeScript support enabled
@@ -50,6 +52,7 @@ npm run test     # Unit tests
 ```
 
 **Detailed Checklist:**
+
 - [ ] **TypeScript Errors**: Zero compilation errors
 - [ ] **Type Safety**: No `any` types without justification
 - [ ] **Import/Export**: All imports resolve correctly
@@ -58,6 +61,7 @@ npm run test     # Unit tests
 - [ ] **Code Style**: Consistent formatting applied
 
 ### Security & Performance
+
 - [ ] **Secrets**: No hardcoded API keys or passwords
 - [ ] **Dependencies**: No high/critical vulnerabilities
 - [ ] **Performance**: No obvious performance regressions
@@ -82,6 +86,7 @@ GitHub Actions automatically validates:
 ```
 
 **Manual Review Checklist:**
+
 - [ ] **CI Status**: All GitHub Actions passing
 - [ ] **Test Results**: No flaky or skipped tests
 - [ ] **Build Artifacts**: Dist files generated correctly
@@ -89,6 +94,7 @@ GitHub Actions automatically validates:
 - [ ] **Breaking Changes**: Properly documented and justified
 
 ### Code Review Requirements
+
 - [ ] **Peer Review**: At least one team member approval
 - [ ] **Maintainer Review**: Core team member approval
 - [ ] **Scope Validation**: Changes match ticket requirements
@@ -104,6 +110,7 @@ GitHub Actions automatically validates:
 Before merging `stabilization → main`:
 
 #### System Health
+
 ```bash
 npm run validation:run     # Comprehensive validation
 npm run deploy:check      # Deployment readiness
@@ -117,6 +124,7 @@ npm run test:performance  # Performance testing
 - [ ] **WebSocket**: Real-time features functional
 
 #### Performance Targets
+
 - [ ] **API Response**: <1 second under 50 concurrent users
 - [ ] **Database Queries**: <50ms for cached KPIs
 - [ ] **WebSocket Latency**: <100ms for real-time features
@@ -124,6 +132,7 @@ npm run test:performance  # Performance testing
 - [ ] **CPU Usage**: Stable under normal load
 
 #### Feature Validation
+
 - [ ] **Conversation System**: Multi-turn conversations working
 - [ ] **ADF Processing**: Lead ingestion functional
 - [ ] **Multi-Tenant**: Dealership isolation secure
@@ -131,6 +140,7 @@ npm run test:performance  # Performance testing
 - [ ] **Authorization**: Role-based access control
 
 #### Security Audit
+
 - [ ] **Vulnerability Scan**: Zero high/critical issues
 - [ ] **Dependency Audit**: All packages up to date
 - [ ] **Environment Secrets**: Properly configured
@@ -156,6 +166,7 @@ curl https://staging.cleanrylie.com/api/dealerships
 ```
 
 **Endpoint Validation:**
+
 - [ ] **Health Endpoint**: Returns 200 with system status
 - [ ] **Metrics Endpoint**: Prometheus metrics available
 - [ ] **API Endpoints**: All core APIs responding
@@ -163,6 +174,7 @@ curl https://staging.cleanrylie.com/api/dealerships
 - [ ] **Static Assets**: Frontend loading correctly
 
 ### Integration Testing
+
 - [ ] **Database Operations**: CRUD operations working
 - [ ] **External Services**: Third-party integrations functional
 - [ ] **Email System**: SendGrid sending emails
@@ -170,6 +182,7 @@ curl https://staging.cleanrylie.com/api/dealerships
 - [ ] **AI Services**: OpenAI API responding
 
 ### User Acceptance Testing
+
 - [ ] **Login Flow**: Authentication working
 - [ ] **Dashboard**: Metrics and data displaying
 - [ ] **Chat System**: Conversations functional
@@ -189,6 +202,7 @@ npm run validation:daemon  # Start continuous monitoring
 ```
 
 **Validation Scope:**
+
 - [ ] **API Health**: All endpoints responding
 - [ ] **Database Schema**: Consistency checks
 - [ ] **Performance Baselines**: Response time monitoring
@@ -196,6 +210,7 @@ npm run validation:daemon  # Start continuous monitoring
 - [ ] **System Resources**: Disk space, memory usage
 
 ### Alert Thresholds
+
 - **API Response Time**: >1 second
 - **Database Query Time**: >50ms for cached queries
 - **Error Rate**: >1% of requests
@@ -218,13 +233,13 @@ When validation fails:
 
 ### Common Issues & Solutions
 
-| Issue | Symptoms | Solution |
-|-------|----------|----------|
-| TypeScript Errors | Compilation fails | Fix type issues, update imports |
-| Test Failures | CI pipeline fails | Fix failing tests, update mocks |
-| Performance Regression | Slow response times | Optimize queries, add caching |
-| Security Vulnerability | Audit warnings | Update dependencies, fix code |
-| Environment Issues | Health checks fail | Verify configuration, restart services |
+| Issue                  | Symptoms            | Solution                               |
+| ---------------------- | ------------------- | -------------------------------------- |
+| TypeScript Errors      | Compilation fails   | Fix type issues, update imports        |
+| Test Failures          | CI pipeline fails   | Fix failing tests, update mocks        |
+| Performance Regression | Slow response times | Optimize queries, add caching          |
+| Security Vulnerability | Audit warnings      | Update dependencies, fix code          |
+| Environment Issues     | Health checks fail  | Verify configuration, restart services |
 
 ---
 
@@ -243,6 +258,7 @@ validation/reports/
 ```
 
 ### Report Analysis
+
 - [ ] **Trends**: Monitor performance over time
 - [ ] **Patterns**: Identify recurring issues
 - [ ] **Thresholds**: Adjust alert levels as needed
@@ -253,6 +269,7 @@ validation/reports/
 ## 🎯 Success Criteria
 
 ### Quality Targets
+
 - ✅ **Test Coverage**: >90% across all modules
 - ✅ **TypeScript**: Zero compilation errors
 - ✅ **Security**: Zero high/critical vulnerabilities
@@ -260,6 +277,7 @@ validation/reports/
 - ✅ **Functionality**: All features working
 
 ### Process Targets
+
 - ✅ **Automation**: All checks automated
 - ✅ **Speed**: Validation completes in <10 minutes
 - ✅ **Reliability**: <1% false positive rate

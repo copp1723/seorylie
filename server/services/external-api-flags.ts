@@ -1,24 +1,24 @@
 /**
  * External API Integration Guards
- * 
+ *
  * Feature flags for all external API integrations to enable safe rollout,
  * testing, and emergency disabling of external services.
- * 
+ *
  * @file server/services/external-api-flags.ts
  */
 
-import { featureFlags, isFeatureEnabled } from './feature-flags';
-import logger from '../utils/logger';
+import { featureFlags, isFeatureEnabled } from "./feature-flags";
+import logger from "../utils/logger";
 
 /**
  * Enum of all external API integration feature flags
  */
 export enum ExternalAPIFlags {
-  GoogleAdsETL = 'google-ads-etl',
-  TwilioSMS = 'twilio-sms',
-  SendGridEmail = 'sendgrid-email',
-  OpenAIChat = 'openai-chat',
-  ADFIntegration = 'adf-integration'
+  GoogleAdsETL = "google-ads-etl",
+  TwilioSMS = "twilio-sms",
+  SendGridEmail = "sendgrid-email",
+  OpenAIChat = "openai-chat",
+  ADFIntegration = "adf-integration",
 }
 
 /**
@@ -26,19 +26,19 @@ export enum ExternalAPIFlags {
  */
 export function initializeExternalAPIFlags(): void {
   // Add all external API flags to the feature flag system
-  Object.values(ExternalAPIFlags).forEach(flagName => {
+  Object.values(ExternalAPIFlags).forEach((flagName) => {
     if (!featureFlags.getConfiguration().flags[flagName]) {
       featureFlags.addFlag({
         name: flagName,
         enabled: true, // Default to enabled
         description: `External API integration: ${flagName}`,
-        environments: ['production', 'staging', 'development']
+        environments: ["production", "staging", "development"],
       });
     }
   });
-  
-  logger.info('External API feature flags initialized', {
-    flagCount: Object.keys(ExternalAPIFlags).length
+
+  logger.info("External API feature flags initialized", {
+    flagCount: Object.keys(ExternalAPIFlags).length,
   });
 }
 
@@ -50,18 +50,18 @@ export function initializeExternalAPIFlags(): void {
  */
 export function isExternalAPIEnabled(
   flagName: ExternalAPIFlags,
-  dealershipId?: number
+  dealershipId?: number,
 ): boolean {
   // Check if the flag exists and is enabled
   const isEnabled = isFeatureEnabled(flagName, dealershipId?.toString());
-  
+
   // Log access attempts for monitoring
-  logger.debug('External API flag check', {
+  logger.debug("External API flag check", {
     flag: flagName,
     enabled: isEnabled,
-    dealershipId
+    dealershipId,
   });
-  
+
   return isEnabled;
 }
 
@@ -73,16 +73,16 @@ export function isExternalAPIEnabled(
  */
 export function disableExternalAPI(
   flagName: ExternalAPIFlags,
-  reason: string
+  reason: string,
 ): boolean {
   const result = featureFlags.toggleFlag(flagName, false);
-  
+
   if (result) {
     logger.warn(`External API ${flagName} disabled`, { reason });
   } else {
     logger.error(`Failed to disable external API ${flagName}`, { reason });
   }
-  
+
   return result;
 }
 
@@ -93,13 +93,13 @@ export function disableExternalAPI(
  */
 export function enableExternalAPI(flagName: ExternalAPIFlags): boolean {
   const result = featureFlags.toggleFlag(flagName, true);
-  
+
   if (result) {
     logger.info(`External API ${flagName} enabled`);
   } else {
     logger.error(`Failed to enable external API ${flagName}`);
   }
-  
+
   return result;
 }
 
@@ -109,11 +109,11 @@ export function enableExternalAPI(flagName: ExternalAPIFlags): boolean {
  */
 export function getExternalAPIStatus(): Record<ExternalAPIFlags, boolean> {
   const status: Partial<Record<ExternalAPIFlags, boolean>> = {};
-  
-  Object.values(ExternalAPIFlags).forEach(flagName => {
+
+  Object.values(ExternalAPIFlags).forEach((flagName) => {
     status[flagName] = isFeatureEnabled(flagName);
   });
-  
+
   return status as Record<ExternalAPIFlags, boolean>;
 }
 

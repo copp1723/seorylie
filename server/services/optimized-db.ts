@@ -1,7 +1,7 @@
-import { db, executeQuery } from '../db';
-import logger from '../utils/logger';
-import { sql } from 'drizzle-orm';
-import { cacheService, createCacheKey } from './unified-cache-service';
+import { db, executeQuery } from "../db";
+import logger from "../utils/logger";
+import { sql } from "drizzle-orm";
+import { cacheService, createCacheKey } from "./unified-cache-service";
 
 /**
  * Optimized database access functions with caching support
@@ -10,10 +10,10 @@ import { cacheService, createCacheKey } from './unified-cache-service';
 
 // Cache durations (in seconds)
 const CACHE_TTL = {
-  SHORT: 60,          // 1 minute
-  MEDIUM: 300,        // 5 minutes
-  LONG: 1800,         // 30 minutes
-  VERY_LONG: 3600     // 1 hour
+  SHORT: 60, // 1 minute
+  MEDIUM: 300, // 5 minutes
+  LONG: 1800, // 30 minutes
+  VERY_LONG: 3600, // 1 hour
 };
 
 /**
@@ -24,35 +24,40 @@ export async function getRecentConversations(
   dealershipId: number,
   page: number = 1,
   limit: number = 20,
-  status?: string
+  status?: string,
 ) {
-  const cacheKey = createCacheKey('conversations', { 
-    dealershipId, 
-    page, 
-    limit, 
-    status: status || 'all' 
+  const cacheKey = createCacheKey("conversations", {
+    dealershipId,
+    page,
+    limit,
+    status: status || "all",
   });
 
-  return cacheService.getOrSet(cacheKey, async () => {
-    logger.info('Cache miss - fetching conversations from database', {
-      dealershipId, page, limit, status
-    });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      logger.info("Cache miss - fetching conversations from database", {
+        dealershipId,
+        page,
+        limit,
+        status,
+      });
 
-    return executeQuery(async () => {
-      const offset = (page - 1) * limit;
-      
-      // Build query parts
-      const whereClause = status 
-        ? `WHERE dealership_id = $1 AND status = $2`
-        : `WHERE dealership_id = $1`;
-      
-      const params = status ? [dealershipId, status] : [dealershipId];
-      
-      // Add pagination params
-      params.push(limit, offset);
-      
-      // Main query
-      const query = `
+      return executeQuery(async () => {
+        const offset = (page - 1) * limit;
+
+        // Build query parts
+        const whereClause = status
+          ? `WHERE dealership_id = $1 AND status = $2`
+          : `WHERE dealership_id = $1`;
+
+        const params = status ? [dealershipId, status] : [dealershipId];
+
+        // Add pagination params
+        params.push(limit, offset);
+
+        // Main query
+        const query = `
         SELECT 
           id, 
           customer_name, 
@@ -68,31 +73,33 @@ export async function getRecentConversations(
         LIMIT $${params.length - 1} 
         OFFSET $${params.length}
       `;
-      
-      // Total count query
-      const countQuery = `
+
+        // Total count query
+        const countQuery = `
         SELECT COUNT(*) as total 
         FROM conversations 
         ${whereClause}
       `;
-      
-      // Execute both queries in parallel
-      const [conversations, countResult] = await Promise.all([
-        db.execute(query),
-        db.execute(countQuery)
-      ]);
-      
-      const total = parseInt(countResult[0]?.total || '0');
-      
-      return {
-        conversations,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit)
-      };
-    });
-  }, { ttl: CACHE_TTL.SHORT });
+
+        // Execute both queries in parallel
+        const [conversations, countResult] = await Promise.all([
+          db.execute(query),
+          db.execute(countQuery),
+        ]);
+
+        const total = parseInt(countResult[0]?.total || "0");
+
+        return {
+          conversations,
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        };
+      });
+    },
+    { ttl: CACHE_TTL.SHORT },
+  );
 }
 
 /**
@@ -101,26 +108,29 @@ export async function getRecentConversations(
  */
 export async function getConversationWithMessages(
   conversationId: number,
-  messageLimit: number = 50
+  messageLimit: number = 50,
 ) {
-  const cacheKey = createCacheKey('conversation', { 
-    id: conversationId, 
-    limit: messageLimit 
+  const cacheKey = createCacheKey("conversation", {
+    id: conversationId,
+    limit: messageLimit,
   });
 
-  return cacheService.getOrSet(cacheKey, async () => {
-    logger.info('Cache miss - fetching conversation details', {
-      conversationId, messageLimit
-    });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      logger.info("Cache miss - fetching conversation details", {
+        conversationId,
+        messageLimit,
+      });
 
-    return executeQuery(async () => {
-      // Get conversation details
-      const conversationQuery = `
+      return executeQuery(async () => {
+        // Get conversation details
+        const conversationQuery = `
         SELECT * FROM conversations WHERE id = $1
       `;
-      
-      // Get recent messages
-      const messagesQuery = `
+
+        // Get recent messages
+        const messagesQuery = `
         SELECT 
           id, 
           content, 
@@ -132,23 +142,25 @@ export async function getConversationWithMessages(
         ORDER BY created_at ASC 
         LIMIT $2
       `;
-      
-      // Execute both queries in parallel
-      const [conversationResult, messages] = await Promise.all([
-        db.execute(conversationQuery, [conversationId]),
-        db.execute(messagesQuery, [conversationId, messageLimit])
-      ]);
-      
-      if (conversationResult.length === 0) {
-        return null;
-      }
-      
-      return {
-        ...conversationResult[0],
-        messages
-      };
-    });
-  }, { ttl: CACHE_TTL.SHORT });
+
+        // Execute both queries in parallel
+        const [conversationResult, messages] = await Promise.all([
+          db.execute(conversationQuery, [conversationId]),
+          db.execute(messagesQuery, [conversationId, messageLimit]),
+        ]);
+
+        if (conversationResult.length === 0) {
+          return null;
+        }
+
+        return {
+          ...conversationResult[0],
+          messages,
+        };
+      });
+    },
+    { ttl: CACHE_TTL.SHORT },
+  );
 }
 
 /**
@@ -157,11 +169,13 @@ export async function getConversationWithMessages(
  */
 export async function findUserForAuth(loginIdentifier: string) {
   // Only cache this briefly as auth data should be fresh
-  const cacheKey = createCacheKey('auth-user', { identifier: loginIdentifier });
+  const cacheKey = createCacheKey("auth-user", { identifier: loginIdentifier });
 
-  return cacheService.getOrSet(cacheKey, async () => {
-    return executeQuery(async () => {
-      const query = `
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      return executeQuery(async () => {
+        const query = `
         SELECT 
           id, 
           username, 
@@ -175,11 +189,13 @@ export async function findUserForAuth(loginIdentifier: string) {
         WHERE email = $1 OR username = $1
         LIMIT 1
       `;
-      
-      const result = await db.execute(query, [loginIdentifier]);
-      return result.length > 0 ? result[0] : null;
-    });
-  }, { ttl: 10 }); // Short 10 second TTL for auth data
+
+        const result = await db.execute(query, [loginIdentifier]);
+        return result.length > 0 ? result[0] : null;
+      });
+    },
+    { ttl: 10 },
+  ); // Short 10 second TTL for auth data
 }
 
 /**
@@ -189,23 +205,27 @@ export async function findUserForAuth(loginIdentifier: string) {
 export async function searchConversations(
   dealershipId: number,
   searchTerm: string,
-  limit: number = 20
+  limit: number = 20,
 ) {
-  const cacheKey = createCacheKey('conversation-search', { 
-    dealershipId, 
-    term: searchTerm, 
-    limit 
+  const cacheKey = createCacheKey("conversation-search", {
+    dealershipId,
+    term: searchTerm,
+    limit,
   });
 
-  return cacheService.getOrSet(cacheKey, async () => {
-    logger.info('Cache miss - searching conversations', {
-      dealershipId, searchTerm, limit
-    });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      logger.info("Cache miss - searching conversations", {
+        dealershipId,
+        searchTerm,
+        limit,
+      });
 
-    return executeQuery(async () => {
-      const searchPattern = `%${searchTerm}%`;
-      
-      const query = `
+      return executeQuery(async () => {
+        const searchPattern = `%${searchTerm}%`;
+
+        const query = `
         SELECT 
           id, 
           customer_name, 
@@ -223,10 +243,12 @@ export async function searchConversations(
         ORDER BY created_at DESC 
         LIMIT $3
       `;
-      
-      return db.execute(query, [dealershipId, searchPattern, limit]);
-    });
-  }, { ttl: CACHE_TTL.SHORT });
+
+        return db.execute(query, [dealershipId, searchPattern, limit]);
+      });
+    },
+    { ttl: CACHE_TTL.SHORT },
+  );
 }
 
 /**
@@ -235,23 +257,26 @@ export async function searchConversations(
  */
 export async function getDealershipUsers(
   dealershipId: number,
-  includeInactive: boolean = false
+  includeInactive: boolean = false,
 ) {
-  const cacheKey = createCacheKey('dealership-users', { 
-    dealershipId, 
-    includeInactive 
+  const cacheKey = createCacheKey("dealership-users", {
+    dealershipId,
+    includeInactive,
   });
 
-  return cacheService.getOrSet(cacheKey, async () => {
-    logger.info('Cache miss - fetching dealership users', {
-      dealershipId, includeInactive
-    });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      logger.info("Cache miss - fetching dealership users", {
+        dealershipId,
+        includeInactive,
+      });
 
-    return executeQuery(async () => {
-      // Add condition for active users only if needed
-      const activeCondition = includeInactive ? '' : 'AND is_active = true';
-      
-      const query = `
+      return executeQuery(async () => {
+        // Add condition for active users only if needed
+        const activeCondition = includeInactive ? "" : "AND is_active = true";
+
+        const query = `
         SELECT 
           id, 
           username, 
@@ -264,10 +289,12 @@ export async function getDealershipUsers(
         WHERE dealership_id = $1 ${activeCondition}
         ORDER BY role ASC, name ASC
       `;
-      
-      return db.execute(query, [dealershipId]);
-    });
-  }, { ttl: CACHE_TTL.MEDIUM });
+
+        return db.execute(query, [dealershipId]);
+      });
+    },
+    { ttl: CACHE_TTL.MEDIUM },
+  );
 }
 
 /**
@@ -277,24 +304,28 @@ export async function getDealershipUsers(
 export async function searchMessageContent(
   dealershipId: number,
   searchTerm: string,
-  limit: number = 20
+  limit: number = 20,
 ) {
-  const cacheKey = createCacheKey('message-search', { 
-    dealershipId, 
-    term: searchTerm, 
-    limit 
+  const cacheKey = createCacheKey("message-search", {
+    dealershipId,
+    term: searchTerm,
+    limit,
   });
 
-  return cacheService.getOrSet(cacheKey, async () => {
-    logger.info('Cache miss - searching message content', {
-      dealershipId, searchTerm, limit
-    });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      logger.info("Cache miss - searching message content", {
+        dealershipId,
+        searchTerm,
+        limit,
+      });
 
-    return executeQuery(async () => {
-      // Convert search term to tsquery format
-      const tsQuery = searchTerm.trim().split(/\s+/).join(' & ');
-      
-      const query = `
+      return executeQuery(async () => {
+        // Convert search term to tsquery format
+        const tsQuery = searchTerm.trim().split(/\s+/).join(" & ");
+
+        const query = `
         SELECT 
           m.id, 
           m.content, 
@@ -308,10 +339,12 @@ export async function searchMessageContent(
         ORDER BY m.created_at DESC
         LIMIT $3
       `;
-      
-      return db.execute(query, [dealershipId, tsQuery, limit]);
-    });
-  }, { ttl: CACHE_TTL.MEDIUM });
+
+        return db.execute(query, [dealershipId, tsQuery, limit]);
+      });
+    },
+    { ttl: CACHE_TTL.MEDIUM },
+  );
 }
 
 /**
@@ -321,21 +354,25 @@ export async function searchMessageContent(
 export async function getConversationAnalytics(
   dealershipId: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
 ) {
-  const cacheKey = createCacheKey('conversation-analytics', { 
-    dealershipId, 
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0]
+  const cacheKey = createCacheKey("conversation-analytics", {
+    dealershipId,
+    startDate: startDate.toISOString().split("T")[0],
+    endDate: endDate.toISOString().split("T")[0],
   });
 
-  return cacheService.getOrSet(cacheKey, async () => {
-    logger.info('Cache miss - generating conversation analytics', {
-      dealershipId, startDate, endDate
-    });
+  return cacheService.getOrSet(
+    cacheKey,
+    async () => {
+      logger.info("Cache miss - generating conversation analytics", {
+        dealershipId,
+        startDate,
+        endDate,
+      });
 
-    return executeQuery(async () => {
-      const query = `
+      return executeQuery(async () => {
+        const query = `
         SELECT 
           DATE(created_at) as date,
           COUNT(*) as total_conversations,
@@ -348,10 +385,16 @@ export async function getConversationAnalytics(
         GROUP BY DATE(created_at) 
         ORDER BY date
       `;
-      
-      return db.execute(query, [dealershipId, startDate.toISOString(), endDate.toISOString()]);
-    });
-  }, { ttl: CACHE_TTL.LONG }); // Longer cache for analytics
+
+        return db.execute(query, [
+          dealershipId,
+          startDate.toISOString(),
+          endDate.toISOString(),
+        ]);
+      });
+    },
+    { ttl: CACHE_TTL.LONG },
+  ); // Longer cache for analytics
 }
 
 /**
@@ -363,13 +406,13 @@ export function invalidateDealershipCache(dealershipId: number) {
   cacheService.invalidatePattern(`^conversations:.*${dealershipId}`);
   cacheService.invalidatePattern(`^conversation-search:.*${dealershipId}`);
   cacheService.invalidatePattern(`^conversation-analytics:.*${dealershipId}`);
-  
+
   // Invalidate user caches
   cacheService.invalidatePattern(`^dealership-users:.*${dealershipId}`);
-  
+
   // Invalidate message search cache
   cacheService.invalidatePattern(`^message-search:.*${dealershipId}`);
-  
+
   logger.info(`Cache invalidated for dealership: ${dealershipId}`);
 }
 
@@ -379,10 +422,10 @@ export function invalidateDealershipCache(dealershipId: number) {
  */
 export function invalidateConversationCache(conversationId: number) {
   cacheService.delete(`conversation:${conversationId}`);
-  
+
   // Also clear potentially affected list caches
   cacheService.invalidatePattern(`^conversations:`);
-  
+
   logger.info(`Cache invalidated for conversation: ${conversationId}`);
 }
 
@@ -391,16 +434,18 @@ export function invalidateConversationCache(conversationId: number) {
  */
 export async function getDatabaseStats() {
   // This is admin-only data so we use a shorter cache
-  return cacheService.getOrSet('database-stats', async () => {
-    return executeQuery(async () => {
-      const queries = [
-        // Table row counts
-        `SELECT 'conversations' as table_name, COUNT(*) as row_count FROM conversations`,
-        `SELECT 'messages' as table_name, COUNT(*) as row_count FROM messages`,
-        `SELECT 'users' as table_name, COUNT(*) as row_count FROM users`,
-        
-        // Index usage
-        `SELECT 
+  return cacheService.getOrSet(
+    "database-stats",
+    async () => {
+      return executeQuery(async () => {
+        const queries = [
+          // Table row counts
+          `SELECT 'conversations' as table_name, COUNT(*) as row_count FROM conversations`,
+          `SELECT 'messages' as table_name, COUNT(*) as row_count FROM messages`,
+          `SELECT 'users' as table_name, COUNT(*) as row_count FROM users`,
+
+          // Index usage
+          `SELECT 
           schemaname, 
           relname as table_name, 
           indexrelname as index_name, 
@@ -409,17 +454,19 @@ export async function getDatabaseStats() {
           pg_stat_user_indexes
         ORDER BY 
           idx_scan DESC
-        LIMIT 10`
-      ];
-      
-      const results = await Promise.all(
-        queries.map(query => db.execute(query))
-      );
-      
-      return {
-        tableCounts: [...results[0], ...results[1], ...results[2]],
-        indexUsage: results[3]
-      };
-    });
-  }, { ttl: 300 }); // 5 minute cache
+        LIMIT 10`,
+        ];
+
+        const results = await Promise.all(
+          queries.map((query) => db.execute(query)),
+        );
+
+        return {
+          tableCounts: [...results[0], ...results[1], ...results[2]],
+          indexUsage: results[3],
+        };
+      });
+    },
+    { ttl: 300 },
+  ); // 5 minute cache
 }

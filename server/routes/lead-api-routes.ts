@@ -1,9 +1,9 @@
-import { Router, Request, Response } from 'express';
-import { z } from 'zod';
-import { LeadService } from '../services/lead-service';
-import { ConversationService } from '../services/conversation-service';
-import { HandoverService } from '../services/handover-service';
-import { 
+import { Router, Request, Response } from "express";
+import { z } from "zod";
+import { LeadService } from "../services/lead-service";
+import { ConversationService } from "../services/conversation-service";
+import { HandoverService } from "../services/handover-service";
+import {
   inboundLeadRequestSchema,
   replyMessageRequestSchema,
   handoverRequestSchema,
@@ -15,17 +15,17 @@ import {
   handoverResponseSchema,
   leadListResponseSchema,
   leadDetailResponseSchema,
-  errorResponseSchema
-} from '../../shared/index';
-import { 
-  validateBody, 
-  validateQuery, 
+  errorResponseSchema,
+} from "../../shared/index";
+import {
+  validateBody,
+  validateQuery,
   validateUuidParam,
   validateContentType,
-  validateBodySize
-} from '../middleware/validation';
-import { authenticateApiKey } from '../middleware/auth';
-import logger from '../utils/logger';
+  validateBodySize,
+} from "../middleware/validation";
+import { authenticateApiKey } from "../middleware/auth";
+import logger from "../utils/logger";
 
 const router = Router();
 const leadService = new LeadService();
@@ -34,8 +34,8 @@ const handoverService = new HandoverService();
 
 // Common validation middleware for API endpoints
 const apiValidation = [
-  validateContentType(['application/json']),
-  validateBodySize(1024 * 1024) // 1MB limit
+  validateContentType(["application/json"]),
+  validateBodySize(1024 * 1024), // 1MB limit
 ];
 
 // Middleware to extract dealership from API key
@@ -44,7 +44,7 @@ const extractDealership = (req: Request, res: Response, next: Function) => {
   if (!dealership) {
     return res.status(401).json({
       success: false,
-      error: 'Invalid or missing API key'
+      error: "Invalid or missing API key",
     });
   }
   req.dealershipId = dealership.id;
@@ -63,22 +63,23 @@ const extractDealership = (req: Request, res: Response, next: Function) => {
  * @throws {409} Duplicate lead detected - Lead already exists
  * @throws {500} Internal server error - Server processing error
  */
-router.post('/inbound', 
+router.post(
+  "/inbound",
   authenticateApiKey,
   extractDealership,
   ...apiValidation,
   validateBody(inboundLeadRequestSchema),
   async (req: Request, res: Response) => {
     try {
-      logger.info('Inbound lead API request', {
+      logger.info("Inbound lead API request", {
         dealershipId: req.dealershipId,
         source: req.body.lead.source,
-        customerName: req.body.customer.fullName
+        customerName: req.body.customer.fullName,
       });
 
       const result = await leadService.processInboundLead(
         req.dealershipId,
-        req.body
+        req.body,
       );
 
       if (result.success) {
@@ -89,42 +90,41 @@ router.post('/inbound',
             customerId: result.customerId,
             conversationId: result.conversationId,
             isExistingCustomer: result.isExistingCustomer,
-            warnings: result.warnings
+            warnings: result.warnings,
           },
-          message: 'Lead created successfully'
+          message: "Lead created successfully",
         });
       } else if (result.isDuplicateLead) {
         res.status(409).json({
           success: false,
-          error: 'Duplicate lead detected',
+          error: "Duplicate lead detected",
           data: {
             existingLeadId: result.leadId,
-            customerId: result.customerId
+            customerId: result.customerId,
           },
-          details: result.errors
+          details: result.errors,
         });
       } else {
         res.status(400).json({
           success: false,
-          error: 'Lead processing failed',
-          details: result.errors
+          error: "Lead processing failed",
+          details: result.errors,
         });
       }
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Inbound lead API error', {
+      logger.error("Inbound lead API error", {
         error: err.message,
-        dealershipId: req.dealershipId
+        dealershipId: req.dealershipId,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Internal server error',
-        message: 'Failed to process inbound lead'
+        error: "Internal server error",
+        message: "Failed to process inbound lead",
       });
     }
-  }
+  },
 );
 
 /**
@@ -139,22 +139,23 @@ router.post('/inbound',
  * @throws {404} Conversation not found - The specified conversation does not exist
  * @throws {500} Internal server error - Server processing error
  */
-router.post('/reply',
+router.post(
+  "/reply",
   authenticateApiKey,
   extractDealership,
   ...apiValidation,
   validateBody(replyMessageRequestSchema),
   async (req: Request, res: Response) => {
     try {
-      logger.info('Reply message API request', {
+      logger.info("Reply message API request", {
         dealershipId: req.dealershipId,
         conversationId: req.body.conversationId,
-        sender: req.body.sender
+        sender: req.body.sender,
       });
 
       const result = await conversationService.sendReply(
         req.dealershipId,
-        req.body
+        req.body,
       );
 
       if (result.success) {
@@ -163,33 +164,34 @@ router.post('/reply',
           data: {
             messageId: result.messageId,
             conversationId: result.conversationId,
-            timestamp: result.timestamp
+            timestamp: result.timestamp,
           },
-          message: 'Reply sent successfully'
+          message: "Reply sent successfully",
         });
       } else {
         res.status(result.conversationNotFound ? 404 : 400).json({
           success: false,
-          error: result.conversationNotFound ? 'Conversation not found' : 'Reply failed',
-          details: result.errors
+          error: result.conversationNotFound
+            ? "Conversation not found"
+            : "Reply failed",
+          details: result.errors,
         });
       }
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Reply message API error', {
+      logger.error("Reply message API error", {
         error: err.message,
         dealershipId: req.dealershipId,
-        conversationId: req.body.conversationId
+        conversationId: req.body.conversationId,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Internal server error',
-        message: 'Failed to send reply'
+        error: "Internal server error",
+        message: "Failed to send reply",
       });
     }
-  }
+  },
 );
 
 /**
@@ -204,22 +206,23 @@ router.post('/reply',
  * @throws {404} Conversation not found - The specified conversation does not exist
  * @throws {500} Internal server error - Server processing error
  */
-router.post('/handover',
+router.post(
+  "/handover",
   authenticateApiKey,
   extractDealership,
   ...apiValidation,
   validateBody(handoverRequestSchema),
   async (req: Request, res: Response) => {
     try {
-      logger.info('Handover request API', {
+      logger.info("Handover request API", {
         dealershipId: req.dealershipId,
         conversationId: req.body.conversationId,
-        reason: req.body.reason
+        reason: req.body.reason,
       });
 
       const result = await handoverService.createHandover(
         req.dealershipId,
-        req.body
+        req.body,
       );
 
       if (result.success) {
@@ -229,33 +232,34 @@ router.post('/handover',
             handoverId: result.handoverId,
             conversationId: result.conversationId,
             status: result.status,
-            estimatedResponseTime: result.estimatedResponseTime
+            estimatedResponseTime: result.estimatedResponseTime,
           },
-          message: 'Handover created successfully'
+          message: "Handover created successfully",
         });
       } else {
         res.status(result.conversationNotFound ? 404 : 400).json({
           success: false,
-          error: result.conversationNotFound ? 'Conversation not found' : 'Handover failed',
-          details: result.errors
+          error: result.conversationNotFound
+            ? "Conversation not found"
+            : "Handover failed",
+          details: result.errors,
         });
       }
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Handover API error', {
+      logger.error("Handover API error", {
         error: err.message,
         dealershipId: req.dealershipId,
-        conversationId: req.body.conversationId
+        conversationId: req.body.conversationId,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Internal server error',
-        message: 'Failed to create handover'
+        error: "Internal server error",
+        message: "Failed to create handover",
       });
     }
-  }
+  },
 );
 
 /**
@@ -271,10 +275,11 @@ router.post('/handover',
  * @throws {404} Handover not found - The specified handover does not exist
  * @throws {500} Internal server error - Server processing error
  */
-router.patch('/handover/:handoverId',
+router.patch(
+  "/handover/:handoverId",
   authenticateApiKey,
   extractDealership,
-  validateUuidParam('handoverId'),
+  validateUuidParam("handoverId"),
   ...apiValidation,
   validateBody(handoverUpdateRequestSchema),
   async (req: Request, res: Response) => {
@@ -282,47 +287,48 @@ router.patch('/handover/:handoverId',
       const { handoverId } = req.params;
       const updateData = req.body;
 
-      logger.info('Handover update API', {
+      logger.info("Handover update API", {
         dealershipId: req.dealershipId,
         handoverId,
-        status: updateData.status
+        status: updateData.status,
       });
 
       const result = await handoverService.updateHandover(
         req.dealershipId,
         handoverId,
-        updateData
+        updateData,
       );
 
       if (result.success) {
         res.json({
           success: true,
           data: result.handover,
-          message: 'Handover updated successfully'
+          message: "Handover updated successfully",
         });
       } else {
         res.status(result.handoverNotFound ? 404 : 400).json({
           success: false,
-          error: result.handoverNotFound ? 'Handover not found' : 'Update failed',
-          details: result.errors
+          error: result.handoverNotFound
+            ? "Handover not found"
+            : "Update failed",
+          details: result.errors,
         });
       }
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Handover update API error', {
+      logger.error("Handover update API error", {
         error: err.message,
         dealershipId: req.dealershipId,
-        handoverId: req.params.handoverId
+        handoverId: req.params.handoverId,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Internal server error',
-        message: 'Failed to update handover'
+        error: "Internal server error",
+        message: "Failed to update handover",
       });
     }
-  }
+  },
 );
 
 // GET endpoints for retrieving data
@@ -340,7 +346,8 @@ router.patch('/handover/:handoverId',
  * @returns {LeadListResponse} 200 - Leads retrieved successfully
  * @throws {500} Internal server error - Server processing error
  */
-router.get('/leads',
+router.get(
+  "/leads",
   authenticateApiKey,
   extractDealership,
   validateQuery(leadsQuerySchema),
@@ -353,7 +360,7 @@ router.get('/leads',
         offset: parseInt(offset as string) || 0,
         status: status as string,
         source: source as string,
-        customerId: customerId as string
+        customerId: customerId as string,
       });
 
       res.json({
@@ -362,24 +369,23 @@ router.get('/leads',
         pagination: {
           limit: Math.min(parseInt(limit as string) || 50, 100),
           offset: parseInt(offset as string) || 0,
-          total: leads.length
-        }
+          total: leads.length,
+        },
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Get leads API error', {
+      logger.error("Get leads API error", {
         error: err.message,
-        dealershipId: req.dealershipId
+        dealershipId: req.dealershipId,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Internal server error',
-        message: 'Failed to retrieve leads'
+        error: "Internal server error",
+        message: "Failed to retrieve leads",
       });
     }
-  }
+  },
 );
 
 /**
@@ -393,10 +399,11 @@ router.get('/leads',
  * @throws {404} Lead not found - The specified lead does not exist
  * @throws {500} Internal server error - Server processing error
  */
-router.get('/leads/:leadId',
+router.get(
+  "/leads/:leadId",
   authenticateApiKey,
   extractDealership,
-  validateUuidParam('leadId'),
+  validateUuidParam("leadId"),
   async (req: Request, res: Response) => {
     try {
       const { leadId } = req.params;
@@ -406,30 +413,29 @@ router.get('/leads/:leadId',
       if (!lead) {
         return res.status(404).json({
           success: false,
-          error: 'Lead not found'
+          error: "Lead not found",
         });
       }
 
       res.json({
         success: true,
-        data: lead
+        data: lead,
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Get lead by ID API error', {
+      logger.error("Get lead by ID API error", {
         error: err.message,
         dealershipId: req.dealershipId,
-        leadId: req.params.leadId
+        leadId: req.params.leadId,
       });
 
       res.status(500).json({
         success: false,
-        error: 'Internal server error',
-        message: 'Failed to retrieve lead'
+        error: "Internal server error",
+        message: "Failed to retrieve lead",
       });
     }
-  }
+  },
 );
 
 export default router;

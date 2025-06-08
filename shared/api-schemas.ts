@@ -1,17 +1,17 @@
-import { z } from 'zod';
-import { 
-  leadSources, 
-  leadStatuses, 
-  leadPriorities, 
+import { z } from "zod";
+import {
+  leadSources,
+  leadStatuses,
+  leadPriorities,
   conversationStatuses,
-  messageTypes, 
-  messageSenders, 
-  handoverReasons, 
-  handoverStatuses 
-} from './lead-management-schema';
+  messageTypes,
+  messageSenders,
+  handoverReasons,
+  handoverStatuses,
+} from "./lead-management-schema";
 
 // Import personas from schema to avoid duplicate imports
-import { personas } from './schema';
+import { personas } from "./schema";
 
 // ===== BASE SCHEMAS =====
 
@@ -19,7 +19,7 @@ import { personas } from './schema';
 export const paginationSchema = z.object({
   limit: z.number().min(1).max(100).default(50),
   offset: z.number().min(0).default(0),
-  total: z.number().optional()
+  total: z.number().optional(),
 });
 
 // Common response wrapper
@@ -31,7 +31,7 @@ export const apiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
     errors: z.array(z.string()).optional(),
     warnings: z.array(z.string()).optional(),
     pagination: paginationSchema.optional(),
-    timestamp: z.string().datetime().optional()
+    timestamp: z.string().datetime().optional(),
   });
 
 // Error response schema
@@ -41,7 +41,7 @@ export const errorResponseSchema = z.object({
   message: z.string().optional(),
   details: z.array(z.string()).optional(),
   code: z.string().optional(),
-  timestamp: z.string().datetime().optional()
+  timestamp: z.string().datetime().optional(),
 });
 
 // Validation error details
@@ -49,14 +49,14 @@ export const validationErrorSchema = z.object({
   field: z.string(),
   message: z.string(),
   code: z.string(),
-  received: z.any().optional()
+  received: z.any().optional(),
 });
 
 export const validationErrorResponseSchema = z.object({
   success: z.literal(false),
-  error: z.literal('Validation failed'),
+  error: z.literal("Validation failed"),
   details: z.array(validationErrorSchema),
-  timestamp: z.string().datetime().optional()
+  timestamp: z.string().datetime().optional(),
 });
 
 // ===== CUSTOMER SCHEMAS =====
@@ -90,7 +90,7 @@ export const apiCustomerSchema = z.object({
   totalPurchases: z.number(),
   customFields: z.record(z.any()),
   createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime()
+  updatedAt: z.string().datetime(),
 });
 
 export const customerInputSchema = z.object({
@@ -103,9 +103,9 @@ export const customerInputSchema = z.object({
   city: z.string().max(100).optional(),
   state: z.string().max(50).optional(),
   zipCode: z.string().max(20).optional(),
-  country: z.string().max(50).default('US'),
-  preferredLanguage: z.string().max(20).default('en'),
-  customFields: z.record(z.any()).optional()
+  country: z.string().max(50).default("US"),
+  preferredLanguage: z.string().max(20).default("en"),
+  customFields: z.record(z.any()).optional(),
 });
 
 // ===== VEHICLE SCHEMAS =====
@@ -119,7 +119,7 @@ export const vehicleInterestSchema = z.object({
   bodyStyle: z.string().nullable(),
   vin: z.string().nullable(),
   stockNumber: z.string().nullable(),
-  condition: z.enum(['new', 'used', 'cpo', 'any']).nullable(),
+  condition: z.enum(["new", "used", "cpo", "any"]).nullable(),
   minPrice: z.number().nullable(),
   maxPrice: z.number().nullable(),
   mileageMax: z.number().nullable(),
@@ -136,27 +136,34 @@ export const vehicleInterestSchema = z.object({
   tradeInCondition: z.string().nullable(),
   tradeInValue: z.number().nullable(),
   createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime()
+  updatedAt: z.string().datetime(),
 });
 
 export const vehicleInterestInputSchema = z.object({
-  year: z.number().int().min(1900).max(new Date().getFullYear() + 2).optional(),
+  year: z
+    .number()
+    .int()
+    .min(1900)
+    .max(new Date().getFullYear() + 2)
+    .optional(),
   make: z.string().max(100).optional(),
   model: z.string().max(100).optional(),
   trim: z.string().max(100).optional(),
   vin: z.string().length(17).optional(),
   stockNumber: z.string().max(50).optional(),
-  condition: z.enum(['new', 'used', 'cpo']).optional(),
+  condition: z.enum(["new", "used", "cpo"]).optional(),
   minPrice: z.number().min(0).optional(),
   maxPrice: z.number().min(0).optional(),
-  tradeIn: z.object({
-    year: z.number().int().min(1900).max(new Date().getFullYear()).optional(),
-    make: z.string().max(100).optional(),
-    model: z.string().max(100).optional(),
-    vin: z.string().length(17).optional(),
-    mileage: z.number().min(0).optional(),
-    condition: z.string().max(50).optional()
-  }).optional()
+  tradeIn: z
+    .object({
+      year: z.number().int().min(1900).max(new Date().getFullYear()).optional(),
+      make: z.string().max(100).optional(),
+      model: z.string().max(100).optional(),
+      vin: z.string().length(17).optional(),
+      mileage: z.number().min(0).optional(),
+      condition: z.string().max(50).optional(),
+    })
+    .optional(),
 });
 
 // ===== LEAD SCHEMAS =====
@@ -195,7 +202,7 @@ export const apiLeadSchema = z.object({
   customFields: z.record(z.any()),
   version: z.number(),
   createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime()
+  updatedAt: z.string().datetime(),
 });
 
 // ===== API REQUEST SCHEMAS =====
@@ -211,17 +218,19 @@ export const inboundLeadRequestSchema = z.object({
     source: z.enum(leadSources),
     medium: z.string().max(100).optional(),
     campaign: z.string().max(100).optional(),
-    priority: z.enum(leadPriorities).default('medium')
+    priority: z.enum(leadPriorities).default("medium"),
   }),
-  attribution: z.object({
-    source: z.string().max(100),
-    medium: z.string().max(100).optional(),
-    campaign: z.string().max(100).optional(),
-    keyword: z.string().max(255).optional(),
-    referrer: z.string().max(500).optional(),
-    landingPage: z.string().max(500).optional()
-  }).optional(),
-  customFields: z.record(z.any()).optional()
+  attribution: z
+    .object({
+      source: z.string().max(100),
+      medium: z.string().max(100).optional(),
+      campaign: z.string().max(100).optional(),
+      keyword: z.string().max(255).optional(),
+      referrer: z.string().max(500).optional(),
+      landingPage: z.string().max(500).optional(),
+    })
+    .optional(),
+  customFields: z.record(z.any()).optional(),
 });
 
 // Lead creation response
@@ -231,31 +240,35 @@ export const leadCreationResponseSchema = z.object({
   conversationId: z.string().uuid(),
   leadNumber: z.string(),
   isExistingCustomer: z.boolean(),
-  warnings: z.array(z.string())
+  warnings: z.array(z.string()),
 });
 
 // Reply message schema
 export const replyMessageRequestSchema = z.object({
   conversationId: z.string().uuid(),
   content: z.string().min(1).max(10000),
-  contentType: z.enum(['text', 'html', 'markdown']).default('text'),
+  contentType: z.enum(["text", "html", "markdown"]).default("text"),
   sender: z.enum(messageSenders),
   senderUserId: z.number().optional(),
   senderName: z.string().max(100).optional(),
   subject: z.string().max(255).optional(),
-  attachments: z.array(z.object({
-    filename: z.string().max(255),
-    contentType: z.string().max(100),
-    size: z.number().min(0),
-    url: z.string().url()
-  })).optional()
+  attachments: z
+    .array(
+      z.object({
+        filename: z.string().max(255),
+        contentType: z.string().max(100),
+        size: z.number().min(0),
+        url: z.string().url(),
+      }),
+    )
+    .optional(),
 });
 
 // Message response
 export const messageResponseSchema = z.object({
   messageId: z.string().uuid(),
   conversationId: z.string().uuid(),
-  timestamp: z.string().datetime()
+  timestamp: z.string().datetime(),
 });
 
 // Handover request schema
@@ -264,8 +277,8 @@ export const handoverRequestSchema = z.object({
   reason: z.enum(handoverReasons),
   description: z.string().min(1).max(1000),
   toUserId: z.number().optional(),
-  urgency: z.enum(leadPriorities).default('medium'),
-  context: z.record(z.any()).optional()
+  urgency: z.enum(leadPriorities).default("medium"),
+  context: z.record(z.any()).optional(),
 });
 
 // Handover response
@@ -273,7 +286,7 @@ export const handoverResponseSchema = z.object({
   handoverId: z.string().uuid(),
   conversationId: z.string().uuid(),
   status: z.enum(handoverStatuses),
-  estimatedResponseTime: z.string()
+  estimatedResponseTime: z.string(),
 });
 
 // Handover update schema
@@ -281,7 +294,7 @@ export const handoverUpdateRequestSchema = z.object({
   status: z.enum(handoverStatuses),
   userId: z.number().optional(),
   notes: z.string().max(1000).optional(),
-  customerSatisfaction: z.number().min(1).max(5).optional()
+  customerSatisfaction: z.number().min(1).max(5).optional(),
 });
 
 // ===== CONVERSATION SCHEMAS =====
@@ -304,14 +317,14 @@ export const apiConversationSchema = z.object({
   priority: z.enum(leadPriorities),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-  closedAt: z.string().datetime().nullable()
+  closedAt: z.string().datetime().nullable(),
 });
 
 export const apiMessageSchema = z.object({
   id: z.string().uuid(),
   conversationId: z.string().uuid(),
   content: z.string(),
-  contentType: z.enum(['text', 'html', 'markdown']),
+  contentType: z.enum(["text", "html", "markdown"]),
   subject: z.string().nullable(),
   type: z.enum(messageTypes),
   sender: z.enum(messageSenders),
@@ -325,74 +338,112 @@ export const apiMessageSchema = z.object({
   aiModel: z.string().nullable(),
   aiConfidence: z.number().nullable(),
   processingTime: z.number().nullable(),
-  attachments: z.array(z.object({
-    filename: z.string(),
-    contentType: z.string(),
-    size: z.number(),
-    url: z.string()
-  })),
+  attachments: z.array(
+    z.object({
+      filename: z.string(),
+      contentType: z.string(),
+      size: z.number(),
+      url: z.string(),
+    }),
+  ),
   sentiment: z.string().nullable(),
   entities: z.record(z.any()),
   keywords: z.array(z.string()),
   createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime()
+  updatedAt: z.string().datetime(),
 });
 
 // ===== QUERY PARAMETER SCHEMAS =====
 
 export const leadsQuerySchema = z.object({
-  limit: z.string().transform(val => parseInt(val)).pipe(z.number().min(1).max(100)).default('50'),
-  offset: z.string().transform(val => parseInt(val)).pipe(z.number().min(0)).default('0'),
+  limit: z
+    .string()
+    .transform((val) => parseInt(val))
+    .pipe(z.number().min(1).max(100))
+    .default("50"),
+  offset: z
+    .string()
+    .transform((val) => parseInt(val))
+    .pipe(z.number().min(0))
+    .default("0"),
   status: z.enum(leadStatuses).optional(),
   source: z.enum(leadSources).optional(),
   customerId: z.string().uuid().optional(),
-  assignedUserId: z.string().transform(val => parseInt(val)).pipe(z.number()).optional(),
+  assignedUserId: z
+    .string()
+    .transform((val) => parseInt(val))
+    .pipe(z.number())
+    .optional(),
   priority: z.enum(leadPriorities).optional(),
   createdAfter: z.string().datetime().optional(),
-  createdBefore: z.string().datetime().optional()
+  createdBefore: z.string().datetime().optional(),
 });
 
 export const conversationsQuerySchema = z.object({
-  limit: z.string().transform(val => parseInt(val)).pipe(z.number().min(1).max(100)).default('50'),
-  offset: z.string().transform(val => parseInt(val)).pipe(z.number().min(0)).default('0'),
+  limit: z
+    .string()
+    .transform((val) => parseInt(val))
+    .pipe(z.number().min(1).max(100))
+    .default("50"),
+  offset: z
+    .string()
+    .transform((val) => parseInt(val))
+    .pipe(z.number().min(0))
+    .default("0"),
   status: z.enum(conversationStatuses).optional(),
   leadId: z.string().uuid().optional(),
   customerId: z.string().uuid().optional(),
-  assignedUserId: z.string().transform(val => parseInt(val)).pipe(z.number()).optional(),
-  channel: z.string().optional()
+  assignedUserId: z
+    .string()
+    .transform((val) => parseInt(val))
+    .pipe(z.number())
+    .optional(),
+  channel: z.string().optional(),
 });
 
 // ===== RESPONSE SCHEMAS =====
 
-export const leadListResponseSchema = apiResponseSchema(z.object({
-  leads: z.array(apiLeadSchema),
-  pagination: paginationSchema
-}));
+export const leadListResponseSchema = apiResponseSchema(
+  z.object({
+    leads: z.array(apiLeadSchema),
+    pagination: paginationSchema,
+  }),
+);
 
 export const leadDetailResponseSchema = apiResponseSchema(apiLeadSchema);
 
-export const conversationListResponseSchema = apiResponseSchema(z.object({
-  conversations: z.array(apiConversationSchema),
-  pagination: paginationSchema
-}));
+export const conversationListResponseSchema = apiResponseSchema(
+  z.object({
+    conversations: z.array(apiConversationSchema),
+    pagination: paginationSchema,
+  }),
+);
 
-export const conversationDetailResponseSchema = apiResponseSchema(z.object({
-  conversation: apiConversationSchema,
-  messages: z.array(apiMessageSchema),
-  totalMessages: z.number()
-}));
+export const conversationDetailResponseSchema = apiResponseSchema(
+  z.object({
+    conversation: apiConversationSchema,
+    messages: z.array(apiMessageSchema),
+    totalMessages: z.number(),
+  }),
+);
 
 // ===== WEBHOOK SCHEMAS =====
 
 export const twilioWebhookSchema = z.object({
   MessageSid: z.string(),
-  MessageStatus: z.enum(['queued', 'sent', 'delivered', 'failed', 'undelivered']),
+  MessageStatus: z.enum([
+    "queued",
+    "sent",
+    "delivered",
+    "failed",
+    "undelivered",
+  ]),
   To: z.string(),
   From: z.string(),
   Body: z.string().optional(),
   ErrorCode: z.string().optional(),
   ErrorMessage: z.string().optional(),
-  Timestamp: z.string().optional()
+  Timestamp: z.string().optional(),
 });
 
 // ===== TYPE EXPORTS =====
@@ -417,4 +468,6 @@ export type ApiResponse<T> = {
   timestamp?: string;
 };
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
-export type ValidationErrorResponse = z.infer<typeof validationErrorResponseSchema>;
+export type ValidationErrorResponse = z.infer<
+  typeof validationErrorResponseSchema
+>;

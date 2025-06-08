@@ -1,18 +1,18 @@
-import { WebSocketServer, WebSocket } from 'ws';
-import { Server } from 'http';
-import logger from '../utils/logger';
-import db from '../db';
-import { sql } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
-import { enhancedConversationService } from './enhanced-conversation-service';
+import { WebSocketServer, WebSocket } from "ws";
+import { Server } from "http";
+import logger from "../utils/logger";
+import db from "../db";
+import { sql } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
+import { enhancedConversationService } from "./enhanced-conversation-service";
 
 interface ChatMessage {
   id: string;
   conversationId: number;
   senderId: number;
-  senderType: 'agent' | 'customer';
+  senderType: "agent" | "customer";
   content: string;
-  messageType: 'text' | 'image' | 'file';
+  messageType: "text" | "image" | "file";
   timestamp: Date;
   metadata?: any;
 }
@@ -23,7 +23,7 @@ interface ChatConnection {
   userId?: number;
   dealershipId?: number;
   conversationId?: number;
-  type: 'agent' | 'customer';
+  type: "agent" | "customer";
   lastActivity: Date;
 }
 
@@ -46,96 +46,108 @@ export class ChatServer {
   }
 
   initialize(server: Server): void {
-    this.wss = new WebSocketServer({ 
+    this.wss = new WebSocketServer({
       server,
-      path: '/ws/chat'
+      path: "/ws/chat",
     });
 
-    this.wss.on('connection', (ws: WebSocket, request) => {
+    this.wss.on("connection", (ws: WebSocket, request) => {
       this.handleConnection(ws, request);
     });
 
-    logger.info('Chat WebSocket server initialized');
+    logger.info("Chat WebSocket server initialized");
   }
 
   private async handleConnection(ws: WebSocket, request: any): Promise<void> {
     const connectionId = uuidv4();
-    
+
     // Extract session from cookies or headers for authentication
     // This is a simplified version - you'd want proper session verification
     const connection: ChatConnection = {
       id: connectionId,
       ws,
-      type: 'customer', // Default, will be updated after auth
-      lastActivity: new Date()
+      type: "customer", // Default, will be updated after auth
+      lastActivity: new Date(),
     };
 
     this.connections.set(connectionId, connection);
 
-    ws.on('message', async (data: Buffer) => {
+    ws.on("message", async (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString());
         await this.handleMessage(connectionId, message);
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
-        logger.error('Error handling WebSocket message', { 
-          error: err.message, 
-          connectionId 
+        logger.error("Error handling WebSocket message", {
+          error: err.message,
+          connectionId,
         });
-        this.sendError(ws, 'Invalid message format');
+        this.sendError(ws, "Invalid message format");
       }
     });
 
-    ws.on('close', () => {
+    ws.on("close", () => {
       this.handleDisconnection(connectionId);
     });
 
-    ws.on('error', (error) => {
-      logger.error('WebSocket error', { error: error.message, connectionId });
+    ws.on("error", (error) => {
+      logger.error("WebSocket error", { error: error.message, connectionId });
       this.handleDisconnection(connectionId);
     });
 
     // Send welcome message
     this.sendMessage(ws, {
-      type: 'connection_established',
+      type: "connection_established",
       connectionId,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
-  private async handleMessage(connectionId: string, message: any): Promise<void> {
+  private async handleMessage(
+    connectionId: string,
+    message: any,
+  ): Promise<void> {
     const connection = this.connections.get(connectionId);
     if (!connection) return;
 
     connection.lastActivity = new Date();
 
     switch (message.type) {
-      case 'authenticate':
+      case "authenticate":
         await this.handleAuthentication(connectionId, message);
         break;
-      
-      case 'join_conversation':
+
+      case "join_conversation":
         await this.handleJoinConversation(connectionId, message);
         break;
-      
-      case 'send_message':
+
+      case "send_message":
         await this.handleSendMessage(connectionId, message);
         break;
-      
-      case 'typing':
+
+      case "typing":
         await this.handleTyping(connectionId, message);
         break;
-      
-      case 'ping':
-        this.sendMessage(connection.ws, { type: 'pong', timestamp: new Date() });
+
+      case "ping":
+        this.sendMessage(connection.ws, {
+          type: "pong",
+          timestamp: new Date(),
+        });
         break;
-      
+
       default:
-        logger.warn('Unknown message type', { type: message.type, connectionId });
+        logger.warn("Unknown message type", {
+          type: message.type,
+          connectionId,
+        });
     }
   }
 
-  private async handleAuthentication(connectionId: string, message: any): Promise<void> {
+  private async handleAuthentication(
+    connectionId: string,
+    message: any,
+  ): Promise<void> {
     const connection = this.connections.get(connectionId);
     if (!connection) return;
 
@@ -143,52 +155,58 @@ export class ChatServer {
       // Authenticate user based on session token or JWT
       // This is simplified - implement proper authentication
       const { token, userType } = message;
-      
+
       // For demo purposes, we'll mock authentication
       // In production, verify the token and get user details
       if (token) {
         connection.userId = message.userId || 1;
         connection.dealershipId = message.dealershipId || 1;
-        connection.type = userType || 'customer';
+        connection.type = userType || "customer";
 
         this.sendMessage(connection.ws, {
-          type: 'authenticated',
+          type: "authenticated",
           userId: connection.userId,
           userType: connection.type,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
-        logger.info('User authenticated via WebSocket', {
+        logger.info("User authenticated via WebSocket", {
           connectionId,
           userId: connection.userId,
-          userType: connection.type
+          userType: connection.type,
         });
       } else {
-        this.sendError(connection.ws, 'Authentication failed');
+        this.sendError(connection.ws, "Authentication failed");
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Authentication error', { error: err.message, connectionId });
-      this.sendError(connection.ws, 'Authentication failed');
+      logger.error("Authentication error", {
+        error: err.message,
+        connectionId,
+      });
+      this.sendError(connection.ws, "Authentication failed");
     }
   }
 
-  private async handleJoinConversation(connectionId: string, message: any): Promise<void> {
+  private async handleJoinConversation(
+    connectionId: string,
+    message: any,
+  ): Promise<void> {
     const connection = this.connections.get(connectionId);
     if (!connection || !connection.userId) return;
 
     const { conversationId } = message;
-    
+
     try {
       // Verify user has access to this conversation
       const hasAccess = await this.verifyConversationAccess(
-        connection.userId, 
-        conversationId, 
-        connection.dealershipId!
+        connection.userId,
+        conversationId,
+        connection.dealershipId!,
       );
 
       if (!hasAccess) {
-        this.sendError(connection.ws, 'Access denied to conversation');
+        this.sendError(connection.ws, "Access denied to conversation");
         return;
       }
 
@@ -200,45 +218,51 @@ export class ChatServer {
 
       // Send confirmation and recent messages
       const recentMessages = await this.getRecentMessages(conversationId);
-      
+
       this.sendMessage(connection.ws, {
-        type: 'joined_conversation',
+        type: "joined_conversation",
         conversationId,
         recentMessages,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // Notify other participants
-      this.broadcastToRoom(conversationId, {
-        type: 'user_joined',
-        userId: connection.userId,
-        userType: connection.type,
-        timestamp: new Date()
-      }, connectionId);
+      this.broadcastToRoom(
+        conversationId,
+        {
+          type: "user_joined",
+          userId: connection.userId,
+          userType: connection.type,
+          timestamp: new Date(),
+        },
+        connectionId,
+      );
 
-      logger.info('User joined conversation', {
+      logger.info("User joined conversation", {
         connectionId,
         userId: connection.userId,
-        conversationId
+        conversationId,
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Error joining conversation', { 
-        error: err.message, 
-        connectionId, 
-        conversationId 
+      logger.error("Error joining conversation", {
+        error: err.message,
+        connectionId,
+        conversationId,
       });
-      this.sendError(connection.ws, 'Failed to join conversation');
+      this.sendError(connection.ws, "Failed to join conversation");
     }
   }
 
-  private async handleSendMessage(connectionId: string, message: any): Promise<void> {
+  private async handleSendMessage(
+    connectionId: string,
+    message: any,
+  ): Promise<void> {
     const connection = this.connections.get(connectionId);
     if (!connection || !connection.conversationId || !connection.userId) return;
 
     try {
-      const { content, messageType = 'text', metadata = {} } = message;
+      const { content, messageType = "text", metadata = {} } = message;
 
       // Save message to database
       const chatMessage: ChatMessage = {
@@ -249,53 +273,54 @@ export class ChatServer {
         content,
         messageType,
         timestamp: new Date(),
-        metadata
+        metadata,
       };
 
       await this.saveMessage(chatMessage);
 
       // Broadcast to all participants in the conversation
       this.broadcastToRoom(connection.conversationId, {
-        type: 'new_message',
+        type: "new_message",
         message: chatMessage,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // Generate intelligent AI response if message is from customer
-      if (connection.type === 'customer' && connection.dealershipId) {
+      if (connection.type === "customer" && connection.dealershipId) {
         try {
-          const aiResponse = await enhancedConversationService.generateIntelligentChatResponse({
-            conversationId: connection.conversationId.toString(),
-            content: content,
-            dealershipId: connection.dealershipId,
-            userId: connection.userId || 0
-          });
+          const aiResponse =
+            await enhancedConversationService.generateIntelligentChatResponse({
+              conversationId: connection.conversationId.toString(),
+              content: content,
+              dealershipId: connection.dealershipId,
+              userId: connection.userId || 0,
+            });
 
           if (aiResponse) {
             const aiMessage: ChatMessage = {
               id: uuidv4(),
               conversationId: connection.conversationId,
               senderId: 0, // AI assistant
-              senderType: 'agent',
+              senderType: "agent",
               content: aiResponse,
-              messageType: 'text',
+              messageType: "text",
               timestamp: new Date(),
-              metadata: { isAI: true, respondingTo: chatMessage.id }
+              metadata: { isAI: true, respondingTo: chatMessage.id },
             };
 
             await this.saveMessage(aiMessage);
 
             // Broadcast AI response to all participants
             this.broadcastToRoom(connection.conversationId, {
-              type: 'new_message',
+              type: "new_message",
               message: aiMessage,
-              timestamp: new Date()
+              timestamp: new Date(),
             });
           }
         } catch (error) {
-          logger.error('Error generating AI response', { 
+          logger.error("Error generating AI response", {
             error: error instanceof Error ? error.message : String(error),
-            conversationId: connection.conversationId 
+            conversationId: connection.conversationId,
           });
         }
       }
@@ -303,36 +328,42 @@ export class ChatServer {
       // Update conversation last activity
       await this.updateConversationActivity(connection.conversationId);
 
-      logger.info('Message sent', {
+      logger.info("Message sent", {
         connectionId,
         conversationId: connection.conversationId,
-        messageId: chatMessage.id
+        messageId: chatMessage.id,
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Error sending message', { 
-        error: err.message, 
-        connectionId 
+      logger.error("Error sending message", {
+        error: err.message,
+        connectionId,
       });
-      this.sendError(connection.ws, 'Failed to send message');
+      this.sendError(connection.ws, "Failed to send message");
     }
   }
 
-  private async handleTyping(connectionId: string, message: any): Promise<void> {
+  private async handleTyping(
+    connectionId: string,
+    message: any,
+  ): Promise<void> {
     const connection = this.connections.get(connectionId);
     if (!connection || !connection.conversationId) return;
 
     const { isTyping } = message;
 
     // Broadcast typing indicator to other participants
-    this.broadcastToRoom(connection.conversationId, {
-      type: 'typing_indicator',
-      userId: connection.userId,
-      userType: connection.type,
-      isTyping,
-      timestamp: new Date()
-    }, connectionId);
+    this.broadcastToRoom(
+      connection.conversationId,
+      {
+        type: "typing_indicator",
+        userId: connection.userId,
+        userType: connection.type,
+        isTyping,
+        timestamp: new Date(),
+      },
+      connectionId,
+    );
   }
 
   private handleDisconnection(connectionId: string): void {
@@ -342,44 +373,48 @@ export class ChatServer {
     // Remove from room if in a conversation
     if (connection.conversationId) {
       this.leaveRoom(connection.conversationId, connectionId);
-      
+
       // Notify other participants
       this.broadcastToRoom(connection.conversationId, {
-        type: 'user_left',
+        type: "user_left",
         userId: connection.userId,
         userType: connection.type,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
     }
 
     this.connections.delete(connectionId);
-    
-    logger.info('User disconnected', {
+
+    logger.info("User disconnected", {
       connectionId,
       userId: connection.userId,
-      conversationId: connection.conversationId
+      conversationId: connection.conversationId,
     });
   }
 
-  private joinRoom(conversationId: number, connectionId: string, connection: ChatConnection): void {
+  private joinRoom(
+    conversationId: number,
+    connectionId: string,
+    connection: ChatConnection,
+  ): void {
     if (!this.rooms.has(conversationId)) {
       this.rooms.set(conversationId, {
         conversationId,
         dealershipId: connection.dealershipId!,
         agents: new Set(),
         customers: new Set(),
-        lastActivity: new Date()
+        lastActivity: new Date(),
       });
     }
 
     const room = this.rooms.get(conversationId)!;
-    
-    if (connection.type === 'agent') {
+
+    if (connection.type === "agent") {
       room.agents.add(connectionId);
     } else {
       room.customers.add(connectionId);
     }
-    
+
     room.lastActivity = new Date();
   }
 
@@ -396,24 +431,28 @@ export class ChatServer {
     }
   }
 
-  private broadcastToRoom(conversationId: number, message: any, excludeConnectionId?: string): void {
+  private broadcastToRoom(
+    conversationId: number,
+    message: any,
+    excludeConnectionId?: string,
+  ): void {
     const room = this.rooms.get(conversationId);
     if (!room) return;
 
     // Handle agents
-    room.agents.forEach(connectionId => {
+    room.agents.forEach((connectionId) => {
       if (connectionId === excludeConnectionId) return;
-      
+
       const connection = this.connections.get(connectionId);
       if (connection && connection.ws.readyState === WebSocket.OPEN) {
         this.sendMessage(connection.ws, message);
       }
     });
-    
+
     // Handle customers
-    room.customers.forEach(connectionId => {
+    room.customers.forEach((connectionId) => {
       if (connectionId === excludeConnectionId) return;
-      
+
       const connection = this.connections.get(connectionId);
       if (connection && connection.ws.readyState === WebSocket.OPEN) {
         this.sendMessage(connection.ws, message);
@@ -429,13 +468,17 @@ export class ChatServer {
 
   private sendError(ws: WebSocket, error: string): void {
     this.sendMessage(ws, {
-      type: 'error',
+      type: "error",
       error,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
-  private async verifyConversationAccess(userId: number, conversationId: number, dealershipId: number): Promise<boolean> {
+  private async verifyConversationAccess(
+    userId: number,
+    conversationId: number,
+    dealershipId: number,
+  ): Promise<boolean> {
     try {
       // Check if user has access to this conversation
       // This is simplified - implement proper access control
@@ -444,15 +487,22 @@ export class ChatServer {
         WHERE id = ${conversationId} 
         AND dealership_id = ${dealershipId}
       `);
-      
+
       return result.length > 0;
     } catch (error) {
-      logger.error('Error verifying conversation access', { error, userId, conversationId });
+      logger.error("Error verifying conversation access", {
+        error,
+        userId,
+        conversationId,
+      });
       return false;
     }
   }
 
-  private async getRecentMessages(conversationId: number, limit: number = 50): Promise<ChatMessage[]> {
+  private async getRecentMessages(
+    conversationId: number,
+    limit: number = 50,
+  ): Promise<ChatMessage[]> {
     try {
       const result = await db.execute(sql`
         SELECT 
@@ -470,25 +520,26 @@ export class ChatServer {
 
       // Transform database format to ChatMessage format
       const messages: ChatMessage[] = [];
-      
+
       for (const row of result) {
-        const senderType: 'agent' | 'customer' = row.isFromCustomer ? 'customer' : 'agent';
+        const senderType: "agent" | "customer" = row.isFromCustomer
+          ? "customer"
+          : "agent";
         messages.push({
           id: row.id,
           conversationId: row.conversationId,
           senderId: 0, // Would need to add sender_id to messages table
           senderType,
           content: row.content,
-          messageType: 'text', // Default to text, could be stored in metadata
+          messageType: "text", // Default to text, could be stored in metadata
           timestamp: new Date(row.timestamp),
-          metadata: row.metadata || {}
+          metadata: row.metadata || {},
         });
       }
-      
+
       return messages.reverse(); // Newest last
-      
     } catch (error) {
-      logger.error('Error getting recent messages', { error, conversationId });
+      logger.error("Error getting recent messages", { error, conversationId });
       return [];
     }
   }
@@ -508,18 +559,20 @@ export class ChatServer {
           ${message.id},
           ${message.conversationId},
           ${message.content},
-          ${message.senderType === 'customer'},
+          ${message.senderType === "customer"},
           ${message.timestamp.toISOString()},
           ${JSON.stringify(message.metadata)}
         )
       `);
     } catch (error) {
-      logger.error('Error saving message', { error, message });
+      logger.error("Error saving message", { error, message });
       throw error;
     }
   }
 
-  private async updateConversationActivity(conversationId: number): Promise<void> {
+  private async updateConversationActivity(
+    conversationId: number,
+  ): Promise<void> {
     try {
       await db.execute(sql`
         UPDATE conversations
@@ -528,7 +581,10 @@ export class ChatServer {
         WHERE id = ${conversationId}
       `);
     } catch (error) {
-      logger.error('Error updating conversation activity', { error, conversationId });
+      logger.error("Error updating conversation activity", {
+        error,
+        conversationId,
+      });
     }
   }
 
@@ -542,26 +598,27 @@ export class ChatServer {
   private checkConnections(): void {
     const now = new Date();
     const timeoutThreshold = 5 * 60 * 1000; // 5 minutes
-    
+
     this.connections.forEach((connection, connectionId) => {
       // Check if connection is stale
-      const timeSinceLastActivity = now.getTime() - connection.lastActivity.getTime();
-      
+      const timeSinceLastActivity =
+        now.getTime() - connection.lastActivity.getTime();
+
       if (timeSinceLastActivity > timeoutThreshold) {
         // Connection has been inactive for too long
-        logger.info('Closing inactive connection', { connectionId });
-        
+        logger.info("Closing inactive connection", { connectionId });
+
         if (connection.ws.readyState === WebSocket.OPEN) {
-          connection.ws.close(1000, 'Connection timeout due to inactivity');
+          connection.ws.close(1000, "Connection timeout due to inactivity");
         }
-        
+
         this.handleDisconnection(connectionId);
       } else if (connection.ws.readyState === WebSocket.OPEN) {
         // Send ping to keep connection alive
-        this.sendMessage(connection.ws, { type: 'ping', timestamp: now });
+        this.sendMessage(connection.ws, { type: "ping", timestamp: now });
       }
     });
-    
+
     // Clean up empty rooms
     this.rooms.forEach((room, conversationId) => {
       if (room.agents.size === 0 && room.customers.size === 0) {
@@ -574,22 +631,22 @@ export class ChatServer {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
     }
-    
+
     // Close all connections
-    this.connections.forEach(connection => {
+    this.connections.forEach((connection) => {
       if (connection.ws.readyState === WebSocket.OPEN) {
-        connection.ws.close(1000, 'Server shutting down');
+        connection.ws.close(1000, "Server shutting down");
       }
     });
-    
+
     this.connections.clear();
     this.rooms.clear();
-    
+
     if (this.wss) {
       this.wss.close();
       this.wss = null;
     }
-    
-    logger.info('Chat server shut down');
+
+    logger.info("Chat server shut down");
   }
 }

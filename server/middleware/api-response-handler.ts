@@ -3,28 +3,32 @@
  * Provides standardized response formatting for API endpoints
  */
 
-import type { Request, Response, NextFunction } from 'express';
-import { HttpStatus } from '../utils/api-response';
+import type { Request, Response, NextFunction } from "express";
+import { HttpStatus } from "../utils/api-response";
 
 /**
  * Extends Express Response object with standardized response methods
  */
-export const apiResponseHandler = (req: Request, res: Response, next: NextFunction): void => {
+export const apiResponseHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
   /**
    * Send a success response
    * @param data Data to include in the response
    * @param message Optional success message
    * @param statusCode HTTP status code (defaults to 200)
    */
-  res.sendSuccess = function<T = any>(
+  res.sendSuccess = function <T = any>(
     data: T,
     message?: string,
-    statusCode = HttpStatus.OK
+    statusCode = HttpStatus.OK,
   ): Response {
     const response = {
       success: true,
       data,
-      ...(message && { message })
+      ...(message && { message }),
     };
 
     return this.status(statusCode).json(response);
@@ -39,13 +43,13 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
    * @param message Optional success message
    * @param statusCode HTTP status code (defaults to 200)
    */
-  res.sendPaginatedSuccess = function<T = any>(
+  res.sendPaginatedSuccess = function <T = any>(
     data: T[],
     total: number,
     limit: number,
     offset: number,
     message?: string,
-    statusCode = HttpStatus.OK
+    statusCode = HttpStatus.OK,
   ): Response {
     const response = {
       success: true,
@@ -53,9 +57,9 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
       pagination: {
         limit,
         offset,
-        total
+        total,
       },
-      ...(message && { message })
+      ...(message && { message }),
     };
 
     return this.status(statusCode).json(response);
@@ -68,11 +72,11 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
    * @param details Additional error details
    * @param code Optional error code for client-side handling
    */
-  res.sendError = function(
+  res.sendError = function (
     error: string | Error,
     statusCode = HttpStatus.BAD_REQUEST,
     details?: any,
-    code?: string
+    code?: string,
   ): Response {
     const errorMessage = error instanceof Error ? error.message : error;
 
@@ -80,7 +84,7 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
       success: false,
       error: errorMessage,
       ...(details && { details }),
-      ...(code && { code })
+      ...(code && { code }),
     };
 
     return this.status(statusCode).json(response);
@@ -91,15 +95,15 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
    * @param validationErrors Object containing field-level validation errors
    * @param message Optional error message
    */
-  res.sendValidationError = function(
+  res.sendValidationError = function (
     validationErrors: Record<string, string>,
-    message = 'Validation failed'
+    message = "Validation failed",
   ): Response {
     const response = {
       success: false,
       error: message,
       details: validationErrors,
-      code: 'VALIDATION_ERROR'
+      code: "VALIDATION_ERROR",
     };
 
     return this.status(HttpStatus.UNPROCESSABLE_ENTITY).json(response);
@@ -110,17 +114,17 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
    * @param resourceType Type of resource that wasn't found
    * @param resourceId ID of the resource that wasn't found
    */
-  res.sendNotFound = function(
+  res.sendNotFound = function (
     resourceType: string,
-    resourceId?: string | number
+    resourceId?: string | number,
   ): Response {
     const response = {
       success: false,
       error: `${resourceType} not found`,
       ...(resourceId && {
-        details: { resourceId, resourceType }
+        details: { resourceId, resourceType },
       }),
-      code: 'RESOURCE_NOT_FOUND'
+      code: "RESOURCE_NOT_FOUND",
     };
 
     return this.status(HttpStatus.NOT_FOUND).json(response);
@@ -133,11 +137,33 @@ export const apiResponseHandler = (req: Request, res: Response, next: NextFuncti
 declare global {
   namespace Express {
     interface Response {
-      sendSuccess<T = any>(data: T, message?: string, statusCode?: number): Response;
-      sendPaginatedSuccess<T = any>(data: T[], total: number, limit: number, offset: number, message?: string, statusCode?: number): Response;
-      sendError(error: string | Error, statusCode?: number, details?: any, code?: string): Response;
-      sendValidationError(validationErrors: Record<string, string>, message?: string): Response;
-      sendNotFound(resourceType: string, resourceId?: string | number): Response;
+      sendSuccess<T = any>(
+        data: T,
+        message?: string,
+        statusCode?: number,
+      ): Response;
+      sendPaginatedSuccess<T = any>(
+        data: T[],
+        total: number,
+        limit: number,
+        offset: number,
+        message?: string,
+        statusCode?: number,
+      ): Response;
+      sendError(
+        error: string | Error,
+        statusCode?: number,
+        details?: any,
+        code?: string,
+      ): Response;
+      sendValidationError(
+        validationErrors: Record<string, string>,
+        message?: string,
+      ): Response;
+      sendNotFound(
+        resourceType: string,
+        resourceId?: string | number,
+      ): Response;
     }
   }
 }

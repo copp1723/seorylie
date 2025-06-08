@@ -1,26 +1,28 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./Tabs";
 
 const meta: Meta<typeof Tabs> = {
-  title: 'Components/UI/Tabs',
+  title: "Components/UI/Tabs",
   component: Tabs,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
     docs: {
       description: {
-        component: 'A set of layered sections of content—known as tab panels—that are displayed one at a time.',
+        component:
+          "A set of layered sections of content—known as tab panels—that are displayed one at a time.",
       },
     },
   },
   argTypes: {
     defaultValue: {
-      description: 'The value of the tab that should be active when initially rendered.',
-      control: 'text',
+      description:
+        "The value of the tab that should be active when initially rendered.",
+      control: "text",
     },
     orientation: {
-      description: 'The orientation of the component.',
-      control: 'radio',
-      options: ['horizontal', 'vertical'],
+      description: "The orientation of the component.",
+      control: "radio",
+      options: ["horizontal", "vertical"],
     },
   },
 };
@@ -30,8 +32,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    defaultValue: 'tab1',
-    className: 'w-[400px]',
+    defaultValue: "tab1",
+    className: "w-[400px]",
   },
   render: (args) => (
     <Tabs {...args}>
@@ -57,9 +59,9 @@ export const Default: Story = {
 
 export const Vertical: Story = {
   args: {
-    defaultValue: 'general',
-    orientation: 'vertical',
-    className: 'w-[600px] h-[300px]',
+    defaultValue: "general",
+    orientation: "vertical",
+    className: "w-[600px] h-[300px]",
   },
   render: (args) => (
     <Tabs {...args}>
@@ -103,8 +105,8 @@ export const Vertical: Story = {
 
 export const ThreeTabs: Story = {
   args: {
-    defaultValue: 'overview',
-    className: 'w-[500px]',
+    defaultValue: "overview",
+    className: "w-[500px]",
   },
   render: (args) => (
     <Tabs {...args}>
@@ -137,8 +139,8 @@ export const ThreeTabs: Story = {
 
 export const Disabled: Story = {
   args: {
-    defaultValue: 'tab1',
-    className: 'w-[400px]',
+    defaultValue: "tab1",
+    className: "w-[400px]",
   },
   render: (args) => (
     <Tabs {...args}>

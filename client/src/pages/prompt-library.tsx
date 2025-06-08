@@ -19,7 +19,7 @@ export default function PromptLibraryPage() {
   // Query for system prompts - TEMPORARILY DISABLED
   const [systemPromptsData, setSystemPromptsData] = useState<any>(undefined);
   const [systemPromptsLoading, setSystemPromptsLoading] = useState(false);
-  
+
   // TODO: Re-enable React Query
   // const { data: systemPromptsData, isLoading: systemPromptsLoading } = useQuery(
   //   {
@@ -31,7 +31,7 @@ export default function PromptLibraryPage() {
   // Query for test history - TEMPORARILY DISABLED
   const [testHistoryData, setTestHistoryData] = useState<any>(undefined);
   const [testHistoryLoading, setTestHistoryLoading] = useState(false);
-  
+
   // TODO: Re-enable React Query
   // const { data: testHistoryData, isLoading: testHistoryLoading } = useQuery({
   //   queryKey: ["/api/prompt-library/history"],
@@ -41,27 +41,25 @@ export default function PromptLibraryPage() {
 
   // Mutation for testing prompts - TEMPORARILY DISABLED
   const testPromptMutation = {
-    mutate: (data: {
-      prompt: string;
-      variables?: Record<string, string>;
-    }) => {
-      console.log('Would test prompt:', data);
+    mutate: (data: { prompt: string; variables?: Record<string, string> }) => {
+      console.log("Would test prompt:", data);
       // Simulate response for testing
       const mockResponse = {
         processedPrompt: data.prompt,
         aiResponse: "This is a mock response for testing purposes",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      setTestPromptMutation(prev => ({ ...prev, data: mockResponse }));
+      setTestPromptMutation((prev) => ({ ...prev, data: mockResponse }));
     },
     isPending: false,
     isError: false,
     error: null,
-    data: null
+    data: null,
   };
-  
-  const [testPromptMutationState, setTestPromptMutation] = useState(testPromptMutation);
-  
+
+  const [testPromptMutationState, setTestPromptMutation] =
+    useState(testPromptMutation);
+
   // TODO: Re-enable React Query
   // const testPromptMutation = useMutation({
   //   mutationFn: (data: {
@@ -231,11 +229,12 @@ export default function PromptLibraryPage() {
                   </div>
                 )}
 
-                {!testPromptMutationState.data && !testPromptMutationState.isError && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    Test a prompt to see results
-                  </div>
-                )}
+                {!testPromptMutationState.data &&
+                  !testPromptMutationState.isError && (
+                    <div className="text-center py-12 text-muted-foreground">
+                      Test a prompt to see results
+                    </div>
+                  )}
               </CardContent>
             </Card>
           </div>

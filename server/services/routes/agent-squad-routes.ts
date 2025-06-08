@@ -1,8 +1,8 @@
-import express from 'express';
-import { hybridAIService } from '../hybrid-ai-service';
-import { initializeAgentSquad, isAgentSquadReady } from '../agentSquad/index';
-import logger from '../../utils/logger';
-import { authenticateSession } from '../../middleware/auth';
+import express from "express";
+import { hybridAIService } from "../hybrid-ai-service";
+import { initializeAgentSquad, isAgentSquadReady } from "../agentSquad/index";
+import logger from "../../utils/logger";
+import { authenticateSession } from "../../middleware/auth";
 
 const router = express.Router();
 
@@ -10,14 +10,14 @@ const router = express.Router();
  * Initialize Agent Squad for a dealership
  * POST /api/agent-squad/initialize
  */
-router.post('/initialize', authenticateSession, async (req, res) => {
+router.post("/initialize", authenticateSession, async (req, res) => {
   try {
     const { dealershipId, enabled = true } = req.body;
 
     if (!dealershipId) {
       return res.status(400).json({
         success: false,
-        error: 'Dealership ID is required'
+        error: "Dealership ID is required",
       });
     }
 
@@ -25,29 +25,28 @@ router.post('/initialize', authenticateSession, async (req, res) => {
     const initialized = initializeAgentSquad({
       enabled,
       openaiApiKey: process.env.OPENAI_API_KEY,
-      fallbackToOriginal: true
+      fallbackToOriginal: true,
     });
 
     if (!initialized) {
       return res.status(500).json({
         success: false,
-        error: 'Failed to initialize Agent Squad - check OpenAI API key'
+        error: "Failed to initialize Agent Squad - check OpenAI API key",
       });
     }
 
-    logger.info('Agent Squad initialized via API', { dealershipId, enabled });
+    logger.info("Agent Squad initialized via API", { dealershipId, enabled });
 
     res.json({
       success: true,
-      message: 'Agent Squad initialized successfully',
-      ready: isAgentSquadReady()
+      message: "Agent Squad initialized successfully",
+      ready: isAgentSquadReady(),
     });
-
   } catch (error) {
-    logger.error('Agent Squad initialization failed', { error });
+    logger.error("Agent Squad initialization failed", { error });
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 });
@@ -56,21 +55,21 @@ router.post('/initialize', authenticateSession, async (req, res) => {
  * Test Agent Squad with a sample message
  * POST /api/agent-squad/test
  */
-router.post('/test', authenticateSession, async (req, res) => {
+router.post("/test", authenticateSession, async (req, res) => {
   try {
     const { message, dealershipId } = req.body;
 
     if (!message || !dealershipId) {
       return res.status(400).json({
         success: false,
-        error: 'Message and dealership ID are required'
+        error: "Message and dealership ID are required",
       });
     }
 
     if (!isAgentSquadReady()) {
       return res.status(503).json({
         success: false,
-        error: 'Agent Squad is not initialized'
+        error: "Agent Squad is not initialized",
       });
     }
 
@@ -81,15 +80,15 @@ router.post('/test', authenticateSession, async (req, res) => {
       prompt: message,
       context: {
         test: true,
-        customerInfo: { name: 'Test Customer' }
-      }
+        customerInfo: { name: "Test Customer" },
+      },
     });
 
-    logger.info('Agent Squad test completed', {
+    logger.info("Agent Squad test completed", {
       dealershipId,
       success: result.success,
       usedAgentSquad: result.usedAgentSquad,
-      selectedAgent: result.selectedAgent
+      selectedAgent: result.selectedAgent,
     });
 
     res.json({
@@ -99,15 +98,14 @@ router.post('/test', authenticateSession, async (req, res) => {
         selectedAgent: result.selectedAgent,
         usedAgentSquad: result.usedAgentSquad,
         confidence: result.confidence,
-        fallbackReason: result.fallbackReason
-      }
+        fallbackReason: result.fallbackReason,
+      },
     });
-
   } catch (error) {
-    logger.error('Agent Squad test failed', { error });
+    logger.error("Agent Squad test failed", { error });
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 });
@@ -116,7 +114,7 @@ router.post('/test', authenticateSession, async (req, res) => {
  * Get Agent Squad status and health
  * GET /api/agent-squad/status
  */
-router.get('/status', authenticateSession, async (req, res) => {
+router.get("/status", authenticateSession, async (req, res) => {
   try {
     const healthStatus = await hybridAIService.getHealthStatus();
     const config = hybridAIService.getConfig();
@@ -128,16 +126,15 @@ router.get('/status', authenticateSession, async (req, res) => {
         health: healthStatus,
         config: {
           useAgentSquad: config.useAgentSquad,
-          fallbackToOriginal: config.fallbackToOriginal
-        }
-      }
+          fallbackToOriginal: config.fallbackToOriginal,
+        },
+      },
     });
-
   } catch (error) {
-    logger.error('Agent Squad status check failed', { error });
+    logger.error("Agent Squad status check failed", { error });
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 });
@@ -146,31 +143,31 @@ router.get('/status', authenticateSession, async (req, res) => {
  * Update Agent Squad configuration
  * PUT /api/agent-squad/config
  */
-router.put('/config', authenticateSession, async (req, res) => {
+router.put("/config", authenticateSession, async (req, res) => {
   try {
     const { useAgentSquad, fallbackToOriginal } = req.body;
 
     hybridAIService.updateConfig({
       useAgentSquad: useAgentSquad !== undefined ? useAgentSquad : undefined,
-      fallbackToOriginal: fallbackToOriginal !== undefined ? fallbackToOriginal : undefined
+      fallbackToOriginal:
+        fallbackToOriginal !== undefined ? fallbackToOriginal : undefined,
     });
 
-    logger.info('Agent Squad configuration updated', {
+    logger.info("Agent Squad configuration updated", {
       useAgentSquad,
-      fallbackToOriginal
+      fallbackToOriginal,
     });
 
     res.json({
       success: true,
-      message: 'Configuration updated successfully',
-      config: hybridAIService.getConfig()
+      message: "Configuration updated successfully",
+      config: hybridAIService.getConfig(),
     });
-
   } catch (error) {
-    logger.error('Agent Squad config update failed', { error });
+    logger.error("Agent Squad config update failed", { error });
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 });

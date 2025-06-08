@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  Dispatch,
+  SetStateAction,
+} from "react";
 
 /**
  * Options for the useLocalStorage hook
@@ -9,19 +15,19 @@ export interface LocalStorageOptions {
    * @default false
    */
   useSessionStorage?: boolean;
-  
+
   /**
    * Whether to serialize/deserialize objects using JSON
    * @default true
    */
   serialize?: boolean;
-  
+
   /**
    * Prefix to add to all keys
    * @default ''
    */
   prefix?: string;
-  
+
   /**
    * Function to call when an error occurs
    */
@@ -31,11 +37,13 @@ export interface LocalStorageOptions {
 /**
  * Check if localStorage is available
  */
-const isStorageAvailable = (type: 'localStorage' | 'sessionStorage'): boolean => {
+const isStorageAvailable = (
+  type: "localStorage" | "sessionStorage",
+): boolean => {
   try {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === "undefined") return false;
     const storage = window[type];
-    const testKey = '__storage_test__';
+    const testKey = "__storage_test__";
     storage.setItem(testKey, testKey);
     storage.removeItem(testKey);
     return true;
@@ -54,74 +62,87 @@ const isStorageAvailable = (type: 'localStorage' | 'sessionStorage'): boolean =>
 export const useLocalStorage = <T>(
   key: string,
   initialValue: T | (() => T),
-  options: LocalStorageOptions = {}
-): [T, Dispatch<SetStateAction<T>>, { remove: () => void, error: Error | null }] => {
+  options: LocalStorageOptions = {},
+): [
+  T,
+  Dispatch<SetStateAction<T>>,
+  { remove: () => void; error: Error | null },
+] => {
   const {
     useSessionStorage = false,
     serialize = true,
-    prefix = '',
+    prefix = "",
     onError,
   } = options;
 
   // Determine which storage to use
-  const storageType = useSessionStorage ? 'sessionStorage' : 'localStorage';
+  const storageType = useSessionStorage ? "sessionStorage" : "localStorage";
   const storageAvailable = isStorageAvailable(storageType);
-  
+
   // Prefixed key
   const prefixedKey = `${prefix}${key}`;
-  
+
   // State for tracking errors
   const [error, setError] = useState<Error | null>(null);
 
   // Helper function to safely access storage
-  const safelyAccessStorage = useCallback((operation: () => void) => {
-    if (!storageAvailable) {
-      const storageError = new Error(`${storageType} is not available`);
-      setError(storageError);
-      if (onError) onError(storageError);
-      return false;
-    }
-    
-    try {
-      operation();
-      return true;
-    } catch (e) {
-      const storageError = e instanceof Error ? e : new Error('Storage operation failed');
-      setError(storageError);
-      if (onError) onError(storageError);
-      return false;
-    }
-  }, [storageType, storageAvailable, onError]);
+  const safelyAccessStorage = useCallback(
+    (operation: () => void) => {
+      if (!storageAvailable) {
+        const storageError = new Error(`${storageType} is not available`);
+        setError(storageError);
+        if (onError) onError(storageError);
+        return false;
+      }
+
+      try {
+        operation();
+        return true;
+      } catch (e) {
+        const storageError =
+          e instanceof Error ? e : new Error("Storage operation failed");
+        setError(storageError);
+        if (onError) onError(storageError);
+        return false;
+      }
+    },
+    [storageType, storageAvailable, onError],
+  );
 
   // Function to get the value from storage
   const getStoredValue = useCallback((): T => {
     // If storage is not available, return the initial value
     if (!storageAvailable) {
-      return typeof initialValue === 'function'
+      return typeof initialValue === "function"
         ? (initialValue as () => T)()
         : initialValue;
     }
-    
+
     // Get from storage
     const storage = window[storageType];
     const storedValue = storage.getItem(prefixedKey);
-    
+
     // If the key doesn't exist, return the initial value
     if (storedValue === null) {
-      const value = typeof initialValue === 'function'
-        ? (initialValue as () => T)()
-        : initialValue;
-      
+      const value =
+        typeof initialValue === "function"
+          ? (initialValue as () => T)()
+          : initialValue;
+
       // Initialize storage with the initial value
-      if (serialize && typeof value !== 'string') {
-        safelyAccessStorage(() => storage.setItem(prefixedKey, JSON.stringify(value)));
+      if (serialize && typeof value !== "string") {
+        safelyAccessStorage(() =>
+          storage.setItem(prefixedKey, JSON.stringify(value)),
+        );
       } else {
-        safelyAccessStorage(() => storage.setItem(prefixedKey, value as unknown as string));
+        safelyAccessStorage(() =>
+          storage.setItem(prefixedKey, value as unknown as string),
+        );
       }
-      
+
       return value;
     }
-    
+
     // Parse the stored value
     if (serialize) {
       try {
@@ -131,9 +152,16 @@ export const useLocalStorage = <T>(
         return storedValue as unknown as T;
       }
     }
-    
+
     return storedValue as unknown as T;
-  }, [initialValue, storageAvailable, storageType, prefixedKey, serialize, safelyAccessStorage]);
+  }, [
+    initialValue,
+    storageAvailable,
+    storageType,
+    prefixedKey,
+    serialize,
+    safelyAccessStorage,
+  ]);
 
   // State to keep track of the current value
   const [storedValue, setStoredValue] = useState<T>(getStoredValue);
@@ -141,7 +169,7 @@ export const useLocalStorage = <T>(
   // Listen for changes to this key from other components
   useEffect(() => {
     if (!storageAvailable) return;
-    
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === prefixedKey && e.newValue !== null) {
         // Update state when the storage changes
@@ -155,19 +183,19 @@ export const useLocalStorage = <T>(
       } else if (e.key === prefixedKey && e.newValue === null) {
         // Key was removed, reset to initial value
         setStoredValue(
-          typeof initialValue === 'function'
+          typeof initialValue === "function"
             ? (initialValue as () => T)()
-            : initialValue
+            : initialValue,
         );
       }
     };
-    
+
     // Add event listener
-    window.addEventListener('storage', handleStorageChange);
-    
+    window.addEventListener("storage", handleStorageChange);
+
     // Cleanup
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, [prefixedKey, serialize, storageAvailable, initialValue]);
 
@@ -176,19 +204,20 @@ export const useLocalStorage = <T>(
   const setValue: Dispatch<SetStateAction<T>> = useCallback(
     (value) => {
       // Allow value to be a function
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+
       // Save state
       setStoredValue(valueToStore);
-      
+
       // Save to storage
       if (storageAvailable) {
         const storage = window[storageType];
-        
+
         safelyAccessStorage(() => {
           if (valueToStore === undefined) {
             storage.removeItem(prefixedKey);
-          } else if (serialize && typeof valueToStore !== 'string') {
+          } else if (serialize && typeof valueToStore !== "string") {
             storage.setItem(prefixedKey, JSON.stringify(valueToStore));
           } else {
             storage.setItem(prefixedKey, valueToStore as unknown as string);
@@ -196,7 +225,14 @@ export const useLocalStorage = <T>(
         });
       }
     },
-    [storedValue, storageAvailable, storageType, prefixedKey, serialize, safelyAccessStorage]
+    [
+      storedValue,
+      storageAvailable,
+      storageType,
+      prefixedKey,
+      serialize,
+      safelyAccessStorage,
+    ],
   );
 
   // Function to remove the item from storage
@@ -205,14 +241,20 @@ export const useLocalStorage = <T>(
       const storage = window[storageType];
       safelyAccessStorage(() => storage.removeItem(prefixedKey));
     }
-    
+
     // Reset to initial value
     setStoredValue(
-      typeof initialValue === 'function'
+      typeof initialValue === "function"
         ? (initialValue as () => T)()
-        : initialValue
+        : initialValue,
     );
-  }, [storageAvailable, storageType, prefixedKey, initialValue, safelyAccessStorage]);
+  }, [
+    storageAvailable,
+    storageType,
+    prefixedKey,
+    initialValue,
+    safelyAccessStorage,
+  ]);
 
   return [storedValue, setValue, { remove, error }];
 };

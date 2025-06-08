@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit from "express-rate-limit";
 
 // Standard rate limit for most API routes
 export const standardLimiter = rateLimit({
@@ -7,9 +7,9 @@ export const standardLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    status: 'error',
-    message: 'Too many requests, please try again later.'
-  }
+    status: "error",
+    message: "Too many requests, please try again later.",
+  },
 });
 
 // More strict rate limit for authentication-related endpoints
@@ -19,9 +19,9 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    status: 'error',
-    message: 'Too many login attempts, please try again later.'
-  }
+    status: "error",
+    message: "Too many login attempts, please try again later.",
+  },
 });
 
 // Very strict rate limit for sensitive endpoints
@@ -31,9 +31,10 @@ export const strictLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    status: 'error',
-    message: 'Rate limit exceeded for sensitive operation, please try again later.'
-  }
+    status: "error",
+    message:
+      "Rate limit exceeded for sensitive operation, please try again later.",
+  },
 });
 
 // Specialized rate limit for API key-based endpoints
@@ -43,7 +44,7 @@ export const apiKeyLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    status: 'error',
-    message: 'API rate limit exceeded, please slow down your requests.'
-  }
+    status: "error",
+    message: "API rate limit exceeded, please slow down your requests.",
+  },
 });

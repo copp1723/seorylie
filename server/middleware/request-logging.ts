@@ -1,13 +1,13 @@
 /**
  * Request/Response Logging Middleware
- * 
+ *
  * Provides comprehensive logging of HTTP requests and responses with correlation IDs,
  * performance metrics, and sensitive data redaction.
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import logger from '../utils/logger';
+import { Request, Response, NextFunction } from "express";
+import { v4 as uuidv4 } from "uuid";
+import logger from "../utils/logger";
 
 export interface RequestLogContext {
   requestId: string;
@@ -34,18 +34,18 @@ export interface LoggingOptions {
   excludeHeaders?: string[];
   maxBodySize?: number;
   sensitiveFields?: string[];
-  logLevel?: 'debug' | 'info' | 'warn' | 'error';
+  logLevel?: "debug" | "info" | "warn" | "error";
 }
 
 const DEFAULT_OPTIONS: LoggingOptions = {
   includeRequestBody: false,
   includeResponseBody: false,
   includeHeaders: false,
-  excludePaths: ['/health', '/metrics', '/favicon.ico'],
-  excludeHeaders: ['authorization', 'cookie', 'x-api-key'],
+  excludePaths: ["/health", "/metrics", "/favicon.ico"],
+  excludeHeaders: ["authorization", "cookie", "x-api-key"],
   maxBodySize: 1024, // 1KB
-  sensitiveFields: ['password', 'token', 'secret', 'key', 'auth'],
-  logLevel: 'info'
+  sensitiveFields: ["password", "token", "secret", "key", "auth"],
+  logLevel: "info",
 };
 
 /**
@@ -56,21 +56,21 @@ export function createRequestLoggingMiddleware(options: LoggingOptions = {}) {
 
   return (req: Request, res: Response, next: NextFunction) => {
     // Skip excluded paths
-    if (config.excludePaths?.some(path => req.path.includes(path))) {
+    if (config.excludePaths?.some((path) => req.path.includes(path))) {
       return next();
     }
 
     // Generate correlation IDs
-    const requestId = req.headers['x-request-id'] as string || uuidv4();
-    const traceId = req.headers['x-trace-id'] as string || uuidv4();
+    const requestId = (req.headers["x-request-id"] as string) || uuidv4();
+    const traceId = (req.headers["x-trace-id"] as string) || uuidv4();
 
     // Add correlation IDs to request
     req.requestId = requestId;
     req.traceId = traceId;
 
     // Add correlation IDs to response headers
-    res.setHeader('X-Request-Id', requestId);
-    res.setHeader('X-Trace-Id', traceId);
+    res.setHeader("X-Request-Id", requestId);
+    res.setHeader("X-Trace-Id", traceId);
 
     const startTime = Date.now();
 
@@ -80,11 +80,11 @@ export function createRequestLoggingMiddleware(options: LoggingOptions = {}) {
       traceId,
       method: req.method,
       url: req.originalUrl,
-      userAgent: req.get('User-Agent'),
+      userAgent: req.get("User-Agent"),
       ip: getClientIP(req),
       userId: req.user?.id,
       dealershipId: req.dealershipId,
-      startTime
+      startTime,
     };
 
     // Log request start
@@ -99,7 +99,7 @@ export function createRequestLoggingMiddleware(options: LoggingOptions = {}) {
     let responseSent = false;
 
     // Override response methods to capture response data
-    res.send = function(body: any) {
+    res.send = function (body: any) {
       if (!responseSent) {
         responseBody = body;
         logResponse(req, res, logContext, config, body);
@@ -108,7 +108,7 @@ export function createRequestLoggingMiddleware(options: LoggingOptions = {}) {
       return originalSend.call(this, body);
     };
 
-    res.json = function(obj: any) {
+    res.json = function (obj: any) {
       if (!responseSent) {
         responseBody = obj;
         logResponse(req, res, logContext, config, obj);
@@ -117,7 +117,7 @@ export function createRequestLoggingMiddleware(options: LoggingOptions = {}) {
       return originalJson.call(this, obj);
     };
 
-    res.end = function(chunk?: any, encoding?: any) {
+    res.end = function (chunk?: any, encoding?: any) {
       if (!responseSent) {
         responseBody = chunk;
         logResponse(req, res, logContext, config, chunk);
@@ -127,7 +127,7 @@ export function createRequestLoggingMiddleware(options: LoggingOptions = {}) {
     };
 
     // Handle response finish event
-    res.on('finish', () => {
+    res.on("finish", () => {
       if (!responseSent) {
         logResponse(req, res, logContext, config);
         responseSent = true;
@@ -135,9 +135,9 @@ export function createRequestLoggingMiddleware(options: LoggingOptions = {}) {
     });
 
     // Handle errors
-    res.on('error', (error) => {
+    res.on("error", (error) => {
       logContext.error = error;
-      logger.error('Response error', error, logContext);
+      logger.error("Response error", error, logContext);
     });
 
     next();
@@ -147,10 +147,14 @@ export function createRequestLoggingMiddleware(options: LoggingOptions = {}) {
 /**
  * Log incoming request
  */
-function logRequest(req: Request, context: RequestLogContext, config: LoggingOptions) {
+function logRequest(
+  req: Request,
+  context: RequestLogContext,
+  config: LoggingOptions,
+) {
   const logData: any = {
-    type: 'request',
-    ...context
+    type: "request",
+    ...context,
   };
 
   // Include headers if configured
@@ -160,7 +164,11 @@ function logRequest(req: Request, context: RequestLogContext, config: LoggingOpt
 
   // Include request body if configured
   if (config.includeRequestBody && req.body) {
-    logData.body = sanitizeBody(req.body, config.sensitiveFields || [], config.maxBodySize || 1024);
+    logData.body = sanitizeBody(
+      req.body,
+      config.sensitiveFields || [],
+      config.maxBodySize || 1024,
+    );
   }
 
   // Include query parameters
@@ -173,56 +181,64 @@ function logRequest(req: Request, context: RequestLogContext, config: LoggingOpt
     logData.params = sanitizeObject(req.params, config.sensitiveFields || []);
   }
 
-  logger[config.logLevel || 'info']('HTTP Request', logData);
+  logger[config.logLevel || "info"]("HTTP Request", logData);
 }
 
 /**
  * Log outgoing response
  */
 function logResponse(
-  req: Request, 
-  res: Response, 
-  context: RequestLogContext, 
+  req: Request,
+  res: Response,
+  context: RequestLogContext,
   config: LoggingOptions,
-  body?: any
+  body?: any,
 ) {
   const endTime = Date.now();
   const duration = endTime - context.startTime;
 
   const logData: any = {
-    type: 'response',
+    type: "response",
     ...context,
     endTime,
     duration,
     statusCode: res.statusCode,
-    contentLength: res.get('Content-Length')
+    contentLength: res.get("Content-Length"),
   };
 
   // Include response headers if configured
   if (config.includeHeaders) {
-    logData.responseHeaders = sanitizeHeaders(res.getHeaders(), config.excludeHeaders || []);
+    logData.responseHeaders = sanitizeHeaders(
+      res.getHeaders(),
+      config.excludeHeaders || [],
+    );
   }
 
   // Include response body if configured
   if (config.includeResponseBody && body) {
-    logData.responseBody = sanitizeBody(body, config.sensitiveFields || [], config.maxBodySize || 1024);
+    logData.responseBody = sanitizeBody(
+      body,
+      config.sensitiveFields || [],
+      config.maxBodySize || 1024,
+    );
   }
 
   // Determine log level based on status code
-  let logLevel = config.logLevel || 'info';
+  let logLevel = config.logLevel || "info";
   if (res.statusCode >= 500) {
-    logLevel = 'error';
+    logLevel = "error";
   } else if (res.statusCode >= 400) {
-    logLevel = 'warn';
+    logLevel = "warn";
   }
 
   // Add performance warnings
-  if (duration > 5000) { // 5 seconds
-    logData.performanceWarning = 'Slow response time';
-    logLevel = 'warn';
+  if (duration > 5000) {
+    // 5 seconds
+    logData.performanceWarning = "Slow response time";
+    logLevel = "warn";
   }
 
-  logger[logLevel]('HTTP Response', logData);
+  logger[logLevel]("HTTP Response", logData);
 }
 
 /**
@@ -230,11 +246,11 @@ function logResponse(
  */
 function getClientIP(req: Request): string {
   return (
-    req.headers['x-forwarded-for'] as string ||
-    req.headers['x-real-ip'] as string ||
+    (req.headers["x-forwarded-for"] as string) ||
+    (req.headers["x-real-ip"] as string) ||
     req.connection.remoteAddress ||
     req.socket.remoteAddress ||
-    'unknown'
+    "unknown"
   );
 }
 
@@ -243,26 +259,30 @@ function getClientIP(req: Request): string {
  */
 function sanitizeHeaders(headers: any, excludeHeaders: string[]): any {
   const sanitized: any = {};
-  
+
   for (const [key, value] of Object.entries(headers)) {
     const lowerKey = key.toLowerCase();
     if (excludeHeaders.includes(lowerKey)) {
-      sanitized[key] = '[REDACTED]';
+      sanitized[key] = "[REDACTED]";
     } else {
       sanitized[key] = value;
     }
   }
-  
+
   return sanitized;
 }
 
 /**
  * Sanitize request/response body
  */
-function sanitizeBody(body: any, sensitiveFields: string[], maxSize: number): any {
+function sanitizeBody(
+  body: any,
+  sensitiveFields: string[],
+  maxSize: number,
+): any {
   try {
     let sanitized = sanitizeObject(body, sensitiveFields);
-    
+
     // Truncate if too large
     const serialized = JSON.stringify(sanitized);
     if (serialized.length > maxSize) {
@@ -270,15 +290,15 @@ function sanitizeBody(body: any, sensitiveFields: string[], maxSize: number): an
         _truncated: true,
         _originalSize: serialized.length,
         _maxSize: maxSize,
-        data: serialized.substring(0, maxSize) + '...'
+        data: serialized.substring(0, maxSize) + "...",
       };
     }
-    
+
     return sanitized;
   } catch (error) {
     return {
-      _error: 'Failed to serialize body',
-      _type: typeof body
+      _error: "Failed to serialize body",
+      _type: typeof body,
     };
   }
 }
@@ -291,46 +311,50 @@ function sanitizeObject(obj: any, sensitiveFields: string[]): any {
     return obj;
   }
 
-  if (typeof obj !== 'object') {
+  if (typeof obj !== "object") {
     return obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeObject(item, sensitiveFields));
+    return obj.map((item) => sanitizeObject(item, sensitiveFields));
   }
 
   const sanitized: any = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     const lowerKey = key.toLowerCase();
-    const isSensitive = sensitiveFields.some(field => 
-      lowerKey.includes(field.toLowerCase())
+    const isSensitive = sensitiveFields.some((field) =>
+      lowerKey.includes(field.toLowerCase()),
     );
-    
+
     if (isSensitive) {
-      sanitized[key] = '[REDACTED]';
-    } else if (typeof value === 'object') {
+      sanitized[key] = "[REDACTED]";
+    } else if (typeof value === "object") {
       sanitized[key] = sanitizeObject(value, sensitiveFields);
     } else {
       sanitized[key] = value;
     }
   }
-  
+
   return sanitized;
 }
 
 /**
  * Express middleware for adding correlation IDs
  */
-export function correlationIdMiddleware(req: Request, res: Response, next: NextFunction) {
-  const requestId = req.headers['x-request-id'] as string || uuidv4();
-  const traceId = req.headers['x-trace-id'] as string || uuidv4();
+export function correlationIdMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const requestId = (req.headers["x-request-id"] as string) || uuidv4();
+  const traceId = (req.headers["x-trace-id"] as string) || uuidv4();
 
   req.requestId = requestId;
   req.traceId = traceId;
 
-  res.setHeader('X-Request-Id', requestId);
-  res.setHeader('X-Trace-Id', traceId);
+  res.setHeader("X-Request-Id", requestId);
+  res.setHeader("X-Trace-Id", traceId);
 
   next();
 }
@@ -338,26 +362,31 @@ export function correlationIdMiddleware(req: Request, res: Response, next: NextF
 /**
  * Express middleware for performance monitoring
  */
-export function performanceMiddleware(req: Request, res: Response, next: NextFunction) {
+export function performanceMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   const startTime = Date.now();
 
-  res.on('finish', () => {
+  res.on("finish", () => {
     const duration = Date.now() - startTime;
-    
+
     // Log slow requests
-    if (duration > 1000) { // 1 second
-      logger.warn('Slow request detected', {
+    if (duration > 1000) {
+      // 1 second
+      logger.warn("Slow request detected", {
         method: req.method,
         url: req.originalUrl,
         duration,
         statusCode: res.statusCode,
         requestId: req.requestId,
-        traceId: req.traceId
+        traceId: req.traceId,
       });
     }
 
     // Add performance header
-    res.setHeader('X-Response-Time', `${duration}ms`);
+    res.setHeader("X-Response-Time", `${duration}ms`);
   });
 
   next();

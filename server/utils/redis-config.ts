@@ -3,14 +3,14 @@
  *
  * This file provides Redis client setup for job queues and caching
  */
-import Redis from 'ioredis';
-import logger from './logger';
+import Redis from "ioredis";
+import logger from "./logger";
 
 // Use environment variables or default to localhost for development
-const REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-const REDIS_PORT = parseInt(process.env.REDIS_PORT || '6379', 10);
+const REDIS_HOST = process.env.REDIS_HOST || "localhost";
+const REDIS_PORT = parseInt(process.env.REDIS_PORT || "6379", 10);
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
-const REDIS_TLS = process.env.REDIS_TLS === 'true';
+const REDIS_TLS = process.env.REDIS_TLS === "true";
 
 // Default Redis options with development-friendly settings
 const redisOptions = {
@@ -20,8 +20,10 @@ const redisOptions = {
   tls: REDIS_TLS ? {} : undefined,
   retryStrategy: (times: number): number | null => {
     // In development, limit retries to prevent log spam
-    if (process.env.NODE_ENV !== 'production' && times > 5) {
-      logger.warn('Redis retry limit reached in development mode, stopping retries');
+    if (process.env.NODE_ENV !== "production" && times > 5) {
+      logger.warn(
+        "Redis retry limit reached in development mode, stopping retries",
+      );
       return null; // Stop retrying
     }
 
@@ -31,42 +33,51 @@ const redisOptions = {
     return delay;
   },
   enableOfflineQueue: false, // Disable in development to prevent hanging
-  maxRetriesPerRequest: process.env.NODE_ENV === 'production' ? 10 : 3, // Fewer retries in dev
+  maxRetriesPerRequest: process.env.NODE_ENV === "production" ? 10 : 3, // Fewer retries in dev
   connectTimeout: 5000, // Shorter timeout in development
   reconnectOnError: (err: Error): boolean => {
     // In development, don't reconnect on ECONNREFUSED
-    if (process.env.NODE_ENV !== 'production' && err.message.includes('ECONNREFUSED')) {
+    if (
+      process.env.NODE_ENV !== "production" &&
+      err.message.includes("ECONNREFUSED")
+    ) {
       return false;
     }
 
-    const targetErrors = ['READONLY', 'ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND'];
-    return targetErrors.some(e => err.message.includes(e));
+    const targetErrors = ["READONLY", "ETIMEDOUT", "ECONNRESET", "ENOTFOUND"];
+    return targetErrors.some((e) => err.message.includes(e));
   },
-  lazyConnect: true // Only connect when actually needed
+  lazyConnect: true, // Only connect when actually needed
 };
 
 // Create Redis client with error handling
 const createRedisClient = () => {
   const client = new Redis({
     ...redisOptions,
-    host: '0.0.0.0',
+    host: "0.0.0.0",
   });
 
-  client.on('connect', () => {
-    logger.info('Redis client connected successfully');
+  client.on("connect", () => {
+    logger.info("Redis client connected successfully");
   });
 
-  client.on('error', (err) => {
-    logger.error('Redis client error', err);
+  client.on("error", (err) => {
+    logger.error("Redis client error", err);
 
     // Check if error is a connection refusal and we're in development
-    if (err.message && err.message.includes('ECONNREFUSED') && process.env.NODE_ENV !== 'production') {
-      logger.warn('Redis connection refused - using in-memory fallback for development');
+    if (
+      err.message &&
+      err.message.includes("ECONNREFUSED") &&
+      process.env.NODE_ENV !== "production"
+    ) {
+      logger.warn(
+        "Redis connection refused - using in-memory fallback for development",
+      );
       // The fallback mechanism is implemented in the queue modules
     }
   });
 
-  client.on('reconnecting', (delay: number) => {
+  client.on("reconnecting", (delay: number) => {
     logger.info(`Redis client reconnecting in ${delay}ms`);
   });
 
@@ -87,8 +98,10 @@ export const getRedisClient = (): Redis => {
 // Function to check if Redis is available
 export const isRedisAvailable = async (): Promise<boolean> => {
   // Skip Redis if explicitly set in environment
-  if (process.env.SKIP_REDIS === 'true') {
-    logger.info('Redis connections skipped due to SKIP_REDIS=true environment setting');
+  if (process.env.SKIP_REDIS === "true") {
+    logger.info(
+      "Redis connections skipped due to SKIP_REDIS=true environment setting",
+    );
     return false;
   }
 
@@ -101,7 +114,7 @@ export const isRedisAvailable = async (): Promise<boolean> => {
     await redisClient.ping();
     return true;
   } catch (err) {
-    logger.warn('Redis availability check failed', err);
+    logger.warn("Redis availability check failed", err);
     return false;
   }
 };
@@ -112,9 +125,9 @@ export const closeRedisConnection = async (): Promise<void> => {
     try {
       await redisClient.quit();
       redisClient = null;
-      logger.info('Redis connection closed gracefully');
+      logger.info("Redis connection closed gracefully");
     } catch (err) {
-      logger.error('Error closing Redis connection', err);
+      logger.error("Error closing Redis connection", err);
       // Force disconnect if quit fails
       if (redisClient) {
         redisClient.disconnect();
@@ -160,7 +173,7 @@ export const getStore = async () => {
     return getRedisClient();
   }
 
-  logger.warn('Using in-memory store fallback instead of Redis');
+  logger.warn("Using in-memory store fallback instead of Redis");
   return memoryStore;
 };
 
@@ -169,5 +182,5 @@ export default {
   isRedisAvailable,
   closeRedisConnection,
   getStore,
-  InMemoryStore
+  InMemoryStore,
 };

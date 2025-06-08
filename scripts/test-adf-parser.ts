@@ -2,11 +2,11 @@
 
 /**
  * Simple ADF Parser Test Script
- * 
+ *
  * Tests the ADF parser directly to isolate issues
  */
 
-import { AdfParser } from '../server/services/adf-parser';
+import { AdfParser } from "../server/services/adf-parser";
 
 const SAMPLE_ADF_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <adf version="1.0">
@@ -36,18 +36,17 @@ const SAMPLE_ADF_XML = `<?xml version="1.0" encoding="UTF-8"?>
 </adf>`;
 
 async function testAdfParser() {
-  console.log('🧪 Testing ADF Parser directly...\n');
-  
+  console.log("🧪 Testing ADF Parser directly...\n");
+
   try {
     const parser = new AdfParser();
-    console.log('✅ ADF Parser instantiated successfully');
-    
+    console.log("✅ ADF Parser instantiated successfully");
+
     const result = await parser.parseAdfXml(SAMPLE_ADF_XML);
-    console.log('✅ ADF XML parsed successfully');
-    console.log('Result:', JSON.stringify(result, null, 2));
-    
+    console.log("✅ ADF XML parsed successfully");
+    console.log("Result:", JSON.stringify(result, null, 2));
   } catch (error) {
-    console.error('❌ ADF Parser test failed:');
+    console.error("❌ ADF Parser test failed:");
     console.error(error);
   }
 }

@@ -3,6 +3,7 @@
 ## Problem Summary
 
 Your staging deployment shows a white screen due to Redis connection failures. The logs show:
+
 ```
 [ioredis] Unhandled error event: Error: connect ECONNREFUSED 127.0.0.1:6379
 ```
@@ -29,6 +30,7 @@ Your staging deployment shows a white screen due to Redis connection failures. T
 ### Step 2: Verify the Fix
 
 After redeployment, check your logs for these success messages:
+
 ```
 ✅ Redis disabled via SKIP_REDIS environment variable
 ✅ Using mock Redis client for development
@@ -38,12 +40,14 @@ After redeployment, check your logs for these success messages:
 ### Step 3: Test Your Application
 
 Run our verification script:
+
 ```bash
 # Replace with your actual staging URL
 STAGING_URL=https://your-app.onrender.com node scripts/verify-staging-fix.js
 ```
 
 Or manually test:
+
 - Visit your staging URL
 - Check `/api/health` endpoint
 - Verify no white screen appears
@@ -59,11 +63,13 @@ Or manually test:
 ### Code Changes Made
 
 1. **Enhanced Redis Initialization** (`server/lib/redis.ts`):
+
    - Added `SKIP_REDIS` environment variable check
    - Improved error handling with timeouts
    - Better cleanup of failed connections
 
 2. **Non-blocking Server Startup** (`server/index.ts`):
+
    - Wrapped Redis initialization in try-catch
    - Server continues startup even if Redis fails
 
@@ -84,6 +90,7 @@ Or manually test:
 If you prefer to keep Redis:
 
 1. **Enable Redis Service in Render**:
+
    - Uncomment Redis service in `render.yaml`
    - Ensure `REDIS_URL` environment variable is set
 
@@ -94,6 +101,7 @@ If you prefer to keep Redis:
 ### Option 2: Local Development
 
 For local development with Redis disabled:
+
 ```bash
 # Add to your .env file
 SKIP_REDIS=true
@@ -107,12 +115,14 @@ SKIP_REDIS=true npm run dev
 ### Health Checks
 
 Monitor these endpoints:
+
 - `/api/health` - Overall application health
 - `/` - Homepage functionality
 
 ### Log Monitoring
 
 Watch for these log patterns:
+
 ```bash
 # Success patterns
 ✅ "Redis disabled via SKIP_REDIS"
@@ -133,15 +143,18 @@ Watch for these log patterns:
 ### Still Getting White Screen?
 
 1. **Check Environment Variable**:
+
    ```bash
    # Verify in Render dashboard that SKIP_REDIS=true is set
    ```
 
 2. **Check Deployment Logs**:
+
    - Look for Redis-related error messages
    - Verify server startup messages
 
 3. **Database Issues**:
+
    - Ensure `DATABASE_URL` is properly set
    - Check database connection in logs
 
@@ -151,26 +164,29 @@ Watch for these log patterns:
 
 ### Common Issues
 
-| Issue | Solution |
-|-------|----------|
-| White screen persists | Verify `SKIP_REDIS=true` is set and redeploy |
-| 500 errors | Check database connection and API logs |
-| Build failures | Review build logs for compilation errors |
-| Slow responses | Normal with in-memory fallback, consider Redis for production |
+| Issue                 | Solution                                                      |
+| --------------------- | ------------------------------------------------------------- |
+| White screen persists | Verify `SKIP_REDIS=true` is set and redeploy                  |
+| 500 errors            | Check database connection and API logs                        |
+| Build failures        | Review build logs for compilation errors                      |
+| Slow responses        | Normal with in-memory fallback, consider Redis for production |
 
 ## Scripts and Tools
 
 ### Quick Fix Script
+
 ```bash
 ./scripts/fix-staging-redis.sh
 ```
 
 ### Verification Script
+
 ```bash
 node scripts/verify-staging-fix.js https://your-staging-url.onrender.com
 ```
 
 ### Manual Testing
+
 ```bash
 # Test health endpoint
 curl https://your-staging-url.onrender.com/api/health
@@ -188,6 +204,7 @@ curl https://your-staging-url.onrender.com/
 ## Support
 
 If issues persist:
+
 1. Check Render service logs
 2. Verify all environment variables are set correctly
 3. Ensure the latest code changes are deployed

@@ -12,19 +12,22 @@ export interface JWTPayload {
 }
 
 // Combined user type that supports both JWT and Replit auth
-export type AuthUser = JWTPayload | User | {
-  claims?: {
-    sub: string;
-    email?: string;
-    first_name?: string;
-    last_name?: string;
-    profile_image_url?: string;
-    exp?: number;
-  };
-  access_token?: string;
-  refresh_token?: string;
-  expires_at?: number;
-};
+export type AuthUser =
+  | JWTPayload
+  | User
+  | {
+      claims?: {
+        sub: string;
+        email?: string;
+        first_name?: string;
+        last_name?: string;
+        profile_image_url?: string;
+        exp?: number;
+      };
+      access_token?: string;
+      refresh_token?: string;
+      expires_at?: number;
+    };
 
 declare global {
   namespace Express {

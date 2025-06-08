@@ -1,11 +1,11 @@
 /**
  * Standardized Error Handling Patterns for Tests
- * 
+ *
  * This module provides consistent error handling patterns and test utilities
  * to ensure tests match actual service behavior.
  */
 
-import { expect } from 'vitest';
+import { expect } from "vitest";
 
 // Standard error types used across the codebase
 export interface ServiceResult<T = any> {
@@ -24,7 +24,7 @@ export interface AdfParseResult extends ServiceResult {
     minimumFieldsPresent: boolean;
     missingRequiredFields: string[];
   };
-  parserUsed: 'v1' | 'v2';
+  parserUsed: "v1" | "v2";
   parseTimeMs: number;
 }
 
@@ -36,15 +36,16 @@ export class ErrorPatternMatchers {
    */
   static expectResultObjectError(
     promise: Promise<ServiceResult>,
-    expectedErrors: string[] = []
+    expectedErrors: string[] = [],
   ) {
     return expect(promise).resolves.toEqual(
       expect.objectContaining({
         success: false,
-        errors: expectedErrors.length > 0 
-          ? expect.arrayContaining(expectedErrors)
-          : expect.any(Array)
-      })
+        errors:
+          expectedErrors.length > 0
+            ? expect.arrayContaining(expectedErrors)
+            : expect.any(Array),
+      }),
     );
   }
 
@@ -54,7 +55,7 @@ export class ErrorPatternMatchers {
    */
   static expectThrownError(
     promise: Promise<any>,
-    expectedMessage?: string | RegExp
+    expectedMessage?: string | RegExp,
   ) {
     if (expectedMessage) {
       return expect(promise).rejects.toThrow(expectedMessage);
@@ -69,7 +70,7 @@ export class ErrorPatternMatchers {
   static expectThrownErrorType<T extends Error>(
     promise: Promise<any>,
     ErrorClass: new (...args: any[]) => T,
-    expectedMessage?: string
+    expectedMessage?: string,
   ) {
     const assertion = expect(promise).rejects.toBeInstanceOf(ErrorClass);
     if (expectedMessage) {
@@ -83,17 +84,18 @@ export class ErrorPatternMatchers {
    */
   static expectAdfParseError(
     promise: Promise<AdfParseResult>,
-    expectedErrors: string[] = []
+    expectedErrors: string[] = [],
   ) {
     return expect(promise).resolves.toEqual(
       expect.objectContaining({
         success: false,
-        errors: expectedErrors.length > 0 
-          ? expect.arrayContaining(expectedErrors)
-          : expect.any(Array),
+        errors:
+          expectedErrors.length > 0
+            ? expect.arrayContaining(expectedErrors)
+            : expect.any(Array),
         parserUsed: expect.stringMatching(/^v[12]$/),
-        parseTimeMs: expect.any(Number)
-      })
+        parseTimeMs: expect.any(Number),
+      }),
     );
   }
 }
@@ -114,8 +116,11 @@ export class MockErrorGenerators {
   /**
    * Create a database connection error
    */
-  static createDatabaseError(operation: string = 'query'): Error {
-    return this.createError(`Database ${operation} failed`, 'DB_CONNECTION_ERROR');
+  static createDatabaseError(operation: string = "query"): Error {
+    return this.createError(
+      `Database ${operation} failed`,
+      "DB_CONNECTION_ERROR",
+    );
   }
 
   /**
@@ -131,21 +136,24 @@ export class MockErrorGenerators {
    * Create a validation error
    */
   static createValidationError(field: string): Error {
-    return this.createError(`Validation failed for field: ${field}`, 'VALIDATION_ERROR');
+    return this.createError(
+      `Validation failed for field: ${field}`,
+      "VALIDATION_ERROR",
+    );
   }
 
   /**
    * Create a timeout error
    */
   static createTimeoutError(operation: string): Error {
-    return this.createError(`Operation timeout: ${operation}`, 'TIMEOUT_ERROR');
+    return this.createError(`Operation timeout: ${operation}`, "TIMEOUT_ERROR");
   }
 
   /**
    * Create a circuit breaker error
    */
   static createCircuitBreakerError(): Error {
-    return this.createError('Circuit breaker is open', 'CIRCUIT_BREAKER_OPEN');
+    return this.createError("Circuit breaker is open", "CIRCUIT_BREAKER_OPEN");
   }
 }
 
@@ -155,11 +163,15 @@ export class ServiceErrorPatterns {
    * ADF Service error patterns
    */
   static adf = {
-    expectParseError: (promise: Promise<AdfParseResult>, errors: string[] = []) =>
-      ErrorPatternMatchers.expectAdfParseError(promise, errors),
-    
-    expectProcessingError: (promise: Promise<ServiceResult>, errors: string[] = []) =>
-      ErrorPatternMatchers.expectResultObjectError(promise, errors)
+    expectParseError: (
+      promise: Promise<AdfParseResult>,
+      errors: string[] = [],
+    ) => ErrorPatternMatchers.expectAdfParseError(promise, errors),
+
+    expectProcessingError: (
+      promise: Promise<ServiceResult>,
+      errors: string[] = [],
+    ) => ErrorPatternMatchers.expectResultObjectError(promise, errors),
   };
 
   /**
@@ -168,19 +180,22 @@ export class ServiceErrorPatterns {
   static database = {
     expectConnectionError: (promise: Promise<any>) =>
       ErrorPatternMatchers.expectThrownError(promise, /database.*connection/i),
-    
+
     expectQueryError: (promise: Promise<any>) =>
-      ErrorPatternMatchers.expectThrownError(promise, /query.*failed/i)
+      ErrorPatternMatchers.expectThrownError(promise, /query.*failed/i),
   };
 
   /**
    * Validation service error patterns
    */
   static validation = {
-    expectValidationError: (promise: Promise<ServiceResult>, field?: string) => {
+    expectValidationError: (
+      promise: Promise<ServiceResult>,
+      field?: string,
+    ) => {
       const errors = field ? [`Validation failed for field: ${field}`] : [];
       return ErrorPatternMatchers.expectResultObjectError(promise, errors);
-    }
+    },
   };
 
   /**
@@ -189,9 +204,9 @@ export class ServiceErrorPatterns {
   static infrastructure = {
     expectSystemError: (promise: Promise<any>, message?: string) =>
       ErrorPatternMatchers.expectThrownError(promise, message),
-    
+
     expectTimeoutError: (promise: Promise<any>) =>
-      ErrorPatternMatchers.expectThrownError(promise, /timeout/i)
+      ErrorPatternMatchers.expectThrownError(promise, /timeout/i),
   };
 }
 
@@ -207,10 +222,10 @@ export class ErrorTestUtils {
   /**
    * Create a mock that returns a failed result object
    */
-  static createFailingResultMock(errors: string[] = ['Mock error']) {
+  static createFailingResultMock(errors: string[] = ["Mock error"]) {
     return vi.fn().mockResolvedValue({
       success: false,
-      errors
+      errors,
     });
   }
 
@@ -230,11 +245,17 @@ export class ErrorTestUtils {
    * Simulate network timeout
    */
   static createTimeoutMock(timeoutMs: number = 5000) {
-    return vi.fn().mockImplementation(() => 
-      new Promise((_, reject) => 
-        setTimeout(() => reject(MockErrorGenerators.createTimeoutError('network')), timeoutMs)
-      )
-    );
+    return vi
+      .fn()
+      .mockImplementation(
+        () =>
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(MockErrorGenerators.createTimeoutError("network")),
+              timeoutMs,
+            ),
+          ),
+      );
   }
 }
 

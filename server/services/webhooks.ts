@@ -13,94 +13,94 @@
  * This framework is designed to be extensible and support various webhook scenarios.
  */
 
-import { Request, Response, NextFunction, Router } from 'express';
-import axios, { AxiosRequestConfig, Method } from 'axios';
-import * as crypto from 'crypto';
-import { v4 as uuidv4 } from 'uuid';
-import { z } from 'zod';
-import { db } from '../db';
-import { logger } from '../utils/logger';
-import { CircuitBreaker } from './circuit-breaker';
-import { eventBus } from './event-bus';
+import { Request, Response, NextFunction, Router } from "express";
+import axios, { AxiosRequestConfig, Method } from "axios";
+import * as crypto from "crypto";
+import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
+import { db } from "../db";
+import { logger } from "../utils/logger";
+import { CircuitBreaker } from "./circuit-breaker";
+import { eventBus } from "./event-bus";
 import {
   webhookEvents,
   webhookDeliveryLogs,
   adsSpendLogs,
-  systemDiagnostics
+  systemDiagnostics,
   // webhooks,
   // webhookSubscriptions
-} from '../../shared/schema';
-import { eq, and, desc, sql, like } from 'drizzle-orm';
-import { promClient } from '../observability/metrics';
+} from "../../shared/schema";
+import { eq, and, desc, sql, like } from "drizzle-orm";
+import { promClient } from "../observability/metrics";
 
 // Prometheus metrics
 const webhookMetrics = {
   incomingTotal: new promClient.Counter({
-    name: 'webhook_incoming_total',
-    help: 'Total number of incoming webhooks',
-    labelNames: ['type', 'source', 'status']
+    name: "webhook_incoming_total",
+    help: "Total number of incoming webhooks",
+    labelNames: ["type", "source", "status"],
   }),
   outgoingTotal: new promClient.Counter({
-    name: 'webhook_outgoing_total',
-    help: 'Total number of outgoing webhooks',
-    labelNames: ['type', 'destination', 'status']
+    name: "webhook_outgoing_total",
+    help: "Total number of outgoing webhooks",
+    labelNames: ["type", "destination", "status"],
   }),
   processingTime: new promClient.Histogram({
-    name: 'webhook_processing_time',
-    help: 'Time taken to process webhooks',
-    labelNames: ['type', 'direction'],
-    buckets: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+    name: "webhook_processing_time",
+    help: "Time taken to process webhooks",
+    labelNames: ["type", "direction"],
+    buckets: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
   }),
   retryCount: new promClient.Counter({
-    name: 'webhook_retry_count',
-    help: 'Number of webhook delivery retries',
-    labelNames: ['type', 'destination']
+    name: "webhook_retry_count",
+    help: "Number of webhook delivery retries",
+    labelNames: ["type", "destination"],
   }),
   rateLimitExceeded: new promClient.Counter({
-    name: 'webhook_rate_limit_exceeded',
-    help: 'Number of times rate limits were exceeded',
-    labelNames: ['type', 'source']
-  })
+    name: "webhook_rate_limit_exceeded",
+    help: "Number of times rate limits were exceeded",
+    labelNames: ["type", "source"],
+  }),
 };
 
 /**
  * Webhook types
  */
 export enum WebhookType {
-  ADS_SPEND = 'ads_spend',
-  SYSTEM_DIAGNOSTIC = 'system_diagnostic',
-  NOTIFICATION = 'notification',
-  INTEGRATION = 'integration',
-  CUSTOM = 'custom'
+  ADS_SPEND = "ads_spend",
+  SYSTEM_DIAGNOSTIC = "system_diagnostic",
+  NOTIFICATION = "notification",
+  INTEGRATION = "integration",
+  CUSTOM = "custom",
 }
 
 /**
  * Webhook security levels
  */
 export enum WebhookSecurityLevel {
-  NONE = 'none',
-  HMAC = 'hmac',
-  JWT = 'jwt',
-  OAUTH = 'oauth'
+  NONE = "none",
+  HMAC = "hmac",
+  JWT = "jwt",
+  OAUTH = "oauth",
 }
 
 /**
  * Webhook status
  */
 export enum WebhookStatus {
-  PENDING = 'pending',
-  DELIVERED = 'delivered',
-  FAILED = 'failed',
-  RATE_LIMITED = 'rate_limited',
-  INVALID = 'invalid'
+  PENDING = "pending",
+  DELIVERED = "delivered",
+  FAILED = "failed",
+  RATE_LIMITED = "rate_limited",
+  INVALID = "invalid",
 }
 
 /**
  * Webhook direction
  */
 export enum WebhookDirection {
-  INCOMING = 'incoming',
-  OUTGOING = 'outgoing'
+  INCOMING = "incoming",
+  OUTGOING = "outgoing",
 }
 
 /**
@@ -112,7 +112,7 @@ export const WebhookEventSchema = z.object({
   source: z.string(),
   timestamp: z.string().datetime(),
   data: z.record(z.any()),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.any()).optional(),
 });
 
 export type WebhookEvent = z.infer<typeof WebhookEventSchema>;
@@ -126,20 +126,24 @@ export const WebhookConfigSchema = z.object({
   description: z.string().optional(),
   type: z.nativeEnum(WebhookType),
   url: z.string().url(),
-  method: z.enum(['GET', 'POST', 'PUT', 'DELETE']).default('POST'),
+  method: z.enum(["GET", "POST", "PUT", "DELETE"]).default("POST"),
   headers: z.record(z.string()).optional(),
-  securityLevel: z.nativeEnum(WebhookSecurityLevel).default(WebhookSecurityLevel.HMAC),
+  securityLevel: z
+    .nativeEnum(WebhookSecurityLevel)
+    .default(WebhookSecurityLevel.HMAC),
   securityConfig: z.record(z.any()).optional(),
   rateLimitPerMinute: z.number().int().positive().default(60),
-  retryConfig: z.object({
-    maxRetries: z.number().int().min(0).default(3),
-    retryDelay: z.number().int().positive().default(1000),
-    retryBackoffMultiplier: z.number().positive().default(2)
-  }).optional(),
+  retryConfig: z
+    .object({
+      maxRetries: z.number().int().min(0).default(3),
+      retryDelay: z.number().int().positive().default(1000),
+      retryBackoffMultiplier: z.number().positive().default(2),
+    })
+    .optional(),
   transformationTemplate: z.string().optional(),
   isActive: z.boolean().default(true),
   dealershipId: z.number().int().positive().optional(),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.any()).optional(),
 });
 
 export type WebhookConfig = z.infer<typeof WebhookConfigSchema>;
@@ -154,7 +158,7 @@ export const WebhookSubscriptionSchema = z.object({
   filter: z.record(z.any()).optional(),
   transformationTemplate: z.string().optional(),
   isActive: z.boolean().default(true),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.any()).optional(),
 });
 
 export type WebhookSubscription = z.infer<typeof WebhookSubscriptionSchema>;
@@ -179,7 +183,7 @@ export const WebhookDeliveryLogSchema = z.object({
   retryCount: z.number().int().min(0).default(0),
   processingTimeMs: z.number().int().min(0).optional(),
   timestamp: z.date().optional(),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.any()).optional(),
 });
 
 export type WebhookDeliveryLog = z.infer<typeof WebhookDeliveryLogSchema>;
@@ -207,8 +211,10 @@ export interface WebhookServiceConfig {
 export class WebhookService {
   private config: WebhookServiceConfig;
   private circuitBreakers: Map<string, CircuitBreaker> = new Map();
-  private rateLimiters: Map<string, { count: number, resetAt: number }> = new Map();
-  private webhookHandlers: Map<string, (event: WebhookEvent) => Promise<any>> = new Map();
+  private rateLimiters: Map<string, { count: number; resetAt: number }> =
+    new Map();
+  private webhookHandlers: Map<string, (event: WebhookEvent) => Promise<any>> =
+    new Map();
   private templateCache: Map<string, Function> = new Map();
 
   constructor(config: WebhookServiceConfig = {}) {
@@ -218,16 +224,25 @@ export class WebhookService {
       defaultMaxRetries: 3,
       defaultRetryDelay: 1000,
       defaultRetryBackoffMultiplier: 2,
-      templatesDir: './templates/webhooks',
-      hmacSecretKey: process.env.WEBHOOK_HMAC_SECRET || 'default-secret-key',
+      templatesDir: "./templates/webhooks",
+      hmacSecretKey: process.env.WEBHOOK_HMAC_SECRET || "default-secret-key",
       enableMetrics: true,
-      ...config
+      ...config,
     };
 
     // Register built-in webhook handlers
-    this.registerHandler(WebhookType.ADS_SPEND, this.handleAdsSpendWebhook.bind(this));
-    this.registerHandler(WebhookType.SYSTEM_DIAGNOSTIC, this.handleSystemDiagnosticWebhook.bind(this));
-    this.registerHandler(WebhookType.NOTIFICATION, this.handleNotificationWebhook.bind(this));
+    this.registerHandler(
+      WebhookType.ADS_SPEND,
+      this.handleAdsSpendWebhook.bind(this),
+    );
+    this.registerHandler(
+      WebhookType.SYSTEM_DIAGNOSTIC,
+      this.handleSystemDiagnosticWebhook.bind(this),
+    );
+    this.registerHandler(
+      WebhookType.NOTIFICATION,
+      this.handleNotificationWebhook.bind(this),
+    );
 
     // Subscribe to relevant events for webhook delivery
     this.subscribeToEvents();
@@ -236,7 +251,10 @@ export class WebhookService {
   /**
    * Register a webhook handler for a specific type
    */
-  registerHandler(type: string, handler: (event: WebhookEvent) => Promise<any>): void {
+  registerHandler(
+    type: string,
+    handler: (event: WebhookEvent) => Promise<any>,
+  ): void {
     this.webhookHandlers.set(type, handler);
     logger.info(`Registered webhook handler for type: ${type}`);
   }
@@ -245,10 +263,12 @@ export class WebhookService {
    * Subscribe to platform events for webhook delivery
    */
   private subscribeToEvents(): void {
-    eventBus.subscribe('events.platform', 'webhook-service', async (event) => {
+    eventBus.subscribe("events.platform", "webhook-service", async (event) => {
       try {
         // Check if any webhooks are subscribed to this event type
-        const subscriptions = await this.getSubscriptionsForEventType(event.type);
+        const subscriptions = await this.getSubscriptionsForEventType(
+          event.type,
+        );
 
         if (subscriptions.length === 0) {
           return;
@@ -258,12 +278,12 @@ export class WebhookService {
         const webhookEvent: WebhookEvent = {
           id: uuidv4(),
           type: event.type,
-          source: 'platform',
+          source: "platform",
           timestamp: new Date().toISOString(),
           data: event.payload,
           metadata: {
-            correlationId: event.correlationId
-          }
+            correlationId: event.correlationId,
+          },
         };
 
         // Store the event
@@ -274,10 +294,10 @@ export class WebhookService {
           await this.deliverWebhook(subscription.webhookId, webhookEvent);
         }
       } catch (error) {
-        logger.error('Error processing event for webhook delivery', {
+        logger.error("Error processing event for webhook delivery", {
           eventType: event.type,
           error: error.message,
-          correlationId: event.correlationId
+          correlationId: event.correlationId,
         });
       }
     });
@@ -294,14 +314,14 @@ export class WebhookService {
         source: event.source,
         data: event.data,
         metadata: event.metadata || {},
-        createdAt: new Date()
+        createdAt: new Date(),
       });
 
       return event.id;
     } catch (error) {
-      logger.error('Error storing webhook event', {
+      logger.error("Error storing webhook event", {
         error: error.message,
-        eventType: event.type
+        eventType: event.type,
       });
       throw error;
     }
@@ -310,7 +330,9 @@ export class WebhookService {
   /**
    * Get webhook subscriptions for an event type
    */
-  private async getSubscriptionsForEventType(eventType: string): Promise<any[]> {
+  private async getSubscriptionsForEventType(
+    eventType: string,
+  ): Promise<any[]> {
     try {
       // Find all active subscriptions that match the event type
       // TODO: Replace 'webhookSubscriptions' with the correct reference to the subscriptions table or model.
@@ -326,9 +348,9 @@ export class WebhookService {
       // TODO: Implement correct subscription lookup
       return [];
     } catch (error) {
-      logger.error('Error getting webhook subscriptions', {
+      logger.error("Error getting webhook subscriptions", {
         error: error.message,
-        eventType
+        eventType,
       });
       return [];
     }
@@ -337,7 +359,10 @@ export class WebhookService {
   /**
    * Deliver a webhook to its destination
    */
-  async deliverWebhook(webhookId: string, event: WebhookEvent): Promise<boolean> {
+  async deliverWebhook(
+    webhookId: string,
+    event: WebhookEvent,
+  ): Promise<boolean> {
     try {
       // Get webhook configuration
       // TODO: Replace 'webhooks' with the correct reference to the webhooks table or model.
@@ -351,13 +376,16 @@ export class WebhookService {
       const webhook = null;
 
       if (!webhook) {
-        logger.warn('Webhook not found or inactive', { webhookId });
+        logger.warn("Webhook not found or inactive", { webhookId });
         return false;
       }
 
       // Check rate limits
       if (this.isRateLimited(webhookId, webhook.rateLimitPerMinute)) {
-        logger.warn('Webhook rate limit exceeded', { webhookId, url: webhook.url });
+        logger.warn("Webhook rate limit exceeded", {
+          webhookId,
+          url: webhook.url,
+        });
 
         // Log rate limited delivery
         await this.logWebhookDelivery({
@@ -368,15 +396,15 @@ export class WebhookService {
           requestUrl: webhook.url,
           requestMethod: webhook.method,
           requestBody: event,
-          error: 'Rate limit exceeded',
-          timestamp: new Date()
+          error: "Rate limit exceeded",
+          timestamp: new Date(),
         });
 
         // Update metrics
         if (this.config.enableMetrics) {
           webhookMetrics.rateLimitExceeded.inc({
             type: webhook.type,
-            destination: new URL(webhook.url).hostname
+            destination: new URL(webhook.url).hostname,
           });
         }
 
@@ -384,41 +412,48 @@ export class WebhookService {
       }
 
       // Transform the event if needed
-      const payload = await this.transformPayload(event, webhook.transformationTemplate);
+      const payload = await this.transformPayload(
+        event,
+        webhook.transformationTemplate,
+      );
 
       // Initialize circuit breaker if not exists
       if (!this.circuitBreakers.has(webhookId)) {
-        this.circuitBreakers.set(webhookId, new CircuitBreaker({
-          name: `webhook-${webhookId}`,
-          maxFailures: 5,
-          resetTimeout: 30000,
-          timeout: 10000
-        }));
+        this.circuitBreakers.set(
+          webhookId,
+          new CircuitBreaker({
+            name: `webhook-${webhookId}`,
+            maxFailures: 5,
+            resetTimeout: 30000,
+            timeout: 10000,
+          }),
+        );
       }
 
       const circuitBreaker = this.circuitBreakers.get(webhookId);
 
       // Prepare headers
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'X-Webhook-ID': webhookId,
-        'X-Event-ID': event.id,
-        'X-Event-Type': event.type,
-        ...webhook.headers
+        "Content-Type": "application/json",
+        "X-Webhook-ID": webhookId,
+        "X-Event-ID": event.id,
+        "X-Event-Type": event.type,
+        ...webhook.headers,
       };
 
       // Add security headers
       if (webhook.securityLevel === WebhookSecurityLevel.HMAC) {
-        const hmacSecret = webhook.securityConfig?.hmacSecret || this.config.hmacSecretKey;
+        const hmacSecret =
+          webhook.securityConfig?.hmacSecret || this.config.hmacSecretKey;
         const signature = this.generateHmacSignature(payload, hmacSecret);
-        headers['X-Webhook-Signature'] = signature;
+        headers["X-Webhook-Signature"] = signature;
       }
 
       // Get retry configuration
       const retryConfig = webhook.retryConfig || {
         maxRetries: this.config.defaultMaxRetries,
         retryDelay: this.config.defaultRetryDelay,
-        retryBackoffMultiplier: this.config.defaultRetryBackoffMultiplier
+        retryBackoffMultiplier: this.config.defaultRetryBackoffMultiplier,
       };
 
       // Start timing
@@ -438,7 +473,7 @@ export class WebhookService {
               url: webhook.url,
               headers,
               data: payload,
-              timeout: 10000
+              timeout: 10000,
             });
 
             lastResponse = response;
@@ -453,13 +488,15 @@ export class WebhookService {
               if (this.config.enableMetrics) {
                 webhookMetrics.retryCount.inc({
                   type: webhook.type,
-                  destination: new URL(webhook.url).hostname
+                  destination: new URL(webhook.url).hostname,
                 });
               }
 
               if (retries <= retryConfig.maxRetries) {
-                const delay = retryConfig.retryDelay * Math.pow(retryConfig.retryBackoffMultiplier, retries - 1);
-                await new Promise(resolve => setTimeout(resolve, delay));
+                const delay =
+                  retryConfig.retryDelay *
+                  Math.pow(retryConfig.retryBackoffMultiplier, retries - 1);
+                await new Promise((resolve) => setTimeout(resolve, delay));
               }
             }
           } catch (error) {
@@ -470,13 +507,15 @@ export class WebhookService {
             if (this.config.enableMetrics) {
               webhookMetrics.retryCount.inc({
                 type: webhook.type,
-                destination: new URL(webhook.url).hostname
+                destination: new URL(webhook.url).hostname,
               });
             }
 
             if (retries <= retryConfig.maxRetries) {
-              const delay = retryConfig.retryDelay * Math.pow(retryConfig.retryBackoffMultiplier, retries - 1);
-              await new Promise(resolve => setTimeout(resolve, delay));
+              const delay =
+                retryConfig.retryDelay *
+                Math.pow(retryConfig.retryBackoffMultiplier, retries - 1);
+              await new Promise((resolve) => setTimeout(resolve, delay));
             }
           }
         }
@@ -500,7 +539,7 @@ export class WebhookService {
           error: lastError?.message,
           retryCount: retries,
           processingTimeMs: processingTime,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         // Update metrics
@@ -508,15 +547,15 @@ export class WebhookService {
           webhookMetrics.outgoingTotal.inc({
             type: webhook.type,
             destination: new URL(webhook.url).hostname,
-            status: success ? 'success' : 'failure'
+            status: success ? "success" : "failure",
           });
 
           webhookMetrics.processingTime.observe(
             {
               type: webhook.type,
-              direction: 'outgoing'
+              direction: "outgoing",
             },
-            processingTime
+            processingTime,
           );
         }
 
@@ -532,10 +571,10 @@ export class WebhookService {
 
       return result;
     } catch (error) {
-      logger.error('Error delivering webhook', {
+      logger.error("Error delivering webhook", {
         error: error.message,
         webhookId,
-        eventId: event.id
+        eventId: event.id,
       });
       return false;
     }
@@ -544,24 +583,28 @@ export class WebhookService {
   /**
    * Process an incoming webhook
    */
-  async processIncomingWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async processIncomingWebhook(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     const startTime = Date.now();
     const { path } = req;
 
     try {
       // Extract webhook type from path
-      const pathParts = path.split('/');
+      const pathParts = path.split("/");
       const webhookType = pathParts[pathParts.length - 1];
 
       // Validate the webhook signature if required
       const isValid = await this.validateWebhookSignature(req);
 
       if (!isValid) {
-        logger.warn('Invalid webhook signature', { path });
+        logger.warn("Invalid webhook signature", { path });
 
         // Log invalid webhook
         await this.logWebhookDelivery({
-          webhookId: 'unknown',
+          webhookId: "unknown",
           eventId: uuidv4(),
           direction: WebhookDirection.INCOMING,
           status: WebhookStatus.INVALID,
@@ -569,20 +612,20 @@ export class WebhookService {
           requestMethod: req.method,
           requestHeaders: req.headers as Record<string, string>,
           requestBody: req.body,
-          error: 'Invalid signature',
-          timestamp: new Date()
+          error: "Invalid signature",
+          timestamp: new Date(),
         });
 
         // Update metrics
         if (this.config.enableMetrics) {
           webhookMetrics.incomingTotal.inc({
             type: webhookType,
-            source: req.get('host') || 'unknown',
-            status: 'invalid'
+            source: req.get("host") || "unknown",
+            status: "invalid",
           });
         }
 
-        res.status(401).json({ error: 'Invalid webhook signature' });
+        res.status(401).json({ error: "Invalid webhook signature" });
         return;
       }
 
@@ -590,14 +633,14 @@ export class WebhookService {
       const webhookEvent: WebhookEvent = {
         id: uuidv4(),
         type: webhookType,
-        source: req.get('host') || 'unknown',
+        source: req.get("host") || "unknown",
         timestamp: new Date().toISOString(),
         data: req.body,
         metadata: {
           headers: req.headers,
           query: req.query,
-          ip: req.ip
-        }
+          ip: req.ip,
+        },
       };
 
       // Store the event
@@ -612,10 +655,10 @@ export class WebhookService {
         result = await handler(webhookEvent);
       } else {
         // Default handling - publish to event bus
-        eventBus.publish('events.webhook', {
+        eventBus.publish("events.webhook", {
           type: `WEBHOOK_${webhookType.toUpperCase()}`,
           payload: webhookEvent.data,
-          correlationId: webhookEvent.id
+          correlationId: webhookEvent.id,
         });
       }
 
@@ -624,7 +667,7 @@ export class WebhookService {
 
       // Log successful webhook
       await this.logWebhookDelivery({
-        webhookId: 'incoming',
+        webhookId: "incoming",
         eventId: webhookEvent.id,
         direction: WebhookDirection.INCOMING,
         status: WebhookStatus.DELIVERED,
@@ -635,36 +678,36 @@ export class WebhookService {
         responseStatus: 200,
         responseBody: { success: true },
         processingTimeMs: processingTime,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // Update metrics
       if (this.config.enableMetrics) {
         webhookMetrics.incomingTotal.inc({
           type: webhookType,
-          source: req.get('host') || 'unknown',
-          status: 'success'
+          source: req.get("host") || "unknown",
+          status: "success",
         });
 
         webhookMetrics.processingTime.observe(
           {
             type: webhookType,
-            direction: 'incoming'
+            direction: "incoming",
           },
-          processingTime
+          processingTime,
         );
       }
 
       res.status(200).json({ success: true, result });
     } catch (error) {
-      logger.error('Error processing incoming webhook', {
+      logger.error("Error processing incoming webhook", {
         error: error.message,
-        path
+        path,
       });
 
       // Log failed webhook
       await this.logWebhookDelivery({
-        webhookId: 'incoming',
+        webhookId: "incoming",
         eventId: uuidv4(),
         direction: WebhookDirection.INCOMING,
         status: WebhookStatus.FAILED,
@@ -673,18 +716,18 @@ export class WebhookService {
         requestHeaders: req.headers as Record<string, string>,
         requestBody: req.body,
         error: error.message,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // Update metrics
       if (this.config.enableMetrics) {
-        const pathParts = path.split('/');
+        const pathParts = path.split("/");
         const webhookType = pathParts[pathParts.length - 1];
 
         webhookMetrics.incomingTotal.inc({
           type: webhookType,
-          source: req.get('host') || 'unknown',
-          status: 'failure'
+          source: req.get("host") || "unknown",
+          status: "failure",
         });
       }
 
@@ -698,7 +741,7 @@ export class WebhookService {
   private async validateWebhookSignature(req: Request): Promise<boolean> {
     try {
       // Get signature from headers
-      const signature = req.headers['x-webhook-signature'] as string;
+      const signature = req.headers["x-webhook-signature"] as string;
 
       // If no signature, check if validation is required
       if (!signature) {
@@ -721,7 +764,8 @@ export class WebhookService {
       const webhook = null;
 
       // If no configuration found, use default security level
-      const securityLevel = webhook?.securityLevel || this.config.defaultSecurityLevel;
+      const securityLevel =
+        webhook?.securityLevel || this.config.defaultSecurityLevel;
 
       // Skip validation if security level is NONE
       if (securityLevel === WebhookSecurityLevel.NONE) {
@@ -730,9 +774,13 @@ export class WebhookService {
 
       // Validate based on security level
       if (securityLevel === WebhookSecurityLevel.HMAC) {
-        const hmacSecret = webhook?.securityConfig?.hmacSecret || this.config.hmacSecretKey;
+        const hmacSecret =
+          webhook?.securityConfig?.hmacSecret || this.config.hmacSecretKey;
         const payload = req.body;
-        const expectedSignature = this.generateHmacSignature(payload, hmacSecret);
+        const expectedSignature = this.generateHmacSignature(
+          payload,
+          hmacSecret,
+        );
 
         return signature === expectedSignature;
       }
@@ -741,9 +789,9 @@ export class WebhookService {
 
       return false;
     } catch (error) {
-      logger.error('Error validating webhook signature', {
+      logger.error("Error validating webhook signature", {
         error: error.message,
-        path: req.path
+        path: req.path,
       });
       return false;
     }
@@ -753,17 +801,18 @@ export class WebhookService {
    * Generate HMAC signature for payload
    */
   private generateHmacSignature(payload: any, secret: string): string {
-    const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
-    return crypto
-      .createHmac('sha256', secret)
-      .update(data)
-      .digest('hex');
+    const data =
+      typeof payload === "string" ? payload : JSON.stringify(payload);
+    return crypto.createHmac("sha256", secret).update(data).digest("hex");
   }
 
   /**
    * Transform webhook payload using template
    */
-  private async transformPayload(event: WebhookEvent, templateId?: string): Promise<any> {
+  private async transformPayload(
+    event: WebhookEvent,
+    templateId?: string,
+  ): Promise<any> {
     if (!templateId) {
       return event;
     }
@@ -777,7 +826,7 @@ export class WebhookService {
 
       // Get template from database
       const template = await db.query.webhookTemplates.findFirst({
-        where: eq(db.webhookTemplates.id, templateId)
+        where: eq(db.webhookTemplates.id, templateId),
       });
 
       if (!template) {
@@ -785,14 +834,14 @@ export class WebhookService {
       }
 
       // Compile and cache the template
-      const compiledTemplate = new Function('event', template.template);
+      const compiledTemplate = new Function("event", template.template);
       this.templateCache.set(templateId, compiledTemplate);
 
       return compiledTemplate(event);
     } catch (error) {
-      logger.error('Error transforming webhook payload', {
+      logger.error("Error transforming webhook payload", {
         error: error.message,
-        templateId
+        templateId,
       });
       return event;
     }
@@ -801,16 +850,18 @@ export class WebhookService {
   /**
    * Log webhook delivery
    */
-  private async logWebhookDelivery(log: Partial<WebhookDeliveryLog>): Promise<void> {
+  private async logWebhookDelivery(
+    log: Partial<WebhookDeliveryLog>,
+  ): Promise<void> {
     try {
       await db.insert(webhookDeliveryLogs).values({
         id: uuidv4(),
         ...log,
-        createdAt: new Date()
+        createdAt: new Date(),
       });
     } catch (error) {
-      logger.error('Error logging webhook delivery', {
-        error: error.message
+      logger.error("Error logging webhook delivery", {
+        error: error.message,
       });
     }
   }
@@ -845,7 +896,7 @@ export class WebhookService {
       // Initialize or reset counter
       this.rateLimiters.set(webhookId, {
         count: 1,
-        resetAt
+        resetAt,
       });
     } else {
       // Increment counter
@@ -856,7 +907,7 @@ export class WebhookService {
   /**
    * Register a new webhook
    */
-  async registerWebhook(config: Omit<WebhookConfig, 'id'>): Promise<string> {
+  async registerWebhook(config: Omit<WebhookConfig, "id">): Promise<string> {
     try {
       // Validate configuration
       const validatedConfig = WebhookConfigSchema.parse(config);
@@ -890,13 +941,16 @@ export class WebhookService {
       //   updatedAt: new Date()
       // });
 
-      logger.info('Webhook registered successfully', { webhookId: id, type: validatedConfig.type });
+      logger.info("Webhook registered successfully", {
+        webhookId: id,
+        type: validatedConfig.type,
+      });
 
       return id;
     } catch (error) {
-      logger.error('Error registering webhook', {
+      logger.error("Error registering webhook", {
         error: error.message,
-        name: config.name
+        name: config.name,
       });
       throw error;
     }
@@ -905,7 +959,10 @@ export class WebhookService {
   /**
    * Update a webhook
    */
-  async updateWebhook(id: string, config: Partial<WebhookConfig>): Promise<boolean> {
+  async updateWebhook(
+    id: string,
+    config: Partial<WebhookConfig>,
+  ): Promise<boolean> {
     try {
       // Get current webhook
       // TODO: Replace 'webhooks' with the correct reference to the webhooks table or model.
@@ -928,13 +985,13 @@ export class WebhookService {
       //   })
       //   .where(eq(webhooks.id, id));
 
-      logger.info('Webhook updated successfully', { webhookId: id });
+      logger.info("Webhook updated successfully", { webhookId: id });
 
       return true;
     } catch (error) {
-      logger.error('Error updating webhook', {
+      logger.error("Error updating webhook", {
         error: error.message,
-        webhookId: id
+        webhookId: id,
       });
       throw error;
     }
@@ -954,13 +1011,13 @@ export class WebhookService {
       //   })
       //   .where(eq(webhooks.id, id));
 
-      logger.info('Webhook deleted successfully', { webhookId: id });
+      logger.info("Webhook deleted successfully", { webhookId: id });
 
       return true;
     } catch (error) {
-      logger.error('Error deleting webhook', {
+      logger.error("Error deleting webhook", {
         error: error.message,
-        webhookId: id
+        webhookId: id,
       });
       throw error;
     }
@@ -980,11 +1037,13 @@ export class WebhookService {
   /**
    * Get all webhooks
    */
-  async getWebhooks(options: {
-    type?: WebhookType;
-    dealershipId?: number;
-    isActive?: boolean;
-  } = {}): Promise<any[]> {
+  async getWebhooks(
+    options: {
+      type?: WebhookType;
+      dealershipId?: number;
+      isActive?: boolean;
+    } = {},
+  ): Promise<any[]> {
     const { type, dealershipId, isActive } = options;
 
     // Build query conditions
@@ -1016,10 +1075,13 @@ export class WebhookService {
   /**
    * Subscribe to webhook events
    */
-  async subscribeToWebhook(subscription: Omit<WebhookSubscription, 'id'>): Promise<string> {
+  async subscribeToWebhook(
+    subscription: Omit<WebhookSubscription, "id">,
+  ): Promise<string> {
     try {
       // Validate subscription
-      const validatedSubscription = WebhookSubscriptionSchema.parse(subscription);
+      const validatedSubscription =
+        WebhookSubscriptionSchema.parse(subscription);
 
       // Generate ID if not provided
       const id = validatedSubscription.id || uuidv4();
@@ -1038,16 +1100,16 @@ export class WebhookService {
       //   updatedAt: new Date()
       // });
 
-      logger.info('Webhook subscription created successfully', {
+      logger.info("Webhook subscription created successfully", {
         subscriptionId: id,
-        webhookId: validatedSubscription.webhookId
+        webhookId: validatedSubscription.webhookId,
       });
 
       return id;
     } catch (error) {
-      logger.error('Error creating webhook subscription', {
+      logger.error("Error creating webhook subscription", {
         error: error.message,
-        webhookId: subscription.webhookId
+        webhookId: subscription.webhookId,
       });
       throw error;
     }
@@ -1056,15 +1118,24 @@ export class WebhookService {
   /**
    * Get webhook delivery logs
    */
-  async getWebhookDeliveryLogs(options: {
-    webhookId?: string;
-    eventId?: string;
-    status?: WebhookStatus;
-    direction?: WebhookDirection;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<any[]> {
-    const { webhookId, eventId, status, direction, limit = 50, offset = 0 } = options;
+  async getWebhookDeliveryLogs(
+    options: {
+      webhookId?: string;
+      eventId?: string;
+      status?: WebhookStatus;
+      direction?: WebhookDirection;
+      limit?: number;
+      offset?: number;
+    } = {},
+  ): Promise<any[]> {
+    const {
+      webhookId,
+      eventId,
+      status,
+      direction,
+      limit = 50,
+      offset = 0,
+    } = options;
 
     // Build query conditions
     const conditions = [];
@@ -1089,19 +1160,21 @@ export class WebhookService {
       where: conditions.length > 0 ? and(...conditions) : undefined,
       orderBy: [desc(webhookDeliveryLogs.createdAt)],
       limit,
-      offset
+      offset,
     });
   }
 
   /**
    * Get webhook events
    */
-  async getWebhookEvents(options: {
-    type?: string;
-    source?: string;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<any[]> {
+  async getWebhookEvents(
+    options: {
+      type?: string;
+      source?: string;
+      limit?: number;
+      offset?: number;
+    } = {},
+  ): Promise<any[]> {
     const { type, source, limit = 50, offset = 0 } = options;
 
     // Build query conditions
@@ -1119,7 +1192,7 @@ export class WebhookService {
       where: conditions.length > 0 ? and(...conditions) : undefined,
       orderBy: [desc(webhookEvents.createdAt)],
       limit,
-      offset
+      offset,
     });
   }
 
@@ -1128,9 +1201,9 @@ export class WebhookService {
    */
   private async handleAdsSpendWebhook(event: WebhookEvent): Promise<any> {
     try {
-      logger.info('Processing ads spend webhook', {
+      logger.info("Processing ads spend webhook", {
         eventId: event.id,
-        source: event.source
+        source: event.source,
       });
 
       // Extract data from webhook
@@ -1145,26 +1218,26 @@ export class WebhookService {
         metrics,
         source: event.source,
         webhookEventId: event.id,
-        createdAt: new Date()
+        createdAt: new Date(),
       });
 
       // Publish to event bus for further processing
-      eventBus.publish('events.platform', {
-        type: 'ADS_SPEND_RECORDED',
+      eventBus.publish("events.platform", {
+        type: "ADS_SPEND_RECORDED",
         payload: {
           accountId,
           date,
           spend,
-          metrics
+          metrics,
         },
-        correlationId: event.id
+        correlationId: event.id,
       });
 
       return { success: true };
     } catch (error) {
-      logger.error('Error handling ads spend webhook', {
+      logger.error("Error handling ads spend webhook", {
         error: error instanceof Error ? error.message : String(error),
-        eventId: event.id
+        eventId: event.id,
       });
       throw error;
     }
@@ -1173,11 +1246,13 @@ export class WebhookService {
   /**
    * Handle system diagnostic webhook
    */
-  private async handleSystemDiagnosticWebhook(event: WebhookEvent): Promise<any> {
+  private async handleSystemDiagnosticWebhook(
+    event: WebhookEvent,
+  ): Promise<any> {
     try {
-      logger.info('Processing system diagnostic webhook', {
+      logger.info("Processing system diagnostic webhook", {
         eventId: event.id,
-        source: event.source
+        source: event.source,
       });
 
       // Extract data from webhook
@@ -1192,29 +1267,29 @@ export class WebhookService {
         source: event.source,
         webhookEventId: event.id,
         timestamp: new Date(timestamp || Date.now()),
-        createdAt: new Date()
+        createdAt: new Date(),
       });
 
       // Check for critical status
-      if (status === 'critical') {
+      if (status === "critical") {
         // Publish critical event
-        eventBus.publish('events.platform', {
-          type: 'DIAGNOSTIC_CRITICAL',
+        eventBus.publish("events.platform", {
+          type: "DIAGNOSTIC_CRITICAL",
           payload: {
             system,
             status,
             metrics,
-            source: event.source
+            source: event.source,
           },
-          correlationId: event.id
+          correlationId: event.id,
         });
       }
 
       return { success: true };
     } catch (error) {
-      logger.error('Error handling system diagnostic webhook', {
+      logger.error("Error handling system diagnostic webhook", {
         error: error instanceof Error ? error.message : String(error),
-        eventId: event.id
+        eventId: event.id,
       });
       throw error;
     }
@@ -1225,41 +1300,41 @@ export class WebhookService {
    */
   private async handleNotificationWebhook(event: WebhookEvent): Promise<any> {
     try {
-      logger.info('Processing notification webhook', {
+      logger.info("Processing notification webhook", {
         eventId: event.id,
-        source: event.source
+        source: event.source,
       });
 
       // Extract data from webhook
       const { title, message, priority, channel, recipients } = event.data;
 
       // Forward to notification service
-      const { notificationService } = require('./notification-service');
+      const { notificationService } = require("./notification-service");
 
-      if (channel === 'slack') {
+      if (channel === "slack") {
         await notificationService.sendSlackNotification({
           title,
           message,
           priority,
           data: event.data,
-          correlationId: event.id
+          correlationId: event.id,
         });
-      } else if (channel === 'email' && recipients) {
+      } else if (channel === "email" && recipients) {
         await notificationService.sendEmailNotification({
           to: recipients,
           subject: title,
           message,
           priority,
           data: event.data,
-          correlationId: event.id
+          correlationId: event.id,
         });
       }
 
       return { success: true };
     } catch (error) {
-      logger.error('Error handling notification webhook', {
+      logger.error("Error handling notification webhook", {
         error: error instanceof Error ? error.message : String(error),
-        eventId: event.id
+        eventId: event.id,
       });
       throw error;
     }
@@ -1272,31 +1347,33 @@ export class WebhookService {
     const router = Router();
 
     // Generic webhook handler
-    router.post('/:type', this.processIncomingWebhook.bind(this));
+    router.post("/:type", this.processIncomingWebhook.bind(this));
 
     // Specific webhook endpoints
-    router.post('/ads/spend', (req, res, next) => {
+    router.post("/ads/spend", (req, res, next) => {
       req.body.type = WebhookType.ADS_SPEND;
       this.processIncomingWebhook(req, res, next);
     });
 
-    router.post('/system/diagnostic', (req, res, next) => {
+    router.post("/system/diagnostic", (req, res, next) => {
       req.body.type = WebhookType.SYSTEM_DIAGNOSTIC;
       this.processIncomingWebhook(req, res, next);
     });
 
-    router.post('/notification', (req, res, next) => {
+    router.post("/notification", (req, res, next) => {
       req.body.type = WebhookType.NOTIFICATION;
       this.processIncomingWebhook(req, res, next);
     });
 
     // Webhook management endpoints
-    router.get('/config', async (req, res, next) => {
+    router.get("/config", async (req, res, next) => {
       try {
         const webhooks = await this.getWebhooks({
-          dealershipId: req.query.dealershipId ? parseInt(req.query.dealershipId as string) : undefined,
+          dealershipId: req.query.dealershipId
+            ? parseInt(req.query.dealershipId as string)
+            : undefined,
           type: req.query.type as WebhookType,
-          isActive: req.query.isActive === 'true'
+          isActive: req.query.isActive === "true",
         });
 
         res.json({ webhooks });
@@ -1305,12 +1382,12 @@ export class WebhookService {
       }
     });
 
-    router.get('/config/:id', async (req, res, next) => {
+    router.get("/config/:id", async (req, res, next) => {
       try {
         const webhook = await this.getWebhook(req.params.id);
 
         if (!webhook) {
-          return res.status(404).json({ error: 'Webhook not found' });
+          return res.status(404).json({ error: "Webhook not found" });
         }
 
         res.json({ webhook });
@@ -1319,7 +1396,7 @@ export class WebhookService {
       }
     });
 
-    router.post('/config', async (req, res, next) => {
+    router.post("/config", async (req, res, next) => {
       try {
         const id = await this.registerWebhook(req.body);
         res.status(201).json({ id });
@@ -1328,7 +1405,7 @@ export class WebhookService {
       }
     });
 
-    router.put('/config/:id', async (req, res, next) => {
+    router.put("/config/:id", async (req, res, next) => {
       try {
         const success = await this.updateWebhook(req.params.id, req.body);
         res.json({ success });
@@ -1337,7 +1414,7 @@ export class WebhookService {
       }
     });
 
-    router.delete('/config/:id', async (req, res, next) => {
+    router.delete("/config/:id", async (req, res, next) => {
       try {
         const success = await this.deleteWebhook(req.params.id);
         res.json({ success });
@@ -1347,15 +1424,19 @@ export class WebhookService {
     });
 
     // Webhook logs endpoints
-    router.get('/logs', async (req, res, next) => {
+    router.get("/logs", async (req, res, next) => {
       try {
         const logs = await this.getWebhookDeliveryLogs({
           webhookId: req.query.webhookId as string,
           eventId: req.query.eventId as string,
           status: req.query.status as WebhookStatus,
           direction: req.query.direction as WebhookDirection,
-          limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
-          offset: req.query.offset ? parseInt(req.query.offset as string) : undefined
+          limit: req.query.limit
+            ? parseInt(req.query.limit as string)
+            : undefined,
+          offset: req.query.offset
+            ? parseInt(req.query.offset as string)
+            : undefined,
         });
 
         res.json({ logs });
@@ -1365,13 +1446,17 @@ export class WebhookService {
     });
 
     // Webhook events endpoints
-    router.get('/events', async (req, res, next) => {
+    router.get("/events", async (req, res, next) => {
       try {
         const events = await this.getWebhookEvents({
           type: req.query.type as string,
           source: req.query.source as string,
-          limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
-          offset: req.query.offset ? parseInt(req.query.offset as string) : undefined
+          limit: req.query.limit
+            ? parseInt(req.query.limit as string)
+            : undefined,
+          offset: req.query.offset
+            ? parseInt(req.query.offset as string)
+            : undefined,
         });
 
         res.json({ events });

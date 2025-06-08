@@ -6,7 +6,13 @@ import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000;
 
-type ToastVariant = "default" | "destructive" | "success" | "warning" | "info" | "loading";
+type ToastVariant =
+  | "default"
+  | "destructive"
+  | "success"
+  | "warning"
+  | "info"
+  | "loading";
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -224,12 +230,12 @@ const toastLoading = (props: Omit<Toast, "variant">) => {
   return toast({ ...props, variant: "loading" });
 };
 
-export { 
-  useToast, 
-  toast, 
-  toastSuccess, 
-  toastError, 
-  toastWarning, 
-  toastInfo, 
-  toastLoading 
+export {
+  useToast,
+  toast,
+  toastSuccess,
+  toastError,
+  toastWarning,
+  toastInfo,
+  toastLoading,
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 /**
  * Event parameters type for analytics tracking
@@ -22,8 +22,8 @@ interface AnalyticsConfig {
 
 // Default configuration
 const defaultConfig: AnalyticsConfig = {
-  enabled: process.env.NODE_ENV === 'production',
-  debugMode: process.env.NODE_ENV === 'development',
+  enabled: process.env.NODE_ENV === "production",
+  debugMode: process.env.NODE_ENV === "development",
   sessionId: generateSessionId(),
 };
 
@@ -34,8 +34,10 @@ let analyticsConfig: AnalyticsConfig = { ...defaultConfig };
  * Generate a random session ID
  */
 function generateSessionId(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
+  return (
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
+  );
 }
 
 /**
@@ -50,7 +52,10 @@ export function configureAnalytics(config: Partial<AnalyticsConfig>): void {
  * @param eventName Name of the event
  * @param parameters Event parameters
  */
-export function logEvent(eventName: string, parameters: EventParameters = {}): void {
+export function logEvent(
+  eventName: string,
+  parameters: EventParameters = {},
+): void {
   if (!analyticsConfig.enabled && !analyticsConfig.debugMode) {
     return;
   }
@@ -76,7 +81,7 @@ export function logEvent(eventName: string, parameters: EventParameters = {}): v
     if (analyticsConfig.debugMode) {
       console.log(`📤 Sending to ${analyticsConfig.endpoint}`, eventData);
     }
-    
+
     // Example implementation:
     // fetch(analyticsConfig.endpoint, {
     //   method: 'POST',
@@ -96,8 +101,11 @@ export function logEvent(eventName: string, parameters: EventParameters = {}): v
  * @param pageName Name of the page
  * @param parameters Additional parameters
  */
-export function trackPageView(pageName: string, parameters: EventParameters = {}): void {
-  logEvent('page_view', { pageName, ...parameters });
+export function trackPageView(
+  pageName: string,
+  parameters: EventParameters = {},
+): void {
+  logEvent("page_view", { pageName, ...parameters });
 }
 
 /**
@@ -105,7 +113,10 @@ export function trackPageView(pageName: string, parameters: EventParameters = {}
  * @param pageName Name of the page
  * @param parameters Additional parameters
  */
-export function usePageTracking(pageName: string, parameters: EventParameters = {}): void {
+export function usePageTracking(
+  pageName: string,
+  parameters: EventParameters = {},
+): void {
   useEffect(() => {
     trackPageView(pageName, parameters);
   }, [pageName, JSON.stringify(parameters)]);
@@ -116,9 +127,12 @@ export function usePageTracking(pageName: string, parameters: EventParameters = 
  * @param componentName Name of the component
  * @param parameters Additional parameters
  */
-export function useComponentTracking(componentName: string, parameters: EventParameters = {}): void {
+export function useComponentTracking(
+  componentName: string,
+  parameters: EventParameters = {},
+): void {
   useEffect(() => {
-    logEvent('component_render', { componentName, ...parameters });
+    logEvent("component_render", { componentName, ...parameters });
   }, [componentName, JSON.stringify(parameters)]);
 }
 
@@ -133,18 +147,20 @@ export function useUserPresence(): { isActive: boolean } {
     const handleActivity = () => setIsActive(true);
     const handleInactivity = () => {
       setIsActive(false);
-      logEvent('user_inactive', { duration: 60 });
+      logEvent("user_inactive", { duration: 60 });
     };
 
     // Set up activity listeners
-    const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
-    events.forEach(event => window.addEventListener(event, handleActivity));
+    const events = ["mousedown", "keydown", "touchstart", "scroll"];
+    events.forEach((event) => window.addEventListener(event, handleActivity));
 
     // Set up inactivity timer (60 seconds)
     const inactivityTimer = setTimeout(handleInactivity, 60000);
 
     return () => {
-      events.forEach(event => window.removeEventListener(event, handleActivity));
+      events.forEach((event) =>
+        window.removeEventListener(event, handleActivity),
+      );
       clearTimeout(inactivityTimer);
     };
   }, [isActive]);
@@ -153,9 +169,9 @@ export function useUserPresence(): { isActive: boolean } {
 }
 
 // Initialize with any environment variables
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   configureAnalytics({
-    enabled: process.env.REACT_APP_ANALYTICS_ENABLED === 'true',
+    enabled: process.env.REACT_APP_ANALYTICS_ENABLED === "true",
     endpoint: process.env.REACT_APP_ANALYTICS_ENDPOINT,
     apiKey: process.env.REACT_APP_ANALYTICS_API_KEY,
   });

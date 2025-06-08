@@ -4,10 +4,10 @@
  * Allows gradual migration with feature flags and per-dealership routing
  */
 
-import logger from '../utils/logger';
-import { sendGridService } from './sendgrid-service';
+import logger from "../utils/logger";
+import { sendGridService } from "./sendgrid-service";
 
-export type EmailProcessor = 'sendgrid' | 'legacy' | 'both';
+export type EmailProcessor = "sendgrid" | "legacy" | "both";
 
 export interface EmailRoutingConfig {
   globalProcessor: EmailProcessor;
@@ -34,10 +34,11 @@ export class EmailRouterService {
 
   private loadConfiguration(): EmailRoutingConfig {
     return {
-      globalProcessor: (process.env.EMAIL_PROCESSOR as EmailProcessor) || 'legacy',
+      globalProcessor:
+        (process.env.EMAIL_PROCESSOR as EmailProcessor) || "legacy",
       dealershipRouting: this.parseDealershipRouting(),
-      enableLogging: process.env.EMAIL_ROUTING_LOGGING === 'true',
-      enableComparison: process.env.EMAIL_COMPARISON_MODE === 'true'
+      enableLogging: process.env.EMAIL_ROUTING_LOGGING === "true",
+      enableComparison: process.env.EMAIL_COMPARISON_MODE === "true",
     };
   }
 
@@ -48,7 +49,9 @@ export class EmailRouterService {
     try {
       return JSON.parse(routing);
     } catch (error) {
-      logger.warn('Invalid DEALERSHIP_EMAIL_ROUTING format, using empty routing');
+      logger.warn(
+        "Invalid DEALERSHIP_EMAIL_ROUTING format, using empty routing",
+      );
       return {};
     }
   }
@@ -94,53 +97,56 @@ export class EmailRouterService {
     attachments?: any[];
     dealershipId?: string;
   }): Promise<ProcessedEmail[]> {
-    const processor = this.getProcessorForEmail(emailData.to, emailData.dealershipId);
+    const processor = this.getProcessorForEmail(
+      emailData.to,
+      emailData.dealershipId,
+    );
     const results: ProcessedEmail[] = [];
 
     if (this.config.enableLogging) {
-      logger.info('Email routing decision', {
+      logger.info("Email routing decision", {
         to: emailData.to,
         from: emailData.from,
         processor,
-        dealershipId: emailData.dealershipId
+        dealershipId: emailData.dealershipId,
       });
     }
 
     // Process with determined processor
-    if (processor === 'sendgrid') {
+    if (processor === "sendgrid") {
       const result = await this.processThroughSendGrid(emailData);
       results.push(result);
-    } else if (processor === 'legacy') {
+    } else if (processor === "legacy") {
       const result = await this.processThroughLegacy(emailData);
       results.push(result);
-    } else if (processor === 'both') {
+    } else if (processor === "both") {
       // Process through both systems for comparison
       const [sendgridResult, legacyResult] = await Promise.allSettled([
         this.processThroughSendGrid(emailData),
-        this.processThroughLegacy(emailData)
+        this.processThroughLegacy(emailData),
       ]);
 
-      if (sendgridResult.status === 'fulfilled') {
+      if (sendgridResult.status === "fulfilled") {
         results.push(sendgridResult.value);
       } else {
         results.push({
           id: `sendgrid-${Date.now()}`,
-          processor: 'sendgrid',
+          processor: "sendgrid",
           success: false,
           processingTime: 0,
-          error: sendgridResult.reason?.message
+          error: sendgridResult.reason?.message,
         });
       }
 
-      if (legacyResult.status === 'fulfilled') {
+      if (legacyResult.status === "fulfilled") {
         results.push(legacyResult.value);
       } else {
         results.push({
           id: `legacy-${Date.now()}`,
-          processor: 'legacy',
+          processor: "legacy",
           success: false,
           processingTime: 0,
-          error: legacyResult.reason?.message
+          error: legacyResult.reason?.message,
         });
       }
 
@@ -153,95 +159,100 @@ export class EmailRouterService {
     return results;
   }
 
-  private async processThroughSendGrid(emailData: any): Promise<ProcessedEmail> {
+  private async processThroughSendGrid(
+    emailData: any,
+  ): Promise<ProcessedEmail> {
     const startTime = Date.now();
-    
+
     try {
       // This would integrate with your existing ADF processing
       // For now, just simulate the processing
-      
+
       if (!sendGridService.isConfigured()) {
-        throw new Error('SendGrid not configured');
+        throw new Error("SendGrid not configured");
       }
 
       // Process email through SendGrid webhook logic
       // This is where you'd call your ADF processing service
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       return {
         id: `sendgrid-${Date.now()}`,
-        processor: 'sendgrid',
+        processor: "sendgrid",
         success: true,
         processingTime,
         metadata: {
-          source: 'sendgrid_webhook'
-        }
+          source: "sendgrid_webhook",
+        },
       };
-
     } catch (error) {
       return {
         id: `sendgrid-${Date.now()}`,
-        processor: 'sendgrid',
+        processor: "sendgrid",
         success: false,
         processingTime: Date.now() - startTime,
-        error: error.message
+        error: error.message,
       };
     }
   }
 
   private async processThroughLegacy(emailData: any): Promise<ProcessedEmail> {
     const startTime = Date.now();
-    
+
     try {
       // This would integrate with your existing IMAP/email processing
       // For now, just simulate the processing
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       return {
         id: `legacy-${Date.now()}`,
-        processor: 'legacy',
+        processor: "legacy",
         success: true,
         processingTime,
         metadata: {
-          source: 'legacy_imap'
-        }
+          source: "legacy_imap",
+        },
       };
-
     } catch (error) {
       return {
         id: `legacy-${Date.now()}`,
-        processor: 'legacy',
+        processor: "legacy",
         success: false,
         processingTime: Date.now() - startTime,
-        error: error.message
+        error: error.message,
       };
     }
   }
 
-  private compareResults(sendgridResult: ProcessedEmail, legacyResult: ProcessedEmail, emailData: any) {
-    logger.info('Email processing comparison', {
+  private compareResults(
+    sendgridResult: ProcessedEmail,
+    legacyResult: ProcessedEmail,
+    emailData: any,
+  ) {
+    logger.info("Email processing comparison", {
       email: emailData.to,
       sendgrid: {
         success: sendgridResult.success,
-        time: sendgridResult.processingTime
+        time: sendgridResult.processingTime,
       },
       legacy: {
         success: legacyResult.success,
-        time: legacyResult.processingTime
+        time: legacyResult.processingTime,
       },
-      timeDifference: sendgridResult.processingTime - legacyResult.processingTime
+      timeDifference:
+        sendgridResult.processingTime - legacyResult.processingTime,
     });
 
     // Log if there are discrepancies
     if (sendgridResult.success !== legacyResult.success) {
-      logger.warn('Email processing result mismatch', {
+      logger.warn("Email processing result mismatch", {
         email: emailData.to,
         sendgridSuccess: sendgridResult.success,
         legacySuccess: legacyResult.success,
         sendgridError: sendgridResult.error,
-        legacyError: legacyResult.error
+        legacyError: legacyResult.error,
       });
     }
   }
@@ -251,10 +262,10 @@ export class EmailRouterService {
    */
   updateDealershipRouting(dealershipId: string, processor: EmailProcessor) {
     this.config.dealershipRouting[dealershipId] = processor;
-    
-    logger.info('Updated dealership email routing', {
+
+    logger.info("Updated dealership email routing", {
       dealershipId,
-      processor
+      processor,
     });
   }
 
@@ -266,7 +277,7 @@ export class EmailRouterService {
       globalProcessor: this.config.globalProcessor,
       dealershipRouting: this.config.dealershipRouting,
       sendgridConfigured: sendGridService.isConfigured(),
-      comparison_mode: this.config.enableComparison
+      comparison_mode: this.config.enableComparison,
     };
   }
 }

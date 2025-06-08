@@ -28,29 +28,35 @@ export function setupRoutes(app: Express) {
 
         if (sg_message_id && eventType) {
           // Map SendGrid events to our status types
-          let status: 'sent' | 'delivered' | 'opened' | 'clicked' | 'bounced' | 'failed';
+          let status:
+            | "sent"
+            | "delivered"
+            | "opened"
+            | "clicked"
+            | "bounced"
+            | "failed";
 
           switch (eventType) {
-            case 'delivered':
-              status = 'delivered';
+            case "delivered":
+              status = "delivered";
               break;
-            case 'open':
-              status = 'opened';
+            case "open":
+              status = "opened";
               break;
-            case 'click':
-              status = 'clicked';
+            case "click":
+              status = "clicked";
               break;
-            case 'bounce':
-            case 'blocked':
-            case 'dropped':
-              status = 'bounced';
+            case "bounce":
+            case "blocked":
+            case "dropped":
+              status = "bounced";
               break;
-            case 'spamreport':
-            case 'unsubscribe':
-              status = 'failed';
+            case "spamreport":
+            case "unsubscribe":
+              status = "failed";
               break;
             default:
-              status = 'sent';
+              status = "sent";
           }
 
           updateDeliveryStatus(sg_message_id, status, {
@@ -58,19 +64,19 @@ export function setupRoutes(app: Express) {
             email,
             timestamp,
             reason: event.reason,
-            url: event.url // For click events
+            url: event.url, // For click events
           });
         }
       });
 
-      logger.info('Processed SendGrid webhook events', {
-        eventCount: events.length
+      logger.info("Processed SendGrid webhook events", {
+        eventCount: events.length,
       });
 
       res.status(200).json({ message: "Webhook processed successfully" });
     } catch (error) {
-      logger.error('SendGrid webhook processing failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+      logger.error("SendGrid webhook processing failed", {
+        error: error instanceof Error ? error.message : "Unknown error",
       });
       res.status(500).json({ error: "Webhook processing failed" });
     }

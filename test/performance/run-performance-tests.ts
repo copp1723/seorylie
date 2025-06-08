@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
 
-import { spawn, ChildProcess } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import DatabasePerformanceMonitor from './db-performance-monitor';
-import logger from '../../server/utils/logger';
+import { spawn, ChildProcess } from "child_process";
+import fs from "fs";
+import path from "path";
+import DatabasePerformanceMonitor from "./db-performance-monitor";
+import logger from "../../server/utils/logger";
 
 interface TestResult {
   testName: string;
@@ -52,14 +52,14 @@ class PerformanceTestRunner {
         passedTests: 0,
         failedTests: 0,
         totalDuration: 0,
-        bottlenecks: []
-      }
+        bottlenecks: [],
+      },
     };
   }
 
   async runAllTests(): Promise<void> {
-    console.log('🚀 Starting Comprehensive Performance & Load Testing Suite');
-    console.log('=========================================================\n');
+    console.log("🚀 Starting Comprehensive Performance & Load Testing Suite");
+    console.log("=========================================================\n");
 
     // Start monitoring
     this.startSystemMonitoring();
@@ -67,16 +67,15 @@ class PerformanceTestRunner {
 
     try {
       // Run tests in sequence to avoid resource conflicts
-      await this.runTest('API Load Test', 'npm run test:load:api');
-      await this.runTest('Chat/WebSocket Load Test', 'npm run test:load:chat');
-      await this.runTest('Inventory Load Test', 'npm run test:load:inventory');
-      await this.runTest('Full Load Test Suite', 'npm run test:load');
+      await this.runTest("API Load Test", "npm run test:load:api");
+      await this.runTest("Chat/WebSocket Load Test", "npm run test:load:chat");
+      await this.runTest("Inventory Load Test", "npm run test:load:inventory");
+      await this.runTest("Full Load Test Suite", "npm run test:load");
 
       // Run database-specific performance tests
       await this.runDatabasePerformanceTests();
-
     } catch (error) {
-      console.error('❌ Test suite failed:', error);
+      console.error("❌ Test suite failed:", error);
     } finally {
       // Stop monitoring and generate reports
       this.stopSystemMonitoring();
@@ -88,17 +87,20 @@ class PerformanceTestRunner {
     }
   }
 
-  private async runTest(testName: string, command: string): Promise<TestResult> {
+  private async runTest(
+    testName: string,
+    command: string,
+  ): Promise<TestResult> {
     console.log(`\n🧪 Running: ${testName}`);
     console.log(`Command: ${command}`);
-    console.log('─'.repeat(50));
+    console.log("─".repeat(50));
 
     const startTime = Date.now();
     const result: TestResult = {
       testName,
       success: false,
       duration: 0,
-      errors: []
+      errors: [],
     };
 
     try {
@@ -113,7 +115,6 @@ class PerformanceTestRunner {
         console.log(`❌ ${testName} failed`);
         this.testSuite.summary.failedTests++;
       }
-
     } catch (error) {
       result.success = false;
       result.duration = Date.now() - startTime;
@@ -132,71 +133,71 @@ class PerformanceTestRunner {
 
   private executeCommand(command: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      const [cmd, ...args] = command.split(' ');
+      const [cmd, ...args] = command.split(" ");
       const process = spawn(cmd, args, {
-        stdio: 'inherit',
-        shell: true
+        stdio: "inherit",
+        shell: true,
       });
 
-      process.on('close', (code) => {
+      process.on("close", (code) => {
         resolve(code === 0);
       });
 
-      process.on('error', (error) => {
+      process.on("error", (error) => {
         reject(error);
       });
 
       // Set timeout for long-running tests
-      setTimeout(() => {
-        process.kill('SIGTERM');
-        reject(new Error('Test timeout after 10 minutes'));
-      }, 10 * 60 * 1000); // 10 minutes
+      setTimeout(
+        () => {
+          process.kill("SIGTERM");
+          reject(new Error("Test timeout after 10 minutes"));
+        },
+        10 * 60 * 1000,
+      ); // 10 minutes
     });
   }
 
   private async runDatabasePerformanceTests(): Promise<void> {
-    console.log('\n🗄️ Running Database Performance Tests');
-    console.log('─'.repeat(50));
+    console.log("\n🗄️ Running Database Performance Tests");
+    console.log("─".repeat(50));
 
     const testQueries = [
       {
-        name: 'Complex Inventory Search',
+        name: "Complex Inventory Search",
         query: async () => {
           // Simulate complex inventory search
-          return this.dbMonitor.executeQuery(
-            async () => {
-              // This would be replaced with actual database queries
-              await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
-              return [];
-            },
-            'SELECT * FROM vehicles WHERE make = ? AND year > ? AND price BETWEEN ? AND ?'
-          );
-        }
+          return this.dbMonitor.executeQuery(async () => {
+            // This would be replaced with actual database queries
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.random() * 100),
+            );
+            return [];
+          }, "SELECT * FROM vehicles WHERE make = ? AND year > ? AND price BETWEEN ? AND ?");
+        },
       },
       {
-        name: 'Multi-tenant Conversation Query',
+        name: "Multi-tenant Conversation Query",
         query: async () => {
-          return this.dbMonitor.executeQuery(
-            async () => {
-              await new Promise(resolve => setTimeout(resolve, Math.random() * 150));
-              return [];
-            },
-            'SELECT c.*, m.* FROM conversations c JOIN messages m ON c.id = m.conversation_id WHERE c.dealership_id = ?'
-          );
-        }
+          return this.dbMonitor.executeQuery(async () => {
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.random() * 150),
+            );
+            return [];
+          }, "SELECT c.*, m.* FROM conversations c JOIN messages m ON c.id = m.conversation_id WHERE c.dealership_id = ?");
+        },
       },
       {
-        name: 'Bulk Vehicle Insert',
+        name: "Bulk Vehicle Insert",
         query: async () => {
-          return this.dbMonitor.executeQuery(
-            async () => {
-              await new Promise(resolve => setTimeout(resolve, Math.random() * 300));
-              return { insertedCount: 50 };
-            },
-            'INSERT INTO vehicles (make, model, year, vin, price, dealership_id) VALUES ...'
-          );
-        }
-      }
+          return this.dbMonitor.executeQuery(async () => {
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.random() * 300),
+            );
+            return { insertedCount: 50 };
+          }, "INSERT INTO vehicles (make, model, year, vin, price, dealership_id) VALUES ...");
+        },
+      },
     ];
 
     for (const test of testQueries) {
@@ -216,7 +217,7 @@ class PerformanceTestRunner {
         timestamp: new Date(),
         cpu: process.cpuUsage().user / 1000000, // Convert to seconds
         memory: process.memoryUsage(),
-        loadAverage: require('os').loadavg()
+        loadAverage: require("os").loadavg(),
       };
 
       this.testSuite.systemMetrics.push(metrics);
@@ -230,8 +231,8 @@ class PerformanceTestRunner {
   }
 
   private async generateFinalReport(): Promise<void> {
-    console.log('\n📊 Generating Performance Test Report');
-    console.log('=====================================');
+    console.log("\n📊 Generating Performance Test Report");
+    console.log("=====================================");
 
     // Analyze results for bottlenecks
     this.analyzeBottlenecks();
@@ -250,21 +251,24 @@ class PerformanceTestRunner {
     const bottlenecks: string[] = [];
 
     // Check for failed tests
-    const failedTests = this.testSuite.results.filter(r => !r.success);
+    const failedTests = this.testSuite.results.filter((r) => !r.success);
     if (failedTests.length > 0) {
       bottlenecks.push(`${failedTests.length} tests failed`);
     }
 
     // Check for slow tests
-    const slowTests = this.testSuite.results.filter(r => r.duration > 300000); // > 5 minutes
+    const slowTests = this.testSuite.results.filter((r) => r.duration > 300000); // > 5 minutes
     if (slowTests.length > 0) {
       bottlenecks.push(`${slowTests.length} tests took longer than 5 minutes`);
     }
 
     // Check memory usage
-    const maxMemory = Math.max(...this.testSuite.systemMetrics.map(m => m.memory.heapUsed));
-    if (maxMemory > 1024 * 1024 * 1024) { // > 1GB
-      bottlenecks.push('High memory usage detected (>1GB)');
+    const maxMemory = Math.max(
+      ...this.testSuite.systemMetrics.map((m) => m.memory.heapUsed),
+    );
+    if (maxMemory > 1024 * 1024 * 1024) {
+      // > 1GB
+      bottlenecks.push("High memory usage detected (>1GB)");
     }
 
     this.testSuite.summary.bottlenecks = bottlenecks;
@@ -273,7 +277,9 @@ class PerformanceTestRunner {
   private printSummary(): void {
     const { summary } = this.testSuite;
     const duration = this.testSuite.endTime
-      ? (this.testSuite.endTime.getTime() - this.testSuite.startTime.getTime()) / 1000
+      ? (this.testSuite.endTime.getTime() -
+          this.testSuite.startTime.getTime()) /
+        1000
       : 0;
 
     console.log(`\n📈 PERFORMANCE TEST SUMMARY`);
@@ -281,7 +287,9 @@ class PerformanceTestRunner {
     console.log(`Total Tests: ${summary.totalTests}`);
     console.log(`Passed: ${summary.passedTests}`);
     console.log(`Failed: ${summary.failedTests}`);
-    console.log(`Success Rate: ${((summary.passedTests / summary.totalTests) * 100).toFixed(1)}%`);
+    console.log(
+      `Success Rate: ${((summary.passedTests / summary.totalTests) * 100).toFixed(1)}%`,
+    );
 
     if (summary.bottlenecks.length > 0) {
       console.log(`\n⚠️ BOTTLENECKS IDENTIFIED:`);
@@ -294,7 +302,7 @@ class PerformanceTestRunner {
   }
 
   private async saveDetailedReport(): Promise<void> {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filename = `performance-test-report-${timestamp}.json`;
     const filepath = path.join(__dirname, filename);
 
@@ -302,7 +310,7 @@ class PerformanceTestRunner {
       fs.writeFileSync(filepath, JSON.stringify(this.testSuite, null, 2));
       console.log(`\n💾 Detailed report saved to: ${filepath}`);
     } catch (error) {
-      console.error('Failed to save detailed report:', error);
+      console.error("Failed to save detailed report:", error);
     }
   }
 
@@ -320,13 +328,20 @@ class PerformanceTestRunner {
     }
 
     const avgTestDuration = summary.totalDuration / summary.totalTests;
-    if (avgTestDuration > 180000) { // > 3 minutes average
-      console.log(`3. Consider optimizing test performance (avg: ${(avgTestDuration/1000).toFixed(1)}s)`);
+    if (avgTestDuration > 180000) {
+      // > 3 minutes average
+      console.log(
+        `3. Consider optimizing test performance (avg: ${(avgTestDuration / 1000).toFixed(1)}s)`,
+      );
     }
 
-    console.log(`4. Review database performance metrics for optimization opportunities`);
+    console.log(
+      `4. Review database performance metrics for optimization opportunities`,
+    );
     console.log(`5. Monitor memory usage during peak load`);
-    console.log(`6. Consider implementing caching for frequently accessed data`);
+    console.log(
+      `6. Consider implementing caching for frequently accessed data`,
+    );
   }
 }
 

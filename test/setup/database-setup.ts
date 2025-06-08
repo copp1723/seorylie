@@ -1,13 +1,18 @@
 /**
  * Database setup for tests using pg-mem mock
- * 
+ *
  * This file provides database mocking for tests using the pg-mem in-memory
  * PostgreSQL database. It handles setup, teardown, and reset operations.
  */
 
-import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { createMockDatabase, getGlobalMockDatabase, resetGlobalMockDatabase, cleanupGlobalMockDatabase } from '../mocks/database';
-import type { MockDatabase } from '../mocks/database';
+import { beforeAll, afterAll, beforeEach, afterEach } from "vitest";
+import {
+  createMockDatabase,
+  getGlobalMockDatabase,
+  resetGlobalMockDatabase,
+  cleanupGlobalMockDatabase,
+} from "../mocks/database";
+import type { MockDatabase } from "../mocks/database";
 
 // Global variables for test database
 let globalTestDb: any = null;
@@ -54,7 +59,7 @@ export async function cleanupTestDatabase(): Promise<void> {
 
 // Setup database before all tests
 beforeAll(async () => {
-  console.log('Setting up test database with pg-mem...');
+  console.log("Setting up test database with pg-mem...");
   await setupTestDatabase();
 });
 
@@ -70,7 +75,7 @@ afterEach(async () => {
 
 // Final cleanup after all tests
 afterAll(async () => {
-  console.log('Cleaning up test database...');
+  console.log("Cleaning up test database...");
   await cleanupTestDatabase();
 });
 
@@ -78,7 +83,9 @@ afterAll(async () => {
  * Helper function to create service instances with mocked database
  * Usage: const emailService = createServiceWithMockDb(EmailService);
  */
-export function createServiceWithMockDb<T>(ServiceClass: new (...args: any[]) => T): T {
+export function createServiceWithMockDb<T>(
+  ServiceClass: new (...args: any[]) => T,
+): T {
   return new ServiceClass(globalTestDb);
 }
 
@@ -94,8 +101,11 @@ export function getMockDbForInjection(): any {
  * Helper function to create EmailService with rate limiting mocks
  * Usage: const emailService = createEmailServiceWithMocks(mockStore, mockNowFn);
  */
-export function createEmailServiceWithMocks(rateLimitStore?: any, nowFn?: () => number): any {
+export function createEmailServiceWithMocks(
+  rateLimitStore?: any,
+  nowFn?: () => number,
+): any {
   // Import EmailService dynamically to avoid circular dependencies
-  const { EmailService } = require('../../server/services/email-service');
+  const { EmailService } = require("../../server/services/email-service");
   return new EmailService(globalTestDb, rateLimitStore, nowFn);
 }

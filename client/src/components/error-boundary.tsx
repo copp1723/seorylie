@@ -1,7 +1,17 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
-import { AlertTriangle, RotateCw, RefreshCw, HelpCircle, Copy, Home } from "lucide-react";
-import { useActionableToast, ErrorCategory } from "@/components/ui/actionable-toast";
+import {
+  AlertTriangle,
+  RotateCw,
+  RefreshCw,
+  HelpCircle,
+  Copy,
+  Home,
+} from "lucide-react";
+import {
+  useActionableToast,
+  ErrorCategory,
+} from "@/components/ui/actionable-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -12,38 +22,38 @@ export enum ErrorFeatureFlag {
   ENABLE_TELEMETRY = "error.enableTelemetry",
   SHOW_TECHNICAL_DETAILS = "error.showTechnicalDetails",
   ENABLE_AUTO_RETRY = "error.enableAutoRetry",
-  USE_MINIMAL_FALLBACK = "error.useMinimalFallback"
+  USE_MINIMAL_FALLBACK = "error.useMinimalFallback",
 }
 
 // Error severity levels
 export enum ErrorSeverity {
   CRITICAL = "critical", // Application cannot continue
-  HIGH = "high",         // Feature is completely broken
-  MEDIUM = "medium",     // Feature is partially broken but usable
-  LOW = "low"            // Minor issues that don't affect core functionality
+  HIGH = "high", // Feature is completely broken
+  MEDIUM = "medium", // Feature is partially broken but usable
+  LOW = "low", // Minor issues that don't affect core functionality
 }
 
 // Error location/context
 export enum ErrorContext {
-  APP = "app",           // Top-level app error
-  PAGE = "page",         // Page-level error
+  APP = "app", // Top-level app error
+  PAGE = "page", // Page-level error
   COMPONENT = "component", // Component-level error
-  DATA = "data",         // Data loading/processing error
-  FORM = "form",         // Form submission error
-  MEDIA = "media"        // Media loading error
+  DATA = "data", // Data loading/processing error
+  FORM = "form", // Form submission error
+  MEDIA = "media", // Media loading error
 }
 
 // Error type classification
 export enum ErrorType {
-  NETWORK = "network",   // Network/API errors
+  NETWORK = "network", // Network/API errors
   RENDERING = "rendering", // React rendering errors
-  LOGIC = "logic",       // Business logic errors
+  LOGIC = "logic", // Business logic errors
   VALIDATION = "validation", // Input validation errors
   AUTHENTICATION = "authentication", // Auth errors
   PERMISSION = "permission", // Permission errors
   RESOURCE = "resource", // Resource not found/unavailable
-  TIMEOUT = "timeout",   // Operation timeout
-  UNKNOWN = "unknown"    // Unclassified errors
+  TIMEOUT = "timeout", // Operation timeout
+  UNKNOWN = "unknown", // Unclassified errors
 }
 
 // Extended error interface with metadata
@@ -104,7 +114,7 @@ const DEFAULT_FEATURE_FLAGS: Record<ErrorFeatureFlag, boolean> = {
   [ErrorFeatureFlag.ENABLE_TELEMETRY]: true,
   [ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS]: false,
   [ErrorFeatureFlag.ENABLE_AUTO_RETRY]: true,
-  [ErrorFeatureFlag.USE_MINIMAL_FALLBACK]: false
+  [ErrorFeatureFlag.USE_MINIMAL_FALLBACK]: false,
 };
 
 // Helper to classify errors
@@ -115,10 +125,10 @@ export const classifyError = (error: unknown): ExtendedError => {
 
   // If it's already an ExtendedError, return it
   if (
-    error instanceof Error && 
-    'context' in error && 
-    'type' in error && 
-    'severity' in error
+    error instanceof Error &&
+    "context" in error &&
+    "type" in error &&
+    "severity" in error
   ) {
     return error as ExtendedError;
   }
@@ -127,7 +137,7 @@ export const classifyError = (error: unknown): ExtendedError => {
 
   if (error instanceof Error) {
     extendedError = error as ExtendedError;
-  } else if (typeof error === 'string') {
+  } else if (typeof error === "string") {
     extendedError = new Error(error) as ExtendedError;
   } else {
     try {
@@ -160,7 +170,7 @@ export const classifyError = (error: unknown): ExtendedError => {
   const statusMatch = extendedError.message.match(/status (\d+)/i);
   if (statusMatch && statusMatch[1]) {
     extendedError.status = parseInt(statusMatch[1], 10);
-    
+
     // Classify based on status code
     if (extendedError.status >= 500) {
       extendedError.type = ErrorType.NETWORK;
@@ -181,7 +191,9 @@ export const classifyError = (error: unknown): ExtendedError => {
   }
 
   // Extract trace ID if present
-  const traceIdMatch = extendedError.message.match(/trace[_-]?id:?\s*([a-z0-9-]+)/i);
+  const traceIdMatch = extendedError.message.match(
+    /trace[_-]?id:?\s*([a-z0-9-]+)/i,
+  );
   if (traceIdMatch && traceIdMatch[1]) {
     extendedError.traceId = traceIdMatch[1];
   }
@@ -201,7 +213,7 @@ export const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
   isRetrying = false,
   supportEmail,
   supportUrl,
-  homeUrl
+  homeUrl,
 }) => {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -253,12 +265,12 @@ export const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
     const details = `
 Error: ${errorTitle}
 Message: ${errorMessage}
-${error.code ? `Code: ${error.code}` : ''}
-${error.traceId && featureFlags[ErrorFeatureFlag.SHOW_TRACE_ID] ? `Trace ID: ${error.traceId}` : ''}
+${error.code ? `Code: ${error.code}` : ""}
+${error.traceId && featureFlags[ErrorFeatureFlag.SHOW_TRACE_ID] ? `Trace ID: ${error.traceId}` : ""}
 Type: ${error.type}
 Context: ${context}
 Timestamp: ${error.timestamp || new Date().toISOString()}
-${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStack Trace:\n${error.stack}` : ''}
+${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStack Trace:\n${error.stack}` : ""}
     `.trim();
 
     navigator.clipboard.writeText(details).then(() => {
@@ -283,9 +295,9 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
   // Handle contact support
   const handleContactSupport = () => {
     if (supportUrl) {
-      window.open(supportUrl, '_blank');
+      window.open(supportUrl, "_blank");
     } else if (supportEmail) {
-      window.location.href = `mailto:${supportEmail}?subject=Error Report&body=Error Details:%0A%0ATrace ID: ${error.traceId || 'N/A'}%0ATimestamp: ${error.timestamp || new Date().toISOString()}%0AError: ${encodeURIComponent(errorMessage)}`;
+      window.location.href = `mailto:${supportEmail}?subject=Error Report&body=Error Details:%0A%0ATrace ID: ${error.traceId || "N/A"}%0ATimestamp: ${error.timestamp || new Date().toISOString()}%0AError: ${encodeURIComponent(errorMessage)}`;
     }
   };
 
@@ -298,16 +310,18 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
         errorCode: error.code,
         traceId: error.traceId,
         category: ErrorCategory.CLIENT,
-        onRetry: async () => { 
+        onRetry: async () => {
           if (retryError) {
             await retryError();
           } else {
             resetErrorBoundary();
           }
         },
-        onContactSupport: supportEmail || supportUrl ? handleContactSupport : undefined,
-        showTechnicalDetails: featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS],
-        technicalDetails: error.stack
+        onContactSupport:
+          supportEmail || supportUrl ? handleContactSupport : undefined,
+        showTechnicalDetails:
+          featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS],
+        technicalDetails: error.stack,
       });
     }
   }, []);
@@ -315,7 +329,7 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
   // Different UI based on context
   if (featureFlags[ErrorFeatureFlag.USE_MINIMAL_FALLBACK]) {
     return (
-      <div 
+      <div
         className="p-4 rounded-md bg-destructive/10 text-destructive border border-destructive/20"
         role="alert"
         aria-live="assertive"
@@ -325,9 +339,9 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
           <h3 className="font-medium">{errorTitle}</h3>
         </div>
         <p className="text-sm mb-2">{errorMessage}</p>
-        <Button 
-          size="sm" 
-          variant="outline" 
+        <Button
+          size="sm"
+          variant="outline"
           onClick={resetErrorBoundary}
           className="mt-2"
           aria-label="Try again"
@@ -355,14 +369,17 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
           {error.traceId && featureFlags[ErrorFeatureFlag.SHOW_TRACE_ID] && (
             <div className="mb-4 text-center">
               <p className="text-xs text-muted-foreground">
-                Reference ID: <code className="px-1 py-0.5 bg-muted rounded">{error.traceId}</code>
+                Reference ID:{" "}
+                <code className="px-1 py-0.5 bg-muted rounded">
+                  {error.traceId}
+                </code>
               </p>
             </div>
           )}
 
           <div className="space-y-3">
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               onClick={handleRetry}
               disabled={isRetrying || retryCount >= maxRetries}
               aria-label="Try again"
@@ -381,8 +398,8 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
             </Button>
 
             {(supportEmail || supportUrl) && (
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 variant="outline"
                 onClick={handleContactSupport}
                 aria-label="Contact support"
@@ -393,10 +410,10 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
             )}
 
             {homeUrl && (
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 variant="ghost"
-                onClick={() => window.location.href = homeUrl}
+                onClick={() => (window.location.href = homeUrl)}
                 aria-label="Return to home"
               >
                 <Home className="h-4 w-4 mr-2" />
@@ -414,7 +431,7 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
               >
                 {expanded ? "Hide technical details" : "Show technical details"}
               </button>
-              
+
               {expanded && (
                 <div className="mt-2 relative">
                   <pre className="text-xs p-3 bg-muted rounded overflow-x-auto max-h-[200px]">
@@ -455,7 +472,9 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
             </div>
             <div>
               <h2 className="text-lg font-semibold mb-1">{errorTitle}</h2>
-              <p className="text-sm text-muted-foreground mb-2">{userGuidance}</p>
+              <p className="text-sm text-muted-foreground mb-2">
+                {userGuidance}
+              </p>
               <p className="text-sm">{errorMessage}</p>
             </div>
           </div>
@@ -463,13 +482,16 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
           {error.traceId && featureFlags[ErrorFeatureFlag.SHOW_TRACE_ID] && (
             <div className="mb-4">
               <p className="text-xs text-muted-foreground">
-                Reference ID: <code className="px-1 py-0.5 bg-muted rounded">{error.traceId}</code>
+                Reference ID:{" "}
+                <code className="px-1 py-0.5 bg-muted rounded">
+                  {error.traceId}
+                </code>
               </p>
             </div>
           )}
 
           <div className="flex flex-wrap gap-2">
-            <Button 
+            <Button
               size="sm"
               onClick={handleRetry}
               disabled={isRetrying || retryCount >= maxRetries}
@@ -489,7 +511,7 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
             </Button>
 
             {(supportEmail || supportUrl) && (
-              <Button 
+              <Button
                 size="sm"
                 variant="outline"
                 onClick={handleContactSupport}
@@ -517,7 +539,7 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
 
   // Component/default error
   return (
-    <div 
+    <div
       className="rounded-md border bg-background p-4 shadow-sm"
       role="alert"
       aria-live="assertive"
@@ -529,15 +551,18 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
         <div className="flex-1">
           <h3 className="font-medium mb-1">{errorTitle}</h3>
           <p className="text-sm text-muted-foreground mb-2">{errorMessage}</p>
-          
+
           {error.traceId && featureFlags[ErrorFeatureFlag.SHOW_TRACE_ID] && (
             <p className="text-xs text-muted-foreground mb-2">
-              Reference ID: <code className="px-1 py-0.5 bg-muted rounded">{error.traceId}</code>
+              Reference ID:{" "}
+              <code className="px-1 py-0.5 bg-muted rounded">
+                {error.traceId}
+              </code>
             </p>
           )}
-          
+
           <div className="flex flex-wrap gap-2 mt-3">
-            <Button 
+            <Button
               size="sm"
               onClick={handleRetry}
               disabled={isRetrying || retryCount >= maxRetries}
@@ -555,7 +580,7 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
                 </>
               )}
             </Button>
-            
+
             <Button
               size="sm"
               variant="ghost"
@@ -575,7 +600,7 @@ ${error.stack && featureFlags[ErrorFeatureFlag.SHOW_TECHNICAL_DETAILS] ? `\nStac
 // Media error fallback
 export const MediaErrorFallback: React.FC<ErrorFallbackProps> = (props) => {
   return (
-    <div 
+    <div
       className="rounded-md bg-muted flex items-center justify-center p-4 aspect-video"
       role="alert"
     >
@@ -585,8 +610,8 @@ export const MediaErrorFallback: React.FC<ErrorFallbackProps> = (props) => {
         <p className="text-xs text-muted-foreground mb-3">
           {props.error.message || "Failed to load media"}
         </p>
-        <Button 
-          size="sm" 
+        <Button
+          size="sm"
           onClick={props.resetErrorBoundary}
           aria-label="Try again"
         >
@@ -601,7 +626,7 @@ export const MediaErrorFallback: React.FC<ErrorFallbackProps> = (props) => {
 // Form error fallback
 export const FormErrorFallback: React.FC<ErrorFallbackProps> = (props) => {
   return (
-    <div 
+    <div
       className="rounded-md border border-destructive/20 bg-destructive/5 p-3 my-3"
       role="alert"
     >
@@ -610,9 +635,9 @@ export const FormErrorFallback: React.FC<ErrorFallbackProps> = (props) => {
         <p className="font-medium">Form Submission Error</p>
       </div>
       <p className="text-sm mb-2">{props.error.message}</p>
-      <Button 
-        size="sm" 
-        variant="outline" 
+      <Button
+        size="sm"
+        variant="outline"
         onClick={props.resetErrorBoundary}
         className="mt-1"
         aria-label="Try again"
@@ -627,15 +652,20 @@ export const FormErrorFallback: React.FC<ErrorFallbackProps> = (props) => {
 // Main Error Boundary component
 export class ErrorBoundary extends React.Component<
   ErrorBoundaryProps,
-  { error: ExtendedError | null; errorInfo: React.ErrorInfo | null | undefined; retryCount: number; isRetrying: boolean }
+  {
+    error: ExtendedError | null;
+    errorInfo: React.ErrorInfo | null | undefined;
+    retryCount: number;
+    isRetrying: boolean;
+  }
 > {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { 
-      error: null, 
-      errorInfo: null, 
+    this.state = {
+      error: null,
+      errorInfo: null,
       retryCount: 0,
-      isRetrying: false 
+      isRetrying: false,
     };
   }
 
@@ -646,20 +676,26 @@ export class ErrorBoundary extends React.Component<
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Classify the error
     const extendedError = classifyError(error);
-    
+
     // Update state with error details
     this.setState({ error: extendedError, errorInfo });
-    
+
     // Call onError handler if provided
     if (this.props.onError) {
       this.props.onError(extendedError, errorInfo);
     }
-    
+
     // Report to telemetry if enabled
-    const featureFlags = { ...DEFAULT_FEATURE_FLAGS, ...this.props.featureFlags };
-    if (featureFlags[ErrorFeatureFlag.ENABLE_TELEMETRY] && this.props.telemetryService) {
+    const featureFlags = {
+      ...DEFAULT_FEATURE_FLAGS,
+      ...this.props.featureFlags,
+    };
+    if (
+      featureFlags[ErrorFeatureFlag.ENABLE_TELEMETRY] &&
+      this.props.telemetryService
+    ) {
       try {
-        this.props.telemetryService.setContext('error', {
+        this.props.telemetryService.setContext("error", {
           message: extendedError.message,
           stack: extendedError.stack,
           componentStack: errorInfo.componentStack,
@@ -667,15 +703,15 @@ export class ErrorBoundary extends React.Component<
           type: extendedError.type,
           severity: extendedError.severity,
           traceId: extendedError.traceId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
-        
+
         this.props.telemetryService.captureException(extendedError);
       } catch (telemetryError) {
         console.error("Failed to report error to telemetry:", telemetryError);
       }
     }
-    
+
     // Log the error to console
     console.error("Error caught by ErrorBoundary:", extendedError);
     console.error("Component stack:", errorInfo.componentStack);
@@ -683,16 +719,25 @@ export class ErrorBoundary extends React.Component<
 
   override componentDidUpdate(prevProps: ErrorBoundaryProps) {
     // Reset error state if resetKeys change
-    if (this.props.resetKeys && 
-        prevProps.resetKeys && 
-        this.state.error && 
-        this.props.resetKeys.some((key, index) => key !== prevProps.resetKeys?.[index])) {
+    if (
+      this.props.resetKeys &&
+      prevProps.resetKeys &&
+      this.state.error &&
+      this.props.resetKeys.some(
+        (key, index) => key !== prevProps.resetKeys?.[index],
+      )
+    ) {
       this.resetErrorBoundary();
     }
   }
 
   resetErrorBoundary = () => {
-    this.setState({ error: null, errorInfo: null, retryCount: 0, isRetrying: false });
+    this.setState({
+      error: null,
+      errorInfo: null,
+      retryCount: 0,
+      isRetrying: false,
+    });
     if (this.props.onReset) {
       this.props.onReset();
     }
@@ -700,20 +745,23 @@ export class ErrorBoundary extends React.Component<
 
   retryError = async () => {
     if (this.state.isRetrying) return;
-    
+
     this.setState({ isRetrying: true });
-    
+
     // Implement retry with exponential backoff
     const retryInterval = this.props.retryInterval || 1000;
-    const backoff = Math.min(retryInterval * Math.pow(1.5, this.state.retryCount), 10000);
-    
+    const backoff = Math.min(
+      retryInterval * Math.pow(1.5, this.state.retryCount),
+      10000,
+    );
+
     try {
       // Wait for backoff period
-      await new Promise(resolve => setTimeout(resolve, backoff));
-      
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+
       // Increment retry count
-      this.setState(prevState => ({ retryCount: prevState.retryCount + 1 }));
-      
+      this.setState((prevState) => ({ retryCount: prevState.retryCount + 1 }));
+
       // Reset error state to trigger re-render
       this.resetErrorBoundary();
     } catch (e) {
@@ -724,17 +772,27 @@ export class ErrorBoundary extends React.Component<
   };
 
   override render() {
-    const { children, fallback, context, featureFlags, maxRetries, supportEmail, supportUrl, homeUrl, className } = this.props;
+    const {
+      children,
+      fallback,
+      context,
+      featureFlags,
+      maxRetries,
+      supportEmail,
+      supportUrl,
+      homeUrl,
+      className,
+    } = this.props;
     const { error, errorInfo, retryCount, isRetrying } = this.state;
-    
+
     // If there's no error, render children
     if (!error) {
       return children;
     }
-    
+
     // Merge feature flags with defaults
     const mergedFeatureFlags = { ...DEFAULT_FEATURE_FLAGS, ...featureFlags };
-    
+
     // Props for fallback component
     const fallbackProps: ErrorFallbackProps = {
       error,
@@ -748,49 +806,61 @@ export class ErrorBoundary extends React.Component<
       isRetrying,
       supportEmail,
       supportUrl,
-      homeUrl
+      homeUrl,
     };
-    
+
     // Render the appropriate fallback UI
     if (fallback) {
-      if (typeof fallback === 'function') {
+      if (typeof fallback === "function") {
         return <div className={className}>{fallback(fallbackProps)}</div>;
       }
       return <div className={className}>{fallback}</div>;
     }
-    
+
     // Use context-specific fallbacks
     if (context === ErrorContext.MEDIA) {
-      return <div className={className}><MediaErrorFallback {...fallbackProps} /></div>;
+      return (
+        <div className={className}>
+          <MediaErrorFallback {...fallbackProps} />
+        </div>
+      );
     }
-    
+
     if (context === ErrorContext.FORM) {
-      return <div className={className}><FormErrorFallback {...fallbackProps} /></div>;
+      return (
+        <div className={className}>
+          <FormErrorFallback {...fallbackProps} />
+        </div>
+      );
     }
-    
+
     // Default fallback
-    return <div className={className}><DefaultErrorFallback {...fallbackProps} /></div>;
+    return (
+      <div className={className}>
+        <DefaultErrorFallback {...fallbackProps} />
+      </div>
+    );
   }
 }
 
 // Error boundary hook for functional components
 export const useErrorBoundary = () => {
   const [error, setError] = useState<ExtendedError | null>(null);
-  
+
   const showBoundary = (e: unknown) => {
     setError(classifyError(e));
   };
-  
+
   return { showBoundary, error };
 };
 
 // HOC to wrap components with error boundary
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
-  errorBoundaryProps: Omit<ErrorBoundaryProps, 'children'>
+  errorBoundaryProps: Omit<ErrorBoundaryProps, "children">,
 ): React.ComponentType<P> {
-  const displayName = Component.displayName || Component.name || 'Component';
-  
+  const displayName = Component.displayName || Component.name || "Component";
+
   const WrappedComponent = (props: P) => {
     return (
       <ErrorBoundary {...errorBoundaryProps}>
@@ -798,9 +868,9 @@ export function withErrorBoundary<P extends object>(
       </ErrorBoundary>
     );
   };
-  
+
   WrappedComponent.displayName = `withErrorBoundary(${displayName})`;
-  
+
   return WrappedComponent;
 }
 

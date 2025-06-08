@@ -1,14 +1,14 @@
 // Primary Database Schemas - Export everything from schema.ts first
-export * from './schema';
+export * from "./schema";
 
 // Explicitly export key types that might be missed by wildcard
-export type { DealershipMode } from './schema';
+export type { DealershipMode } from "./schema";
 
 // Lead Management Schemas - Selective exports to avoid conflicts with schema.ts
 export {
   // Types
   leadSources,
-  leadStatuses, 
+  leadStatuses,
   leadPriorities,
   conversationStatuses,
   messageTypes,
@@ -23,7 +23,7 @@ export {
   type MessageSender,
   type HandoverReason,
   type HandoverStatus,
-  
+
   // Tables (with lm_ prefix to avoid conflicts)
   leadSourcesTable,
   dealershipHandoverSettings,
@@ -34,7 +34,7 @@ export {
   messages as lmMessages,
   handovers,
   leadActivities,
-  
+
   // Relations
   leadSourcesRelations,
   dealershipHandoverSettingsRelations,
@@ -45,7 +45,7 @@ export {
   messagesRelations as lmMessagesRelations,
   handoversRelations,
   leadActivitiesRelations,
-  
+
   // Zod schemas (with lm_ prefix to avoid conflicts)
   insertLeadSourceSchema as lmInsertLeadSourceSchema,
   insertDealershipHandoverSettingsSchema,
@@ -56,18 +56,18 @@ export {
   insertMessageSchema as lmInsertMessageSchema,
   insertHandoverSchema,
   insertLeadActivitySchema,
-  
+
   // API schemas
   inboundLeadSchema,
   replyMessageSchema,
   handoverRequestSchema,
-} from './lead-management-schema';
+} from "./lead-management-schema";
 
 // ADF Schemas
-export * from './adf-schema';
+export * from "./adf-schema";
 
 // API Schemas
-export * from './api-schemas';
+export * from "./api-schemas";
 
 // Schema Extensions and Utilities
-export * from './schema-extensions';
+export * from "./schema-extensions";

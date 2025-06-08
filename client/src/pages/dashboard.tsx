@@ -9,30 +9,36 @@ import ConversationChart from "@/components/conversation-chart";
 import PersonaChart from "@/components/persona-chart";
 import FeaturedSection from "@/components/featured-section";
 import { useLoading } from "@/contexts/LoadingContext";
-import { 
-  SkeletonDashboard, 
-  SkeletonCard, 
-  SkeletonTable 
+import {
+  SkeletonDashboard,
+  SkeletonCard,
+  SkeletonTable,
 } from "@/components/loading/SkeletonLoader";
-import { 
-  enhancedLazy, 
-  withLazyLoading, 
-  ViewportLazyLoad 
+import {
+  enhancedLazy,
+  withLazyLoading,
+  ViewportLazyLoad,
 } from "@/utils/lazy-loading";
 import { logEvent } from "@/utils/analytics";
 
 // Lazy load components that aren't immediately visible
-const LazyConversationChart = withLazyLoading(() => import("@/components/conversation-chart"), {
-  id: "conversation-chart",
-  preload: true,
-  trackProgress: true,
-});
+const LazyConversationChart = withLazyLoading(
+  () => import("@/components/conversation-chart"),
+  {
+    id: "conversation-chart",
+    preload: true,
+    trackProgress: true,
+  },
+);
 
-const LazyPersonaChart = withLazyLoading(() => import("@/components/persona-chart"), {
-  id: "persona-chart",
-  preload: false,
-  trackProgress: true,
-});
+const LazyPersonaChart = withLazyLoading(
+  () => import("@/components/persona-chart"),
+  {
+    id: "persona-chart",
+    preload: false,
+    trackProgress: true,
+  },
+);
 
 export default function Dashboard() {
   const [dealershipFilter, setDealershipFilter] = useState("all");
@@ -44,14 +50,14 @@ export default function Dashboard() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Get loading utilities from context
-  const { 
-    startLoading, 
-    stopLoading, 
-    isLoadingKey, 
-    setProgress, 
+  const {
+    startLoading,
+    stopLoading,
+    isLoadingKey,
+    setProgress,
     getKeyProgress,
     withLoading,
-    setError: setLoadingError
+    setError: setLoadingError,
   } = useLoading();
 
   // Loading keys
@@ -66,25 +72,28 @@ export default function Dashboard() {
     const loadDashboardData = async () => {
       try {
         startLoading(DASHBOARD_LOAD_KEY, "Loading dashboard...");
-        
+
         // Simulate staggered loading for better UX
         await Promise.all([
           loadConversations(),
           loadApiStatus(),
-          loadChartData()
+          loadChartData(),
         ]);
-        
+
         // Mark initial load as complete
         setInitialLoadComplete(true);
         stopLoading(DASHBOARD_LOAD_KEY);
-        
+
         // Log performance metrics
-        logEvent('dashboard_loaded', {
+        logEvent("dashboard_loaded", {
           loadTime: performance.now(),
-          dealershipFilter
+          dealershipFilter,
         });
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error loading dashboard';
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Unknown error loading dashboard";
         setError(errorMessage);
         setLoadingError(DASHBOARD_LOAD_KEY, errorMessage);
         stopLoading(DASHBOARD_LOAD_KEY);
@@ -114,10 +123,10 @@ export default function Dashboard() {
     try {
       startLoading(CONVERSATIONS_KEY, "Loading conversations...");
       setProgress(DASHBOARD_LOAD_KEY, 25);
-      
+
       // Simulate API call with delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       // Sample data for the dashboard
       const sampleConversations: Conversation[] = [
         {
@@ -161,13 +170,14 @@ export default function Dashboard() {
           updatedAt: "2023-06-15T09:45:00Z",
         },
       ];
-      
+
       setConversations(sampleConversations);
       stopLoading(CONVERSATIONS_KEY);
       setProgress(DASHBOARD_LOAD_KEY, 50);
       return sampleConversations;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load conversations';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load conversations";
       setLoadingError(CONVERSATIONS_KEY, errorMessage);
       throw err;
     }
@@ -178,25 +188,34 @@ export default function Dashboard() {
     try {
       startLoading(API_STATUS_KEY, "Checking API status...");
       setProgress(DASHBOARD_LOAD_KEY, 75);
-      
+
       // Simulate API call with delay
-      await new Promise(resolve => setTimeout(resolve, 400));
-      
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
       const endpoints = [
-        { path: "/inbound", status: "operational" as const, uptime: "100% uptime" },
-        { path: "/reply", status: "operational" as const, uptime: "99.8% uptime" },
+        {
+          path: "/inbound",
+          status: "operational" as const,
+          uptime: "100% uptime",
+        },
+        {
+          path: "/reply",
+          status: "operational" as const,
+          uptime: "99.8% uptime",
+        },
         {
           path: "/handover",
           status: "operational" as const,
           uptime: "99.9% uptime",
         },
       ];
-      
+
       setApiEndpoints(endpoints);
       stopLoading(API_STATUS_KEY);
       return endpoints;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load API status';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load API status";
       setLoadingError(API_STATUS_KEY, errorMessage);
       throw err;
     }
@@ -206,10 +225,10 @@ export default function Dashboard() {
   const loadChartData = async () => {
     try {
       startLoading(CHART_DATA_KEY, "Loading analytics data...");
-      
+
       // Simulate API call with delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       const convData = [
         { name: "Mon", count: 30 },
         { name: "Tue", count: 45 },
@@ -219,7 +238,7 @@ export default function Dashboard() {
         { name: "Sat", count: 85 },
         { name: "Sun", count: 70 },
       ];
-      
+
       const personaData = [
         { name: "Friendly Advisor", value: 85, percentage: "28.4%" },
         { name: "Technical Expert", value: 74, percentage: "24.7%" },
@@ -227,14 +246,15 @@ export default function Dashboard() {
         { name: "Sales Assistant", value: 54, percentage: "18.2%" },
         { name: "Service Advisor", value: 47, percentage: "15.8%" },
       ];
-      
+
       setConversationChartData(convData);
       setPersonaChartData(personaData);
       stopLoading(CHART_DATA_KEY);
       setProgress(DASHBOARD_LOAD_KEY, 100);
       return { convData, personaData };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load chart data';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load chart data";
       setLoadingError(CHART_DATA_KEY, errorMessage);
       throw err;
     }
@@ -244,24 +264,29 @@ export default function Dashboard() {
   const handleFilterChange = async () => {
     try {
       startLoading(FILTER_CHANGE_KEY, `Filtering by ${dealershipFilter}...`);
-      
+
       // Simulate API call with delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       // Filter conversations based on dealership
-      const filteredConversations = dealershipFilter === "all" 
-        ? await loadConversations()
-        : (await loadConversations()).filter(conv => {
-            if (dealershipFilter === "florida") return conv.dealershipName === "Florida Motors";
-            if (dealershipFilter === "texas") return conv.dealershipName === "Texas Auto Group";
-            if (dealershipFilter === "california") return conv.dealershipName === "California Cars";
-            return true;
-          });
-      
+      const filteredConversations =
+        dealershipFilter === "all"
+          ? await loadConversations()
+          : (await loadConversations()).filter((conv) => {
+              if (dealershipFilter === "florida")
+                return conv.dealershipName === "Florida Motors";
+              if (dealershipFilter === "texas")
+                return conv.dealershipName === "Texas Auto Group";
+              if (dealershipFilter === "california")
+                return conv.dealershipName === "California Cars";
+              return true;
+            });
+
       setConversations(filteredConversations);
       stopLoading(FILTER_CHANGE_KEY);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to apply filter';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to apply filter";
       setLoadingError(FILTER_CHANGE_KEY, errorMessage);
     }
   };
@@ -272,17 +297,20 @@ export default function Dashboard() {
     const loadDashboardData = async () => {
       try {
         startLoading(DASHBOARD_LOAD_KEY, "Retrying dashboard load...");
-        
+
         await Promise.all([
           loadConversations(),
           loadApiStatus(),
-          loadChartData()
+          loadChartData(),
         ]);
-        
+
         setInitialLoadComplete(true);
         stopLoading(DASHBOARD_LOAD_KEY);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error loading dashboard';
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Unknown error loading dashboard";
         setError(errorMessage);
         setLoadingError(DASHBOARD_LOAD_KEY, errorMessage);
         stopLoading(DASHBOARD_LOAD_KEY);
@@ -299,9 +327,14 @@ export default function Dashboard() {
   // Show full page loading skeleton during initial load
   if (isLoadingKey(DASHBOARD_LOAD_KEY) && !initialLoadComplete) {
     return (
-      <div className="animate-fadeIn" role="progressbar" aria-busy="true" aria-label="Loading dashboard">
-        <SkeletonDashboard 
-          cards={3} 
+      <div
+        className="animate-fadeIn"
+        role="progressbar"
+        aria-busy="true"
+        aria-label="Loading dashboard"
+      >
+        <SkeletonDashboard
+          cards={3}
           showCharts={true}
           showTables={true}
           showStats={true}
@@ -320,7 +353,7 @@ export default function Dashboard() {
           <p>Failed to load dashboard</p>
         </div>
         <p className="text-neutral-600">{error}</p>
-        <button 
+        <button
           onClick={handleRetry}
           className="inline-flex items-center justify-center h-10 px-4 text-sm font-medium text-white bg-primary rounded-lg shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors"
         >
@@ -351,7 +384,9 @@ export default function Dashboard() {
               <option value="california">California Cars</option>
             </select>
             <span className="absolute top-2.5 right-3 material-icons text-neutral-400 text-sm pointer-events-none">
-              {isLoadingKey(FILTER_CHANGE_KEY) ? "hourglass_empty" : "arrow_drop_down"}
+              {isLoadingKey(FILTER_CHANGE_KEY)
+                ? "hourglass_empty"
+                : "arrow_drop_down"}
             </span>
           </div>
           <button className="inline-flex items-center justify-center h-10 px-4 text-sm font-medium text-white bg-primary rounded-lg shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-colors">
@@ -365,7 +400,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 mb-8">
         {/* System Status */}
         {isLoadingKey(API_STATUS_KEY) ? (
-          <SkeletonCard 
+          <SkeletonCard
             height="160px"
             lines={2}
             animation="wave"
@@ -386,7 +421,7 @@ export default function Dashboard() {
 
         {/* Prompt Testing */}
         {isLoadingKey(API_STATUS_KEY) ? (
-          <SkeletonCard 
+          <SkeletonCard
             height="160px"
             lines={2}
             animation="wave"
@@ -409,7 +444,7 @@ export default function Dashboard() {
 
         {/* Setup Tools */}
         {isLoadingKey(API_STATUS_KEY) ? (
-          <SkeletonCard 
+          <SkeletonCard
             height="160px"
             lines={2}
             animation="wave"
@@ -436,7 +471,7 @@ export default function Dashboard() {
         {/* API Status */}
         <div>
           {isLoadingKey(API_STATUS_KEY) ? (
-            <SkeletonTable 
+            <SkeletonTable
               rows={3}
               columns={3}
               animation="wave"
@@ -452,7 +487,7 @@ export default function Dashboard() {
         {/* Dealership Setup */}
         <div>
           {isLoadingKey(API_STATUS_KEY) ? (
-            <SkeletonCard 
+            <SkeletonCard
               height="200px"
               lines={3}
               animation="wave"
@@ -475,14 +510,14 @@ export default function Dashboard() {
       <ViewportLazyLoad
         fallback={
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 mt-8">
-            <SkeletonCard 
+            <SkeletonCard
               height="300px"
               header={true}
               lines={1}
               animation="wave"
               aria-label="Loading conversation chart"
             />
-            <SkeletonCard 
+            <SkeletonCard
               height="300px"
               header={true}
               lines={1}
@@ -492,30 +527,36 @@ export default function Dashboard() {
           </div>
         }
         margin="200px"
-        onVisible={() => logEvent('dashboard_charts_visible', { timestamp: Date.now() })}
+        onVisible={() =>
+          logEvent("dashboard_charts_visible", { timestamp: Date.now() })
+        }
       >
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 mt-8">
-          <Suspense fallback={
-            <SkeletonCard 
-              height="300px"
-              header={true}
-              lines={1}
-              animation="wave"
-              aria-label="Loading conversation chart"
-            />
-          }>
+          <Suspense
+            fallback={
+              <SkeletonCard
+                height="300px"
+                header={true}
+                lines={1}
+                animation="wave"
+                aria-label="Loading conversation chart"
+              />
+            }
+          >
             <LazyConversationChart data={conversationChartData} />
           </Suspense>
-          
-          <Suspense fallback={
-            <SkeletonCard 
-              height="300px"
-              header={true}
-              lines={1}
-              animation="wave"
-              aria-label="Loading persona chart"
-            />
-          }>
+
+          <Suspense
+            fallback={
+              <SkeletonCard
+                height="300px"
+                header={true}
+                lines={1}
+                animation="wave"
+                aria-label="Loading persona chart"
+              />
+            }
+          >
             <LazyPersonaChart data={personaChartData} />
           </Suspense>
         </div>
@@ -525,7 +566,7 @@ export default function Dashboard() {
       <ViewportLazyLoad
         fallback={
           <div className="mt-8">
-            <SkeletonTable 
+            <SkeletonTable
               rows={5}
               columns={4}
               animation="wave"
@@ -538,8 +579,9 @@ export default function Dashboard() {
         margin="100px"
       >
         <div className="mt-8">
-          {isLoadingKey(CONVERSATIONS_KEY) || isLoadingKey(FILTER_CHANGE_KEY) ? (
-            <SkeletonTable 
+          {isLoadingKey(CONVERSATIONS_KEY) ||
+          isLoadingKey(FILTER_CHANGE_KEY) ? (
+            <SkeletonTable
               rows={5}
               columns={4}
               animation="wave"
@@ -548,9 +590,9 @@ export default function Dashboard() {
               aria-label="Loading conversations"
             />
           ) : (
-            <ConversationTable 
-              conversations={conversations} 
-              onViewConversation={handleViewConversation} 
+            <ConversationTable
+              conversations={conversations}
+              onViewConversation={handleViewConversation}
             />
           )}
         </div>

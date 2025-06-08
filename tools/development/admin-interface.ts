@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import express from 'express';
-import bcrypt from 'bcrypt';
+import express from "express";
+import bcrypt from "bcrypt";
 
 const app = express();
 const port = 3002;
@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve admin interface
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html>
@@ -110,21 +110,30 @@ app.get('/', (req, res) => {
 });
 
 // Status endpoint
-app.get('/status', (req, res) => {
+app.get("/status", (req, res) => {
   res.json({
-    status: 'running',
+    status: "running",
     timestamp: new Date().toISOString(),
-    database: 'PostgreSQL (via environment)',
-    purpose: 'Alpha dealership setup interface',
-    port: port
+    database: "PostgreSQL (via environment)",
+    purpose: "Alpha dealership setup interface",
+    port: port,
   });
 });
 
-// Create dealership endpoint  
-app.post('/create-dealership', async (req, res) => {
+// Create dealership endpoint
+app.post("/create-dealership", async (req, res) => {
   try {
-    const { name, subdomain, contactEmail, contactPhone, address, city, state, zip } = req.body;
-    
+    const {
+      name,
+      subdomain,
+      contactEmail,
+      contactPhone,
+      address,
+      city,
+      state,
+      zip,
+    } = req.body;
+
     // For now, just return success (would connect to DB in real implementation)
     res.send(`
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -150,13 +159,13 @@ app.post('/create-dealership', async (req, res) => {
 });
 
 // Create admin endpoint
-app.post('/create-admin', async (req, res) => {
+app.post("/create-admin", async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     res.send(`
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; color: green;">
@@ -180,8 +189,10 @@ app.post('/create-admin', async (req, res) => {
   }
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🎯 CleanRylie Admin Interface running on http://localhost:${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(
+    `🎯 CleanRylie Admin Interface running on http://localhost:${port}`,
+  );
   console.log(`📋 Open your browser and go to: http://localhost:${port}`);
   console.log(`✨ Ready to create your first alpha dealership!`);
 });

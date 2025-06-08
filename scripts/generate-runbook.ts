@@ -2,35 +2,35 @@
 
 /**
  * STAB-601 Migration Guide & Runbook Generator
- * 
+ *
  * This script generates human-readable documentation from stabilization artifacts:
  * - Reads .stabilization/*.json files (migration configurations)
  * - Analyzes migration folder structure and SQL files
  * - Extracts deployment automation scripts
  * - Generates comprehensive migration guide and deployment runbook
- * 
+ *
  * @file scripts/generate-runbook.ts
  */
 
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, '..');
+const PROJECT_ROOT = path.resolve(__dirname, "..");
 
 interface StabilizationArtifact {
   name: string;
   path: string;
   content?: any;
-  type: 'config' | 'migration' | 'script' | 'summary' | 'runbook';
+  type: "config" | "migration" | "script" | "summary" | "runbook";
 }
 
 interface MigrationFile {
   name: string;
   version: string;
-  type: 'up' | 'down';
+  type: "up" | "down";
   description: string;
   dependencies: string[];
   path: string;
@@ -39,8 +39,8 @@ interface MigrationFile {
 interface RunbookSection {
   title: string;
   content: string;
-  priority: 'critical' | 'high' | 'medium' | 'low';
-  category: 'deployment' | 'migration' | 'monitoring' | 'troubleshooting';
+  priority: "critical" | "high" | "medium" | "low";
+  category: "deployment" | "migration" | "monitoring" | "troubleshooting";
 }
 
 class RunbookGenerator {
@@ -52,59 +52,67 @@ class RunbookGenerator {
    * Main entry point - generate the complete runbook
    */
   async generate(): Promise<void> {
-    console.log('🚀 Starting STAB-601 Migration Guide & Runbook Generation...');
-    console.log('📋 Analyzing stabilization artifacts and migration sources...\n');
+    console.log("🚀 Starting STAB-601 Migration Guide & Runbook Generation...");
+    console.log(
+      "📋 Analyzing stabilization artifacts and migration sources...\n",
+    );
 
     await this.collectArtifacts();
     await this.analyzeMigrations();
     await this.generateSections();
     await this.generateDocuments();
 
-    console.log('\n✅ Migration Guide & Runbook generation completed successfully!');
+    console.log(
+      "\n✅ Migration Guide & Runbook generation completed successfully!",
+    );
   }
 
   /**
    * Step 1: Collect all stabilization artifacts from various sources
    */
   private async collectArtifacts(): Promise<void> {
-    console.log('📂 Collecting stabilization artifacts...');
+    console.log("📂 Collecting stabilization artifacts...");
 
     // Check for .stabilization directory
-    const stabilizationDir = path.join(PROJECT_ROOT, '.stabilization');
+    const stabilizationDir = path.join(PROJECT_ROOT, ".stabilization");
     try {
       const stabilizationFiles = await fs.readdir(stabilizationDir);
       for (const file of stabilizationFiles) {
-        if (file.endsWith('.json')) {
+        if (file.endsWith(".json")) {
           const filePath = path.join(stabilizationDir, file);
-          const content = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+          const content = JSON.parse(await fs.readFile(filePath, "utf-8"));
           this.artifacts.push({
             name: file,
             path: filePath,
             content,
-            type: 'config'
+            type: "config",
           });
         }
       }
-      console.log(`   Found ${stabilizationFiles.length} files in .stabilization/`);
+      console.log(
+        `   Found ${stabilizationFiles.length} files in .stabilization/`,
+      );
     } catch (error) {
-      console.log('   No .stabilization directory found, checking alternative sources...');
+      console.log(
+        "   No .stabilization directory found, checking alternative sources...",
+      );
     }
 
     // Collect existing STAB documentation
     const stabFiles = [
-      'STAB-305-SUMMARY.md',
-      'docs/STAB-103-BUNDLE-SIZE-GUARD.md'
+      "STAB-305-SUMMARY.md",
+      "docs/STAB-103-BUNDLE-SIZE-GUARD.md",
     ];
 
     for (const stabFile of stabFiles) {
       const filePath = path.join(PROJECT_ROOT, stabFile);
       try {
-        const content = await fs.readFile(filePath, 'utf-8');
+        const content = await fs.readFile(filePath, "utf-8");
         this.artifacts.push({
           name: path.basename(stabFile),
           path: filePath,
           content,
-          type: 'summary'
+          type: "summary",
         });
         console.log(`   ✅ Collected ${stabFile}`);
       } catch (error) {
@@ -113,16 +121,16 @@ class RunbookGenerator {
     }
 
     // Collect existing runbooks
-    const runbookFiles = ['docs/ADF_RUNBOOK.md'];
+    const runbookFiles = ["docs/ADF_RUNBOOK.md"];
     for (const runbookFile of runbookFiles) {
       const filePath = path.join(PROJECT_ROOT, runbookFile);
       try {
-        const content = await fs.readFile(filePath, 'utf-8');
+        const content = await fs.readFile(filePath, "utf-8");
         this.artifacts.push({
           name: path.basename(runbookFile),
           path: filePath,
           content,
-          type: 'runbook'
+          type: "runbook",
         });
         console.log(`   ✅ Collected ${runbookFile}`);
       } catch (error) {
@@ -132,19 +140,19 @@ class RunbookGenerator {
 
     // Collect deployment scripts
     const deploymentScripts = [
-      'scripts/deployment-automation.ts',
-      'scripts/deployment-readiness-check.ts'
+      "scripts/deployment-automation.ts",
+      "scripts/deployment-readiness-check.ts",
     ];
 
     for (const scriptFile of deploymentScripts) {
       const filePath = path.join(PROJECT_ROOT, scriptFile);
       try {
-        const content = await fs.readFile(filePath, 'utf-8');
+        const content = await fs.readFile(filePath, "utf-8");
         this.artifacts.push({
           name: path.basename(scriptFile),
           path: filePath,
           content,
-          type: 'script'
+          type: "script",
         });
         console.log(`   ✅ Collected ${scriptFile}`);
       } catch (error) {
@@ -159,17 +167,17 @@ class RunbookGenerator {
    * Step 2: Analyze migration folder structure
    */
   private async analyzeMigrations(): Promise<void> {
-    console.log('🗄️  Analyzing migration folder structure...');
+    console.log("🗄️  Analyzing migration folder structure...");
 
-    const migrationsDir = path.join(PROJECT_ROOT, 'migrations');
+    const migrationsDir = path.join(PROJECT_ROOT, "migrations");
     try {
       const migrationFiles = await fs.readdir(migrationsDir);
-      
+
       for (const file of migrationFiles) {
-        if (file.endsWith('.sql')) {
+        if (file.endsWith(".sql")) {
           const filePath = path.join(migrationsDir, file);
-          const content = await fs.readFile(filePath, 'utf-8');
-          
+          const content = await fs.readFile(filePath, "utf-8");
+
           const migration = this.parseMigrationFile(file, content, filePath);
           this.migrations.push(migration);
         }
@@ -177,51 +185,67 @@ class RunbookGenerator {
 
       // Sort migrations by version
       this.migrations.sort((a, b) => a.version.localeCompare(b.version));
-      
-      console.log(`   ✅ Analyzed ${this.migrations.length} migration files`);
-      
-      // Group by version for summary
-      const migrationGroups = this.migrations.reduce((groups, migration) => {
-        const version = migration.version.split('_')[0];
-        if (!groups[version]) groups[version] = [];
-        groups[version].push(migration);
-        return groups;
-      }, {} as Record<string, MigrationFile[]>);
 
-      console.log(`   📊 Migration versions found: ${Object.keys(migrationGroups).join(', ')}\n`);
+      console.log(`   ✅ Analyzed ${this.migrations.length} migration files`);
+
+      // Group by version for summary
+      const migrationGroups = this.migrations.reduce(
+        (groups, migration) => {
+          const version = migration.version.split("_")[0];
+          if (!groups[version]) groups[version] = [];
+          groups[version].push(migration);
+          return groups;
+        },
+        {} as Record<string, MigrationFile[]>,
+      );
+
+      console.log(
+        `   📊 Migration versions found: ${Object.keys(migrationGroups).join(", ")}\n`,
+      );
     } catch (error) {
-      console.log(`   ❌ Error reading migrations directory: ${error.message}\n`);
+      console.log(
+        `   ❌ Error reading migrations directory: ${error.message}\n`,
+      );
     }
   }
 
   /**
    * Parse migration file content to extract metadata
    */
-  private parseMigrationFile(filename: string, content: string, filePath: string): MigrationFile {
-    const isRollback = filename.includes('rollback');
-    const version = filename.replace('.sql', '').replace('_rollback', '');
-    
+  private parseMigrationFile(
+    filename: string,
+    content: string,
+    filePath: string,
+  ): MigrationFile {
+    const isRollback = filename.includes("rollback");
+    const version = filename.replace(".sql", "").replace("_rollback", "");
+
     // Extract description from SQL comments
     const descriptionMatch = content.match(/--\s*(.*?)(?:\n|$)/);
-    const description = descriptionMatch ? descriptionMatch[1].trim() : this.generateDescriptionFromFilename(filename);
-    
+    const description = descriptionMatch
+      ? descriptionMatch[1].trim()
+      : this.generateDescriptionFromFilename(filename);
+
     // Extract dependencies from migration content
     const dependencies: string[] = [];
     const dependencyMatches = content.match(/--\s*DEPENDS:\s*(.*?)(?:\n|$)/g);
     if (dependencyMatches) {
-      dependencyMatches.forEach(match => {
-        const deps = match.replace(/--\s*DEPENDS:\s*/, '').trim().split(',');
-        dependencies.push(...deps.map(d => d.trim()));
+      dependencyMatches.forEach((match) => {
+        const deps = match
+          .replace(/--\s*DEPENDS:\s*/, "")
+          .trim()
+          .split(",");
+        dependencies.push(...deps.map((d) => d.trim()));
       });
     }
 
     return {
       name: filename,
       version,
-      type: isRollback ? 'down' : 'up',
+      type: isRollback ? "down" : "up",
       description,
       dependencies,
-      path: filePath
+      path: filePath,
     };
   }
 
@@ -229,13 +253,13 @@ class RunbookGenerator {
    * Generate human-readable description from filename
    */
   private generateDescriptionFromFilename(filename: string): string {
-    const name = filename.replace('.sql', '').replace('_rollback', '');
-    const parts = name.split('_').slice(1); // Remove version number
-    
+    const name = filename.replace(".sql", "").replace("_rollback", "");
+    const parts = name.split("_").slice(1); // Remove version number
+
     return parts
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ')
-      .replace(/([A-Z])/g, ' $1')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
+      .replace(/([A-Z])/g, " $1")
       .trim();
   }
 
@@ -243,54 +267,54 @@ class RunbookGenerator {
    * Step 3: Generate runbook sections from collected data
    */
   private async generateSections(): Promise<void> {
-    console.log('📝 Generating runbook sections...');
+    console.log("📝 Generating runbook sections...");
 
     // Overview section
     this.sections.push({
-      title: 'System Overview',
+      title: "System Overview",
       content: this.generateOverviewSection(),
-      priority: 'critical',
-      category: 'deployment'
+      priority: "critical",
+      category: "deployment",
     });
 
     // Migration guide section
     this.sections.push({
-      title: 'Database Migration Guide',
+      title: "Database Migration Guide",
       content: this.generateMigrationGuide(),
-      priority: 'critical',
-      category: 'migration'
+      priority: "critical",
+      category: "migration",
     });
 
     // Deployment procedures
     this.sections.push({
-      title: 'Deployment Procedures',
+      title: "Deployment Procedures",
       content: this.generateDeploymentProcedures(),
-      priority: 'high',
-      category: 'deployment'
+      priority: "high",
+      category: "deployment",
     });
 
     // STAB completion summary
     this.sections.push({
-      title: 'Stabilization (STAB) Tickets Completion Status',
+      title: "Stabilization (STAB) Tickets Completion Status",
       content: this.generateStabCompletionStatus(),
-      priority: 'high',
-      category: 'deployment'
+      priority: "high",
+      category: "deployment",
     });
 
     // Monitoring and troubleshooting
     this.sections.push({
-      title: 'Monitoring & Troubleshooting',
+      title: "Monitoring & Troubleshooting",
       content: this.generateMonitoringSection(),
-      priority: 'medium',
-      category: 'monitoring'
+      priority: "medium",
+      category: "monitoring",
     });
 
     // Emergency procedures
     this.sections.push({
-      title: 'Emergency Response Procedures',
+      title: "Emergency Response Procedures",
       content: this.generateEmergencyProcedures(),
-      priority: 'critical',
-      category: 'troubleshooting'
+      priority: "critical",
+      category: "troubleshooting",
     });
 
     console.log(`   ✅ Generated ${this.sections.length} runbook sections\n`);
@@ -300,8 +324,8 @@ class RunbookGenerator {
    * Generate system overview section
    */
   private generateOverviewSection(): string {
-    const packageJson = this.artifacts.find(a => a.name === 'package.json');
-    
+    const packageJson = this.artifacts.find((a) => a.name === "package.json");
+
     return `## CleanRylie - Automotive Dealership AI Platform
 
 ### Architecture Summary
@@ -356,16 +380,20 @@ The migrations follow a sequential versioning scheme:
 `;
 
     // Add migration table
-    const migrationVersions = [...new Set(this.migrations.map(m => m.version.split('_')[0]))].sort();
-    
+    const migrationVersions = [
+      ...new Set(this.migrations.map((m) => m.version.split("_")[0])),
+    ].sort();
+
     for (const version of migrationVersions) {
-      const versionMigrations = this.migrations.filter(m => m.version.startsWith(version));
-      const upMigration = versionMigrations.find(m => m.type === 'up');
-      const downMigration = versionMigrations.find(m => m.type === 'down');
-      
+      const versionMigrations = this.migrations.filter((m) =>
+        m.version.startsWith(version),
+      );
+      const upMigration = versionMigrations.find((m) => m.type === "up");
+      const downMigration = versionMigrations.find((m) => m.type === "down");
+
       if (upMigration) {
-        const status = downMigration ? '✅ Complete' : '⚠️ No rollback';
-        guide += `| ${version} | ${upMigration.description} | ${upMigration.type === 'up' ? 'Forward' : 'Rollback'} | ${status} |\n`;
+        const status = downMigration ? "✅ Complete" : "⚠️ No rollback";
+        guide += `| ${version} | ${upMigration.description} | ${upMigration.type === "up" ? "Forward" : "Rollback"} | ${status} |\n`;
       }
     }
 
@@ -409,13 +437,15 @@ Some migrations have dependencies on previous versions:
 `;
 
     // Add dependency information
-    const migrationsWithDeps = this.migrations.filter(m => m.dependencies.length > 0);
+    const migrationsWithDeps = this.migrations.filter(
+      (m) => m.dependencies.length > 0,
+    );
     if (migrationsWithDeps.length > 0) {
       for (const migration of migrationsWithDeps) {
-        guide += `- **${migration.version}**: Requires ${migration.dependencies.join(', ')}\n`;
+        guide += `- **${migration.version}**: Requires ${migration.dependencies.join(", ")}\n`;
       }
     } else {
-      guide += '- All migrations are currently independent\n';
+      guide += "- All migrations are currently independent\n";
     }
 
     return guide;
@@ -425,8 +455,12 @@ Some migrations have dependencies on previous versions:
    * Generate deployment procedures section
    */
   private generateDeploymentProcedures(): string {
-    const deploymentScript = this.artifacts.find(a => a.name === 'deployment-automation.ts');
-    const readinessCheck = this.artifacts.find(a => a.name === 'deployment-readiness-check.ts');
+    const deploymentScript = this.artifacts.find(
+      (a) => a.name === "deployment-automation.ts",
+    );
+    const readinessCheck = this.artifacts.find(
+      (a) => a.name === "deployment-readiness-check.ts",
+    );
 
     return `## Deployment Automation
 
@@ -455,7 +489,7 @@ npm run deploy:check         # Pre-deployment readiness check
 
 ### Pre-Deployment Checklist
 
-${readinessCheck ? '✅ Automated readiness check available' : '⚠️ Manual readiness check required'}
+${readinessCheck ? "✅ Automated readiness check available" : "⚠️ Manual readiness check required"}
 
 **Required Checks:**
 1. **Environment Variables**: All required env vars configured
@@ -538,8 +572,10 @@ CleanRylie supports blue-green deployment for zero-downtime updates:
    * Generate STAB completion status
    */
   private generateStabCompletionStatus(): string {
-    const stabSummary = this.artifacts.find(a => a.name === 'STAB-305-SUMMARY.md');
-    
+    const stabSummary = this.artifacts.find(
+      (a) => a.name === "STAB-305-SUMMARY.md",
+    );
+
     let status = `## Stabilization Tickets (STAB) Status
 
 ### Completed STAB Tickets
@@ -563,7 +599,9 @@ CleanRylie supports blue-green deployment for zero-downtime updates:
     }
 
     // Check for other STAB files
-    const bundleGuard = this.artifacts.find(a => a.name === 'STAB-103-BUNDLE-SIZE-GUARD.md');
+    const bundleGuard = this.artifacts.find(
+      (a) => a.name === "STAB-103-BUNDLE-SIZE-GUARD.md",
+    );
     if (bundleGuard) {
       status += `#### STAB-103: Bundle Size Guard ✅ COMPLETED
 - **Objective**: Implement bundle size monitoring and optimization
@@ -618,8 +656,8 @@ All STAB tickets must meet these criteria before marking complete:
    * Generate monitoring section
    */
   private generateMonitoringSection(): string {
-    const adfRunbook = this.artifacts.find(a => a.name === 'ADF_RUNBOOK.md');
-    
+    const adfRunbook = this.artifacts.find((a) => a.name === "ADF_RUNBOOK.md");
+
     return `## Monitoring & Observability
 
 ### Health Checks
@@ -877,29 +915,32 @@ npm run logs:emergency
    * Step 4: Generate final documents
    */
   private async generateDocuments(): Promise<void> {
-    console.log('📄 Generating final documentation...');
+    console.log("📄 Generating final documentation...");
 
     // Generate Migration Guide
     const migrationGuide = this.generateMigrationGuideDocument();
-    const migrationGuidePath = path.join(PROJECT_ROOT, 'MIGRATION_GUIDE.md');
+    const migrationGuidePath = path.join(PROJECT_ROOT, "MIGRATION_GUIDE.md");
     await fs.writeFile(migrationGuidePath, migrationGuide);
     console.log(`   ✅ Generated: ${migrationGuidePath}`);
 
-    // Generate Deployment Runbook  
+    // Generate Deployment Runbook
     const deploymentRunbook = this.generateDeploymentRunbookDocument();
-    const runbookPath = path.join(PROJECT_ROOT, 'DEPLOYMENT_RUNBOOK.md');
+    const runbookPath = path.join(PROJECT_ROOT, "DEPLOYMENT_RUNBOOK.md");
     await fs.writeFile(runbookPath, deploymentRunbook);
     console.log(`   ✅ Generated: ${runbookPath}`);
 
     // Generate Comprehensive Operations Guide
     const operationsGuide = this.generateOperationsGuideDocument();
-    const operationsPath = path.join(PROJECT_ROOT, 'OPERATIONS_GUIDE.md');
+    const operationsPath = path.join(PROJECT_ROOT, "OPERATIONS_GUIDE.md");
     await fs.writeFile(operationsPath, operationsGuide);
     console.log(`   ✅ Generated: ${operationsPath}`);
 
     // Generate artifacts summary
     const artifactsSummary = this.generateArtifactsSummary();
-    const summaryPath = path.join(PROJECT_ROOT, 'STAB-601-ARTIFACTS-SUMMARY.md');
+    const summaryPath = path.join(
+      PROJECT_ROOT,
+      "STAB-601-ARTIFACTS-SUMMARY.md",
+    );
     await fs.writeFile(summaryPath, artifactsSummary);
     console.log(`   ✅ Generated: ${summaryPath}`);
   }
@@ -908,8 +949,12 @@ npm run logs:emergency
    * Generate migration guide document
    */
   private generateMigrationGuideDocument(): string {
-    const migrationSection = this.sections.find(s => s.title === 'Database Migration Guide');
-    const overviewSection = this.sections.find(s => s.title === 'System Overview');
+    const migrationSection = this.sections.find(
+      (s) => s.title === "Database Migration Guide",
+    );
+    const overviewSection = this.sections.find(
+      (s) => s.title === "System Overview",
+    );
 
     return `# CleanRylie Migration Guide
 
@@ -919,11 +964,11 @@ npm run logs:emergency
 
 ---
 
-${overviewSection?.content || ''}
+${overviewSection?.content || ""}
 
 ---
 
-${migrationSection?.content || ''}
+${migrationSection?.content || ""}
 
 ## Migration Validation
 
@@ -981,9 +1026,15 @@ ${migrationSection?.content || ''}
    * Generate deployment runbook document
    */
   private generateDeploymentRunbookDocument(): string {
-    const deploymentSection = this.sections.find(s => s.title === 'Deployment Procedures');
-    const stabSection = this.sections.find(s => s.title === 'Stabilization (STAB) Tickets Completion Status');
-    const emergencySection = this.sections.find(s => s.title === 'Emergency Response Procedures');
+    const deploymentSection = this.sections.find(
+      (s) => s.title === "Deployment Procedures",
+    );
+    const stabSection = this.sections.find(
+      (s) => s.title === "Stabilization (STAB) Tickets Completion Status",
+    );
+    const emergencySection = this.sections.find(
+      (s) => s.title === "Emergency Response Procedures",
+    );
 
     return `# CleanRylie Deployment Runbook
 
@@ -993,15 +1044,15 @@ ${migrationSection?.content || ''}
 
 ---
 
-${deploymentSection?.content || ''}
+${deploymentSection?.content || ""}
 
 ---
 
-${stabSection?.content || ''}
+${stabSection?.content || ""}
 
 ---
 
-${emergencySection?.content || ''}
+${emergencySection?.content || ""}
 
 ## Change Management
 
@@ -1052,8 +1103,12 @@ ${emergencySection?.content || ''}
    * Generate operations guide document
    */
   private generateOperationsGuideDocument(): string {
-    const monitoringSection = this.sections.find(s => s.title === 'Monitoring & Troubleshooting');
-    const overviewSection = this.sections.find(s => s.title === 'System Overview');
+    const monitoringSection = this.sections.find(
+      (s) => s.title === "Monitoring & Troubleshooting",
+    );
+    const overviewSection = this.sections.find(
+      (s) => s.title === "System Overview",
+    );
 
     return `# CleanRylie Operations Guide
 
@@ -1063,11 +1118,11 @@ ${emergencySection?.content || ''}
 
 ---
 
-${overviewSection?.content || ''}
+${overviewSection?.content || ""}
 
 ---
 
-${monitoringSection?.content || ''}
+${monitoringSection?.content || ""}
 
 ## Routine Maintenance
 
@@ -1170,16 +1225,27 @@ redis-cli INFO stats      # Hit/miss statistics
 ## Artifacts Analyzed
 
 ### Configuration Files
-${this.artifacts.filter(a => a.type === 'config').map(a => `- \`${a.path}\``).join('\n') || '- No configuration files found in .stabilization/'}
+${
+  this.artifacts
+    .filter((a) => a.type === "config")
+    .map((a) => `- \`${a.path}\``)
+    .join("\n") || "- No configuration files found in .stabilization/"
+}
 
 ### Migration Files
-${this.migrations.map(m => `- \`${m.path}\` - ${m.description} (${m.type})`).join('\n')}
+${this.migrations.map((m) => `- \`${m.path}\` - ${m.description} (${m.type})`).join("\n")}
 
 ### Documentation Sources  
-${this.artifacts.filter(a => a.type === 'summary' || a.type === 'runbook').map(a => `- \`${a.path}\``).join('\n')}
+${this.artifacts
+  .filter((a) => a.type === "summary" || a.type === "runbook")
+  .map((a) => `- \`${a.path}\``)
+  .join("\n")}
 
 ### Scripts and Automation
-${this.artifacts.filter(a => a.type === 'script').map(a => `- \`${a.path}\``).join('\n')}
+${this.artifacts
+  .filter((a) => a.type === "script")
+  .map((a) => `- \`${a.path}\``)
+  .join("\n")}
 
 ---
 
@@ -1205,17 +1271,26 @@ ${this.artifacts.filter(a => a.type === 'script').map(a => `- \`${a.path}\``).jo
 ## Migration Analysis Summary
 
 **Total Migration Files**: ${this.migrations.length}
-**Forward Migrations**: ${this.migrations.filter(m => m.type === 'up').length}
-**Rollback Migrations**: ${this.migrations.filter(m => m.type === 'down').length}
+**Forward Migrations**: ${this.migrations.filter((m) => m.type === "up").length}
+**Rollback Migrations**: ${this.migrations.filter((m) => m.type === "down").length}
 
 **Migration Coverage**:
-${[...new Set(this.migrations.map(m => m.version.split('_')[0]))].map(version => {
-  const versionMigrations = this.migrations.filter(m => m.version.startsWith(version));
-  const hasUp = versionMigrations.some(m => m.type === 'up');
-  const hasDown = versionMigrations.some(m => m.type === 'down');
-  const coverage = hasUp && hasDown ? '✅ Complete' : hasUp ? '⚠️ Forward only' : '❌ Missing';
-  return `- Version ${version}: ${coverage}`;
-}).join('\n')}
+${[...new Set(this.migrations.map((m) => m.version.split("_")[0]))]
+  .map((version) => {
+    const versionMigrations = this.migrations.filter((m) =>
+      m.version.startsWith(version),
+    );
+    const hasUp = versionMigrations.some((m) => m.type === "up");
+    const hasDown = versionMigrations.some((m) => m.type === "down");
+    const coverage =
+      hasUp && hasDown
+        ? "✅ Complete"
+        : hasUp
+          ? "⚠️ Forward only"
+          : "❌ Missing";
+    return `- Version ${version}: ${coverage}`;
+  })
+  .join("\n")}
 
 ---
 
@@ -1259,17 +1334,23 @@ async function main() {
   try {
     const generator = new RunbookGenerator();
     await generator.generate();
-    
-    console.log('\n🎉 STAB-601 Migration Guide & Runbook Generation completed successfully!');
-    console.log('\n📋 Generated Files:');
-    console.log('   • MIGRATION_GUIDE.md - Database migration procedures');
-    console.log('   • DEPLOYMENT_RUNBOOK.md - Deployment and emergency procedures');  
-    console.log('   • OPERATIONS_GUIDE.md - Day-to-day operations guide');
-    console.log('   • STAB-601-ARTIFACTS-SUMMARY.md - Artifacts analysis summary');
-    
-    console.log('\n✅ All STAB-601 deliverables completed');
+
+    console.log(
+      "\n🎉 STAB-601 Migration Guide & Runbook Generation completed successfully!",
+    );
+    console.log("\n📋 Generated Files:");
+    console.log("   • MIGRATION_GUIDE.md - Database migration procedures");
+    console.log(
+      "   • DEPLOYMENT_RUNBOOK.md - Deployment and emergency procedures",
+    );
+    console.log("   • OPERATIONS_GUIDE.md - Day-to-day operations guide");
+    console.log(
+      "   • STAB-601-ARTIFACTS-SUMMARY.md - Artifacts analysis summary",
+    );
+
+    console.log("\n✅ All STAB-601 deliverables completed");
   } catch (error) {
-    console.error('❌ Error generating runbook:', error);
+    console.error("❌ Error generating runbook:", error);
     process.exit(1);
   }
 }

@@ -5,6 +5,7 @@ This guide walks through setting up a new client with their own custom domain fo
 ## Overview
 
 **Email Flow:**
+
 - **Inbound ADF:** `leads@clientdomain.com` → `client-internal@gmail.com` → IMAP → CleanRylie
 - **Outbound Responses:** CleanRylie → SendGrid → `leads@clientdomain.com` → Lead
 
@@ -22,6 +23,7 @@ This guide walks through setting up a new client with their own custom domain fo
 ### Phase 1: Preparation
 
 1. **Gather Client Information:**
+
    ```
    Business Name: ABC Motors
    Domain: abcmotors.com
@@ -29,6 +31,7 @@ This guide walks through setting up a new client with their own custom domain fo
    ```
 
 2. **Create Gmail Account:**
+
    ```
    Email: abcmotors-internal@gmail.com
    Purpose: IMAP processing (hidden from leads)
@@ -42,12 +45,14 @@ This guide walks through setting up a new client with their own custom domain fo
 ### Phase 2: SendGrid Domain Authentication
 
 1. **Add Domain to SendGrid:**
+
    ```
    SendGrid Dashboard → Settings → Sender Authentication → Domain Authentication
    → Add New Domain → abcmotors.com
    ```
 
 2. **Configure Domain Settings:**
+
    - Use automated security: Yes
    - Use custom return path: No (unless client requests)
    - Generate records
@@ -73,7 +78,7 @@ To complete your professional email setup, please add these DNS records to your 
 
 CNAME Records:
 1. Host: s1._domainkey    Value: s1.domainkey.u12345.wl123.sendgrid.net
-2. Host: s2._domainkey    Value: s2.domainkey.u12345.wl123.sendgrid.net  
+2. Host: s2._domainkey    Value: s2.domainkey.u12345.wl123.sendgrid.net
 3. Host: em1234           Value: u12345.wl123.sendgrid.net
 
 Email Forwarding:
@@ -92,6 +97,7 @@ Let me know when complete!
 ### Phase 4: CleanRylie Configuration
 
 1. **Run Setup Script:**
+
    ```bash
    chmod +x scripts/setup-client-domain.sh
    ./scripts/setup-client-domain.sh "ABC Motors" "abcmotors.com" "abcmotors-internal@gmail.com" 1
@@ -99,8 +105,8 @@ Let me know when complete!
 
 2. **Manual Database Update (Alternative):**
    ```sql
-   UPDATE dealerships 
-   SET 
+   UPDATE dealerships
+   SET
      name = 'ABC Motors',
      email_config = jsonb_build_object(
        'fromEmail', 'leads@abcmotors.com',
@@ -124,22 +130,25 @@ Let me know when complete!
 ### Phase 5: Verification & Testing
 
 1. **Verify Domain in SendGrid:**
+
    - Wait 24-48 hours after DNS changes
    - Check SendGrid dashboard for green verification
 
 2. **Update Verification Status:**
+
    ```sql
-   UPDATE dealerships 
-   SET email_config = jsonb_set(email_config, '{verified}', 'true') 
+   UPDATE dealerships
+   SET email_config = jsonb_set(email_config, '{verified}', 'true')
    WHERE id = 1;
    ```
 
 3. **Test Email Flow:**
+
    ```bash
    # Test inbound
    Send test ADF to: leads@abcmotors.com
-   
-   # Test outbound  
+
+   # Test outbound
    Trigger response from CleanRylie
    Verify lead receives from: ABC Motors <leads@abcmotors.com>
    ```
@@ -149,11 +158,13 @@ Let me know when complete!
 ### Common Issues
 
 1. **DNS Propagation Delays:**
+
    - Wait 24-48 hours
    - Use DNS checker tools
    - Verify with `dig` command
 
 2. **Email Forwarding Not Working:**
+
    - Check domain registrar settings
    - Test with simple email first
    - Consider using Google Workspace
@@ -178,6 +189,7 @@ echo "Test message" | mail -s "Test" leads@abcmotors.com
 ## Client Communication Templates
 
 ### Initial Setup Email
+
 ```
 Subject: Professional Email Setup - Next Steps
 
@@ -202,6 +214,7 @@ Best regards,
 ```
 
 ### DNS Instructions Email
+
 ```
 Subject: DNS Records for [Client] Email Setup
 
@@ -220,6 +233,7 @@ Let me know when complete!
 ```
 
 ### Completion Email
+
 ```
 Subject: ✅ Professional Email Setup Complete - [Client]
 
@@ -228,7 +242,7 @@ Hi [Client],
 Excellent! Your professional email system is now live.
 
 ✅ Domain verified
-✅ Email forwarding working  
+✅ Email forwarding working
 ✅ Professional branding active
 
 Your leads now receive emails from: [Client Name] <leads@[domain].com>
@@ -243,12 +257,14 @@ Welcome to professional lead communication!
 ## Maintenance
 
 ### Monthly Checks
+
 - Verify domain authentication status
 - Check email forwarding functionality
 - Monitor delivery rates in SendGrid
 - Review any bounced emails
 
 ### Annual Tasks
+
 - Renew domain registration
 - Update DNS records if needed
 - Review and update email templates

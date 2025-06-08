@@ -1,5 +1,5 @@
-import { eq, and, desc } from 'drizzle-orm';
-import db from '../db';
+import { eq, and, desc } from "drizzle-orm";
+import db from "../db";
 import {
   conversations,
   messages,
@@ -9,16 +9,16 @@ import {
   type Message,
   type Conversation,
   type MessageSender,
-  type MessageType
-} from '../../shared/lead-management-schema';
-import { enhancedAIService } from './enhanced-ai-service';
-import { conversationIntelligence } from './conversation-intelligence';
-import logger from '../utils/logger';
+  type MessageType,
+} from "../../shared/lead-management-schema";
+import { enhancedAIService } from "./enhanced-ai-service";
+import { conversationIntelligence } from "./conversation-intelligence";
+import logger from "../utils/logger";
 
 export interface ReplyMessageData {
   conversationId: string;
   content: string;
-  contentType?: 'text' | 'html' | 'markdown';
+  contentType?: "text" | "html" | "markdown";
   sender: MessageSender;
   senderUserId?: number;
   senderName?: string;
@@ -58,32 +58,34 @@ export class ConversationService {
    */
   async sendReply(
     dealershipId: number,
-    replyData: ReplyMessageData
+    replyData: ReplyMessageData,
   ): Promise<ReplyResult> {
     const errors: string[] = [];
 
     try {
-      logger.info('Sending reply message', {
+      logger.info("Sending reply message", {
         dealershipId,
         conversationId: replyData.conversationId,
-        sender: replyData.sender
+        sender: replyData.sender,
       });
 
       // Verify conversation exists and belongs to dealership
       const conversationResults = await this.db
         .select()
         .from(conversations)
-        .where(and(
-          eq(conversations.id, replyData.conversationId),
-          eq(conversations.dealershipId, dealershipId)
-        ))
+        .where(
+          and(
+            eq(conversations.id, replyData.conversationId),
+            eq(conversations.dealershipId, dealershipId),
+          ),
+        )
         .limit(1);
 
       if (conversationResults.length === 0) {
         return {
           success: false,
-          errors: ['Conversation not found'],
-          conversationNotFound: true
+          errors: ["Conversation not found"],
+          conversationNotFound: true,
         };
       }
 
@@ -92,32 +94,32 @@ export class ConversationService {
       // Determine message type based on sender
       let messageType: MessageType;
       switch (replyData.sender) {
-        case 'customer':
-          messageType = 'inbound';
+        case "customer":
+          messageType = "inbound";
           break;
-        case 'ai':
-        case 'agent':
-          messageType = 'outbound';
+        case "ai":
+        case "agent":
+          messageType = "outbound";
           break;
-        case 'system':
-          messageType = 'system';
+        case "system":
+          messageType = "system";
           break;
         default:
-          messageType = 'outbound';
+          messageType = "outbound";
       }
 
       // Create the message
       const messageData: InsertMessage = {
         conversationId: replyData.conversationId,
         content: replyData.content,
-        contentType: replyData.contentType || 'text',
+        contentType: replyData.contentType || "text",
         subject: replyData.subject,
         type: messageType,
         sender: replyData.sender,
         senderUserId: replyData.senderUserId,
         senderName: replyData.senderName,
         attachments: replyData.attachments || [],
-        isRead: replyData.sender !== 'customer' // Mark as read if not from customer
+        isRead: replyData.sender !== "customer", // Mark as read if not from customer
       };
 
       const [newMessage] = await this.db
@@ -133,7 +135,8 @@ export class ConversationService {
           messageCount: conversation.messageCount + 1,
           updatedAt: new Date(),
           // Update status based on sender
-          status: replyData.sender === 'customer' ? 'waiting_response' : 'active'
+          status:
+            replyData.sender === "customer" ? "waiting_response" : "active",
         })
         .where(eq(conversations.id, replyData.conversationId));
 
@@ -141,18 +144,18 @@ export class ConversationService {
       await this.db.insert(leadActivities).values({
         leadId: conversation.leadId,
         userId: replyData.senderUserId,
-        type: 'message_sent',
-        description: `${replyData.sender} sent a message: ${replyData.content.substring(0, 100)}${replyData.content.length > 100 ? '...' : ''}`,
-        messageId: newMessage.id
+        type: "message_sent",
+        description: `${replyData.sender} sent a message: ${replyData.content.substring(0, 100)}${replyData.content.length > 100 ? "..." : ""}`,
+        messageId: newMessage.id,
       });
 
       // Generate intelligent AI response if message is from customer
-      if (replyData.sender === 'customer') {
+      if (replyData.sender === "customer") {
         try {
           const aiResponse = await enhancedAIService.generateResponse(
             replyData.conversationId,
             replyData.content,
-            dealershipId
+            dealershipId,
           );
 
           if (aiResponse) {
@@ -160,11 +163,11 @@ export class ConversationService {
             const aiMessageData: InsertMessage = {
               conversationId: replyData.conversationId,
               content: aiResponse,
-              contentType: 'text',
-              type: 'outbound',
-              sender: 'ai',
-              senderName: 'Rylie AI Assistant',
-              isRead: true
+              contentType: "text",
+              type: "outbound",
+              sender: "ai",
+              senderName: "Rylie AI Assistant",
+              isRead: true,
             };
 
             const [aiMessage] = await this.db
@@ -179,37 +182,37 @@ export class ConversationService {
                 lastMessageAt: new Date(),
                 messageCount: conversation.messageCount + 2, // +1 for customer message, +1 for AI response
                 updatedAt: new Date(),
-                status: 'active'
+                status: "active",
               })
               .where(eq(conversations.id, replyData.conversationId));
 
             // Log AI response activity
             await this.db.insert(leadActivities).values({
               leadId: conversation.leadId,
-              type: 'ai_response',
-              description: `AI generated intelligent response: ${aiResponse.substring(0, 100)}${aiResponse.length > 100 ? '...' : ''}`,
-              messageId: aiMessage.id
+              type: "ai_response",
+              description: `AI generated intelligent response: ${aiResponse.substring(0, 100)}${aiResponse.length > 100 ? "..." : ""}`,
+              messageId: aiMessage.id,
             });
 
-            logger.info('Intelligent AI response generated and sent', {
+            logger.info("Intelligent AI response generated and sent", {
               customerMessageId: newMessage.id,
               aiMessageId: aiMessage.id,
-              conversationId: replyData.conversationId
+              conversationId: replyData.conversationId,
             });
           }
         } catch (error) {
-          logger.error('Error generating intelligent AI response', {
+          logger.error("Error generating intelligent AI response", {
             error: error instanceof Error ? error.message : String(error),
-            conversationId: replyData.conversationId
+            conversationId: replyData.conversationId,
           });
           // Don't fail the entire request if AI response fails
         }
       }
 
-      logger.info('Reply message sent successfully', {
+      logger.info("Reply message sent successfully", {
         messageId: newMessage.id,
         conversationId: replyData.conversationId,
-        sender: replyData.sender
+        sender: replyData.sender,
       });
 
       return {
@@ -217,22 +220,21 @@ export class ConversationService {
         messageId: newMessage.id,
         conversationId: replyData.conversationId,
         timestamp: newMessage.createdAt,
-        errors
+        errors,
       };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Reply message failed', {
+      logger.error("Reply message failed", {
         error: err.message,
         dealershipId,
-        conversationId: replyData.conversationId
+        conversationId: replyData.conversationId,
       });
 
       errors.push(`Failed to send reply: ${err.message}`);
 
       return {
         success: false,
-        errors
+        errors,
       };
     }
   }
@@ -247,19 +249,25 @@ export class ConversationService {
       includeMessages?: boolean;
       messageLimit?: number;
       messageOffset?: number;
-    } = {}
+    } = {},
   ): Promise<ConversationDetails | null> {
     try {
-      const { includeMessages = true, messageLimit = 50, messageOffset = 0 } = options;
+      const {
+        includeMessages = true,
+        messageLimit = 50,
+        messageOffset = 0,
+      } = options;
 
       // Get conversation
       const conversationResults = await this.db
         .select()
         .from(conversations)
-        .where(and(
-          eq(conversations.id, conversationId),
-          eq(conversations.dealershipId, dealershipId)
-        ))
+        .where(
+          and(
+            eq(conversations.id, conversationId),
+            eq(conversations.dealershipId, dealershipId),
+          ),
+        )
         .limit(1);
 
       if (conversationResults.length === 0) {
@@ -292,15 +300,14 @@ export class ConversationService {
       return {
         conversation,
         messages: conversationMessages,
-        totalMessages
+        totalMessages,
       };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Get conversation failed', {
+      logger.error("Get conversation failed", {
         error: err.message,
         dealershipId,
-        conversationId
+        conversationId,
       });
 
       return null;
@@ -318,7 +325,7 @@ export class ConversationService {
       status?: string;
       leadId?: string;
       customerId?: string;
-    } = {}
+    } = {},
   ): Promise<Conversation[]> {
     try {
       const { limit = 50, offset = 0, status, leadId, customerId } = options;
@@ -329,36 +336,41 @@ export class ConversationService {
         .where(eq(conversations.dealershipId, dealershipId));
 
       if (status) {
-        query = query.where(and(
-          eq(conversations.dealershipId, dealershipId),
-          eq(conversations.status, status as any)
-        ));
+        query = query.where(
+          and(
+            eq(conversations.dealershipId, dealershipId),
+            eq(conversations.status, status as any),
+          ),
+        );
       }
 
       if (leadId) {
-        query = query.where(and(
-          eq(conversations.dealershipId, dealershipId),
-          eq(conversations.leadId, leadId)
-        ));
+        query = query.where(
+          and(
+            eq(conversations.dealershipId, dealershipId),
+            eq(conversations.leadId, leadId),
+          ),
+        );
       }
 
       if (customerId) {
-        query = query.where(and(
-          eq(conversations.dealershipId, dealershipId),
-          eq(conversations.customerId, customerId)
-        ));
+        query = query.where(
+          and(
+            eq(conversations.dealershipId, dealershipId),
+            eq(conversations.customerId, customerId),
+          ),
+        );
       }
 
       return query
         .orderBy(desc(conversations.lastMessageAt))
         .limit(limit)
         .offset(offset);
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Get conversations failed', {
+      logger.error("Get conversations failed", {
         error: err.message,
-        dealershipId
+        dealershipId,
       });
 
       return [];
@@ -371,17 +383,19 @@ export class ConversationService {
   async markMessagesAsRead(
     dealershipId: number,
     conversationId: string,
-    userId?: number
+    userId?: number,
   ): Promise<{ success: boolean; updatedCount: number }> {
     try {
       // Verify conversation belongs to dealership
       const conversationExists = await this.db
         .select({ id: conversations.id })
         .from(conversations)
-        .where(and(
-          eq(conversations.id, conversationId),
-          eq(conversations.dealershipId, dealershipId)
-        ))
+        .where(
+          and(
+            eq(conversations.id, conversationId),
+            eq(conversations.dealershipId, dealershipId),
+          ),
+        )
         .limit(1);
 
       if (conversationExists.length === 0) {
@@ -394,22 +408,23 @@ export class ConversationService {
         .set({
           isRead: true,
           readAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
-        .where(and(
-          eq(messages.conversationId, conversationId),
-          eq(messages.isRead, false)
-        ))
+        .where(
+          and(
+            eq(messages.conversationId, conversationId),
+            eq(messages.isRead, false),
+          ),
+        )
         .returning({ id: messages.id });
 
       return { success: true, updatedCount: updateResult.length };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Mark messages as read failed', {
+      logger.error("Mark messages as read failed", {
         error: err.message,
         dealershipId,
-        conversationId
+        conversationId,
       });
 
       return { success: false, updatedCount: 0 };
@@ -423,7 +438,7 @@ export class ConversationService {
     dealershipId: number,
     conversationId: string,
     status: string,
-    userId?: number
+    userId?: number,
   ): Promise<{ success: boolean; conversation?: Conversation }> {
     try {
       const updateResult = await this.db
@@ -431,12 +446,15 @@ export class ConversationService {
         .set({
           status: status as any,
           updatedAt: new Date(),
-          closedAt: status === 'resolved' || status === 'archived' ? new Date() : null
+          closedAt:
+            status === "resolved" || status === "archived" ? new Date() : null,
         })
-        .where(and(
-          eq(conversations.id, conversationId),
-          eq(conversations.dealershipId, dealershipId)
-        ))
+        .where(
+          and(
+            eq(conversations.id, conversationId),
+            eq(conversations.dealershipId, dealershipId),
+          ),
+        )
         .returning();
 
       if (updateResult.length === 0) {
@@ -449,19 +467,18 @@ export class ConversationService {
       await this.db.insert(leadActivities).values({
         leadId: conversation.leadId,
         userId,
-        type: 'conversation_status_changed',
-        description: `Conversation status changed to: ${status}`
+        type: "conversation_status_changed",
+        description: `Conversation status changed to: ${status}`,
       });
 
       return { success: true, conversation };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Update conversation status failed', {
+      logger.error("Update conversation status failed", {
         error: err.message,
         dealershipId,
         conversationId,
-        status
+        status,
       });
 
       return { success: false };
@@ -479,7 +496,7 @@ export class ConversationService {
       status?: string;
       leadId?: string;
       customerId?: string;
-    } = {}
+    } = {},
   ): Promise<Conversation[]> {
     return this.getConversations(dealershipId, options);
   }
@@ -489,7 +506,7 @@ export class ConversationService {
    */
   async getConversationById(
     conversationId: string,
-    dealershipId: number
+    dealershipId: number,
   ): Promise<ConversationDetails | null> {
     return this.getConversation(dealershipId, conversationId);
   }
@@ -499,7 +516,7 @@ export class ConversationService {
    */
   async getConversationStats(
     dealershipId: number,
-    timeframe: string = '24h'
+    timeframe: string = "24h",
   ): Promise<{
     total: number;
     active: number;
@@ -510,18 +527,18 @@ export class ConversationService {
       // Calculate date range based on timeframe
       const now = new Date();
       let startDate = new Date();
-      
+
       switch (timeframe) {
-        case '1h':
+        case "1h":
           startDate.setHours(now.getHours() - 1);
           break;
-        case '24h':
+        case "24h":
           startDate.setDate(now.getDate() - 1);
           break;
-        case '7d':
+        case "7d":
           startDate.setDate(now.getDate() - 7);
           break;
-        case '30d':
+        case "30d":
           startDate.setDate(now.getDate() - 30);
           break;
         default:
@@ -532,23 +549,32 @@ export class ConversationService {
       const totalConversations = await this.db
         .select()
         .from(conversations)
-        .where(and(
-          eq(conversations.dealershipId, dealershipId),
-          // Add date filter if needed
-        ));
+        .where(
+          and(
+            eq(conversations.dealershipId, dealershipId),
+            // Add date filter if needed
+          ),
+        );
 
-      const activeConversations = totalConversations.filter(c => c.status === 'active');
-      const resolvedConversations = totalConversations.filter(c => c.status === 'resolved');
+      const activeConversations = totalConversations.filter(
+        (c) => c.status === "active",
+      );
+      const resolvedConversations = totalConversations.filter(
+        (c) => c.status === "resolved",
+      );
 
       return {
         total: totalConversations.length,
         active: activeConversations.length,
         resolved: resolvedConversations.length,
-        averageResponseTime: 0 // TODO: Calculate actual response time
+        averageResponseTime: 0, // TODO: Calculate actual response time
       };
-
     } catch (error) {
-      logger.error('Get conversation stats failed', { error, dealershipId, timeframe });
+      logger.error("Get conversation stats failed", {
+        error,
+        dealershipId,
+        timeframe,
+      });
       return { total: 0, active: 0, resolved: 0, averageResponseTime: 0 };
     }
   }
@@ -558,21 +584,27 @@ export class ConversationService {
    */
   async verifyConversationAccess(
     conversationId: string,
-    dealershipId: number
+    dealershipId: number,
   ): Promise<boolean> {
     try {
       const conversation = await this.db
         .select({ id: conversations.id })
         .from(conversations)
-        .where(and(
-          eq(conversations.id, conversationId),
-          eq(conversations.dealershipId, dealershipId)
-        ))
+        .where(
+          and(
+            eq(conversations.id, conversationId),
+            eq(conversations.dealershipId, dealershipId),
+          ),
+        )
         .limit(1);
 
       return conversation.length > 0;
     } catch (error) {
-      logger.error('Verify conversation access failed', { error, conversationId, dealershipId });
+      logger.error("Verify conversation access failed", {
+        error,
+        conversationId,
+        dealershipId,
+      });
       return false;
     }
   }
@@ -584,7 +616,7 @@ export class ConversationService {
     conversationId: string,
     dealershipId: number,
     cursor?: string,
-    limit: number = 50
+    limit: number = 50,
   ): Promise<{
     messages: Message[];
     nextCursor?: string;
@@ -592,7 +624,10 @@ export class ConversationService {
   }> {
     try {
       // Verify access
-      const hasAccess = await this.verifyConversationAccess(conversationId, dealershipId);
+      const hasAccess = await this.verifyConversationAccess(
+        conversationId,
+        dealershipId,
+      );
       if (!hasAccess) {
         return { messages: [], hasMore: false };
       }
@@ -613,16 +648,20 @@ export class ConversationService {
       const hasMore = results.length > limit;
       const messages = hasMore ? results.slice(0, -1) : results;
 
-      const nextCursor = hasMore ? messages[messages.length - 1]?.id : undefined;
+      const nextCursor = hasMore
+        ? messages[messages.length - 1]?.id
+        : undefined;
 
       return {
         messages,
         nextCursor,
-        hasMore
+        hasMore,
       };
-
     } catch (error) {
-      logger.error('Get conversation messages with cursor failed', { error, conversationId });
+      logger.error("Get conversation messages with cursor failed", {
+        error,
+        conversationId,
+      });
       return { messages: [], hasMore: false };
     }
   }
@@ -644,7 +683,7 @@ export class ConversationService {
 
       return lead[0] || null;
     } catch (error) {
-      logger.error('Get lead context failed', { error, adfLeadId });
+      logger.error("Get lead context failed", { error, adfLeadId });
       return null;
     }
   }
@@ -656,7 +695,7 @@ export class ConversationService {
     conversationId: string,
     eventType: string,
     eventData: any,
-    userId?: number
+    userId?: number,
   ): Promise<string> {
     try {
       // Find the conversation to get leadId
@@ -667,7 +706,7 @@ export class ConversationService {
         .limit(1);
 
       if (conversation.length === 0) {
-        throw new Error('Conversation not found');
+        throw new Error("Conversation not found");
       }
 
       const [activity] = await this.db
@@ -677,13 +716,17 @@ export class ConversationService {
           userId,
           type: eventType,
           description: `Event: ${eventType}`,
-          metadata: eventData
+          metadata: eventData,
         })
         .returning();
 
       return activity.id;
     } catch (error) {
-      logger.error('Log conversation event failed', { error, conversationId, eventType });
+      logger.error("Log conversation event failed", {
+        error,
+        conversationId,
+        eventType,
+      });
       throw error;
     }
   }

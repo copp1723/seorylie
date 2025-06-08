@@ -3,6 +3,7 @@
 ## Current Problem
 
 Your repository root has **60+ files** making it difficult to:
+
 - Find specific configuration files
 - Understand project structure at a glance
 - Maintain consistent organization
@@ -13,6 +14,7 @@ Your repository root has **60+ files** making it difficult to:
 Organize files into **4 main categories** with logical subfolders:
 
 ### 📁 **config/** - All Configuration Files
+
 ```
 config/
 ├── environment/          # Environment configuration
@@ -38,6 +40,7 @@ config/
 ```
 
 ### 📁 **docs/** - Expanded Documentation
+
 ```
 docs/
 ├── deployment/          # Deployment guides
@@ -59,6 +62,7 @@ docs/
 ```
 
 ### 📁 **database/** - Database Management
+
 ```
 database/
 ├── schema/             # Schema definitions
@@ -78,6 +82,7 @@ database/
 ```
 
 ### 📁 **tools/** - Development Tools
+
 ```
 tools/
 ├── testing/            # Test utilities
@@ -103,12 +108,14 @@ tools/
 ## Benefits
 
 ### 🎯 **Immediate Benefits**
+
 - **Cleaner root directory**: From 60+ files to ~10 core files
 - **Logical grouping**: Related files are together
 - **Easier navigation**: Find files by purpose, not alphabetically
 - **Better onboarding**: New developers understand structure instantly
 
 ### 🚀 **Long-term Benefits**
+
 - **Scalability**: Easy to add new files in appropriate folders
 - **Maintenance**: Easier to update related configurations together
 - **Documentation**: Self-documenting structure
@@ -117,6 +124,7 @@ tools/
 ## Implementation Strategy
 
 ### Phase 1: Safe Reorganization (Recommended)
+
 1. **Create new branch**: `feature/repository-reorganization`
 2. **Run reorganization script**: `./scripts/reorganize-repository.sh`
 3. **Update configuration paths**: Package.json, imports, CI files
@@ -126,6 +134,7 @@ tools/
 ### Phase 2: Path Updates Required
 
 #### **package.json Scripts**
+
 ```json
 {
   "scripts": {
@@ -137,13 +146,15 @@ tools/
 ```
 
 #### **Import Path Updates**
+
 ```typescript
 // Update imports in TypeScript files
-import config from '../config/build/vite.config';
-import { drizzleConfig } from '../database/schema/drizzle.config';
+import config from "../config/build/vite.config";
+import { drizzleConfig } from "../database/schema/drizzle.config";
 ```
 
 #### **CI/CD Updates**
+
 ```yaml
 # Update GitHub Actions paths
 - name: Run tests
@@ -153,6 +164,7 @@ import { drizzleConfig } from '../database/schema/drizzle.config';
 ## Files That Stay in Root
 
 Keep these essential files in root for convention/tooling:
+
 - `package.json` - NPM requires this in root
 - `package-lock.json` - NPM lockfile
 - `README.md` - Repository documentation
@@ -162,11 +174,13 @@ Keep these essential files in root for convention/tooling:
 ## Migration Checklist
 
 ### Before Migration
+
 - [ ] Create backup branch
 - [ ] Document current working state
 - [ ] Ensure all tests pass
 
 ### During Migration
+
 - [ ] Run reorganization script
 - [ ] Update package.json paths
 - [ ] Update TypeScript imports
@@ -174,6 +188,7 @@ Keep these essential files in root for convention/tooling:
 - [ ] Update documentation links
 
 ### After Migration
+
 - [ ] Test local development setup
 - [ ] Test build process
 - [ ] Test deployment process
@@ -183,19 +198,23 @@ Keep these essential files in root for convention/tooling:
 ## Risk Mitigation
 
 ### Low Risk
+
 - **Configuration files**: Easy to update paths
 - **Documentation**: No functional impact
 - **Development tools**: Isolated utilities
 
 ### Medium Risk
+
 - **Build configurations**: Require path updates
 - **Import statements**: Need systematic updates
 
 ### High Risk
+
 - **Deployment configs**: Critical for production
 - **CI/CD pipelines**: Could break automation
 
 ### Mitigation Strategy
+
 1. **Test in separate branch first**
 2. **Update paths systematically**
 3. **Validate each component works**

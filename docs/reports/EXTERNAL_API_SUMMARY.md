@@ -5,11 +5,13 @@ The cleanrylie AI platform now exposes external API endpoints for conversation g
 ## 🔑 API Endpoints Available
 
 ### Base URL
+
 ```
 https://your-cleanrylie-domain.com/api/v1
 ```
 
 ### 1. Conversation AI
+
 ```bash
 POST /api/v1/conversation/reply
 X-API-Key: cleanrylie_your_api_key_here
@@ -32,6 +34,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "reply": "I'd be happy to help you with the 2024 Honda Accord...",
@@ -42,7 +45,8 @@ Content-Type: application/json
 }
 ```
 
-### 2. Handover Intelligence 
+### 2. Handover Intelligence
+
 ```bash
 POST /api/v1/handover/analyze
 X-API-Key: cleanrylie_your_api_key_here
@@ -50,7 +54,7 @@ Content-Type: application/json
 
 {
   "customer": {
-    "name": "John Smith", 
+    "name": "John Smith",
     "email": "john@email.com"
   },
   "conversation_history": [
@@ -62,6 +66,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "handover_recommended": true,
@@ -69,13 +74,16 @@ Content-Type: application/json
   "dossier": {
     "customer_summary": "Highly engaged buyer ready for purchase",
     "vehicle_interests": [
-      {"make": "Honda", "model": "Accord", "year": 2024, "confidence": 0.88}
+      { "make": "Honda", "model": "Accord", "year": 2024, "confidence": 0.88 }
     ],
     "key_insights": [
-      {"key": "Purchase Intent", "value": "Ready to buy", "confidence": 0.95}
+      { "key": "Purchase Intent", "value": "Ready to buy", "confidence": 0.95 }
     ],
     "suggested_approach": "Focus on closing immediately",
-    "next_steps": ["Schedule immediate appointment", "Prepare purchase paperwork"]
+    "next_steps": [
+      "Schedule immediate appointment",
+      "Prepare purchase paperwork"
+    ]
   },
   "response_time_ms": 2100
 }
@@ -84,6 +92,7 @@ Content-Type: application/json
 ## 🔐 Authentication
 
 All endpoints require an API key in the header:
+
 ```
 X-API-Key: cleanrylie_your_api_key_here
 ```
@@ -104,6 +113,7 @@ X-API-Key: your_key_here
 ## 📞 Contact for Setup
 
 **Need API keys or have questions?**
+
 - Contact: Josh Copp
 - For production keys and integration support
 

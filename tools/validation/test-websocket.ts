@@ -5,23 +5,23 @@
  * This bypasses the full build process and directly tests our WebSocket implementation
  */
 
-import { createServer } from 'http';
-import express from 'express';
-import WebSocket from 'ws';
-import { setupWebSocketServer, webSocketServer } from '../../server/websocket';
+import { createServer } from "http";
+import express from "express";
+import WebSocket from "ws";
+import { setupWebSocketServer, webSocketServer } from "../../server/websocket";
 
 const PORT = 3001; // Use different port to avoid conflicts
 
 async function testWebSocketServer() {
-  console.log('🧪 Testing WebSocket Server Implementation...\n');
+  console.log("🧪 Testing WebSocket Server Implementation...\n");
 
   // Create test server
   const app = express();
   const httpServer = createServer(app);
 
   // Add metrics endpoint
-  app.get('/metrics', (req, res) => {
-    res.set('Content-Type', 'text/plain');
+  app.get("/metrics", (req, res) => {
+    res.set("Content-Type", "text/plain");
     res.send(`# WebSocket Test Metrics
 websocket_connections_total{status="active"} 0
 websocket_messages_total{type="ping",direction="received"} 0
@@ -30,12 +30,12 @@ websocket_message_processing_duration_seconds_count 0
   });
 
   // Add health endpoint
-  app.get('/health', (req, res) => {
+  app.get("/health", (req, res) => {
     const status = webSocketServer.getStatus();
     res.json({
-      status: 'ok',
+      status: "ok",
       websocket: status,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   });
 
@@ -52,36 +52,35 @@ websocket_message_processing_duration_seconds_count 0
 
     // Setup WebSocket server
     await setupWebSocketServer(httpServer);
-    console.log('✅ WebSocket server setup completed');
+    console.log("✅ WebSocket server setup completed");
 
     // Test metrics endpoint
     const response = await fetch(`http://localhost:${PORT}/metrics`);
     if (response.ok) {
-      console.log('✅ Metrics endpoint accessible');
+      console.log("✅ Metrics endpoint accessible");
     } else {
-      throw new Error('Metrics endpoint failed');
+      throw new Error("Metrics endpoint failed");
     }
 
     // Test health endpoint
     const healthResponse = await fetch(`http://localhost:${PORT}/health`);
     if (healthResponse.ok) {
       const health = await healthResponse.json();
-      console.log('✅ Health endpoint accessible:', health.websocket);
+      console.log("✅ Health endpoint accessible:", health.websocket);
     } else {
-      throw new Error('Health endpoint failed');
+      throw new Error("Health endpoint failed");
     }
 
     // Test WebSocket connection
     await testWebSocketConnection();
 
-    console.log('\n🎉 All WebSocket tests passed!');
+    console.log("\n🎉 All WebSocket tests passed!");
 
     // Cleanup
     await webSocketServer.gracefulShutdown();
     httpServer.close();
-
   } catch (error) {
-    console.error('❌ Test failed:', error);
+    console.error("❌ Test failed:", error);
     httpServer.close();
     process.exit(1);
   }
@@ -96,66 +95,69 @@ async function testWebSocketConnection(): Promise<void> {
 
     const timeout = setTimeout(() => {
       ws.close();
-      reject(new Error('WebSocket test timeout'));
+      reject(new Error("WebSocket test timeout"));
     }, 10000);
 
-    ws.on('open', () => {
-      console.log('✅ WebSocket connection established');
+    ws.on("open", () => {
+      console.log("✅ WebSocket connection established");
     });
 
-    ws.on('message', (data) => {
+    ws.on("message", (data) => {
       try {
         const message = JSON.parse(data.toString());
-        
-        if (message.type === 'welcome' && !welcomeReceived) {
+
+        if (message.type === "welcome" && !welcomeReceived) {
           welcomeReceived = true;
-          console.log('✅ Welcome message received');
+          console.log("✅ Welcome message received");
           testsPassed++;
-          
+
           // Test ping
           setTimeout(() => {
-            ws.send(JSON.stringify({
-              type: 'ping',
-              message: 'test ping',
-              timestamp: new Date().toISOString(),
-              traceId: 'test-trace-id'
-            }));
+            ws.send(
+              JSON.stringify({
+                type: "ping",
+                message: "test ping",
+                timestamp: new Date().toISOString(),
+                traceId: "test-trace-id",
+              }),
+            );
           }, 100);
-          
+
           return;
         }
 
-        if (message.type === 'pong') {
-          console.log('✅ Ping/pong test passed');
+        if (message.type === "pong") {
+          console.log("✅ Ping/pong test passed");
           testsPassed++;
-          
+
           // Test echo
           setTimeout(() => {
-            ws.send(JSON.stringify({
-              type: 'echo',
-              message: 'Hello WebSocket!',
-              timestamp: new Date().toISOString(),
-              traceId: 'test-echo-id'
-            }));
+            ws.send(
+              JSON.stringify({
+                type: "echo",
+                message: "Hello WebSocket!",
+                timestamp: new Date().toISOString(),
+                traceId: "test-echo-id",
+              }),
+            );
           }, 100);
-          
+
           return;
         }
 
-        if (message.type === 'echo') {
-          console.log('✅ Echo test passed:', message.message);
+        if (message.type === "echo") {
+          console.log("✅ Echo test passed:", message.message);
           testsPassed++;
-          
+
           // All tests passed
           if (testsPassed >= totalTests) {
             clearTimeout(timeout);
             ws.close();
             resolve();
           }
-          
+
           return;
         }
-
       } catch (error) {
         clearTimeout(timeout);
         ws.close();
@@ -163,15 +165,17 @@ async function testWebSocketConnection(): Promise<void> {
       }
     });
 
-    ws.on('error', (error) => {
+    ws.on("error", (error) => {
       clearTimeout(timeout);
       reject(new Error(`WebSocket error: ${error}`));
     });
 
-    ws.on('close', () => {
+    ws.on("close", () => {
       if (testsPassed < totalTests) {
         clearTimeout(timeout);
-        reject(new Error(`Tests incomplete: ${testsPassed}/${totalTests} passed`));
+        reject(
+          new Error(`Tests incomplete: ${testsPassed}/${totalTests} passed`),
+        );
       }
     });
   });

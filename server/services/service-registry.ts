@@ -1,25 +1,25 @@
 /**
  * Service Registry
- * 
+ *
  * Central registry for managing all services in the application.
  * Provides service discovery, dependency management, and lifecycle coordination.
  */
 
-import { EventEmitter } from 'events';
-import logger from '../utils/logger';
-import { BaseService, ServiceHealth } from './base-service';
-import { CustomError } from '../utils/error-handler';
+import { EventEmitter } from "events";
+import logger from "../utils/logger";
+import { BaseService, ServiceHealth } from "./base-service";
+import { CustomError } from "../utils/error-handler";
 
 export interface ServiceRegistration {
   name: string;
   instance: BaseService;
   dependencies: string[];
   registeredAt: Date;
-  status: 'registered' | 'initializing' | 'running' | 'stopped' | 'error';
+  status: "registered" | "initializing" | "running" | "stopped" | "error";
 }
 
 export interface ServiceRegistryHealth {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
   totalServices: number;
   runningServices: number;
   failedServices: number;
@@ -36,13 +36,13 @@ export class ServiceRegistry extends EventEmitter {
    * Register a service with the registry
    */
   register(service: BaseService, dependencies: string[] = []): void {
-    const serviceName = service['config'].name;
-    
+    const serviceName = service["config"].name;
+
     if (this.services.has(serviceName)) {
       throw new CustomError(
         `Service ${serviceName} is already registered`,
         400,
-        { code: 'SERVICE_ALREADY_REGISTERED' }
+        { code: "SERVICE_ALREADY_REGISTERED" },
       );
     }
 
@@ -51,36 +51,36 @@ export class ServiceRegistry extends EventEmitter {
       instance: service,
       dependencies,
       registeredAt: new Date(),
-      status: 'registered'
+      status: "registered",
     };
 
     this.services.set(serviceName, registration);
 
     // Set up service event listeners
-    service.on('initialized', () => {
-      registration.status = 'running';
-      this.emit('serviceStarted', serviceName);
+    service.on("initialized", () => {
+      registration.status = "running";
+      this.emit("serviceStarted", serviceName);
       logger.info(`Service started: ${serviceName}`);
     });
 
-    service.on('shutdown', () => {
-      registration.status = 'stopped';
-      this.emit('serviceStopped', serviceName);
+    service.on("shutdown", () => {
+      registration.status = "stopped";
+      this.emit("serviceStopped", serviceName);
       logger.info(`Service stopped: ${serviceName}`);
     });
 
-    service.on('error', (error) => {
-      registration.status = 'error';
-      this.emit('serviceError', serviceName, error);
+    service.on("error", (error) => {
+      registration.status = "error";
+      this.emit("serviceError", serviceName, error);
       logger.error(`Service error: ${serviceName}`, error);
     });
 
     logger.info(`Service registered: ${serviceName}`, {
       dependencies,
-      totalServices: this.services.size
+      totalServices: this.services.size,
     });
 
-    this.emit('serviceRegistered', serviceName);
+    this.emit("serviceRegistered", serviceName);
   }
 
   /**
@@ -89,21 +89,19 @@ export class ServiceRegistry extends EventEmitter {
   async unregister(serviceName: string): Promise<void> {
     const registration = this.services.get(serviceName);
     if (!registration) {
-      throw new CustomError(
-        `Service ${serviceName} is not registered`,
-        404,
-        { code: 'SERVICE_NOT_FOUND' }
-      );
+      throw new CustomError(`Service ${serviceName} is not registered`, 404, {
+        code: "SERVICE_NOT_FOUND",
+      });
     }
 
     // Shutdown the service if it's running
-    if (registration.status === 'running') {
+    if (registration.status === "running") {
       await registration.instance.shutdown();
     }
 
     this.services.delete(serviceName);
-    this.emit('serviceUnregistered', serviceName);
-    
+    this.emit("serviceUnregistered", serviceName);
+
     logger.info(`Service unregistered: ${serviceName}`);
   }
 
@@ -141,23 +139,21 @@ export class ServiceRegistry extends EventEmitter {
    */
   async initializeAll(): Promise<void> {
     if (this.isShuttingDown) {
-      throw new CustomError(
-        'Cannot initialize services during shutdown',
-        400,
-        { code: 'SHUTDOWN_IN_PROGRESS' }
-      );
+      throw new CustomError("Cannot initialize services during shutdown", 400, {
+        code: "SHUTDOWN_IN_PROGRESS",
+      });
     }
 
-    logger.info('Initializing all services...', {
-      totalServices: this.services.size
+    logger.info("Initializing all services...", {
+      totalServices: this.services.size,
     });
 
     try {
       // Calculate initialization order based on dependencies
       this.initializationOrder = this.calculateInitializationOrder();
-      
-      logger.info('Service initialization order calculated', {
-        order: this.initializationOrder
+
+      logger.info("Service initialization order calculated", {
+        order: this.initializationOrder,
       });
 
       // Initialize services in order
@@ -165,44 +161,40 @@ export class ServiceRegistry extends EventEmitter {
         const registration = this.services.get(serviceName);
         if (!registration) continue;
 
-        if (registration.status === 'running') {
+        if (registration.status === "running") {
           logger.info(`Service ${serviceName} is already running, skipping`);
           continue;
         }
 
         try {
-          registration.status = 'initializing';
+          registration.status = "initializing";
           logger.info(`Initializing service: ${serviceName}`);
-          
+
           await registration.instance.initialize();
-          
+
           logger.info(`Service initialized successfully: ${serviceName}`);
         } catch (error) {
-          registration.status = 'error';
+          registration.status = "error";
           logger.error(`Failed to initialize service: ${serviceName}`, error);
-          
+
           // Decide whether to continue or stop based on service criticality
           // For now, we'll continue with other services
-          this.emit('serviceInitializationFailed', serviceName, error);
+          this.emit("serviceInitializationFailed", serviceName, error);
         }
       }
 
-      logger.info('Service initialization completed', {
+      logger.info("Service initialization completed", {
         totalServices: this.services.size,
-        runningServices: this.getRunningServices().length
+        runningServices: this.getRunningServices().length,
       });
 
-      this.emit('allServicesInitialized');
+      this.emit("allServicesInitialized");
     } catch (error) {
-      logger.error('Service initialization failed', error);
-      throw new CustomError(
-        'Failed to initialize services',
-        500,
-        { 
-          code: 'SERVICE_INITIALIZATION_FAILED',
-          context: { error }
-        }
-      );
+      logger.error("Service initialization failed", error);
+      throw new CustomError("Failed to initialize services", 500, {
+        code: "SERVICE_INITIALIZATION_FAILED",
+        context: { error },
+      });
     }
   }
 
@@ -211,18 +203,18 @@ export class ServiceRegistry extends EventEmitter {
    */
   async shutdownAll(): Promise<void> {
     this.isShuttingDown = true;
-    
-    logger.info('Shutting down all services...', {
-      totalServices: this.services.size
+
+    logger.info("Shutting down all services...", {
+      totalServices: this.services.size,
     });
 
     try {
       // Shutdown in reverse order
       const shutdownOrder = [...this.initializationOrder].reverse();
-      
+
       for (const serviceName of shutdownOrder) {
         const registration = this.services.get(serviceName);
-        if (!registration || registration.status !== 'running') continue;
+        if (!registration || registration.status !== "running") continue;
 
         try {
           logger.info(`Shutting down service: ${serviceName}`);
@@ -234,10 +226,10 @@ export class ServiceRegistry extends EventEmitter {
         }
       }
 
-      logger.info('All services shut down');
-      this.emit('allServicesShutdown');
+      logger.info("All services shut down");
+      this.emit("allServicesShutdown");
     } catch (error) {
-      logger.error('Service shutdown failed', error);
+      logger.error("Service shutdown failed", error);
       throw error;
     } finally {
       this.isShuttingDown = false;
@@ -255,49 +247,49 @@ export class ServiceRegistry extends EventEmitter {
 
     for (const [serviceName, registration] of this.services) {
       try {
-        if (registration.status === 'running') {
+        if (registration.status === "running") {
           const health = await registration.instance.getHealth();
           serviceHealths[serviceName] = health;
-          
+
           switch (health.status) {
-            case 'healthy':
+            case "healthy":
               healthyCount++;
               break;
-            case 'degraded':
+            case "degraded":
               degradedCount++;
               break;
-            case 'unhealthy':
+            case "unhealthy":
               unhealthyCount++;
               break;
           }
         } else {
           serviceHealths[serviceName] = {
-            status: 'unhealthy',
+            status: "unhealthy",
             lastCheck: new Date(),
             uptime: 0,
             dependencies: {},
-            error: `Service status: ${registration.status}`
+            error: `Service status: ${registration.status}`,
           };
           unhealthyCount++;
         }
       } catch (error) {
         serviceHealths[serviceName] = {
-          status: 'unhealthy',
+          status: "unhealthy",
           lastCheck: new Date(),
           uptime: 0,
           dependencies: {},
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         };
         unhealthyCount++;
       }
     }
 
     // Determine overall status
-    let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+    let overallStatus: "healthy" | "degraded" | "unhealthy" = "healthy";
     if (unhealthyCount > 0) {
-      overallStatus = unhealthyCount > healthyCount ? 'unhealthy' : 'degraded';
+      overallStatus = unhealthyCount > healthyCount ? "unhealthy" : "degraded";
     } else if (degradedCount > 0) {
-      overallStatus = 'degraded';
+      overallStatus = "degraded";
     }
 
     return {
@@ -306,7 +298,7 @@ export class ServiceRegistry extends EventEmitter {
       runningServices: this.getRunningServices().length,
       failedServices: unhealthyCount,
       services: serviceHealths,
-      lastCheck: new Date()
+      lastCheck: new Date(),
     };
   }
 
@@ -315,7 +307,7 @@ export class ServiceRegistry extends EventEmitter {
    */
   private getRunningServices(): string[] {
     return Array.from(this.services.entries())
-      .filter(([, registration]) => registration.status === 'running')
+      .filter(([, registration]) => registration.status === "running")
       .map(([name]) => name);
   }
 
@@ -333,12 +325,12 @@ export class ServiceRegistry extends EventEmitter {
         throw new CustomError(
           `Circular dependency detected involving service: ${serviceName}`,
           400,
-          { code: 'CIRCULAR_DEPENDENCY' }
+          { code: "CIRCULAR_DEPENDENCY" },
         );
       }
 
       visiting.add(serviceName);
-      
+
       const registration = this.services.get(serviceName);
       if (registration) {
         // Visit dependencies first
@@ -346,7 +338,9 @@ export class ServiceRegistry extends EventEmitter {
           if (this.services.has(dependency)) {
             visit(dependency);
           } else {
-            logger.warn(`Dependency ${dependency} not found for service ${serviceName}`);
+            logger.warn(
+              `Dependency ${dependency} not found for service ${serviceName}`,
+            );
           }
         }
       }

@@ -30,7 +30,7 @@ export class CustomError extends Error implements AppError {
       context?: Record<string, any>;
       userMessage?: string;
       traceId?: string;
-    }
+    },
   ) {
     super(message);
     this.statusCode = statusCode;
@@ -57,7 +57,7 @@ export class ApiError extends CustomError {}
 export function requestIdMiddleware(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   const requestId = (req.headers["x-request-id"] as string) || uuidv4();
   const traceId = (req.headers["x-trace-id"] as string) || requestId; // Use requestId if traceId not present
@@ -75,14 +75,20 @@ export function errorHandler(
   err: AppError | Error, // Can be CustomError or any other Error
   req: Request,
   res: Response,
-  next: NextFunction // eslint-disable-line @typescript-eslint/no-unused-vars
+  next: NextFunction, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): void {
   const customErr = err as AppError; // Type assertion to access custom properties
 
   const statusCode = customErr.statusCode || 500;
-  const message = customErr.userMessage || customErr.message || "Internal Server Error";
-  const traceId = customErr.traceId || req.traceId || (req.headers["x-trace-id"] as string) || uuidv4();
-  const requestId = req.requestId || (req.headers["x-request-id"] as string) || uuidv4();
+  const message =
+    customErr.userMessage || customErr.message || "Internal Server Error";
+  const traceId =
+    customErr.traceId ||
+    req.traceId ||
+    (req.headers["x-trace-id"] as string) ||
+    uuidv4();
+  const requestId =
+    req.requestId || (req.headers["x-request-id"] as string) || uuidv4();
   const code = customErr.code;
   const context = customErr.context;
 
@@ -98,12 +104,12 @@ export function errorHandler(
     method: req.method,
     url: req.originalUrl,
     ip: req.ip || req.connection.remoteAddress,
-    userAgent: req.get('User-Agent'),
+    userAgent: req.get("User-Agent"),
     userId: req.user?.id,
     dealershipId: req.dealershipId,
     context,
     stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   // Log the error with appropriate level
@@ -131,8 +137,8 @@ export function errorHandler(
       code: code || getDefaultErrorCode(statusCode),
       traceId: traceId,
       requestId: requestId,
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   };
 
   // Add user message if different from main message
@@ -172,29 +178,29 @@ export interface StandardErrorResponse {
 function getDefaultErrorCode(statusCode: number): string {
   switch (statusCode) {
     case 400:
-      return 'BAD_REQUEST';
+      return "BAD_REQUEST";
     case 401:
-      return 'UNAUTHORIZED';
+      return "UNAUTHORIZED";
     case 403:
-      return 'FORBIDDEN';
+      return "FORBIDDEN";
     case 404:
-      return 'NOT_FOUND';
+      return "NOT_FOUND";
     case 409:
-      return 'CONFLICT';
+      return "CONFLICT";
     case 422:
-      return 'VALIDATION_ERROR';
+      return "VALIDATION_ERROR";
     case 429:
-      return 'RATE_LIMIT_EXCEEDED';
+      return "RATE_LIMIT_EXCEEDED";
     case 500:
-      return 'INTERNAL_SERVER_ERROR';
+      return "INTERNAL_SERVER_ERROR";
     case 502:
-      return 'BAD_GATEWAY';
+      return "BAD_GATEWAY";
     case 503:
-      return 'SERVICE_UNAVAILABLE';
+      return "SERVICE_UNAVAILABLE";
     case 504:
-      return 'GATEWAY_TIMEOUT';
+      return "GATEWAY_TIMEOUT";
     default:
-      return 'UNKNOWN_ERROR';
+      return "UNKNOWN_ERROR";
   }
 }
 
@@ -203,22 +209,22 @@ export function asyncHandler<
   P = any, // ParamsDictionary
   ResBody = any, // ResponseBody
   ReqBody = any, // RequestBody
-  ReqQuery = any // Query
+  ReqQuery = any, // Query
 >(
   fn: (
     req: Request<P, ResBody, ReqBody, ReqQuery>,
     res: Response<ResBody>,
-    next: NextFunction
-  ) => Promise<any>
+    next: NextFunction,
+  ) => Promise<any>,
 ): (
   req: Request<P, ResBody, ReqBody, ReqQuery>,
   res: Response<ResBody>,
-  next: NextFunction
+  next: NextFunction,
 ) => void {
   return (
     req: Request<P, ResBody, ReqBody, ReqQuery>,
     res: Response<ResBody>,
-    next: NextFunction
+    next: NextFunction,
   ): void => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };

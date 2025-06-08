@@ -1,11 +1,13 @@
 /**
  * External API Flags Manager Component
- * 
+ *
  * Admin interface for managing external API integration flags
  */
 
-import React, { useState } from 'react';
-import useExternalAPIFlags, { ExternalAPIFlags } from '../../hooks/useExternalAPIFlags';
+import React, { useState } from "react";
+import useExternalAPIFlags, {
+  ExternalAPIFlags,
+} from "../../hooks/useExternalAPIFlags";
 
 interface ExternalAPIFlagProps {
   flag: ExternalAPIFlags;
@@ -14,8 +16,13 @@ interface ExternalAPIFlagProps {
   onDisable: (reason: string) => Promise<void>;
 }
 
-const ExternalAPIFlag: React.FC<ExternalAPIFlagProps> = ({ flag, enabled, onEnable, onDisable }) => {
-  const [reason, setReason] = useState<string>('');
+const ExternalAPIFlag: React.FC<ExternalAPIFlagProps> = ({
+  flag,
+  enabled,
+  onEnable,
+  onDisable,
+}) => {
+  const [reason, setReason] = useState<string>("");
   const [showReasonInput, setShowReasonInput] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -31,25 +38,25 @@ const ExternalAPIFlag: React.FC<ExternalAPIFlagProps> = ({ flag, enabled, onEnab
 
   const handleDisable = async () => {
     if (!reason.trim()) return;
-    
+
     setIsSubmitting(true);
     await onDisable(reason);
     setShowReasonInput(false);
-    setReason('');
+    setReason("");
     setIsSubmitting(false);
   };
 
   const cancelDisable = () => {
     setShowReasonInput(false);
-    setReason('');
+    setReason("");
   };
 
   // Format flag name for display
   const formatFlagName = (flag: string): string => {
     return flag
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   return (
@@ -60,20 +67,24 @@ const ExternalAPIFlag: React.FC<ExternalAPIFlagProps> = ({ flag, enabled, onEnab
           <p className="text-sm text-gray-500">{flag}</p>
         </div>
         <div className="flex items-center">
-          <span className={`inline-block w-3 h-3 rounded-full mr-2 ${enabled ? 'bg-green-500' : 'bg-red-500'}`}></span>
-          <span className={`text-sm ${enabled ? 'text-green-600' : 'text-red-600'}`}>
-            {enabled ? 'Enabled' : 'Disabled'}
+          <span
+            className={`inline-block w-3 h-3 rounded-full mr-2 ${enabled ? "bg-green-500" : "bg-red-500"}`}
+          ></span>
+          <span
+            className={`text-sm ${enabled ? "text-green-600" : "text-red-600"}`}
+          >
+            {enabled ? "Enabled" : "Disabled"}
           </span>
           <button
             onClick={handleToggle}
             disabled={isSubmitting || showReasonInput}
             className={`ml-4 px-3 py-1 rounded text-sm ${
-              enabled 
-                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                : 'bg-green-100 text-green-700 hover:bg-green-200'
+              enabled
+                ? "bg-red-100 text-red-700 hover:bg-red-200"
+                : "bg-green-100 text-green-700 hover:bg-green-200"
             } disabled:opacity-50`}
           >
-            {enabled ? 'Disable' : 'Enable'}
+            {enabled ? "Disable" : "Enable"}
           </button>
         </div>
       </div>
@@ -113,14 +124,8 @@ const ExternalAPIFlag: React.FC<ExternalAPIFlagProps> = ({ flag, enabled, onEnab
 };
 
 const ExternalAPIFlagsManager: React.FC = () => {
-  const { 
-    flags, 
-    isLoading, 
-    error, 
-    refreshFlags, 
-    enableFlag, 
-    disableFlag 
-  } = useExternalAPIFlags();
+  const { flags, isLoading, error, refreshFlags, enableFlag, disableFlag } =
+    useExternalAPIFlags();
 
   const handleEnable = async (flag: ExternalAPIFlags) => {
     const success = await enableFlag(flag);
@@ -139,7 +144,9 @@ const ExternalAPIFlagsManager: React.FC = () => {
   if (isLoading) {
     return (
       <div className="p-6">
-        <h2 className="text-xl font-semibold mb-4">External API Integrations</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          External API Integrations
+        </h2>
         <div className="flex justify-center items-center h-40">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-700"></div>
         </div>
@@ -150,13 +157,12 @@ const ExternalAPIFlagsManager: React.FC = () => {
   if (error) {
     return (
       <div className="p-6">
-        <h2 className="text-xl font-semibold mb-4">External API Integrations</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          External API Integrations
+        </h2>
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           <p>Error: {error}</p>
-          <button 
-            onClick={refreshFlags}
-            className="mt-2 text-sm underline"
-          >
+          <button onClick={refreshFlags} className="mt-2 text-sm underline">
             Try again
           </button>
         </div>
@@ -179,13 +185,23 @@ const ExternalAPIFlagsManager: React.FC = () => {
       <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
         <div className="flex">
           <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            <svg
+              className="h-5 w-5 text-blue-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
           <div className="ml-3">
             <p className="text-sm text-blue-700">
-              These settings control the availability of external API integrations. Disabling an integration will prevent the system from making calls to that external service.
+              These settings control the availability of external API
+              integrations. Disabling an integration will prevent the system
+              from making calls to that external service.
             </p>
           </div>
         </div>
@@ -198,7 +214,9 @@ const ExternalAPIFlagsManager: React.FC = () => {
             flag={flag as ExternalAPIFlags}
             enabled={enabled}
             onEnable={() => handleEnable(flag as ExternalAPIFlags)}
-            onDisable={(reason) => handleDisable(flag as ExternalAPIFlags, reason)}
+            onDisable={(reason) =>
+              handleDisable(flag as ExternalAPIFlags, reason)
+            }
           />
         ))}
       </div>

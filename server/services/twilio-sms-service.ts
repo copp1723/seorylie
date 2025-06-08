@@ -1,8 +1,8 @@
-import twilio from 'twilio';
-import logger from '../utils/logger';
-import db from '../db';
-import { sql } from 'drizzle-orm';
-import { credentialsService, TwilioCredentials } from './credentials-service';
+import twilio from "twilio";
+import logger from "../utils/logger";
+import db from "../db";
+import { sql } from "drizzle-orm";
+import { credentialsService, TwilioCredentials } from "./credentials-service";
 
 export interface TwilioConfig {
   accountSid: string;
@@ -23,7 +23,7 @@ export interface SMSMessage {
 
 export interface SMSDeliveryEvent {
   messageSid: string;
-  status: 'queued' | 'sent' | 'delivered' | 'failed' | 'undelivered';
+  status: "queued" | "sent" | "delivered" | "failed" | "undelivered";
   errorCode?: string;
   errorMessage?: string;
   timestamp: Date;
@@ -54,9 +54,12 @@ export class TwilioSMSService {
       }
 
       // Get credentials for this dealership
-      const credentials = await credentialsService.getTwilioCredentials(dealershipId);
+      const credentials =
+        await credentialsService.getTwilioCredentials(dealershipId);
       if (!credentials || !credentials.accountSid || !credentials.authToken) {
-        throw new Error(`No valid Twilio credentials found for dealership ${dealershipId}`);
+        throw new Error(
+          `No valid Twilio credentials found for dealership ${dealershipId}`,
+        );
       }
 
       // Create and cache client
@@ -67,9 +70,9 @@ export class TwilioSMSService {
       return client;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get Twilio client', {
+      logger.error("Failed to get Twilio client", {
         error: err.message,
-        dealership: dealershipId
+        dealership: dealershipId,
       });
       throw err;
     }
@@ -78,14 +81,19 @@ export class TwilioSMSService {
   /**
    * Get Twilio credentials for specific dealership
    */
-  private async getTwilioCredentials(dealershipId: number): Promise<TwilioCredentials> {
+  private async getTwilioCredentials(
+    dealershipId: number,
+  ): Promise<TwilioCredentials> {
     if (this.credentialsCache.has(dealershipId)) {
       return this.credentialsCache.get(dealershipId)!;
     }
 
-    const credentials = await credentialsService.getTwilioCredentials(dealershipId);
+    const credentials =
+      await credentialsService.getTwilioCredentials(dealershipId);
     if (!credentials) {
-      throw new Error(`No Twilio credentials found for dealership ${dealershipId}`);
+      throw new Error(
+        `No Twilio credentials found for dealership ${dealershipId}`,
+      );
     }
 
     this.credentialsCache.set(dealershipId, credentials);
@@ -95,22 +103,30 @@ export class TwilioSMSService {
   /**
    * Send SMS message via Twilio with full tracking
    */
-  async sendSMS(message: SMSMessage): Promise<{ success: boolean; messageSid?: string; error?: string }> {
+  async sendSMS(
+    message: SMSMessage,
+  ): Promise<{ success: boolean; messageSid?: string; error?: string }> {
     try {
       // Check opt-out status before sending
-      const isOptedOut = await this.checkOptOutStatus(message.dealershipId, message.toPhone);
+      const isOptedOut = await this.checkOptOutStatus(
+        message.dealershipId,
+        message.toPhone,
+      );
       if (isOptedOut) {
-        logger.sms('Message not sent - recipient has opted out', {
+        logger.sms("Message not sent - recipient has opted out", {
           dealership: message.dealershipId,
-          toPhone: message.toPhone
+          toPhone: message.toPhone,
         });
-        return { success: false, error: 'Recipient has opted out of SMS communications' };
+        return {
+          success: false,
+          error: "Recipient has opted out of SMS communications",
+        };
       }
 
       // Validate phone number format
       const normalizedPhone = this.normalizePhoneNumber(message.toPhone);
       if (!normalizedPhone) {
-        throw new Error('Invalid phone number format');
+        throw new Error("Invalid phone number format");
       }
 
       // Get Twilio client and credentials for this dealership
@@ -122,41 +138,43 @@ export class TwilioSMSService {
         body: message.message,
         from: message.fromPhone || credentials.fromNumber,
         to: normalizedPhone,
-        statusCallback: `${process.env.BASE_URL}/api/webhooks/twilio/status`
+        statusCallback: `${process.env.BASE_URL}/api/webhooks/twilio/status`,
       });
 
       // Store message in database
-      const messageId = await this.storeMessage({
-        ...message,
-        toPhone: normalizedPhone
-      }, twilioMessage.sid);
+      const messageId = await this.storeMessage(
+        {
+          ...message,
+          toPhone: normalizedPhone,
+        },
+        twilioMessage.sid,
+      );
 
       // Log delivery event
       await this.logDeliveryEvent({
         messageSid: twilioMessage.sid,
         status: twilioMessage.status as any,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
-      logger.sms('SMS sent successfully', {
+      logger.sms("SMS sent successfully", {
         messageSid: twilioMessage.sid,
         dealership: message.dealershipId,
         toPhone: normalizedPhone,
-        status: twilioMessage.status
+        status: twilioMessage.status,
       });
 
       return { success: true, messageSid: twilioMessage.sid };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
 
       // Store failed message in database for retry logic
       await this.storeMessage(message, null, err.message);
 
-      logger.error('Failed to send SMS', {
+      logger.error("Failed to send SMS", {
         error: err.message,
         dealership: message.dealershipId,
-        toPhone: this.maskPhoneNumber(message.toPhone)
+        toPhone: this.maskPhoneNumber(message.toPhone),
       });
 
       return { success: false, error: err.message };
@@ -168,10 +186,13 @@ export class TwilioSMSService {
    */
   async processWebhook(webhookData: any): Promise<void> {
     try {
-      const { MessageSid, MessageStatus, ErrorCode, ErrorMessage } = webhookData;
+      const { MessageSid, MessageStatus, ErrorCode, ErrorMessage } =
+        webhookData;
 
       if (!MessageSid || !MessageStatus) {
-        throw new Error('Invalid webhook data: missing MessageSid or MessageStatus');
+        throw new Error(
+          "Invalid webhook data: missing MessageSid or MessageStatus",
+        );
       }
 
       await this.logDeliveryEvent({
@@ -179,7 +200,7 @@ export class TwilioSMSService {
         status: MessageStatus,
         errorCode: ErrorCode,
         errorMessage: ErrorMessage,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // Update message status
@@ -191,15 +212,17 @@ export class TwilioSMSService {
         WHERE twilio_sid = ${MessageSid}
       `);
 
-      logger.info('Webhook processed successfully', {
+      logger.info("Webhook processed successfully", {
         messageSid: MessageSid,
         status: MessageStatus,
-        errorCode: ErrorCode
+        errorCode: ErrorCode,
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to process webhook', { error: err.message, webhookData });
+      logger.error("Failed to process webhook", {
+        error: err.message,
+        webhookData,
+      });
       throw err;
     }
   }
@@ -223,15 +246,22 @@ export class TwilioSMSService {
       for (const msg of failedMessages) {
         // Exponential backoff: wait 2^retry_count minutes
         const backoffMinutes = Math.pow(2, msg.retry_count);
-        const nextRetry = new Date(msg.created_at.getTime() + (backoffMinutes * 60 * 1000));
+        const nextRetry = new Date(
+          msg.created_at.getTime() + backoffMinutes * 60 * 1000,
+        );
 
         if (new Date() < nextRetry) {
           continue; // Not time for retry yet
         }
 
-        const originalPhone = await this.unmaskPhoneNumber(msg.to_phone_masked, msg.id);
+        const originalPhone = await this.unmaskPhoneNumber(
+          msg.to_phone_masked,
+          msg.id,
+        );
         if (!originalPhone) {
-          logger.error('Cannot retry message - unable to unmask phone number', { messageId: msg.id });
+          logger.error("Cannot retry message - unable to unmask phone number", {
+            messageId: msg.id,
+          });
           continue;
         }
 
@@ -242,7 +272,7 @@ export class TwilioSMSService {
           fromPhone: msg.from_phone,
           templateId: msg.template_id,
           campaignId: msg.campaign_id,
-          metadata: msg.metadata
+          metadata: msg.metadata,
         };
 
         const result = await this.sendSMS(retryMessage);
@@ -263,21 +293,24 @@ export class TwilioSMSService {
           `);
         }
       }
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to retry messages', { error: err.message });
+      logger.error("Failed to retry messages", { error: err.message });
     }
   }
 
   /**
    * Handle opt-out requests (STOP, UNSUBSCRIBE, etc.)
    */
-  async handleOptOut(dealershipId: number, phoneNumber: string, reason: string = 'user_request'): Promise<void> {
+  async handleOptOut(
+    dealershipId: number,
+    phoneNumber: string,
+    reason: string = "user_request",
+  ): Promise<void> {
     try {
       const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
       if (!normalizedPhone) {
-        throw new Error('Invalid phone number format');
+        throw new Error("Invalid phone number format");
       }
 
       await db.execute(sql`
@@ -296,15 +329,14 @@ export class TwilioSMSService {
           opted_back_in_at = NULL
       `);
 
-      logger.info('Phone number opted out successfully', {
+      logger.info("Phone number opted out successfully", {
         dealership: dealershipId,
         phoneNumber: this.maskPhoneNumber(normalizedPhone),
-        reason
+        reason,
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to handle opt-out', { error: err.message });
+      logger.error("Failed to handle opt-out", { error: err.message });
       throw err;
     }
   }
@@ -312,7 +344,10 @@ export class TwilioSMSService {
   /**
    * Check if phone number has opted out
    */
-  async checkOptOutStatus(dealershipId: number, phoneNumber: string): Promise<boolean> {
+  async checkOptOutStatus(
+    dealershipId: number,
+    phoneNumber: string,
+  ): Promise<boolean> {
     try {
       const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
       if (!normalizedPhone) {
@@ -327,10 +362,9 @@ export class TwilioSMSService {
       `);
 
       return result.length > 0;
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to check opt-out status', { error: err.message });
+      logger.error("Failed to check opt-out status", { error: err.message });
       return true; // Fail safe - assume opted out if we can't check
     }
   }
@@ -338,20 +372,25 @@ export class TwilioSMSService {
   /**
    * Mask phone number for logging (privacy compliance)
    */
-  maskPhoneNumber(phoneNumber: string, options: PhoneNumberMaskingOptions = {}): string {
+  maskPhoneNumber(
+    phoneNumber: string,
+    options: PhoneNumberMaskingOptions = {},
+  ): string {
     const {
       preserveLength = true,
-      maskCharacter = '*',
-      visibleDigits = 4
+      maskCharacter = "*",
+      visibleDigits = 4,
     } = options;
 
     if (!phoneNumber || phoneNumber.length < visibleDigits) {
       return maskCharacter.repeat(10); // Default masked phone length
     }
 
-    const cleanNumber = phoneNumber.replace(/\D/g, '');
+    const cleanNumber = phoneNumber.replace(/\D/g, "");
     const visiblePart = cleanNumber.slice(-visibleDigits);
-    const maskedLength = preserveLength ? cleanNumber.length - visibleDigits : 6;
+    const maskedLength = preserveLength
+      ? cleanNumber.length - visibleDigits
+      : 6;
     const maskedPart = maskCharacter.repeat(maskedLength);
 
     return maskedPart + visiblePart;
@@ -360,7 +399,11 @@ export class TwilioSMSService {
   /**
    * Store message in database with masked phone number
    */
-  private async storeMessage(message: SMSMessage, twilioSid: string | null, errorMessage?: string): Promise<string> {
+  private async storeMessage(
+    message: SMSMessage,
+    twilioSid: string | null,
+    errorMessage?: string,
+  ): Promise<string> {
     const messageId = await db.execute(sql`
       INSERT INTO sms_messages (
         dealership_id, twilio_sid, to_phone_masked, message_body, from_phone,
@@ -372,7 +415,7 @@ export class TwilioSMSService {
         ${this.maskPhoneNumber(message.toPhone)},
         ${message.message},
         ${message.fromPhone || (await this.getTwilioCredentials(message.dealershipId)).fromNumber},
-        ${twilioSid ? 'queued' : 'failed'},
+        ${twilioSid ? "queued" : "failed"},
         ${message.templateId || null},
         ${message.campaignId || null},
         ${JSON.stringify(message.metadata || {})},
@@ -413,14 +456,14 @@ export class TwilioSMSService {
   private normalizePhoneNumber(phone: string): string | null {
     try {
       // Remove all non-digit characters
-      const cleaned = phone.replace(/\D/g, '');
+      const cleaned = phone.replace(/\D/g, "");
 
       // Handle US numbers
       if (cleaned.length === 10) {
         return `+1${cleaned}`;
-      } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+      } else if (cleaned.length === 11 && cleaned.startsWith("1")) {
         return `+${cleaned}`;
-      } else if (cleaned.startsWith('+')) {
+      } else if (cleaned.startsWith("+")) {
         return phone; // Already in international format
       }
 
@@ -434,21 +477,25 @@ export class TwilioSMSService {
    * Hash phone number for opt-out storage
    */
   private hashPhoneNumber(phoneNumber: string): string {
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(phoneNumber).digest('hex');
+    const crypto = require("crypto");
+    return crypto.createHash("sha256").update(phoneNumber).digest("hex");
   }
 
   /**
    * Store phone number securely for retry purposes
    */
-  private async storePhoneNumberSecurely(messageId: string, phoneNumber: string): Promise<void> {
+  private async storePhoneNumberSecurely(
+    messageId: string,
+    phoneNumber: string,
+  ): Promise<void> {
     // In production, this should use proper encryption
     // For now, we'll use a simple reversible encoding
-    const crypto = require('crypto');
-    const key = process.env.PHONE_ENCRYPTION_KEY || 'default-key-change-in-production';
-    const cipher = crypto.createCipher('aes-256-cbc', key);
-    let encrypted = cipher.update(phoneNumber, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
+    const crypto = require("crypto");
+    const key =
+      process.env.PHONE_ENCRYPTION_KEY || "default-key-change-in-production";
+    const cipher = crypto.createCipher("aes-256-cbc", key);
+    let encrypted = cipher.update(phoneNumber, "utf8", "hex");
+    encrypted += cipher.final("hex");
 
     await db.execute(sql`
       UPDATE sms_messages
@@ -460,7 +507,10 @@ export class TwilioSMSService {
   /**
    * Retrieve and decrypt phone number for retry
    */
-  private async unmaskPhoneNumber(maskedPhone: string, messageId: string): Promise<string | null> {
+  private async unmaskPhoneNumber(
+    maskedPhone: string,
+    messageId: string,
+  ): Promise<string | null> {
     try {
       const result = await db.execute(sql`
         SELECT encrypted_phone FROM sms_messages WHERE id = ${messageId}
@@ -470,11 +520,12 @@ export class TwilioSMSService {
         return null;
       }
 
-      const crypto = require('crypto');
-      const key = process.env.PHONE_ENCRYPTION_KEY || 'default-key-change-in-production';
-      const decipher = crypto.createDecipher('aes-256-cbc', key);
-      let decrypted = decipher.update(result[0].encrypted_phone, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
+      const crypto = require("crypto");
+      const key =
+        process.env.PHONE_ENCRYPTION_KEY || "default-key-change-in-production";
+      const decipher = crypto.createDecipher("aes-256-cbc", key);
+      let decrypted = decipher.update(result[0].encrypted_phone, "hex", "utf8");
+      decrypted += decipher.final("utf8");
 
       return decrypted;
     } catch {

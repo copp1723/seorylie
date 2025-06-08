@@ -1,9 +1,9 @@
 // AgentSquad service index file
 // Exports all AgentSquad functionality
 
-import { initializeOrchestrator } from './orchestrator';
-import * as inventoryFunctions from './inventory-functions';
-import { createRylieRetriever } from './rylie-retriever';
+import { initializeOrchestrator } from "./orchestrator";
+import * as inventoryFunctions from "./inventory-functions";
+import { createRylieRetriever } from "./rylie-retriever";
 
 // Typed request payload for routing
 export interface AgentSquadRequest {
@@ -38,22 +38,24 @@ export interface AgentSquadResponse {
 }
 
 // Route message through AgentSquad
-export async function routeMessageThroughAgentSquad(request: AgentSquadRequest): Promise<AgentSquadResponse> {
+export async function routeMessageThroughAgentSquad(
+  request: AgentSquadRequest,
+): Promise<AgentSquadResponse> {
   try {
     // Simple implementation - would normally use orchestrator
     return {
       success: true,
-      content: 'AgentSquad response placeholder',
+      content: "AgentSquad response placeholder",
       usedAgentSquad: true,
-      selectedAgent: 'default',
-      confidence: 0.8
+      selectedAgent: "default",
+      confidence: 0.8,
     };
   } catch (error) {
     return {
       success: false,
-      content: 'AgentSquad routing failed',
+      content: "AgentSquad routing failed",
       usedAgentSquad: false,
-      fallbackReason: error instanceof Error ? error.message : 'Unknown error'
+      fallbackReason: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -64,7 +66,7 @@ export function isAgentSquadReady(): boolean {
     // Basic readiness check - ensure core modules are available
     return true;
   } catch (error) {
-    console.error('AgentSquad readiness check failed:', error);
+    console.error("AgentSquad readiness check failed:", error);
     return false;
   }
 }
@@ -75,21 +77,21 @@ export function initializeAgentSquad(config: AgentSquadConfig): boolean {
     if (!config.enabled) {
       return false;
     }
-    
+
     if (!config.openaiApiKey) {
-      console.warn('AgentSquad: No OpenAI API key provided');
+      console.warn("AgentSquad: No OpenAI API key provided");
       return false;
     }
-    
+
     // Initialize orchestrator
     const orchestrator = initializeOrchestrator({
       openaiApiKey: config.openaiApiKey,
-      fallbackToOriginal: config.fallbackToOriginal
+      fallbackToOriginal: config.fallbackToOriginal,
     });
-    
+
     return !!orchestrator;
   } catch (error) {
-    console.error('AgentSquad initialization failed:', error);
+    console.error("AgentSquad initialization failed:", error);
     return false;
   }
 }
@@ -100,7 +102,7 @@ export const agentSquad = {
   inventoryFunctions,
   createRylieRetriever,
   isReady: isAgentSquadReady,
-  initialize: initializeAgentSquad
+  initialize: initializeAgentSquad,
 };
 
 export default agentSquad;

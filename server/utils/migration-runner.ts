@@ -1,8 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as crypto from 'crypto';
-import { client } from '../db';
-import logger from './logger';
+import * as fs from "fs";
+import * as path from "path";
+import * as crypto from "crypto";
+import { client } from "../db";
+import logger from "./logger";
 
 interface Migration {
   id: string;
@@ -20,7 +20,7 @@ interface MigrationResult {
 export class MigrationRunner {
   private migrationsPath: string;
 
-  constructor(migrationsPath = path.join(process.cwd(), 'migrations')) {
+  constructor(migrationsPath = path.join(process.cwd(), "migrations")) {
     this.migrationsPath = migrationsPath;
   }
 
@@ -41,7 +41,7 @@ export class MigrationRunner {
     `;
 
     await client.unsafe(createTableSQL);
-    logger.info('Migrations table initialized');
+    logger.info("Migrations table initialized");
   }
 
   /**
@@ -49,28 +49,33 @@ export class MigrationRunner {
    */
   private async getPendingMigrations(): Promise<Migration[]> {
     // Get all migration files
-    const migrationFiles = fs.readdirSync(this.migrationsPath)
-      .filter(file => file.endsWith('.sql') && !file.endsWith('_rollback.sql'))
+    const migrationFiles = fs
+      .readdirSync(this.migrationsPath)
+      .filter(
+        (file) => file.endsWith(".sql") && !file.endsWith("_rollback.sql"),
+      )
       .sort();
 
     // Get applied migrations from database
-    const appliedMigrations = await client<{ id: string; filename: string; applied_at: Date }[]>`
+    const appliedMigrations = await client<
+      { id: string; filename: string; applied_at: Date }[]
+    >`
       SELECT id, filename, applied_at
       FROM migrations
       ORDER BY applied_at
     `;
 
-    const appliedMigrationIds = new Set(appliedMigrations.map(m => m.id));
+    const appliedMigrationIds = new Set(appliedMigrations.map((m) => m.id));
 
     // Return pending migrations
     return migrationFiles
-      .filter(filename => {
+      .filter((filename) => {
         const id = this.extractMigrationId(filename);
         return !appliedMigrationIds.has(id);
       })
-      .map(filename => ({
+      .map((filename) => ({
         id: this.extractMigrationId(filename),
-        filename
+        filename,
       }));
   }
 
@@ -80,16 +85,18 @@ export class MigrationRunner {
   async getAppliedMigrations(): Promise<Migration[]> {
     await this.initializeMigrationsTable();
 
-    const appliedMigrations = await client<{ id: string; filename: string; applied_at: Date }[]>`
+    const appliedMigrations = await client<
+      { id: string; filename: string; applied_at: Date }[]
+    >`
       SELECT id, filename, applied_at
       FROM migrations
       ORDER BY applied_at DESC
     `;
 
-    return appliedMigrations.map(m => ({
+    return appliedMigrations.map((m) => ({
       id: m.id,
       filename: m.filename,
-      appliedAt: m.applied_at
+      appliedAt: m.applied_at,
     }));
   }
 
@@ -109,7 +116,7 @@ export class MigrationRunner {
    * Calculate checksum of migration file
    */
   private calculateChecksum(content: string): string {
-    return crypto.createHash('sha256').update(content).digest('hex');
+    return crypto.createHash("sha256").update(content).digest("hex");
   }
 
   /**
@@ -120,7 +127,7 @@ export class MigrationRunner {
     if (!fs.existsSync(filePath)) {
       throw new Error(`Migration file not found: ${filePath}`);
     }
-    return fs.readFileSync(filePath, 'utf-8');
+    return fs.readFileSync(filePath, "utf-8");
   }
 
   /**
@@ -148,22 +155,26 @@ export class MigrationRunner {
       });
 
       const executionTime = Date.now() - startTime;
-      logger.info(`Migration ${migration.filename} completed in ${executionTime}ms`);
+      logger.info(
+        `Migration ${migration.filename} completed in ${executionTime}ms`,
+      );
 
       return {
         success: true,
         migration,
-        executionTime
+        executionTime,
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error(`Migration ${migration.filename} failed:`, { error: err.message });
+      logger.error(`Migration ${migration.filename} failed:`, {
+        error: err.message,
+      });
 
       return {
         success: false,
         migration,
         error: err.message,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -171,13 +182,20 @@ export class MigrationRunner {
   /**
    * Run rollback for a specific migration
    */
-  private async rollbackMigration(migration: Migration): Promise<MigrationResult> {
+  private async rollbackMigration(
+    migration: Migration,
+  ): Promise<MigrationResult> {
     const startTime = Date.now();
 
     try {
       // Ensure we handle the string replacement properly
-      const rollbackFilename = migration.filename.replace(/\.sql$/, '_rollback.sql');
-      logger.info(`Rolling back migration: ${migration.filename} using ${rollbackFilename}`);
+      const rollbackFilename = migration.filename.replace(
+        /\.sql$/,
+        "_rollback.sql",
+      );
+      logger.info(
+        `Rolling back migration: ${migration.filename} using ${rollbackFilename}`,
+      );
 
       const content = this.readMigrationFile(rollbackFilename);
 
@@ -194,22 +212,26 @@ export class MigrationRunner {
       });
 
       const executionTime = Date.now() - startTime;
-      logger.info(`Rollback ${rollbackFilename} completed in ${executionTime}ms`);
+      logger.info(
+        `Rollback ${rollbackFilename} completed in ${executionTime}ms`,
+      );
 
       return {
         success: true,
         migration,
-        executionTime
+        executionTime,
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error(`Rollback for ${migration.filename} failed:`, { error: err.message });
+      logger.error(`Rollback for ${migration.filename} failed:`, {
+        error: err.message,
+      });
 
       return {
         success: false,
         migration,
         error: err.message,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     }
   }
@@ -223,7 +245,7 @@ export class MigrationRunner {
     const pendingMigrations = await this.getPendingMigrations();
 
     if (pendingMigrations.length === 0) {
-      logger.info('No pending migrations found');
+      logger.info("No pending migrations found");
       return [];
     }
 
@@ -236,15 +258,22 @@ export class MigrationRunner {
       results.push(result);
 
       if (!result.success) {
-        logger.error(`Migration failed: ${migration.filename}. Stopping migration process.`);
+        logger.error(
+          `Migration failed: ${migration.filename}. Stopping migration process.`,
+        );
         break;
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const totalTime = results.reduce((sum, r) => sum + (r.executionTime || 0), 0);
+    const successCount = results.filter((r) => r.success).length;
+    const totalTime = results.reduce(
+      (sum, r) => sum + (r.executionTime || 0),
+      0,
+    );
 
-    logger.info(`Migration complete: ${successCount}/${results.length} migrations applied in ${totalTime}ms`);
+    logger.info(
+      `Migration complete: ${successCount}/${results.length} migrations applied in ${totalTime}ms`,
+    );
 
     return results;
   }
@@ -258,7 +287,7 @@ export class MigrationRunner {
     const appliedMigrations = await this.getAppliedMigrations();
 
     if (appliedMigrations.length === 0) {
-      logger.info('No migrations to rollback');
+      logger.info("No migrations to rollback");
       return [];
     }
 
@@ -272,15 +301,22 @@ export class MigrationRunner {
       results.push(result);
 
       if (!result.success) {
-        logger.error(`Rollback failed: ${migration.filename}. Stopping rollback process.`);
+        logger.error(
+          `Rollback failed: ${migration.filename}. Stopping rollback process.`,
+        );
         break;
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const totalTime = results.reduce((sum, r) => sum + (r.executionTime || 0), 0);
+    const successCount = results.filter((r) => r.success).length;
+    const totalTime = results.reduce(
+      (sum, r) => sum + (r.executionTime || 0),
+      0,
+    );
 
-    logger.info(`Rollback complete: ${successCount}/${results.length} migrations rolled back in ${totalTime}ms`);
+    logger.info(
+      `Rollback complete: ${successCount}/${results.length} migrations rolled back in ${totalTime}ms`,
+    );
 
     return results;
   }
@@ -303,7 +339,7 @@ export class MigrationRunner {
       appliedCount: appliedMigrations.length,
       pendingCount: pendingMigrations.length,
       appliedMigrations,
-      pendingMigrations
+      pendingMigrations,
     };
   }
 
@@ -314,8 +350,11 @@ export class MigrationRunner {
     const errors: string[] = [];
 
     try {
-      const migrationFiles = fs.readdirSync(this.migrationsPath)
-        .filter(file => file.endsWith('.sql') && !file.endsWith('_rollback.sql'))
+      const migrationFiles = fs
+        .readdirSync(this.migrationsPath)
+        .filter(
+          (file) => file.endsWith(".sql") && !file.endsWith("_rollback.sql"),
+        )
         .sort();
 
       for (const filename of migrationFiles) {
@@ -323,16 +362,17 @@ export class MigrationRunner {
           this.extractMigrationId(filename);
 
           // Check if rollback file exists
-          const rollbackFilename = filename.replace(/\.sql$/, '_rollback.sql');
+          const rollbackFilename = filename.replace(/\.sql$/, "_rollback.sql");
           const rollbackPath = path.join(this.migrationsPath, rollbackFilename);
 
           if (!fs.existsSync(rollbackPath)) {
-            errors.push(`Missing rollback file for ${filename}: ${rollbackFilename}`);
+            errors.push(
+              `Missing rollback file for ${filename}: ${rollbackFilename}`,
+            );
           }
 
           // Validate file content can be read
           this.readMigrationFile(filename);
-
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
           errors.push(`Invalid migration file ${filename}: ${err.message}`);
@@ -345,7 +385,7 @@ export class MigrationRunner {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

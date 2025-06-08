@@ -125,15 +125,15 @@ const SystemPage: React.FC = () => {
   // Delete invitation mutation - TEMPORARILY DISABLED
   const deleteInvitation = {
     mutate: (invitationId: number) => {
-      console.log('Would delete invitation:', invitationId);
+      console.log("Would delete invitation:", invitationId);
       toast({
         title: "Info",
         description: "Invitation deletion temporarily disabled",
       });
     },
-    isPending: false
+    isPending: false,
   };
-  
+
   // TODO: Re-enable React Query
   // const deleteInvitation = useMutation({
   //   mutationFn: (invitationId: number) =>
@@ -161,15 +161,15 @@ const SystemPage: React.FC = () => {
   // Resend invitation mutation - TEMPORARILY DISABLED
   const resendInvitation = {
     mutate: (invitationId: number) => {
-      console.log('Would resend invitation:', invitationId);
+      console.log("Would resend invitation:", invitationId);
       toast({
         title: "Info",
         description: "Invitation resend temporarily disabled",
       });
     },
-    isPending: false
+    isPending: false,
   };
-  
+
   // TODO: Re-enable React Query
   // const resendInvitation = useMutation({
   //   mutationFn: (invitationId: number) =>
@@ -197,7 +197,7 @@ const SystemPage: React.FC = () => {
   // Change password mutation - TEMPORARILY DISABLED
   const changePassword = {
     mutate: (data: { currentPassword: string; newPassword: string }) => {
-      console.log('Would change password');
+      console.log("Would change password");
       toast({
         title: "Info",
         description: "Password change temporarily disabled",
@@ -206,9 +206,9 @@ const SystemPage: React.FC = () => {
       setNewPassword("");
       setConfirmPassword("");
     },
-    isPending: false
+    isPending: false,
   };
-  
+
   // TODO: Re-enable React Query
   // const changePassword = useMutation({
   //   mutationFn: (data: { currentPassword: string; newPassword: string }) =>

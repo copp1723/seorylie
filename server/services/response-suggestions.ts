@@ -3,12 +3,12 @@
  * These suggestions appear as chips or quick replies that reps can use when responding to handover leads
  */
 
-import { OpenAI } from 'openai';
-import logger from '../utils/logger';
-import { ResponseSuggestion } from '../../shared/schema';
-import { ConversationContext } from './handover-service';
-import { DEFAULT_SYSTEM_PROMPT } from './system-prompts/default';
-import type { ChatCompletionMessageParam } from 'openai/resources';
+import { OpenAI } from "openai";
+import logger from "../utils/logger";
+import { ResponseSuggestion } from "../../shared/schema";
+import { ConversationContext } from "./handover-service";
+import { DEFAULT_SYSTEM_PROMPT } from "./system-prompts/default";
+import type { ChatCompletionMessageParam } from "openai/resources";
 
 // Use the logger for this service
 const serviceLogger = logger;
@@ -17,13 +17,19 @@ const serviceLogger = logger;
 let openai: OpenAI | null = null;
 try {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (apiKey && !apiKey.startsWith('sk-dummy') && !apiKey.includes('placeholder')) {
+  if (
+    apiKey &&
+    !apiKey.startsWith("sk-dummy") &&
+    !apiKey.includes("placeholder")
+  ) {
     openai = new OpenAI({ apiKey });
   } else {
-    console.warn('OpenAI API key not configured - response suggestions will be disabled');
+    console.warn(
+      "OpenAI API key not configured - response suggestions will be disabled",
+    );
   }
 } catch (error) {
-  console.error('Failed to initialize OpenAI in response-suggestions:', error);
+  console.error("Failed to initialize OpenAI in response-suggestions:", error);
   openai = null;
 }
 
@@ -35,17 +41,22 @@ export async function generateResponseSuggestions(
 ): Promise<ResponseSuggestion[]> {
   try {
     if (!openai) {
-      serviceLogger.warn('OpenAI client not initialized, returning empty response suggestions');
+      serviceLogger.warn(
+        "OpenAI client not initialized, returning empty response suggestions",
+      );
       return [];
     }
     // We'll handle formatting the conversation history directly when building the messages array
 
     // Get vehicle information if available
-    const vehicleInfo = context.relevantVehicles && context.relevantVehicles.length > 0
-      ? context.relevantVehicles.map(vehicle => {
-          return `${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim || ''} - $${vehicle.price}`;
-        }).join('\n')
-      : 'No specific vehicles discussed';
+    const vehicleInfo =
+      context.relevantVehicles && context.relevantVehicles.length > 0
+        ? context.relevantVehicles
+            .map((vehicle) => {
+              return `${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim || ""} - $${vehicle.price}`;
+            })
+            .join("\n")
+        : "No specific vehicles discussed";
 
     // Construct the system prompt
     const systemPrompt = `
@@ -82,17 +93,19 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY OF SUGGESTION OBJECTS:
     // Properly type the system message and create the array
     const systemMessage: ChatCompletionMessageParam = {
       role: "system",
-      content: systemPrompt
+      content: systemPrompt,
     };
 
     const messages: ChatCompletionMessageParam[] = [systemMessage];
 
     // Add conversation history with proper typing for OpenAI API
-    context.previousMessages.forEach(msg => {
-      const role = msg.isFromCustomer ? 'user' as const : 'assistant' as const;
+    context.previousMessages.forEach((msg) => {
+      const role = msg.isFromCustomer
+        ? ("user" as const)
+        : ("assistant" as const);
       messages.push({
         role,
-        content: msg.content
+        content: msg.content,
       });
     });
 
@@ -104,7 +117,7 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY OF SUGGESTION OBJECTS:
     });
 
     // Extract and parse the response
-    const responseText = response.choices[0]?.message?.content || '[]';
+    const responseText = response.choices[0]?.message?.content || "[]";
     let suggestions: ResponseSuggestion[] = [];
 
     try {
@@ -112,12 +125,12 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY OF SUGGESTION OBJECTS:
       suggestions = JSON.parse(responseText);
 
       // Validate the structure of each suggestion
-      suggestions = suggestions.filter(suggestion => {
+      suggestions = suggestions.filter((suggestion) => {
         return (
           suggestion.text &&
           suggestion.context &&
           suggestion.category &&
-          typeof suggestion.priority === 'number'
+          typeof suggestion.priority === "number"
         );
       });
 
@@ -128,19 +141,25 @@ FORMAT YOUR RESPONSE AS A JSON ARRAY OF SUGGESTION OBJECTS:
       if (suggestions.length > 7) {
         suggestions = suggestions.slice(0, 7);
       }
-
     } catch (parseError) {
-      const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
-      serviceLogger.error(`Failed to parse response suggestions: ${errorMessage}`);
+      const errorMessage =
+        parseError instanceof Error ? parseError.message : String(parseError);
+      serviceLogger.error(
+        `Failed to parse response suggestions: ${errorMessage}`,
+      );
       // Also log the response text for debugging
-      serviceLogger.debug('Response text from failed parsing attempt', { responseText });
+      serviceLogger.debug("Response text from failed parsing attempt", {
+        responseText,
+      });
       return [];
     }
 
     return suggestions;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    serviceLogger.error(`Error generating response suggestions: ${errorMessage}`);
+    serviceLogger.error(
+      `Error generating response suggestions: ${errorMessage}`,
+    );
     return [];
   }
 }

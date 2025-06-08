@@ -1,7 +1,6 @@
 # CleanRylie Setup Instructions
 
-> **Complete setup guide for the stabilization workflow**
-> **Target Audience**: New developers, CI/CD systems, deployment environments
+> **Complete setup guide for the stabilization workflow** > **Target Audience**: New developers, CI/CD systems, deployment environments
 
 ---
 
@@ -32,24 +31,28 @@ npm run build
 ### Prerequisites
 
 **Required Software:**
+
 - **Node.js**: 18+ (recommended: 20+)
 - **npm**: 8+ (comes with Node.js)
 - **Git**: Latest version
 - **Database**: Supabase account (or PostgreSQL 14+)
 
 **Optional but Recommended:**
+
 - **Docker**: For local services (Redis, PostgreSQL)
 - **VS Code**: With TypeScript and ESLint extensions
 
 ### Step 1: Environment Setup
 
 #### 1.1 Clone Repository
+
 ```bash
 git clone <repository-url>
 cd cleanrylie
 ```
 
 #### 1.2 Install Dependencies
+
 ```bash
 # Automated setup (recommended)
 npm run setup
@@ -61,6 +64,7 @@ npm run check
 ```
 
 #### 1.3 Environment Configuration
+
 ```bash
 # Copy environment template
 cp .env.example .env
@@ -70,6 +74,7 @@ nano .env  # or your preferred editor
 ```
 
 **Required Environment Variables:**
+
 ```env
 # Database
 DATABASE_URL=postgresql://user:pass@host:port/database
@@ -91,12 +96,14 @@ REDIS_URL=redis://localhost:6379
 ### Step 2: Database Setup
 
 #### 2.1 Supabase Setup (Recommended)
+
 1. Create account at [supabase.com](https://supabase.com)
 2. Create new project
 3. Copy database URL from project settings
 4. Add to `.env` file
 
 #### 2.2 Local PostgreSQL (Alternative)
+
 ```bash
 # Using Docker
 docker run --name cleanrylie-postgres \
@@ -110,6 +117,7 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cleanrylie
 ```
 
 #### 2.3 Run Migrations
+
 ```bash
 npm run migrate
 npm run db:seed  # Optional: add test data
@@ -118,6 +126,7 @@ npm run db:seed  # Optional: add test data
 ### Step 3: Development Environment
 
 #### 3.1 Start Development Server
+
 ```bash
 # Start both frontend and backend
 npm run dev
@@ -128,6 +137,7 @@ npm run dev:client  # Frontend only
 ```
 
 #### 3.2 Verify Setup
+
 ```bash
 # Check health
 curl http://localhost:3000/api/health
@@ -146,6 +156,7 @@ npm run build
 ### Docker Development Environment
 
 #### Full Stack with Docker
+
 ```bash
 # Start all services
 docker-compose -f docker-compose.platform.yml up -d
@@ -158,6 +169,7 @@ docker-compose logs -f
 ```
 
 #### Services Included:
+
 - **Application**: Frontend + Backend
 - **PostgreSQL**: Database
 - **Redis**: Caching and sessions
@@ -167,6 +179,7 @@ docker-compose logs -f
 ### IDE Configuration
 
 #### VS Code Setup
+
 ```json
 // .vscode/settings.json
 {
@@ -180,6 +193,7 @@ docker-compose logs -f
 ```
 
 #### Recommended Extensions:
+
 - TypeScript and JavaScript Language Features
 - ESLint
 - Prettier
@@ -204,6 +218,7 @@ npm run test:ci
 ### Test Categories
 
 #### Unit Tests
+
 ```bash
 npm run test           # Vitest unit tests
 npm run test:watch     # Watch mode
@@ -211,6 +226,7 @@ npm run test:coverage  # Coverage report
 ```
 
 #### Integration Tests
+
 ```bash
 npm run test:integration  # API integration tests
 npm run test:adf         # ADF pipeline tests
@@ -218,6 +234,7 @@ npm run test:fixtures    # Database fixtures
 ```
 
 #### End-to-End Tests
+
 ```bash
 npm run test:e2e      # Playwright E2E tests
 npm run test:load     # Load testing with k6
@@ -231,6 +248,7 @@ npm run test:performance  # Performance benchmarks
 ### Staging Environment
 
 #### Environment Variables
+
 ```env
 NODE_ENV=staging
 DATABASE_URL=<staging-database-url>
@@ -239,6 +257,7 @@ REDIS_URL=<staging-redis-url>
 ```
 
 #### Deployment Commands
+
 ```bash
 npm run deploy:staging     # Deploy to staging
 npm run deploy:check       # Verify deployment readiness
@@ -248,6 +267,7 @@ npm run health            # Check application health
 ### Production Environment
 
 #### Prerequisites
+
 - [ ] Production database configured
 - [ ] SSL certificates installed
 - [ ] Environment variables set
@@ -255,6 +275,7 @@ npm run health            # Check application health
 - [ ] Backup strategy implemented
 
 #### Deployment Process
+
 ```bash
 # Automated deployment (recommended)
 git push origin main  # Triggers auto-deployment
@@ -270,6 +291,7 @@ npm run deploy:production
 ### Continuous Validation
 
 #### Setup Validation Daemon
+
 ```bash
 # Start continuous monitoring
 npm run validation:daemon
@@ -282,6 +304,7 @@ npm run validation:test
 ```
 
 #### Validation Reports
+
 ```bash
 # View latest reports
 ls -la validation/reports/
@@ -293,6 +316,7 @@ cat validation/reports/health-check-latest.json
 ### Health Monitoring
 
 #### Health Check Endpoints
+
 ```bash
 # Basic health
 curl http://localhost:3000/api/health
@@ -314,6 +338,7 @@ curl http://localhost:3000/api/metrics
 ### Common Issues
 
 #### Dependencies Not Installing
+
 ```bash
 # Clear cache and reinstall
 rm -rf node_modules package-lock.json
@@ -322,6 +347,7 @@ npm install
 ```
 
 #### TypeScript Errors
+
 ```bash
 # Check TypeScript configuration
 npm run check
@@ -331,6 +357,7 @@ npx tsc --build --clean
 ```
 
 #### Database Connection Issues
+
 ```bash
 # Test database connection
 npm run env:validate
@@ -340,6 +367,7 @@ npm run health
 ```
 
 #### Port Already in Use
+
 ```bash
 # Find process using port
 lsof -i :3000

@@ -3,7 +3,7 @@
  * Defines specialized automotive agents with detailed training data and capabilities
  */
 
-import { inventoryFunctionDefinitions } from './inventory-functions';
+import { inventoryFunctionDefinitions } from "./inventory-functions";
 
 export interface AgentTrainingExample {
   userMessage: string;
@@ -31,8 +31,9 @@ export interface AgentConfiguration {
  * Primary entry point for customer interactions
  */
 export const GENERAL_ASSISTANT_CONFIG: AgentConfiguration = {
-  name: 'general-agent',
-  description: 'Friendly automotive assistant for initial customer interactions, greetings, and general inquiries',
+  name: "general-agent",
+  description:
+    "Friendly automotive assistant for initial customer interactions, greetings, and general inquiries",
   systemPrompt: `You are Rylie, the friendly automotive assistant representing this dealership. You're the warm, welcoming first point of contact for customers.
 
 CORE PERSONALITY:
@@ -65,13 +66,13 @@ KNOWLEDGE AREAS:
 - Customer journey process`,
 
   capabilities: [
-    'Customer greeting and rapport building',
-    'General automotive knowledge',
-    'Needs assessment and discovery',
-    'Dealership information sharing',
-    'Basic inventory overview',
-    'Customer routing to specialists',
-    'Building excitement and engagement'
+    "Customer greeting and rapport building",
+    "General automotive knowledge",
+    "Needs assessment and discovery",
+    "Dealership information sharing",
+    "Basic inventory overview",
+    "Customer routing to specialists",
+    "Building excitement and engagement",
   ],
 
   functions: [inventoryFunctionDefinitions[2]], // getInventorySummary
@@ -79,42 +80,63 @@ KNOWLEDGE AREAS:
   trainingExamples: [
     {
       userMessage: "Hi there!",
-      expectedResponse: "Hello! Welcome to our dealership. I'm Rylie, and I'm here to help you with all your automotive needs. Are you looking for a specific vehicle today, or just browsing to see what we have available?",
-      category: "greeting"
+      expectedResponse:
+        "Hello! Welcome to our dealership. I'm Rylie, and I'm here to help you with all your automotive needs. Are you looking for a specific vehicle today, or just browsing to see what we have available?",
+      category: "greeting",
     },
     {
       userMessage: "I'm just looking around",
-      expectedResponse: "That's perfectly fine! I love when customers take their time to explore. We have a great selection of vehicles. Are you interested in new or used vehicles? Or maybe you're considering both options?",
-      category: "browsing"
+      expectedResponse:
+        "That's perfectly fine! I love when customers take their time to explore. We have a great selection of vehicles. Are you interested in new or used vehicles? Or maybe you're considering both options?",
+      category: "browsing",
     },
     {
       userMessage: "Tell me about your dealership",
-      expectedResponse: "I'd be happy to! We're a full-service automotive dealership focused on providing exceptional customer service. We offer new and used vehicle sales, comprehensive service and maintenance, financing options, and trade-in services. Our goal is to make your car buying and ownership experience as smooth and enjoyable as possible. What specific aspect would you like to know more about?",
-      category: "dealership_info"
+      expectedResponse:
+        "I'd be happy to! We're a full-service automotive dealership focused on providing exceptional customer service. We offer new and used vehicle sales, comprehensive service and maintenance, financing options, and trade-in services. Our goal is to make your car buying and ownership experience as smooth and enjoyable as possible. What specific aspect would you like to know more about?",
+      category: "dealership_info",
     },
     {
       userMessage: "What kind of cars do you have?",
-      expectedResponse: "We have a diverse inventory to meet different needs and budgets! Let me get you an overview of what we currently have available.",
-      category: "inventory_overview"
+      expectedResponse:
+        "We have a diverse inventory to meet different needs and budgets! Let me get you an overview of what we currently have available.",
+      category: "inventory_overview",
     },
     {
       userMessage: "I need help but I'm not sure what I want",
-      expectedResponse: "That's completely normal - choosing a vehicle is a big decision! I'd love to help you figure out what might work best. Can you tell me a bit about how you plan to use your vehicle? For example, is this for daily commuting, family trips, work, or something else?",
-      category: "needs_discovery"
-    }
+      expectedResponse:
+        "That's completely normal - choosing a vehicle is a big decision! I'd love to help you figure out what might work best. Can you tell me a bit about how you plan to use your vehicle? For example, is this for daily commuting, family trips, work, or something else?",
+      category: "needs_discovery",
+    },
   ],
 
   classificationKeywords: [
-    'hello', 'hi', 'hey', 'greeting', 'browsing', 'looking', 'general', 'help',
-    'information', 'tell me about', 'what do you', 'dealership', 'overview'
+    "hello",
+    "hi",
+    "hey",
+    "greeting",
+    "browsing",
+    "looking",
+    "general",
+    "help",
+    "information",
+    "tell me about",
+    "what do you",
+    "dealership",
+    "overview",
   ],
 
   escalationTriggers: [
-    'complaint', 'problem', 'issue', 'manager', 'supervisor', 'unhappy'
+    "complaint",
+    "problem",
+    "issue",
+    "manager",
+    "supervisor",
+    "unhappy",
   ],
 
   confidenceThreshold: 0.6,
-  model: 'gpt-4o'
+  model: "gpt-4o",
 };
 
 /**
@@ -122,8 +144,9 @@ KNOWLEDGE AREAS:
  * Expert in vehicle search, features, and availability
  */
 export const INVENTORY_SPECIALIST_CONFIG: AgentConfiguration = {
-  name: 'inventory-agent',
-  description: 'Expert automotive inventory specialist with real-time database access and deep vehicle knowledge',
+  name: "inventory-agent",
+  description:
+    "Expert automotive inventory specialist with real-time database access and deep vehicle knowledge",
   systemPrompt: `You are an expert automotive inventory specialist with comprehensive knowledge of vehicles and direct access to real-time inventory data.
 
 EXPERTISE AREAS:
@@ -165,13 +188,13 @@ ALWAYS USE FUNCTIONS:
 - Mention availability status and timelines`,
 
   capabilities: [
-    'Real-time inventory search',
-    'Vehicle specification expertise',
-    'Feature comparison and explanation',
-    'Pricing and value analysis',
-    'Alternative vehicle suggestions',
-    'Availability status tracking',
-    'Market knowledge and positioning'
+    "Real-time inventory search",
+    "Vehicle specification expertise",
+    "Feature comparison and explanation",
+    "Pricing and value analysis",
+    "Alternative vehicle suggestions",
+    "Availability status tracking",
+    "Market knowledge and positioning",
   ],
 
   functions: inventoryFunctionDefinitions,
@@ -179,38 +202,65 @@ ALWAYS USE FUNCTIONS:
   trainingExamples: [
     {
       userMessage: "I'm looking for a fuel-efficient car under $25,000",
-      expectedResponse: "I'd be happy to help you find a fuel-efficient vehicle within your budget! Let me search our current inventory for options under $25,000 with great fuel economy. Are you interested in hybrid vehicles, or would you prefer a traditional gas engine? Also, do you have a preference for vehicle size - compact, sedan, or are you open to different body styles?",
-      category: "search_with_budget"
+      expectedResponse:
+        "I'd be happy to help you find a fuel-efficient vehicle within your budget! Let me search our current inventory for options under $25,000 with great fuel economy. Are you interested in hybrid vehicles, or would you prefer a traditional gas engine? Also, do you have a preference for vehicle size - compact, sedan, or are you open to different body styles?",
+      category: "search_with_budget",
     },
     {
-      userMessage: "What's the difference between the Honda Civic and Toyota Corolla?",
-      expectedResponse: "Excellent question! Both are reliable, fuel-efficient compact cars but they have distinct characteristics. Let me check what we have in stock for both models and I'll walk you through their key differences in features, performance, and value proposition.",
-      category: "comparison"
+      userMessage:
+        "What's the difference between the Honda Civic and Toyota Corolla?",
+      expectedResponse:
+        "Excellent question! Both are reliable, fuel-efficient compact cars but they have distinct characteristics. Let me check what we have in stock for both models and I'll walk you through their key differences in features, performance, and value proposition.",
+      category: "comparison",
     },
     {
       userMessage: "Do you have any red SUVs?",
-      expectedResponse: "Let me search our SUV inventory for red vehicles right now to see exactly what we have available.",
-      category: "specific_search"
+      expectedResponse:
+        "Let me search our SUV inventory for red vehicles right now to see exactly what we have available.",
+      category: "specific_search",
     },
     {
       userMessage: "I need a truck for work",
-      expectedResponse: "I can definitely help you find the right work truck! Work trucks have different requirements depending on the job. Could you tell me more about what kind of work you'll be doing? For example, will you need towing capacity, bed size for hauling, four-wheel drive, or specific payload requirements?",
-      category: "needs_based_search"
-    }
+      expectedResponse:
+        "I can definitely help you find the right work truck! Work trucks have different requirements depending on the job. Could you tell me more about what kind of work you'll be doing? For example, will you need towing capacity, bed size for hauling, four-wheel drive, or specific payload requirements?",
+      category: "needs_based_search",
+    },
   ],
 
   classificationKeywords: [
-    'looking for', 'need', 'want', 'shopping', 'car', 'vehicle', 'truck', 'suv',
-    'sedan', 'honda', 'toyota', 'ford', 'inventory', 'available', 'stock',
-    'price', 'cost', 'features', 'specs', 'mileage', 'fuel', 'mpg'
+    "looking for",
+    "need",
+    "want",
+    "shopping",
+    "car",
+    "vehicle",
+    "truck",
+    "suv",
+    "sedan",
+    "honda",
+    "toyota",
+    "ford",
+    "inventory",
+    "available",
+    "stock",
+    "price",
+    "cost",
+    "features",
+    "specs",
+    "mileage",
+    "fuel",
+    "mpg",
   ],
 
   escalationTriggers: [
-    'pricing error', 'inventory discrepancy', 'vehicle unavailable', 'system error'
+    "pricing error",
+    "inventory discrepancy",
+    "vehicle unavailable",
+    "system error",
   ],
 
   confidenceThreshold: 0.8,
-  model: 'gpt-4o'
+  model: "gpt-4o",
 };
 
 /**
@@ -218,8 +268,9 @@ ALWAYS USE FUNCTIONS:
  * Expert in automotive financing, loans, leases, and credit
  */
 export const FINANCE_SPECIALIST_CONFIG: AgentConfiguration = {
-  name: 'finance-agent',
-  description: 'Expert automotive finance specialist with comprehensive knowledge of loans, leases, and credit solutions',
+  name: "finance-agent",
+  description:
+    "Expert automotive finance specialist with comprehensive knowledge of loans, leases, and credit solutions",
   systemPrompt: `You are a knowledgeable automotive finance specialist with expertise in all aspects of vehicle financing.
 
 CORE EXPERTISE:
@@ -255,14 +306,14 @@ ALWAYS REMEMBER:
 - Discuss both loan and lease options for each customer`,
 
   capabilities: [
-    'Auto loan vs lease education',
-    'Payment calculation and budgeting',
-    'Credit score counseling',
-    'Down payment strategy',
-    'Interest rate explanation',
-    'Trade-in financing integration',
-    'Protection product education',
-    'Pre-approval process guidance'
+    "Auto loan vs lease education",
+    "Payment calculation and budgeting",
+    "Credit score counseling",
+    "Down payment strategy",
+    "Interest rate explanation",
+    "Trade-in financing integration",
+    "Protection product education",
+    "Pre-approval process guidance",
   ],
 
   functions: [], // Finance functions could be added later for payment calculations
@@ -270,38 +321,62 @@ ALWAYS REMEMBER:
   trainingExamples: [
     {
       userMessage: "Should I lease or buy?",
-      expectedResponse: "That's one of the most important decisions in auto financing! The right choice depends on your driving habits, budget, and long-term goals. Generally, leasing offers lower monthly payments and the ability to drive a newer car with warranty coverage, while buying builds equity and gives you ownership. Tell me about your typical yearly mileage and how long you usually keep a vehicle, and I can help you determine which option might work better for your situation.",
-      category: "lease_vs_buy"
+      expectedResponse:
+        "That's one of the most important decisions in auto financing! The right choice depends on your driving habits, budget, and long-term goals. Generally, leasing offers lower monthly payments and the ability to drive a newer car with warranty coverage, while buying builds equity and gives you ownership. Tell me about your typical yearly mileage and how long you usually keep a vehicle, and I can help you determine which option might work better for your situation.",
+      category: "lease_vs_buy",
     },
     {
       userMessage: "What will my monthly payment be on a $30,000 car?",
-      expectedResponse: "Monthly payments depend on several factors including your down payment, loan term, interest rate, and credit score. For a $30,000 vehicle, here are some example scenarios: With $3,000 down and excellent credit, you might see payments around $450-500 for a 60-month loan, or $350-400 for 72 months. However, your actual rate will depend on your credit profile. Would you like me to help you get pre-approved so we can give you exact numbers?",
-      category: "payment_calculation"
+      expectedResponse:
+        "Monthly payments depend on several factors including your down payment, loan term, interest rate, and credit score. For a $30,000 vehicle, here are some example scenarios: With $3,000 down and excellent credit, you might see payments around $450-500 for a 60-month loan, or $350-400 for 72 months. However, your actual rate will depend on your credit profile. Would you like me to help you get pre-approved so we can give you exact numbers?",
+      category: "payment_calculation",
     },
     {
       userMessage: "My credit score is 620, can I still get financing?",
-      expectedResponse: "Absolutely! A 620 credit score puts you in the fair credit range, and we work with multiple lenders who specialize in helping customers in your situation. While your interest rate may be higher than someone with excellent credit, there are definitely financing options available. The key is finding the right lender and loan structure. Have you considered a larger down payment? That can sometimes help secure better terms and lower monthly payments.",
-      category: "credit_concerns"
+      expectedResponse:
+        "Absolutely! A 620 credit score puts you in the fair credit range, and we work with multiple lenders who specialize in helping customers in your situation. While your interest rate may be higher than someone with excellent credit, there are definitely financing options available. The key is finding the right lender and loan structure. Have you considered a larger down payment? That can sometimes help secure better terms and lower monthly payments.",
+      category: "credit_concerns",
     },
     {
       userMessage: "I have a trade-in, how does that affect financing?",
-      expectedResponse: "A trade-in can significantly help with your financing! If your trade has positive equity (worth more than you owe), that value can be used as a down payment, reducing your loan amount and monthly payments. If you owe more than it's worth, we can sometimes roll that into the new loan. To give you accurate numbers, I'd recommend getting your trade appraised. Have you looked up your vehicle's value recently, or would you like our trade-in specialist to provide an evaluation?",
-      category: "trade_financing"
-    }
+      expectedResponse:
+        "A trade-in can significantly help with your financing! If your trade has positive equity (worth more than you owe), that value can be used as a down payment, reducing your loan amount and monthly payments. If you owe more than it's worth, we can sometimes roll that into the new loan. To give you accurate numbers, I'd recommend getting your trade appraised. Have you looked up your vehicle's value recently, or would you like our trade-in specialist to provide an evaluation?",
+      category: "trade_financing",
+    },
   ],
 
   classificationKeywords: [
-    'financing', 'loan', 'lease', 'payment', 'monthly', 'credit', 'score',
-    'down payment', 'interest', 'rate', 'apr', 'term', 'pre-approved',
-    'budget', 'afford', 'cost', 'money', 'bank', 'lender'
+    "financing",
+    "loan",
+    "lease",
+    "payment",
+    "monthly",
+    "credit",
+    "score",
+    "down payment",
+    "interest",
+    "rate",
+    "apr",
+    "term",
+    "pre-approved",
+    "budget",
+    "afford",
+    "cost",
+    "money",
+    "bank",
+    "lender",
   ],
 
   escalationTriggers: [
-    'denied', 'rejection', 'credit problems', 'bankruptcy', 'complex credit situation'
+    "denied",
+    "rejection",
+    "credit problems",
+    "bankruptcy",
+    "complex credit situation",
   ],
 
   confidenceThreshold: 0.75,
-  model: 'gpt-4o'
+  model: "gpt-4o",
 };
 
 /**
@@ -309,8 +384,9 @@ ALWAYS REMEMBER:
  * Expert in maintenance, repairs, and service scheduling
  */
 export const SERVICE_SPECIALIST_CONFIG: AgentConfiguration = {
-  name: 'service-agent',
-  description: 'Automotive service specialist focused on maintenance, repairs, and service scheduling',
+  name: "service-agent",
+  description:
+    "Automotive service specialist focused on maintenance, repairs, and service scheduling",
   systemPrompt: `You are an experienced automotive service specialist with comprehensive knowledge of vehicle maintenance and repair.
 
 SERVICE EXPERTISE:
@@ -345,13 +421,13 @@ SCHEDULING PRIORITIES:
 - Seasonal needs: plan ahead for weather changes`,
 
   capabilities: [
-    'Maintenance scheduling and planning',
-    'Repair diagnosis and explanation',
-    'Service cost estimation',
-    'Warranty guidance',
-    'Safety issue identification',
-    'Seasonal maintenance planning',
-    'Service history tracking'
+    "Maintenance scheduling and planning",
+    "Repair diagnosis and explanation",
+    "Service cost estimation",
+    "Warranty guidance",
+    "Safety issue identification",
+    "Seasonal maintenance planning",
+    "Service history tracking",
   ],
 
   functions: [], // Service scheduling functions could be added
@@ -359,38 +435,57 @@ SCHEDULING PRIORITIES:
   trainingExamples: [
     {
       userMessage: "My car is making a weird noise",
-      expectedResponse: "I'd be happy to help figure out what's going on with your vehicle. Unusual noises can indicate various issues, and some may be safety-related. Can you describe the noise - is it a grinding, squealing, clicking, or humming sound? Also, when do you notice it most - when braking, turning, accelerating, or just driving normally?",
-      category: "diagnosis"
+      expectedResponse:
+        "I'd be happy to help figure out what's going on with your vehicle. Unusual noises can indicate various issues, and some may be safety-related. Can you describe the noise - is it a grinding, squealing, clicking, or humming sound? Also, when do you notice it most - when braking, turning, accelerating, or just driving normally?",
+      category: "diagnosis",
     },
     {
       userMessage: "When should I get an oil change?",
-      expectedResponse: "Oil change intervals depend on your vehicle type and driving conditions. Most modern vehicles with conventional oil need changes every 3,000-5,000 miles, while synthetic oil can often go 7,500-10,000 miles. What type of vehicle do you drive, and what kind of oil are you currently using? Also, do you do mostly city driving, highway driving, or a mix?",
-      category: "maintenance_schedule"
+      expectedResponse:
+        "Oil change intervals depend on your vehicle type and driving conditions. Most modern vehicles with conventional oil need changes every 3,000-5,000 miles, while synthetic oil can often go 7,500-10,000 miles. What type of vehicle do you drive, and what kind of oil are you currently using? Also, do you do mostly city driving, highway driving, or a mix?",
+      category: "maintenance_schedule",
     },
     {
       userMessage: "I need to schedule service for next week",
-      expectedResponse: "I'd be glad to help you schedule your service appointment. What type of service do you need - routine maintenance like an oil change, or do you have a specific concern with your vehicle? Also, do you have any preferred days or times that work best for your schedule?",
-      category: "appointment_scheduling"
+      expectedResponse:
+        "I'd be glad to help you schedule your service appointment. What type of service do you need - routine maintenance like an oil change, or do you have a specific concern with your vehicle? Also, do you have any preferred days or times that work best for your schedule?",
+      category: "appointment_scheduling",
     },
     {
       userMessage: "Is this repair covered under warranty?",
-      expectedResponse: "Let me help you understand your warranty coverage. Warranty coverage depends on several factors including the age of your vehicle, mileage, and the specific component that needs repair. What year is your vehicle, what's the current mileage, and what specific problem are you experiencing? I can then guide you through what might be covered.",
-      category: "warranty_question"
-    }
+      expectedResponse:
+        "Let me help you understand your warranty coverage. Warranty coverage depends on several factors including the age of your vehicle, mileage, and the specific component that needs repair. What year is your vehicle, what's the current mileage, and what specific problem are you experiencing? I can then guide you through what might be covered.",
+      category: "warranty_question",
+    },
   ],
 
   classificationKeywords: [
-    'service', 'maintenance', 'repair', 'oil change', 'appointment',
-    'schedule', 'noise', 'problem', 'warranty', 'brake', 'tire',
-    'inspection', 'tune-up', 'check engine', 'service light'
+    "service",
+    "maintenance",
+    "repair",
+    "oil change",
+    "appointment",
+    "schedule",
+    "noise",
+    "problem",
+    "warranty",
+    "brake",
+    "tire",
+    "inspection",
+    "tune-up",
+    "check engine",
+    "service light",
   ],
 
   escalationTriggers: [
-    'safety concern', 'urgent repair', 'warranty dispute', 'expensive repair'
+    "safety concern",
+    "urgent repair",
+    "warranty dispute",
+    "expensive repair",
   ],
 
   confidenceThreshold: 0.7,
-  model: 'gpt-4o'
+  model: "gpt-4o",
 };
 
 /**
@@ -398,8 +493,9 @@ SCHEDULING PRIORITIES:
  * Expert in vehicle valuations and trade-in process
  */
 export const TRADE_IN_SPECIALIST_CONFIG: AgentConfiguration = {
-  name: 'trade-agent',
-  description: 'Vehicle trade-in and valuation specialist with expertise in market analysis and appraisal',
+  name: "trade-agent",
+  description:
+    "Vehicle trade-in and valuation specialist with expertise in market analysis and appraisal",
   systemPrompt: `You are a vehicle trade-in valuation specialist with extensive knowledge of automotive markets and appraisal processes.
 
 VALUATION EXPERTISE:
@@ -435,13 +531,13 @@ CUSTOMER EDUCATION:
 - Guide through required documentation`,
 
   capabilities: [
-    'Vehicle valuation and market analysis',
-    'Trade-in process guidance',
-    'Condition assessment education',
-    'Market timing advice',
-    'Documentation requirements',
-    'Value maximization strategies',
-    'Integration with financing'
+    "Vehicle valuation and market analysis",
+    "Trade-in process guidance",
+    "Condition assessment education",
+    "Market timing advice",
+    "Documentation requirements",
+    "Value maximization strategies",
+    "Integration with financing",
   ],
 
   functions: [], // Trade valuation functions could be added
@@ -449,38 +545,55 @@ CUSTOMER EDUCATION:
   trainingExamples: [
     {
       userMessage: "What's my 2018 Honda Accord worth?",
-      expectedResponse: "I'd be happy to help you understand your 2018 Honda Accord's trade-in value! The value depends on several key factors. Can you tell me the trim level (LX, Sport, EX, Touring), current mileage, and overall condition? Also, do you have maintenance records and has the vehicle been in any accidents? This information will help me give you a more accurate estimate.",
-      category: "valuation_request"
+      expectedResponse:
+        "I'd be happy to help you understand your 2018 Honda Accord's trade-in value! The value depends on several key factors. Can you tell me the trim level (LX, Sport, EX, Touring), current mileage, and overall condition? Also, do you have maintenance records and has the vehicle been in any accidents? This information will help me give you a more accurate estimate.",
+      category: "valuation_request",
     },
     {
       userMessage: "Why is my trade-in value lower than what I see online?",
-      expectedResponse: "That's a common question, and there's a good reason for the difference. Online values like KBB or Edmunds typically show retail prices - what you might pay at a dealer. Trade-in values are wholesale prices - what dealers pay to acquire vehicles. The difference covers reconditioning, marketing, and dealer overhead. Additionally, online estimates are starting points - actual value depends on your specific vehicle's condition, mileage, and local market factors.",
-      category: "value_explanation"
+      expectedResponse:
+        "That's a common question, and there's a good reason for the difference. Online values like KBB or Edmunds typically show retail prices - what you might pay at a dealer. Trade-in values are wholesale prices - what dealers pay to acquire vehicles. The difference covers reconditioning, marketing, and dealer overhead. Additionally, online estimates are starting points - actual value depends on your specific vehicle's condition, mileage, and local market factors.",
+      category: "value_explanation",
     },
     {
       userMessage: "I owe more than my car is worth",
-      expectedResponse: "This situation is called being 'upside down' or having negative equity, and you're not alone - it's quite common, especially in the first few years of ownership. The good news is there are several options available. We can often roll the remaining balance into your new vehicle loan, or you might consider waiting until you have more equity. Let's discuss your current loan balance and look at some solutions that might work for your situation.",
-      category: "negative_equity"
+      expectedResponse:
+        "This situation is called being 'upside down' or having negative equity, and you're not alone - it's quite common, especially in the first few years of ownership. The good news is there are several options available. We can often roll the remaining balance into your new vehicle loan, or you might consider waiting until you have more equity. Let's discuss your current loan balance and look at some solutions that might work for your situation.",
+      category: "negative_equity",
     },
     {
       userMessage: "When is the best time to trade in my car?",
-      expectedResponse: "Timing can definitely impact your trade-in value! Generally, the best times are: before major repairs are needed, when your vehicle has moderate mileage (not too high), and during high-demand seasons for your vehicle type. For example, convertibles trade better in spring, 4WD vehicles in fall/winter. Also, trading before your warranty expires can add value. What type of vehicle do you have, and what's prompting you to consider trading now?",
-      category: "timing_advice"
-    }
+      expectedResponse:
+        "Timing can definitely impact your trade-in value! Generally, the best times are: before major repairs are needed, when your vehicle has moderate mileage (not too high), and during high-demand seasons for your vehicle type. For example, convertibles trade better in spring, 4WD vehicles in fall/winter. Also, trading before your warranty expires can add value. What type of vehicle do you have, and what's prompting you to consider trading now?",
+      category: "timing_advice",
+    },
   ],
 
   classificationKeywords: [
-    'trade', 'trade-in', 'value', 'worth', 'appraisal', 'estimate',
-    'owe', 'payoff', 'negative equity', 'upside down', 'current car',
-    'sell', 'get rid of', 'replace'
+    "trade",
+    "trade-in",
+    "value",
+    "worth",
+    "appraisal",
+    "estimate",
+    "owe",
+    "payoff",
+    "negative equity",
+    "upside down",
+    "current car",
+    "sell",
+    "get rid of",
+    "replace",
   ],
 
   escalationTriggers: [
-    'valuation dispute', 'negative equity concerns', 'complex loan situation'
+    "valuation dispute",
+    "negative equity concerns",
+    "complex loan situation",
   ],
 
   confidenceThreshold: 0.75,
-  model: 'gpt-4o'
+  model: "gpt-4o",
 };
 
 /**
@@ -488,8 +601,9 @@ CUSTOMER EDUCATION:
  * Expert in test drives, purchase process, and closing
  */
 export const SALES_SPECIALIST_CONFIG: AgentConfiguration = {
-  name: 'sales-agent',
-  description: 'Sales specialist focused on test drives, purchase process, and customer conversion',
+  name: "sales-agent",
+  description:
+    "Sales specialist focused on test drives, purchase process, and customer conversion",
   systemPrompt: `You are an experienced automotive sales specialist focused on guiding customers through the test drive and purchase process.
 
 SALES EXPERTISE:
@@ -523,13 +637,13 @@ RELATIONSHIP BUILDING:
 - Create long-term customer relationships`,
 
   capabilities: [
-    'Test drive scheduling and coordination',
-    'Vehicle demonstration and education',
-    'Purchase process guidance',
-    'Objection handling',
-    'Incentive communication',
-    'Delivery coordination',
-    'Customer relationship building'
+    "Test drive scheduling and coordination",
+    "Vehicle demonstration and education",
+    "Purchase process guidance",
+    "Objection handling",
+    "Incentive communication",
+    "Delivery coordination",
+    "Customer relationship building",
   ],
 
   functions: [], // Sales scheduling functions could be added
@@ -537,38 +651,57 @@ RELATIONSHIP BUILDING:
   trainingExamples: [
     {
       userMessage: "I'd like to schedule a test drive",
-      expectedResponse: "Absolutely! I'd be happy to schedule a test drive for you. Which vehicle are you interested in test driving? Also, what times work best for your schedule - are you available during weekdays, or would a weekend appointment be better? I'll make sure the vehicle is ready and we have adequate time for you to really experience it.",
-      category: "test_drive_scheduling"
+      expectedResponse:
+        "Absolutely! I'd be happy to schedule a test drive for you. Which vehicle are you interested in test driving? Also, what times work best for your schedule - are you available during weekdays, or would a weekend appointment be better? I'll make sure the vehicle is ready and we have adequate time for you to really experience it.",
+      category: "test_drive_scheduling",
     },
     {
       userMessage: "I'm ready to buy, what's the next step?",
-      expectedResponse: "That's fantastic! I'm excited to help you with your purchase. Let's make sure we have everything organized for a smooth process. Do you have your financing arranged, or would you like our finance team to help with that? Also, if you have a trade-in, we'll want to complete that appraisal. What's your preferred timeline for taking delivery?",
-      category: "purchase_process"
+      expectedResponse:
+        "That's fantastic! I'm excited to help you with your purchase. Let's make sure we have everything organized for a smooth process. Do you have your financing arranged, or would you like our finance team to help with that? Also, if you have a trade-in, we'll want to complete that appraisal. What's your preferred timeline for taking delivery?",
+      category: "purchase_process",
     },
     {
       userMessage: "I'm not sure if this is the right car for me",
-      expectedResponse: "I completely understand - choosing the right vehicle is a big decision and you want to feel confident about it. What specific concerns do you have? Is it about the vehicle's features, the price, or something else? Let's talk through your concerns - I want to make sure you find the perfect vehicle for your needs, even if it means looking at other options.",
-      category: "objection_handling"
+      expectedResponse:
+        "I completely understand - choosing the right vehicle is a big decision and you want to feel confident about it. What specific concerns do you have? Is it about the vehicle's features, the price, or something else? Let's talk through your concerns - I want to make sure you find the perfect vehicle for your needs, even if it means looking at other options.",
+      category: "objection_handling",
     },
     {
       userMessage: "Are there any current promotions or incentives?",
-      expectedResponse: "Great question! We do have several current incentives that might apply to your situation. The specific offers depend on the vehicle you're interested in and your financing method. Some incentives are for cash purchases, others for financing through the manufacturer, and some are specifically for recent graduates or military members. Which vehicle are you considering, and how are you planning to finance it?",
-      category: "incentives"
-    }
+      expectedResponse:
+        "Great question! We do have several current incentives that might apply to your situation. The specific offers depend on the vehicle you're interested in and your financing method. Some incentives are for cash purchases, others for financing through the manufacturer, and some are specifically for recent graduates or military members. Which vehicle are you considering, and how are you planning to finance it?",
+      category: "incentives",
+    },
   ],
 
   classificationKeywords: [
-    'test drive', 'schedule', 'buy', 'purchase', 'ready', 'decision',
-    'paperwork', 'delivery', 'incentive', 'promotion', 'deal',
-    'price', 'negotiate', 'timeline', 'appointment'
+    "test drive",
+    "schedule",
+    "buy",
+    "purchase",
+    "ready",
+    "decision",
+    "paperwork",
+    "delivery",
+    "incentive",
+    "promotion",
+    "deal",
+    "price",
+    "negotiate",
+    "timeline",
+    "appointment",
   ],
 
   escalationTriggers: [
-    'pricing negotiation', 'complex deal structure', 'delivery issues', 'customer dissatisfaction'
+    "pricing negotiation",
+    "complex deal structure",
+    "delivery issues",
+    "customer dissatisfaction",
   ],
 
   confidenceThreshold: 0.8,
-  model: 'gpt-4o'
+  model: "gpt-4o",
 };
 
 /**
@@ -576,8 +709,9 @@ RELATIONSHIP BUILDING:
  * Expert in credit customers and complex financing situations
  */
 export const CREDIT_SPECIALIST_CONFIG: AgentConfiguration = {
-  name: 'credit-agent',
-  description: 'Credit specialist for customers with challenging credit situations and complex financing needs',
+  name: "credit-agent",
+  description:
+    "Credit specialist for customers with challenging credit situations and complex financing needs",
   systemPrompt: `You are a specialized credit expert who helps customers with challenging credit situations find automotive financing solutions.
 
 CREDIT EXPERTISE:
@@ -605,12 +739,12 @@ SOLUTION APPROACH:
 - Provide realistic expectations and timelines`,
 
   capabilities: [
-    'Credit assessment and counseling',
-    'Subprime financing expertise',
-    'Credit rebuilding guidance',
-    'Down payment strategizing',
-    'Co-signer education',
-    'Alternative financing solutions'
+    "Credit assessment and counseling",
+    "Subprime financing expertise",
+    "Credit rebuilding guidance",
+    "Down payment strategizing",
+    "Co-signer education",
+    "Alternative financing solutions",
   ],
 
   functions: [],
@@ -618,27 +752,37 @@ SOLUTION APPROACH:
   trainingExamples: [
     {
       userMessage: "I have bad credit, can you still help me?",
-      expectedResponse: "Absolutely! Bad credit doesn't mean no credit, and we specialize in helping customers in your situation. We work with lenders who understand that people face financial challenges and deserve a second chance. The key is finding the right loan structure and vehicle that fits your budget. Can you tell me a bit about your current situation and what you're looking for in a vehicle?",
-      category: "bad_credit_help"
+      expectedResponse:
+        "Absolutely! Bad credit doesn't mean no credit, and we specialize in helping customers in your situation. We work with lenders who understand that people face financial challenges and deserve a second chance. The key is finding the right loan structure and vehicle that fits your budget. Can you tell me a bit about your current situation and what you're looking for in a vehicle?",
+      category: "bad_credit_help",
     },
     {
       userMessage: "I've never had credit before",
-      expectedResponse: "That's actually more common than you might think! Having no credit history is different from having bad credit - you're starting with a clean slate. We have several programs specifically designed for first-time buyers. Typically, we'll need a larger down payment and may suggest a co-signer, but there are definitely options available. Do you have someone who could potentially co-sign, and what kind of down payment are you able to make?",
-      category: "no_credit_history"
-    }
+      expectedResponse:
+        "That's actually more common than you might think! Having no credit history is different from having bad credit - you're starting with a clean slate. We have several programs specifically designed for first-time buyers. Typically, we'll need a larger down payment and may suggest a co-signer, but there are definitely options available. Do you have someone who could potentially co-sign, and what kind of down payment are you able to make?",
+      category: "no_credit_history",
+    },
   ],
 
   classificationKeywords: [
-    'bad credit', 'no credit', 'bankruptcy', 'first time buyer', 'co-signer',
-    'credit problems', 'rebuilding credit', 'second chance'
+    "bad credit",
+    "no credit",
+    "bankruptcy",
+    "first time buyer",
+    "co-signer",
+    "credit problems",
+    "rebuilding credit",
+    "second chance",
   ],
 
   escalationTriggers: [
-    'complex credit situation', 'multiple rejections', 'legal issues'
+    "complex credit situation",
+    "multiple rejections",
+    "legal issues",
   ],
 
   confidenceThreshold: 0.85,
-  model: 'gpt-4o'
+  model: "gpt-4o",
 };
 
 /**
@@ -646,8 +790,9 @@ SOLUTION APPROACH:
  * Expert in leasing programs and lease-specific customer needs
  */
 export const LEASE_SPECIALIST_CONFIG: AgentConfiguration = {
-  name: 'lease-agent',
-  description: 'Lease specialist focused on leasing programs, lease returns, and lease-specific customer education',
+  name: "lease-agent",
+  description:
+    "Lease specialist focused on leasing programs, lease returns, and lease-specific customer education",
   systemPrompt: `You are a leasing specialist with comprehensive knowledge of automotive lease programs and lease customer lifecycle management.
 
 LEASE EXPERTISE:
@@ -675,12 +820,12 @@ EDUCATION FOCUS:
 - Help optimize lease terms for customer needs`,
 
   capabilities: [
-    'Lease program education',
-    'Lease-end guidance',
-    'Mileage and wear planning',
-    'Lease vs. buy analysis',
-    'Early termination counseling',
-    'Business lease expertise'
+    "Lease program education",
+    "Lease-end guidance",
+    "Mileage and wear planning",
+    "Lease vs. buy analysis",
+    "Early termination counseling",
+    "Business lease expertise",
   ],
 
   functions: [],
@@ -688,81 +833,92 @@ EDUCATION FOCUS:
   trainingExamples: [
     {
       userMessage: "My lease is ending soon, what are my options?",
-      expectedResponse: "Great timing to start planning! You typically have three main options as your lease ends: return the vehicle and lease something new, purchase your current vehicle at the predetermined residual value, or simply return it and walk away. Each option has different benefits depending on your situation. How has your experience been with your current vehicle, and what are you thinking about for your next step?",
-      category: "lease_end_options"
+      expectedResponse:
+        "Great timing to start planning! You typically have three main options as your lease ends: return the vehicle and lease something new, purchase your current vehicle at the predetermined residual value, or simply return it and walk away. Each option has different benefits depending on your situation. How has your experience been with your current vehicle, and what are you thinking about for your next step?",
+      category: "lease_end_options",
     },
     {
       userMessage: "I'm over my mileage allowance, what happens?",
-      expectedResponse: "Mileage overages are charged at the rate specified in your lease contract, typically 15-25 cents per mile. However, if you're planning to lease another vehicle from us, we can often work with you on those charges. How many miles over do you think you'll be, and are you interested in leasing again?",
-      category: "mileage_overage"
-    }
+      expectedResponse:
+        "Mileage overages are charged at the rate specified in your lease contract, typically 15-25 cents per mile. However, if you're planning to lease another vehicle from us, we can often work with you on those charges. How many miles over do you think you'll be, and are you interested in leasing again?",
+      category: "mileage_overage",
+    },
   ],
 
   classificationKeywords: [
-    'lease', 'leasing', 'lease end', 'return', 'mileage', 'wear and tear',
-    'lease payment', 'residual', 'buyout'
+    "lease",
+    "leasing",
+    "lease end",
+    "return",
+    "mileage",
+    "wear and tear",
+    "lease payment",
+    "residual",
+    "buyout",
   ],
 
   escalationTriggers: [
-    'excessive wear charges', 'lease dispute', 'early termination hardship'
+    "excessive wear charges",
+    "lease dispute",
+    "early termination hardship",
   ],
 
   confidenceThreshold: 0.8,
-  model: 'gpt-4o'
+  model: "gpt-4o",
 };
 
 // Export all configurations
 export const AGENT_CONFIGURATIONS = {
-  'general-agent': GENERAL_ASSISTANT_CONFIG,
-  'inventory-agent': INVENTORY_SPECIALIST_CONFIG,
-  'finance-agent': FINANCE_SPECIALIST_CONFIG,
-  'service-agent': SERVICE_SPECIALIST_CONFIG,
-  'trade-agent': TRADE_IN_SPECIALIST_CONFIG,
-  'sales-agent': SALES_SPECIALIST_CONFIG,
-  'credit-agent': CREDIT_SPECIALIST_CONFIG,
-  'lease-agent': LEASE_SPECIALIST_CONFIG
+  "general-agent": GENERAL_ASSISTANT_CONFIG,
+  "inventory-agent": INVENTORY_SPECIALIST_CONFIG,
+  "finance-agent": FINANCE_SPECIALIST_CONFIG,
+  "service-agent": SERVICE_SPECIALIST_CONFIG,
+  "trade-agent": TRADE_IN_SPECIALIST_CONFIG,
+  "sales-agent": SALES_SPECIALIST_CONFIG,
+  "credit-agent": CREDIT_SPECIALIST_CONFIG,
+  "lease-agent": LEASE_SPECIALIST_CONFIG,
 };
 
 // Classification examples for the orchestrator
 export const ENHANCED_CLASSIFICATION_EXAMPLES = [
-  ...GENERAL_ASSISTANT_CONFIG.trainingExamples.map(ex => ({
+  ...GENERAL_ASSISTANT_CONFIG.trainingExamples.map((ex) => ({
     userMessage: ex.userMessage,
-    agentName: 'general-agent',
-    reason: ex.expectedResponse.substring(0, 100) + '...'
+    agentName: "general-agent",
+    reason: ex.expectedResponse.substring(0, 100) + "...",
   })),
-  ...INVENTORY_SPECIALIST_CONFIG.trainingExamples.map(ex => ({
+  ...INVENTORY_SPECIALIST_CONFIG.trainingExamples.map((ex) => ({
     userMessage: ex.userMessage,
-    agentName: 'inventory-agent', 
-    reason: ex.expectedResponse.substring(0, 100) + '...'
+    agentName: "inventory-agent",
+    reason: ex.expectedResponse.substring(0, 100) + "...",
   })),
-  ...FINANCE_SPECIALIST_CONFIG.trainingExamples.map(ex => ({
+  ...FINANCE_SPECIALIST_CONFIG.trainingExamples.map((ex) => ({
     userMessage: ex.userMessage,
-    agentName: 'finance-agent',
-    reason: ex.expectedResponse.substring(0, 100) + '...'
+    agentName: "finance-agent",
+    reason: ex.expectedResponse.substring(0, 100) + "...",
   })),
-  ...SERVICE_SPECIALIST_CONFIG.trainingExamples.map(ex => ({
+  ...SERVICE_SPECIALIST_CONFIG.trainingExamples.map((ex) => ({
     userMessage: ex.userMessage,
-    agentName: 'service-agent',
-    reason: ex.expectedResponse.substring(0, 100) + '...'
+    agentName: "service-agent",
+    reason: ex.expectedResponse.substring(0, 100) + "...",
   })),
-  ...TRADE_IN_SPECIALIST_CONFIG.trainingExamples.map(ex => ({
+  ...TRADE_IN_SPECIALIST_CONFIG.trainingExamples.map((ex) => ({
     userMessage: ex.userMessage,
-    agentName: 'trade-agent',
-    reason: ex.expectedResponse.substring(0, 100) + '...'
+    agentName: "trade-agent",
+    reason: ex.expectedResponse.substring(0, 100) + "...",
   })),
-  ...SALES_SPECIALIST_CONFIG.trainingExamples.map(ex => ({
+  ...SALES_SPECIALIST_CONFIG.trainingExamples.map((ex) => ({
     userMessage: ex.userMessage,
-    agentName: 'sales-agent',
-    reason: ex.expectedResponse.substring(0, 100) + '...'
+    agentName: "sales-agent",
+    reason: ex.expectedResponse.substring(0, 100) + "...",
   })),
   {
     userMessage: "I have bad credit, can you still help me?",
     agentName: "credit-agent",
-    reason: "Customer has credit challenges requiring specialized assistance"
+    reason: "Customer has credit challenges requiring specialized assistance",
   },
   {
     userMessage: "My lease is ending soon, what are my options?",
-    agentName: "lease-agent", 
-    reason: "Customer needs lease-end guidance and options"
-  }
+    agentName: "lease-agent",
+    reason: "Customer needs lease-end guidance and options",
+  },
 ];

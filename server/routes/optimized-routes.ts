@@ -1,12 +1,15 @@
-import express from 'express';
-import { cacheService, createCacheKey } from '../services/unified-cache-service';
-import logger from '../utils/logger';
-import { executeQuery, db } from '../db';
+import express from "express";
+import {
+  cacheService,
+  createCacheKey,
+} from "../services/unified-cache-service";
+import logger from "../utils/logger";
+import { executeQuery, db } from "../db";
 
 const router = express.Router();
 
 // Cached conversations endpoint with pagination
-router.get('/conversations', async (req, res) => {
+router.get("/conversations", async (req, res) => {
   try {
     const dealershipId = Number(req.query.dealershipId) || 1; // Default for development
     const page = Number(req.query.page) || 1;
@@ -14,22 +17,22 @@ router.get('/conversations', async (req, res) => {
     const status = req.query.status as string | undefined;
 
     // Create a cache key based on the query parameters
-    const cacheKey = createCacheKey('conversations', { 
-      dealershipId, 
-      page, 
-      limit, 
-      status: status || 'all' 
+    const cacheKey = createCacheKey("conversations", {
+      dealershipId,
+      page,
+      limit,
+      status: status || "all",
     });
 
     // Try to get from cache first, or compute if not available
     const result = await cacheService.getOrSet(
       cacheKey,
       async () => {
-        logger.info('Cache miss - fetching conversations from database', {
+        logger.info("Cache miss - fetching conversations from database", {
           dealershipId,
           page,
           limit,
-          status
+          status,
         });
 
         // Use executeQuery with retry logic for better reliability
@@ -48,89 +51,92 @@ router.get('/conversations', async (req, res) => {
             FROM conversations c
             WHERE c.dealership_id = $1
           `;
-          
+
           const queryParams: any[] = [dealershipId];
-          
+
           if (status) {
             query += ` AND c.status = $2`;
             queryParams.push(status);
           }
-          
+
           query += ` ORDER BY c.created_at DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
           queryParams.push(limit, (page - 1) * limit);
-          
+
           // Get conversations
           const conversations = await db.execute(query, queryParams);
-          
+
           // Get total count for pagination
           let countQuery = `
             SELECT COUNT(*) as total 
             FROM conversations 
             WHERE dealership_id = $1
           `;
-          
+
           const countParams = [dealershipId];
-          
+
           if (status) {
             countQuery += ` AND status = $2`;
             countParams.push(status);
           }
-          
+
           const totalResult = await db.execute(countQuery, countParams);
           const total = parseInt(totalResult[0].total);
-          
+
           return {
             conversations,
             total,
             page,
             limit,
-            totalPages: Math.ceil(total / limit)
+            totalPages: Math.ceil(total / limit),
           };
         });
       },
-      { ttl: 60 } // Cache for 60 seconds
+      { ttl: 60 }, // Cache for 60 seconds
     );
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('Failed to fetch conversations', err);
+    logger.error("Failed to fetch conversations", err);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch conversations'
+      error: "Failed to fetch conversations",
     });
   }
 });
 
 // Get single conversation with messages (cached)
-router.get('/conversations/:id', async (req, res) => {
+router.get("/conversations/:id", async (req, res) => {
   try {
     const conversationId = Number(req.params.id);
     const messageLimit = Number(req.query.messageLimit) || 50;
 
     // Create cache key
-    const cacheKey = createCacheKey('conversation-detail', { 
-      id: conversationId, 
-      messageLimit 
+    const cacheKey = createCacheKey("conversation-detail", {
+      id: conversationId,
+      messageLimit,
     });
 
     // Try to get from cache first, or compute if not available
     const result = await cacheService.getOrSet(
       cacheKey,
       async () => {
-        logger.info('Cache miss - fetching conversation details from database', {
-          conversationId,
-          messageLimit
-        });
+        logger.info(
+          "Cache miss - fetching conversation details from database",
+          {
+            conversationId,
+            messageLimit,
+          },
+        );
 
         return await executeQuery(async () => {
           // Get conversation details
           const conversation = await db.execute(
             `SELECT * FROM conversations WHERE id = $1`,
-            [conversationId]
+            [conversationId],
           );
 
           if (conversation.length === 0) {
@@ -149,41 +155,41 @@ router.get('/conversations/:id', async (req, res) => {
             WHERE conversation_id = $1 
             ORDER BY created_at ASC 
             LIMIT $2`,
-            [conversationId, messageLimit]
+            [conversationId, messageLimit],
           );
 
           return {
             ...conversation[0],
-            messages
+            messages,
           };
         });
       },
-      { ttl: 30 } // Cache for 30 seconds
+      { ttl: 30 }, // Cache for 30 seconds
     );
 
     if (!result) {
       return res.status(404).json({
         success: false,
-        error: 'Conversation not found'
+        error: "Conversation not found",
       });
     }
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('Failed to fetch conversation details', err);
+    logger.error("Failed to fetch conversation details", err);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch conversation details'
+      error: "Failed to fetch conversation details",
     });
   }
 });
 
 // Search conversations by customer info (cached)
-router.get('/search', async (req, res) => {
+router.get("/search", async (req, res) => {
   try {
     const dealershipId = Number(req.query.dealershipId) || 1;
     const searchTerm = req.query.term as string;
@@ -192,30 +198,30 @@ router.get('/search', async (req, res) => {
     if (!searchTerm) {
       return res.status(400).json({
         success: false,
-        error: 'Search term is required'
+        error: "Search term is required",
       });
     }
 
     // Create cache key
-    const cacheKey = createCacheKey('conversation-search', { 
-      dealershipId, 
-      term: searchTerm, 
-      limit 
+    const cacheKey = createCacheKey("conversation-search", {
+      dealershipId,
+      term: searchTerm,
+      limit,
     });
 
     // Cache search results for a shorter time as they may change frequently
     const results = await cacheService.getOrSet(
       cacheKey,
       async () => {
-        logger.info('Cache miss - searching conversations in database', {
+        logger.info("Cache miss - searching conversations in database", {
           dealershipId,
           searchTerm,
-          limit
+          limit,
         });
 
         return await executeQuery(async () => {
           const searchPattern = `%${searchTerm}%`;
-          
+
           return await db.execute(
             `SELECT 
               id, 
@@ -233,52 +239,52 @@ router.get('/search', async (req, res) => {
               )
             ORDER BY created_at DESC 
             LIMIT $3`,
-            [dealershipId, searchPattern, limit]
+            [dealershipId, searchPattern, limit],
           );
         });
       },
-      { ttl: 20 } // Cache for 20 seconds
+      { ttl: 20 }, // Cache for 20 seconds
     );
 
     res.json({
       success: true,
-      data: results
+      data: results,
     });
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('Failed to search conversations', err);
+    logger.error("Failed to search conversations", err);
     res.status(500).json({
       success: false,
-      error: 'Failed to search conversations'
+      error: "Failed to search conversations",
     });
   }
 });
 
 // Get analytics for conversations (cached longer as analytics change less frequently)
-router.get('/analytics', async (req, res) => {
+router.get("/analytics", async (req, res) => {
   try {
     const dealershipId = Number(req.query.dealershipId) || 1;
     const days = Number(req.query.days) || 30;
 
     // Create cache key
-    const cacheKey = createCacheKey('conversation-analytics', { 
-      dealershipId, 
-      days 
+    const cacheKey = createCacheKey("conversation-analytics", {
+      dealershipId,
+      days,
     });
 
     // Analytics can be cached longer as they change less frequently
     const analytics = await cacheService.getOrSet(
       cacheKey,
       async () => {
-        logger.info('Cache miss - generating conversation analytics', {
+        logger.info("Cache miss - generating conversation analytics", {
           dealershipId,
-          days
+          days,
         });
 
         return await executeQuery(async () => {
           const startDate = new Date();
           startDate.setDate(startDate.getDate() - days);
-          
+
           return await db.execute(
             `SELECT 
               DATE(created_at) as date,
@@ -290,51 +296,53 @@ router.get('/analytics', async (req, res) => {
               AND created_at >= $2
             GROUP BY DATE(created_at) 
             ORDER BY date`,
-            [dealershipId, startDate.toISOString()]
+            [dealershipId, startDate.toISOString()],
           );
         });
       },
-      { ttl: 3600 } // Cache for 1 hour
+      { ttl: 3600 }, // Cache for 1 hour
     );
 
     res.json({
       success: true,
-      data: analytics
+      data: analytics,
     });
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    logger.error('Failed to generate analytics', err);
+    logger.error("Failed to generate analytics", err);
     res.status(500).json({
       success: false,
-      error: 'Failed to generate analytics'
+      error: "Failed to generate analytics",
     });
   }
 });
 
 // Clear cache endpoints (for admin use)
-router.post('/cache/clear', (req, res) => {
+router.post("/cache/clear", (req, res) => {
   const pattern = req.body.pattern;
-  
+
   if (pattern) {
     cacheService.invalidatePattern(pattern);
     logger.info(`Cache cleared by pattern: ${pattern}`);
   } else {
     cacheService.clear();
-    logger.info('Entire cache cleared');
+    logger.info("Entire cache cleared");
   }
-  
+
   res.json({
     success: true,
-    message: pattern ? `Cache cleared by pattern: ${pattern}` : 'Entire cache cleared'
+    message: pattern
+      ? `Cache cleared by pattern: ${pattern}`
+      : "Entire cache cleared",
   });
 });
 
 // Get cache stats
-router.get('/cache/stats', (req, res) => {
+router.get("/cache/stats", (req, res) => {
   const stats = cacheService.getStats();
   res.json({
     success: true,
-    data: stats
+    data: stats,
   });
 });
 

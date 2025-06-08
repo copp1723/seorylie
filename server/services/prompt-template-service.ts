@@ -1,10 +1,28 @@
-import logger from '../utils/logger';
-import db from '../db';
-import { sql } from 'drizzle-orm';
+import logger from "../utils/logger";
+import db from "../db";
+import { sql } from "drizzle-orm";
 
-export type PromptTemplateType = 'greeting' | 'qualification' | 'followup' | 'closing' | 'objection_handling' | 'appointment_booking';
-export type PromptTone = 'professional' | 'friendly' | 'casual' | 'formal' | 'urgent' | 'empathetic';
-export type TemplateVariableType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'multiselect';
+export type PromptTemplateType =
+  | "greeting"
+  | "qualification"
+  | "followup"
+  | "closing"
+  | "objection_handling"
+  | "appointment_booking";
+export type PromptTone =
+  | "professional"
+  | "friendly"
+  | "casual"
+  | "formal"
+  | "urgent"
+  | "empathetic";
+export type TemplateVariableType =
+  | "text"
+  | "number"
+  | "date"
+  | "boolean"
+  | "select"
+  | "multiselect";
 
 export interface TemplateVariable {
   name: string;
@@ -75,9 +93,11 @@ export class PromptTemplateService {
   /**
    * Select the best template based on criteria
    */
-  async selectTemplate(criteria: TemplateSelectionCriteria): Promise<PromptTemplate | null> {
+  async selectTemplate(
+    criteria: TemplateSelectionCriteria,
+  ): Promise<PromptTemplate | null> {
     try {
-      logger.info('Selecting template', criteria);
+      logger.info("Selecting template", criteria);
 
       // Build query with priority order:
       // 1. Exact lead source match
@@ -105,16 +125,15 @@ export class PromptTemplateService {
       `);
 
       if (!result.rows || result.rows.length === 0) {
-        logger.warn('No template found for criteria', criteria);
+        logger.warn("No template found for criteria", criteria);
         return null;
       }
 
       const row = result.rows[0] as any;
       return this.mapRowToTemplate(row);
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to select template', err, criteria);
+      logger.error("Failed to select template", err, criteria);
       throw err;
     }
   }
@@ -122,48 +141,50 @@ export class PromptTemplateService {
   /**
    * Render template with variables
    */
-  renderTemplate(template: PromptTemplate, context: TemplateRenderContext): string {
+  renderTemplate(
+    template: PromptTemplate,
+    context: TemplateRenderContext,
+  ): string {
     try {
       let rendered = template.promptContent;
 
       // Replace template variables with actual values
       const variables = {
-        customer_name: context.customerName || 'Customer',
-        dealership_name: context.dealershipName || 'Our Dealership',
-        agent_name: context.agentName || 'Assistant',
-        vehicle_make: context.vehicleMake || '',
-        vehicle_model: context.vehicleModel || '',
-        lead_source: context.leadSource || '',
-        urgency_level: context.urgencyLevel || 'normal',
-        ...context.customVariables
+        customer_name: context.customerName || "Customer",
+        dealership_name: context.dealershipName || "Our Dealership",
+        agent_name: context.agentName || "Assistant",
+        vehicle_make: context.vehicleMake || "",
+        vehicle_model: context.vehicleModel || "",
+        lead_source: context.leadSource || "",
+        urgency_level: context.urgencyLevel || "normal",
+        ...context.customVariables,
       };
 
       // Replace variables in template
       for (const [key, value] of Object.entries(variables)) {
-        const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-        rendered = rendered.replace(regex, String(value || ''));
+        const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
+        rendered = rendered.replace(regex, String(value || ""));
       }
 
       // Clean up any remaining unreplaced variables
-      rendered = rendered.replace(/{{[^}]+}}/g, '');
+      rendered = rendered.replace(/{{[^}]+}}/g, "");
 
       // Apply tone-specific formatting
       rendered = this.applyToneFormatting(rendered, template.tone);
 
-      logger.info('Template rendered successfully', {
+      logger.info("Template rendered successfully", {
         templateId: template.id,
         templateType: template.templateType,
         tone: template.tone,
-        renderedLength: rendered.length
+        renderedLength: rendered.length,
       });
 
       return rendered;
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to render template', err, {
+      logger.error("Failed to render template", err, {
         templateId: template.id,
-        context
+        context,
       });
       throw err;
     }
@@ -177,7 +198,7 @@ export class PromptTemplateService {
     conversationId: number,
     customerId: number,
     renderedPrompt: string,
-    variablesUsed: Record<string, any>
+    variablesUsed: Record<string, any>,
   ): Promise<void> {
     try {
       await db.execute(sql`
@@ -192,17 +213,16 @@ export class PromptTemplateService {
         WHERE pt.id = ${templateId}
       `);
 
-      logger.info('Template usage tracked', {
+      logger.info("Template usage tracked", {
         templateId,
         conversationId,
-        customerId
+        customerId,
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to track template usage', err, {
+      logger.error("Failed to track template usage", err, {
         templateId,
-        conversationId
+        conversationId,
       });
       // Don't throw - usage tracking failure shouldn't break the main flow
     }
@@ -211,7 +231,9 @@ export class PromptTemplateService {
   /**
    * Create new template
    */
-  async createTemplate(template: Omit<PromptTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async createTemplate(
+    template: Omit<PromptTemplate, "id" | "createdAt" | "updatedAt">,
+  ): Promise<string> {
     try {
       const templateId = crypto.randomUUID();
 
@@ -220,7 +242,7 @@ export class PromptTemplateService {
         await this.unsetDefaultTemplates(
           template.dealershipId,
           template.templateType,
-          template.leadSource
+          template.leadSource,
         );
       }
 
@@ -241,18 +263,17 @@ export class PromptTemplateService {
         )
       `);
 
-      logger.info('Template created successfully', {
+      logger.info("Template created successfully", {
         templateId,
         name: template.name,
         dealershipId: template.dealershipId,
-        templateType: template.templateType
+        templateType: template.templateType,
       });
 
       return templateId;
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to create template', err, template);
+      logger.error("Failed to create template", err, template);
       throw err;
     }
   }
@@ -262,7 +283,7 @@ export class PromptTemplateService {
    */
   async updateTemplate(
     templateId: string,
-    updates: Partial<Omit<PromptTemplate, 'id' | 'createdAt' | 'updatedAt'>>
+    updates: Partial<Omit<PromptTemplate, "id" | "createdAt" | "updatedAt">>,
   ): Promise<void> {
     try {
       // If setting as default, unset other defaults
@@ -272,7 +293,7 @@ export class PromptTemplateService {
           await this.unsetDefaultTemplates(
             template.dealershipId,
             template.templateType,
-            template.leadSource
+            template.leadSource,
           );
         }
       }
@@ -285,7 +306,7 @@ export class PromptTemplateService {
           const dbKey = this.camelToSnakeCase(key);
           updateFields.push(`${dbKey} = ?`);
 
-          if (key === 'variables' || key === 'conditions') {
+          if (key === "variables" || key === "conditions") {
             updateValues.push(JSON.stringify(value));
           } else {
             updateValues.push(value);
@@ -299,18 +320,17 @@ export class PromptTemplateService {
 
       await db.execute(sql`
         UPDATE prompt_templates
-        SET ${sql.raw(updateFields.join(', '))}
+        SET ${sql.raw(updateFields.join(", "))}
         WHERE id = ${templateId}
       `);
 
-      logger.info('Template updated successfully', {
+      logger.info("Template updated successfully", {
         templateId,
-        updatedFields: Object.keys(updates)
+        updatedFields: Object.keys(updates),
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to update template', err, { templateId, updates });
+      logger.error("Failed to update template", err, { templateId, updates });
       throw err;
     }
   }
@@ -329,10 +349,9 @@ export class PromptTemplateService {
       }
 
       return this.mapRowToTemplate(result.rows[0] as any);
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get template', err, { templateId });
+      logger.error("Failed to get template", err, { templateId });
       throw err;
     }
   }
@@ -347,7 +366,7 @@ export class PromptTemplateService {
       templateType?: PromptTemplateType;
       isActive?: boolean;
       limit?: number;
-    } = {}
+    } = {},
   ): Promise<PromptTemplate[]> {
     try {
       let whereConditions = [`dealership_id = ${dealershipId}`];
@@ -364,7 +383,7 @@ export class PromptTemplateService {
         whereConditions.push(`is_active = ${filters.isActive}`);
       }
 
-      const whereClause = whereConditions.join(' AND ');
+      const whereClause = whereConditions.join(" AND ");
       const limit = filters.limit || 100;
 
       const result = await db.execute(sql`
@@ -374,11 +393,10 @@ export class PromptTemplateService {
         LIMIT ${limit}
       `);
 
-      return (result || []).map(row => this.mapRowToTemplate(row as any));
-
+      return (result || []).map((row) => this.mapRowToTemplate(row as any));
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get templates', err, { dealershipId, filters });
+      logger.error("Failed to get templates", err, { dealershipId, filters });
       throw err;
     }
   }
@@ -389,7 +407,7 @@ export class PromptTemplateService {
   async getTemplateAnalytics(
     templateId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<any> {
     try {
       const result = await db.execute(sql`
@@ -422,15 +440,14 @@ export class PromptTemplateService {
 
       return {
         summary: analytics,
-        dailyBreakdown: dailyResult || []
+        dailyBreakdown: dailyResult || [],
       };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get template analytics', err, {
+      logger.error("Failed to get template analytics", err, {
         templateId,
         startDate,
-        endDate
+        endDate,
       });
       throw err;
     }
@@ -439,7 +456,10 @@ export class PromptTemplateService {
   /**
    * Test template with sample data
    */
-  testTemplate(template: PromptTemplate, sampleContext: TemplateRenderContext): {
+  testTemplate(
+    template: PromptTemplate,
+    sampleContext: TemplateRenderContext,
+  ): {
     rendered: string;
     missingVariables: string[];
     warnings: string[];
@@ -451,12 +471,13 @@ export class PromptTemplateService {
       const missingVariables: string[] = [];
       const warnings: string[] = [];
 
-      template.variables.forEach(variable => {
+      template.variables.forEach((variable) => {
         if (variable.required) {
-          const variableKey = variable.name.toLowerCase().replace(/\s+/g, '_');
-          const hasValue = sampleContext.customVariables?.[variableKey] ||
-                          sampleContext.customVariables?.[variable.name] ||
-                          Object.values(sampleContext).some(v => v !== undefined);
+          const variableKey = variable.name.toLowerCase().replace(/\s+/g, "_");
+          const hasValue =
+            sampleContext.customVariables?.[variableKey] ||
+            sampleContext.customVariables?.[variable.name] ||
+            Object.values(sampleContext).some((v) => v !== undefined);
 
           if (!hasValue) {
             missingVariables.push(variable.name);
@@ -466,19 +487,18 @@ export class PromptTemplateService {
 
       // Check for potential issues
       if (rendered.length > 2000) {
-        warnings.push('Template output is very long (>2000 characters)');
+        warnings.push("Template output is very long (>2000 characters)");
       }
 
-      if (rendered.includes('{{')) {
-        warnings.push('Template contains unreplaced variables');
+      if (rendered.includes("{{")) {
+        warnings.push("Template contains unreplaced variables");
       }
 
       return {
         rendered,
         missingVariables,
-        warnings
+        warnings,
       };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       throw new Error(`Template test failed: ${err.message}`);
@@ -496,7 +516,7 @@ export class PromptTemplateService {
       templateType: row.template_type,
       promptContent: row.prompt_content,
       tone: row.tone,
-      language: row.language || 'en',
+      language: row.language || "en",
       variables: row.variables || [],
       conditions: row.conditions || {},
       priority: row.priority || 1,
@@ -509,14 +529,14 @@ export class PromptTemplateService {
       approvedBy: row.approved_by,
       approvedAt: row.approved_at,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
     };
   }
 
   private async unsetDefaultTemplates(
     dealershipId: number,
     templateType: PromptTemplateType,
-    leadSource?: string
+    leadSource?: string,
   ): Promise<void> {
     await db.execute(sql`
       UPDATE prompt_templates
@@ -530,20 +550,20 @@ export class PromptTemplateService {
 
   private applyToneFormatting(content: string, tone: PromptTone): string {
     switch (tone) {
-      case 'urgent':
+      case "urgent":
         return content.toUpperCase();
-      case 'casual':
+      case "casual":
         return content.toLowerCase();
-      case 'formal':
+      case "formal":
         // Ensure proper capitalization
-        return content.replace(/\b\w/g, l => l.toUpperCase());
+        return content.replace(/\b\w/g, (l) => l.toUpperCase());
       default:
         return content;
     }
   }
 
   private camelToSnakeCase(str: string): string {
-    return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
   }
 }
 

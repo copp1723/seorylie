@@ -7,13 +7,16 @@
 **Run `npm run setup` before all local or CI work. All quality gates are auto-checked before running. See [SETUP.md](SETUP.md) for troubleshooting.**
 
 ### Quick Start for Developers
+
 1. **Setup**: `npm run setup` (handles all dependencies and validation)
 2. **Development**: `npm run dev` (starts frontend and backend)
 3. **Testing**: `npm run test` (auto-validates dependencies first)
 4. **Building**: `npm run build` (auto-validates dependencies first)
 
 ### Quality Gates
+
 All commands now include automatic dependency verification and quality checks:
+
 - ✅ Dependencies installed and validated
 - ✅ TypeScript compilation passes
 - ✅ Linting rules enforced
@@ -34,12 +37,14 @@ main ─┬─► (production)
 ```
 
 **Branch Workflow:**
+
 - Work on feature branches: `feature/stab-<ID>/<desc>` branched from `stabilization`
 - Fast-forward merge to `stabilization` after CI passes
 - Final merge `stabilization → main` only when STAB-502 production readiness passes
 - Commit format: `feat: [STAB-101] description`
 
 **Development Process:**
+
 1. Create feature branch from `stabilization`
 2. Implement changes with comprehensive testing
 3. Run `npm run setup` and quality gates
@@ -47,6 +52,7 @@ main ─┬─► (production)
 5. Merge after CI validation and review
 
 ### CI/CD Integration
+
 - **Staging**: Push to `integration/production-readiness-phase1` → auto-deploys to staging
 - **Production**: Merge to `main` after staging validation passes
 - **Feature Work**: Create `feature/` branches off integration branch
@@ -55,10 +61,10 @@ main ─┬─► (production)
 
 ## Branching & Release Model
 
-| Branch | Purpose |
-|--------|---------|
-| **main** | Production baseline (fast-forwarded from golden release candidates) |
-| **integration/production-readiness-phase1** | Active development, staging, and release candidate branch |
+| Branch                                      | Purpose                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------- |
+| **main**                                    | Production baseline (fast-forwarded from golden release candidates) |
+| **integration/production-readiness-phase1** | Active development, staging, and release candidate branch           |
 
 Developers create short-lived `feat/`, `fix/`, or `chore/` branches off `integration/production-readiness-phase1` and open PRs back to it.
 Full details: [docs/BRANCHING_STRATEGY.md](docs/BRANCHING_STRATEGY.md).
@@ -89,6 +95,7 @@ npm install
 ```
 
 To verify vitest is installed, run:
+
 ```bash
 npx vitest --version
 ```
@@ -129,7 +136,7 @@ After setup, you can safely run:
 
 ```bash
 npm run lint       # TypeScript checking (with auto pre-check)
-npm run check      # Type checking (with auto pre-check)  
+npm run check      # Type checking (with auto pre-check)
 npm run test       # Run tests (with auto pre-check)
 npm run build      # Build project (with auto pre-check)
 ```
@@ -140,6 +147,7 @@ npm run build      # Build project (with auto pre-check)
 
 **If your environment restricts network access after container startup:**
 All dependencies must be installed during the setup/init phase. Use:
+
 - `npm ci` for reproducible installs
 - `npm run setup` to verify all dependencies
 - Include `node_modules` in deployment if necessary
@@ -153,8 +161,9 @@ See [SETUP.md](SETUP.md) for comprehensive setup documentation.
 Spin up **the entire multi-service AI platform** with a single command.
 
 ### Prerequisites
-* Docker Desktop (or Docker Engine v24+) installed
-* A valid `.env` file in the repository root containing **at least** `OPENAI_API_KEY`, `SESSION_SECRET`, and `DATABASE_URL`. Other service-specific keys might be needed based on enabled features.
+
+- Docker Desktop (or Docker Engine v24+) installed
+- A valid `.env` file in the repository root containing **at least** `OPENAI_API_KEY`, `SESSION_SECRET`, and `DATABASE_URL`. Other service-specific keys might be needed based on enabled features.
 
 ### Start the platform
 
@@ -167,25 +176,25 @@ docker compose -f docker-compose.platform.yml up -d --build
 
 #### What gets started
 
-| Service                | Image / Context                       | Port | Notes                                    |
-|------------------------|---------------------------------------|------|------------------------------------------|
-| PostgreSQL             | `postgres:15-alpine`                  | 5432 | Primary relational DB                    |
-| Redis                  | `redis:alpine`                        | 6379 | Caching / messaging / session store      |
-| cleanrylie-api         | `./Dockerfile` (target `server`)      | 3000 | Express backend (`/api/*` routes)        |
-| cleanrylie-frontend    | `./Dockerfile` (target `client`)      | 5173 | React/Vite frontend                      |
-| watchdog-api           | `final_watchdog/backend`              | 8000 | FastAPI analytics & insights             |
-| MindsDB (optional)     | `mindsdb/mindsdb:latest`              |47334 | AutoML / SQL-over-AI gateway             |
-| mock-imap              | `./Dockerfile` (target `testing`)     | 1143 | Mock IMAP server for email testing       |
-| mock-openai            | `./Dockerfile` (target `testing`)     | 3001 | Mock OpenAI API for AI testing           |
-| mock-twilio            | `./Dockerfile` (target `testing`)     | 3002 | Mock Twilio API for SMS testing          |
-| test-runner            | `./Dockerfile` (target `testing`)     | -    | CI test runner for automated testing     |
+| Service             | Image / Context                   | Port  | Notes                                |
+| ------------------- | --------------------------------- | ----- | ------------------------------------ |
+| PostgreSQL          | `postgres:15-alpine`              | 5432  | Primary relational DB                |
+| Redis               | `redis:alpine`                    | 6379  | Caching / messaging / session store  |
+| cleanrylie-api      | `./Dockerfile` (target `server`)  | 3000  | Express backend (`/api/*` routes)    |
+| cleanrylie-frontend | `./Dockerfile` (target `client`)  | 5173  | React/Vite frontend                  |
+| watchdog-api        | `final_watchdog/backend`          | 8000  | FastAPI analytics & insights         |
+| MindsDB (optional)  | `mindsdb/mindsdb:latest`          | 47334 | AutoML / SQL-over-AI gateway         |
+| mock-imap           | `./Dockerfile` (target `testing`) | 1143  | Mock IMAP server for email testing   |
+| mock-openai         | `./Dockerfile` (target `testing`) | 3001  | Mock OpenAI API for AI testing       |
+| mock-twilio         | `./Dockerfile` (target `testing`) | 3002  | Mock Twilio API for SMS testing      |
+| test-runner         | `./Dockerfile` (target `testing`) | -     | CI test runner for automated testing |
 
 You can access the running stack at:
 
-* Frontend   → http://localhost:5173  
-* cleanrylie API → http://localhost:3000  
-* Watchdog API → http://localhost:8000  
-* MindsDB UI  → http://localhost:47334 (if enabled)
+- Frontend → http://localhost:5173
+- cleanrylie API → http://localhost:3000
+- Watchdog API → http://localhost:8000
+- MindsDB UI → http://localhost:47334 (if enabled)
 
 ### Health checks
 
@@ -196,11 +205,12 @@ After the containers are up, verify every service is healthy:
 ```
 
 The script polls:
-* `POSTGRES` readiness via `pg_isready`
-* `redis-cli ping`
-* `http://localhost:3000/api/health` (CleanRylie API)
-* `http://localhost:8000/api/health` (Watchdog API, if applicable)
-* `http://localhost:47334/api/health` (MindsDB, if applicable)
+
+- `POSTGRES` readiness via `pg_isready`
+- `redis-cli ping`
+- `http://localhost:3000/api/health` (CleanRylie API)
+- `http://localhost:8000/api/health` (Watchdog API, if applicable)
+- `http://localhost:47334/api/health` (MindsDB, if applicable)
 
 ### One-shot integration test (Example)
 
@@ -208,6 +218,7 @@ The script polls:
 # Example: npx tsx scripts/test-integration.ts
 # (This script may need to be adapted to current platform capabilities)
 ```
+
 This type of script would typically simulate an agent question, analytics call, and insight response to confirm cross-service communication.
 
 > **Troubleshooting**: Run `docker compose -f docker-compose.platform.yml logs -f <service_name>` to inspect logs for any failing container (e.g., `cleanrylie-api`).
@@ -250,14 +261,14 @@ npm run test:adf-mocks
 
 ### Available Testing Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm run test:mocks` | Run all mock service tests |
-| `npm run test:integration-mocks` | Run integration tests with mock services |
-| `npm run test:adf-mocks` | Test ADF pipeline with mock services |
-| `npm run test:fixtures` | Validate test fixtures for completeness |
-| `npm run test:ci` | Run all tests with coverage reporting (CI mode) |
-| `npm run test:ci-framework` | Test the CI framework itself |
+| Command                          | Description                                     |
+| -------------------------------- | ----------------------------------------------- |
+| `npm run test:mocks`             | Run all mock service tests                      |
+| `npm run test:integration-mocks` | Run integration tests with mock services        |
+| `npm run test:adf-mocks`         | Test ADF pipeline with mock services            |
+| `npm run test:fixtures`          | Validate test fixtures for completeness         |
+| `npm run test:ci`                | Run all tests with coverage reporting (CI mode) |
+| `npm run test:ci-framework`      | Test the CI framework itself                    |
 
 ### Testing with Docker Compose
 
@@ -287,16 +298,19 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) provides:
 ### Mock Services
 
 #### Mock IMAP Server (Port 1143)
+
 - Simulates email server for ADF lead processing tests
 - Provides deterministic email delivery for testing
 - Configurable mailboxes and email templates
 
 #### Mock OpenAI (Port 3001)
+
 - Simulates OpenAI API responses without API costs
 - Configurable response templates and latency
 - Supports streaming and non-streaming responses
 
 #### Mock Twilio (Port 3002)
+
 - Simulates SMS sending and delivery status updates
 - Configurable delivery delays and status callbacks
 - Records all sent messages for verification
@@ -384,4 +398,5 @@ Refer to `docs/ENVIRONMENT_CONFIGURATION.md` for a detailed guide.
 ## Contributing
 
 Please refer to `CONTRIBUTING.md` (if available) or follow standard Gitflow practices. Ensure code is linted, tested, and documented before submitting pull requests.
+
 # CI Status: Fixed TypeScript and test command issues Fri May 30 13:57:29 CDT 2025

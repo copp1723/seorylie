@@ -59,21 +59,15 @@ const brandingSchema = z.object({
     .url({ message: "Please enter a valid logo URL" })
     .optional()
     .or(z.literal("")),
-  primary_color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, {
-      message: "Please enter a valid hex color code (e.g., #000000)",
-    }),
-  secondary_color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, {
-      message: "Please enter a valid hex color code (e.g., #FFFFFF)",
-    }),
-  accent_color: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, {
-      message: "Please enter a valid hex color code (e.g., #4F46E5)",
-    }),
+  primary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, {
+    message: "Please enter a valid hex color code (e.g., #000000)",
+  }),
+  secondary_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, {
+    message: "Please enter a valid hex color code (e.g., #FFFFFF)",
+  }),
+  accent_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, {
+    message: "Please enter a valid hex color code (e.g., #4F46E5)",
+  }),
   font_family: z.string(),
 
   // Persona settings

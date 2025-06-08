@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 export function CSSDebug() {
   const [elementCount, setElementCount] = useState(0);
@@ -8,30 +8,32 @@ export function CSSDebug() {
   useEffect(() => {
     // Check if CSS is loaded
     const checkCSS = () => {
-      const testElement = document.createElement('div');
-      testElement.className = 'test-css-loaded';
-      testElement.style.position = 'absolute';
-      testElement.style.left = '-9999px';
+      const testElement = document.createElement("div");
+      testElement.className = "test-css-loaded";
+      testElement.style.position = "absolute";
+      testElement.style.left = "-9999px";
       document.body.appendChild(testElement);
-      
+
       const computed = window.getComputedStyle(testElement);
-      setCssLoaded(computed.position === 'absolute');
+      setCssLoaded(computed.position === "absolute");
       document.body.removeChild(testElement);
     };
 
     // Count DOM elements
     const countElements = () => {
-      const allElements = document.querySelectorAll('*');
+      const allElements = document.querySelectorAll("*");
       setElementCount(allElements.length);
-      
+
       let hidden = 0;
-      allElements.forEach(el => {
+      allElements.forEach((el) => {
         const style = window.getComputedStyle(el);
-        if (style.display === 'none' || 
-            style.visibility === 'hidden' || 
-            style.opacity === '0' ||
-            parseInt(style.width) === 0 ||
-            parseInt(style.height) === 0) {
+        if (
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          style.opacity === "0" ||
+          parseInt(style.width) === 0 ||
+          parseInt(style.height) === 0
+        ) {
           hidden++;
         }
       });
@@ -40,14 +42,14 @@ export function CSSDebug() {
 
     checkCSS();
     countElements();
-    
+
     const interval = setInterval(countElements, 2000);
     return () => clearInterval(interval);
   }, []);
 
   const highlightElements = () => {
     // Add colorful borders to all elements to see layout
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
       * { 
         border: 1px solid red !important; 
@@ -61,7 +63,7 @@ export function CSSDebug() {
       }
     `;
     document.head.appendChild(style);
-    
+
     setTimeout(() => {
       document.head.removeChild(style);
     }, 5000);
@@ -69,7 +71,7 @@ export function CSSDebug() {
 
   const showLayout = () => {
     // Force show all elements
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
       * { 
         display: block !important; 
@@ -95,108 +97,108 @@ export function CSSDebug() {
   };
 
   const inspectMainContent = () => {
-    const root = document.getElementById('root');
+    const root = document.getElementById("root");
     const layout = root?.querySelector('[class*="layout"]');
     const dashboard = root?.querySelector('[class*="dashboard"]');
-    
-    console.group('🔍 Main Content Inspection');
-    console.log('Root element:', root);
-    console.log('Root innerHTML length:', root?.innerHTML.length || 0);
-    console.log('Layout element:', layout);
-    console.log('Dashboard element:', dashboard);
-    
+
+    console.group("🔍 Main Content Inspection");
+    console.log("Root element:", root);
+    console.log("Root innerHTML length:", root?.innerHTML.length || 0);
+    console.log("Layout element:", layout);
+    console.log("Dashboard element:", dashboard);
+
     if (root) {
       const rootStyle = window.getComputedStyle(root);
-      console.log('Root styles:', {
+      console.log("Root styles:", {
         display: rootStyle.display,
         visibility: rootStyle.visibility,
         opacity: rootStyle.opacity,
         width: rootStyle.width,
         height: rootStyle.height,
         background: rootStyle.background,
-        color: rootStyle.color
+        color: rootStyle.color,
       });
     }
     console.groupEnd();
   };
 
   return (
-    <div 
+    <div
       className="debug-panel"
       style={{
-        position: 'fixed',
-        top: '10px',
-        left: '10px',
-        background: '#000',
-        color: '#fff',
-        padding: '15px',
-        borderRadius: '8px',
-        border: '2px solid #333',
+        position: "fixed",
+        top: "10px",
+        left: "10px",
+        background: "#000",
+        color: "#fff",
+        padding: "15px",
+        borderRadius: "8px",
+        border: "2px solid #333",
         zIndex: 99999,
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        maxWidth: '250px'
+        fontFamily: "monospace",
+        fontSize: "11px",
+        maxWidth: "250px",
       }}
     >
-      <h3 style={{ margin: '0 0 10px 0', color: '#ff0' }}>🎨 CSS Debug</h3>
-      
-      <div style={{ marginBottom: '8px' }}>
+      <h3 style={{ margin: "0 0 10px 0", color: "#ff0" }}>🎨 CSS Debug</h3>
+
+      <div style={{ marginBottom: "8px" }}>
         <strong>Elements:</strong> {elementCount}
       </div>
-      
-      <div style={{ marginBottom: '8px' }}>
+
+      <div style={{ marginBottom: "8px" }}>
         <strong>Hidden:</strong> {hiddenElements}
       </div>
-      
-      <div style={{ marginBottom: '8px' }}>
-        <strong>CSS:</strong> {cssLoaded ? '✅' : '❌'}
+
+      <div style={{ marginBottom: "8px" }}>
+        <strong>CSS:</strong> {cssLoaded ? "✅" : "❌"}
       </div>
-      
-      <div style={{ marginBottom: '10px' }}>
-        <button 
+
+      <div style={{ marginBottom: "10px" }}>
+        <button
           onClick={highlightElements}
           style={{
-            background: '#ff6600',
-            color: 'white',
-            border: 'none',
-            padding: '4px 8px',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            fontSize: '10px',
-            marginRight: '5px'
+            background: "#ff6600",
+            color: "white",
+            border: "none",
+            padding: "4px 8px",
+            borderRadius: "3px",
+            cursor: "pointer",
+            fontSize: "10px",
+            marginRight: "5px",
           }}
         >
           Highlight (5s)
         </button>
-        
-        <button 
+
+        <button
           onClick={showLayout}
           style={{
-            background: '#0066ff',
-            color: 'white',
-            border: 'none',
-            padding: '4px 8px',
-            borderRadius: '3px',
-            cursor: 'pointer',
-            fontSize: '10px',
-            marginRight: '5px'
+            background: "#0066ff",
+            color: "white",
+            border: "none",
+            padding: "4px 8px",
+            borderRadius: "3px",
+            cursor: "pointer",
+            fontSize: "10px",
+            marginRight: "5px",
           }}
         >
           Force Show
         </button>
       </div>
-      
-      <button 
+
+      <button
         onClick={inspectMainContent}
         style={{
-          background: '#00aa00',
-          color: 'white',
-          border: 'none',
-          padding: '4px 8px',
-          borderRadius: '3px',
-          cursor: 'pointer',
-          fontSize: '10px',
-          width: '100%'
+          background: "#00aa00",
+          color: "white",
+          border: "none",
+          padding: "4px 8px",
+          borderRadius: "3px",
+          cursor: "pointer",
+          fontSize: "10px",
+          width: "100%",
         }}
       >
         Inspect Main (Console)

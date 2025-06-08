@@ -1,13 +1,13 @@
-import logger from '../utils/logger';
+import logger from "../utils/logger";
 import {
   channelRoutingService,
   ChannelMessage,
   ChannelRoutingResult,
   DeliveryStatus,
-  CommunicationChannel
-} from './channel-routing-service';
-import { channelFactory } from './channel-handlers/channel-factory';
-import { BaseChannelHandler } from './channel-handlers/base-channel-handler';
+  CommunicationChannel,
+} from "./channel-routing-service";
+import { channelFactory } from "./channel-handlers/channel-factory";
+import { BaseChannelHandler } from "./channel-handlers/base-channel-handler";
 
 export interface MessageDeliveryRequest {
   conversationId?: number;
@@ -15,7 +15,7 @@ export interface MessageDeliveryRequest {
   dealershipId: number;
   content: string;
   subject?: string;
-  urgencyLevel?: 'low' | 'normal' | 'high' | 'urgent';
+  urgencyLevel?: "low" | "normal" | "high" | "urgent";
   leadSource?: string;
   preferredChannel?: CommunicationChannel;
   metadata?: Record<string, any>;
@@ -56,14 +56,16 @@ export class MessageDeliveryService {
   /**
    * Send a message through the optimal channel
    */
-  async sendMessage(request: MessageDeliveryRequest): Promise<MessageDeliveryResponse> {
+  async sendMessage(
+    request: MessageDeliveryRequest,
+  ): Promise<MessageDeliveryResponse> {
     try {
-      logger.info('Processing message delivery request', {
+      logger.info("Processing message delivery request", {
         customerId: request.customerId,
         dealershipId: request.dealershipId,
         urgencyLevel: request.urgencyLevel,
         preferredChannel: request.preferredChannel,
-        leadSource: request.leadSource
+        leadSource: request.leadSource,
       });
 
       // Prepare channel message
@@ -74,28 +76,34 @@ export class MessageDeliveryService {
         dealershipId: request.dealershipId,
         content: request.content,
         subject: request.subject,
-        urgencyLevel: request.urgencyLevel || 'normal',
+        urgencyLevel: request.urgencyLevel || "normal",
         leadSource: request.leadSource,
-        metadata: request.metadata || {}
+        metadata: request.metadata || {},
       };
 
       // Route message to appropriate channel
-      const routingResult = await channelRoutingService.routeMessage(channelMessage);
+      const routingResult =
+        await channelRoutingService.routeMessage(channelMessage);
 
       // Get channel handler
       const handler = await channelFactory.getChannelHandler(
         request.dealershipId,
-        routingResult.selectedChannel
+        routingResult.selectedChannel,
       );
 
       if (!handler) {
-        throw new Error(`No handler available for channel: ${routingResult.selectedChannel}`);
+        throw new Error(
+          `No handler available for channel: ${routingResult.selectedChannel}`,
+        );
       }
 
       // Check if channel is available
       const isAvailable = await handler.isAvailable();
       if (!isAvailable) {
-        return await this.handleChannelUnavailable(channelMessage, routingResult);
+        return await this.handleChannelUnavailable(
+          channelMessage,
+          routingResult,
+        );
       }
 
       // Send message through selected channel
@@ -105,14 +113,14 @@ export class MessageDeliveryService {
         // Update delivery status
         await channelRoutingService.updateDeliveryStatus(
           routingResult.deliveryAttemptId,
-          'sent',
-          deliveryResult.metadata
+          "sent",
+          deliveryResult.metadata,
         );
 
-        logger.info('Message sent successfully', {
+        logger.info("Message sent successfully", {
           deliveryAttemptId: routingResult.deliveryAttemptId,
           channel: routingResult.selectedChannel,
-          externalMessageId: deliveryResult.externalMessageId
+          externalMessageId: deliveryResult.externalMessageId,
         });
 
         return {
@@ -120,31 +128,29 @@ export class MessageDeliveryService {
           deliveryAttemptId: routingResult.deliveryAttemptId,
           selectedChannel: routingResult.selectedChannel,
           externalMessageId: deliveryResult.externalMessageId,
-          fallbackChannels: routingResult.fallbackChannels
+          fallbackChannels: routingResult.fallbackChannels,
         };
-
       } else {
         // Handle delivery failure
         return await this.handleDeliveryFailure(
           channelMessage,
           routingResult,
-          deliveryResult.error || 'Unknown delivery error'
+          deliveryResult.error || "Unknown delivery error",
         );
       }
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to send message', err, {
+      logger.error("Failed to send message", err, {
         customerId: request.customerId,
-        dealershipId: request.dealershipId
+        dealershipId: request.dealershipId,
       });
 
       return {
         success: false,
-        deliveryAttemptId: '',
-        selectedChannel: 'email',
+        deliveryAttemptId: "",
+        selectedChannel: "email",
         fallbackChannels: [],
-        error: err.message
+        error: err.message,
       };
     }
   }
@@ -152,9 +158,11 @@ export class MessageDeliveryService {
   /**
    * Send message to multiple channels simultaneously (for urgent messages)
    */
-  async sendMultiChannelMessage(request: MessageDeliveryRequest): Promise<MessageDeliveryResponse[]> {
+  async sendMultiChannelMessage(
+    request: MessageDeliveryRequest,
+  ): Promise<MessageDeliveryResponse[]> {
     try {
-      const channels: CommunicationChannel[] = ['email', 'sms', 'web_chat'];
+      const channels: CommunicationChannel[] = ["email", "sms", "web_chat"];
       const promises = channels.map(async (channel) => {
         const channelRequest = { ...request, preferredChannel: channel };
         return await this.sendMessage(channelRequest);
@@ -163,22 +171,21 @@ export class MessageDeliveryService {
       const results = await Promise.allSettled(promises);
 
       return results.map((result, index) => {
-        if (result.status === 'fulfilled') {
+        if (result.status === "fulfilled") {
           return result.value;
         } else {
           return {
             success: false,
-            deliveryAttemptId: '',
+            deliveryAttemptId: "",
             selectedChannel: channels[index],
             fallbackChannels: [],
-            error: result.reason?.message || 'Failed to send'
+            error: result.reason?.message || "Failed to send",
           };
         }
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to send multi-channel message', err);
+      logger.error("Failed to send multi-channel message", err);
       throw err;
     }
   }
@@ -191,20 +198,19 @@ export class MessageDeliveryService {
       await channelRoutingService.updateDeliveryStatus(
         update.deliveryAttemptId,
         update.status,
-        update.metadata
+        update.metadata,
       );
 
-      logger.info('Delivery status updated', {
+      logger.info("Delivery status updated", {
         deliveryAttemptId: update.deliveryAttemptId,
         status: update.status,
-        timestamp: update.timestamp
+        timestamp: update.timestamp,
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to update delivery status', err, {
+      logger.error("Failed to update delivery status", err, {
         deliveryAttemptId: update.deliveryAttemptId,
-        status: update.status
+        status: update.status,
       });
       throw err;
     }
@@ -213,16 +219,17 @@ export class MessageDeliveryService {
   /**
    * Get delivery status for a message
    */
-  async getDeliveryStatus(deliveryAttemptId: string): Promise<DeliveryStatus | null> {
+  async getDeliveryStatus(
+    deliveryAttemptId: string,
+  ): Promise<DeliveryStatus | null> {
     try {
       // This would query the database for the current status
       // For now, return a placeholder
-      return 'delivered'; // Would be implemented with actual database query
-
+      return "delivered"; // Would be implemented with actual database query
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get delivery status', err, {
-        deliveryAttemptId
+      logger.error("Failed to get delivery status", err, {
+        deliveryAttemptId,
       });
       return null;
     }
@@ -231,19 +238,20 @@ export class MessageDeliveryService {
   /**
    * Retry failed message delivery
    */
-  async retryDelivery(deliveryAttemptId: string): Promise<MessageDeliveryResponse> {
+  async retryDelivery(
+    deliveryAttemptId: string,
+  ): Promise<MessageDeliveryResponse> {
     try {
       // Get original message details from database
       // This would reconstruct the original request and retry
 
-      logger.info('Retrying message delivery', { deliveryAttemptId });
+      logger.info("Retrying message delivery", { deliveryAttemptId });
 
       // For now, return a placeholder response
-      throw new Error('Retry functionality not yet implemented');
-
+      throw new Error("Retry functionality not yet implemented");
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to retry delivery', err, { deliveryAttemptId });
+      logger.error("Failed to retry delivery", err, { deliveryAttemptId });
       throw err;
     }
   }
@@ -254,21 +262,20 @@ export class MessageDeliveryService {
   async getChannelMetrics(
     dealershipId: number,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<any> {
     try {
       return await channelRoutingService.getChannelPerformanceMetrics(
         dealershipId,
         startDate,
-        endDate
+        endDate,
       );
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get channel metrics', err, {
+      logger.error("Failed to get channel metrics", err, {
         dealershipId,
         startDate,
-        endDate
+        endDate,
       });
       throw err;
     }
@@ -283,26 +290,26 @@ export class MessageDeliveryService {
       batchSize?: number;
       delayBetweenBatches?: number;
       failureThreshold?: number;
-    } = {}
+    } = {},
   ): Promise<{
     successful: MessageDeliveryResponse[];
     failed: Array<{ request: MessageDeliveryRequest; error: string }>;
     totalProcessed: number;
   }> {
-
     const {
       batchSize = 10,
       delayBetweenBatches = 1000, // 1 second
-      failureThreshold = 0.5 // Stop if 50% failure rate
+      failureThreshold = 0.5, // Stop if 50% failure rate
     } = options;
 
     const successful: MessageDeliveryResponse[] = [];
-    const failed: Array<{ request: MessageDeliveryRequest; error: string }> = [];
+    const failed: Array<{ request: MessageDeliveryRequest; error: string }> =
+      [];
 
-    logger.info('Starting bulk message delivery', {
+    logger.info("Starting bulk message delivery", {
       totalMessages: requests.length,
       batchSize,
-      delayBetweenBatches
+      delayBetweenBatches,
     });
 
     // Process in batches
@@ -314,10 +321,10 @@ export class MessageDeliveryService {
       if (totalProcessed > 0) {
         const failureRate = failed.length / totalProcessed;
         if (failureRate > failureThreshold) {
-          logger.error('Bulk send stopped due to high failure rate', {
+          logger.error("Bulk send stopped due to high failure rate", {
             failureRate,
             failureThreshold,
-            totalProcessed
+            totalProcessed,
           });
           break;
         }
@@ -330,7 +337,7 @@ export class MessageDeliveryService {
           if (result.success) {
             successful.push(result);
           } else {
-            failed.push({ request, error: result.error || 'Unknown error' });
+            failed.push({ request, error: result.error || "Unknown error" });
           }
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
@@ -342,29 +349,32 @@ export class MessageDeliveryService {
 
       // Delay between batches (except for last batch)
       if (i + batchSize < requests.length) {
-        await new Promise<void>((resolve: () => void) => setTimeout(resolve, delayBetweenBatches));
+        await new Promise<void>((resolve: () => void) =>
+          setTimeout(resolve, delayBetweenBatches),
+        );
       }
 
-      logger.info('Batch processed', {
+      logger.info("Batch processed", {
         batchNumber: Math.floor(i / batchSize) + 1,
         batchSize: batch.length,
-        successfulInBatch: successful.length - (i === 0 ? 0 : successful.length),
-        failedInBatch: failed.length - (i === 0 ? 0 : failed.length)
+        successfulInBatch:
+          successful.length - (i === 0 ? 0 : successful.length),
+        failedInBatch: failed.length - (i === 0 ? 0 : failed.length),
       });
     }
 
     const result = {
       successful,
       failed,
-      totalProcessed: successful.length + failed.length
+      totalProcessed: successful.length + failed.length,
     };
 
-    logger.info('Bulk message delivery completed', {
+    logger.info("Bulk message delivery completed", {
       totalRequested: requests.length,
       totalProcessed: result.totalProcessed,
       successful: successful.length,
       failed: failed.length,
-      successRate: successful.length / result.totalProcessed
+      successRate: successful.length / result.totalProcessed,
     });
 
     return result;
@@ -373,12 +383,11 @@ export class MessageDeliveryService {
   // Private helper methods
   private async handleChannelUnavailable(
     message: ChannelMessage,
-    routingResult: ChannelRoutingResult
+    routingResult: ChannelRoutingResult,
   ): Promise<MessageDeliveryResponse> {
-
-    logger.warn('Primary channel unavailable, attempting fallback', {
+    logger.warn("Primary channel unavailable, attempting fallback", {
       primaryChannel: routingResult.selectedChannel,
-      fallbackChannels: routingResult.fallbackChannels
+      fallbackChannels: routingResult.fallbackChannels,
     });
 
     if (routingResult.fallbackChannels.length === 0) {
@@ -387,7 +396,7 @@ export class MessageDeliveryService {
         deliveryAttemptId: routingResult.deliveryAttemptId,
         selectedChannel: routingResult.selectedChannel,
         fallbackChannels: [],
-        error: 'No fallback channels available'
+        error: "No fallback channels available",
       };
     }
 
@@ -395,7 +404,7 @@ export class MessageDeliveryService {
     const fallbackChannel = routingResult.fallbackChannels[0];
     const fallbackHandler = await channelFactory.getChannelHandler(
       message.dealershipId,
-      fallbackChannel
+      fallbackChannel,
     );
 
     if (!fallbackHandler) {
@@ -404,7 +413,7 @@ export class MessageDeliveryService {
         deliveryAttemptId: routingResult.deliveryAttemptId,
         selectedChannel: routingResult.selectedChannel,
         fallbackChannels: routingResult.fallbackChannels,
-        error: `Fallback channel ${fallbackChannel} not available`
+        error: `Fallback channel ${fallbackChannel} not available`,
       };
     }
 
@@ -414,7 +423,10 @@ export class MessageDeliveryService {
       const remainingFallbacks = routingResult.fallbackChannels.slice(1);
       if (remainingFallbacks.length > 0) {
         // Recursively try next fallback
-        const updatedRouting = { ...routingResult, fallbackChannels: remainingFallbacks };
+        const updatedRouting = {
+          ...routingResult,
+          fallbackChannels: remainingFallbacks,
+        };
         return await this.handleChannelUnavailable(message, updatedRouting);
       } else {
         return {
@@ -422,7 +434,7 @@ export class MessageDeliveryService {
           deliveryAttemptId: routingResult.deliveryAttemptId,
           selectedChannel: routingResult.selectedChannel,
           fallbackChannels: [],
-          error: 'All fallback channels unavailable'
+          error: "All fallback channels unavailable",
         };
       }
     }
@@ -433,8 +445,8 @@ export class MessageDeliveryService {
     if (deliveryResult.success) {
       await channelRoutingService.updateDeliveryStatus(
         routingResult.deliveryAttemptId,
-        'sent',
-        { ...deliveryResult.metadata, fallbackChannel }
+        "sent",
+        { ...deliveryResult.metadata, fallbackChannel },
       );
 
       return {
@@ -442,13 +454,13 @@ export class MessageDeliveryService {
         deliveryAttemptId: routingResult.deliveryAttemptId,
         selectedChannel: fallbackChannel,
         externalMessageId: deliveryResult.externalMessageId,
-        fallbackChannels: routingResult.fallbackChannels.slice(1)
+        fallbackChannels: routingResult.fallbackChannels.slice(1),
       };
     } else {
       return await this.handleDeliveryFailure(
         message,
         { ...routingResult, selectedChannel: fallbackChannel },
-        deliveryResult.error || 'Fallback delivery failed'
+        deliveryResult.error || "Fallback delivery failed",
       );
     }
   }
@@ -456,26 +468,25 @@ export class MessageDeliveryService {
   private async handleDeliveryFailure(
     message: ChannelMessage,
     routingResult: ChannelRoutingResult,
-    error: string
+    error: string,
   ): Promise<MessageDeliveryResponse> {
-
-    logger.error('Message delivery failed', undefined, {
+    logger.error("Message delivery failed", undefined, {
       deliveryAttemptId: routingResult.deliveryAttemptId,
       channel: routingResult.selectedChannel,
-      error
+      error,
     });
 
     // Try fallback through routing service
     const fallbackResult = await channelRoutingService.handleDeliveryFailure(
       routingResult.deliveryAttemptId,
-      error
+      error,
     );
 
     if (fallbackResult) {
       // Recursive call to try fallback
       const fallbackHandler = await channelFactory.getChannelHandler(
         message.dealershipId,
-        fallbackResult.selectedChannel
+        fallbackResult.selectedChannel,
       );
 
       if (fallbackHandler) {
@@ -487,7 +498,7 @@ export class MessageDeliveryService {
             deliveryAttemptId: fallbackResult.deliveryAttemptId,
             selectedChannel: fallbackResult.selectedChannel,
             externalMessageId: deliveryResult.externalMessageId,
-            fallbackChannels: fallbackResult.fallbackChannels
+            fallbackChannels: fallbackResult.fallbackChannels,
           };
         }
       }
@@ -498,7 +509,7 @@ export class MessageDeliveryService {
       deliveryAttemptId: routingResult.deliveryAttemptId,
       selectedChannel: routingResult.selectedChannel,
       fallbackChannels: routingResult.fallbackChannels,
-      error
+      error,
     };
   }
 }

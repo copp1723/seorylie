@@ -14,6 +14,7 @@ This directory contains components related to vehicle inventory display and mana
 ## Usage Guidelines
 
 1. Inventory components should:
+
    - Handle vehicle data consistently
    - Support filtering and sorting operations
    - Display vehicle images and details in a standardized format

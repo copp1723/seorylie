@@ -27,122 +27,122 @@ The database consists of several interconnected tables that store all the necess
 
 The `users` table stores information about all users who have access to the platform.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | Serial | Primary key |
-| username | Text | Unique username for authentication |
-| password | Text | Hashed password |
-| name | Text | User's full name |
-| email | Text | User's email address (unique) |
-| role | Text | User role (admin, user, etc.) |
-| dealershipId | Integer | Foreign key reference to dealerships table |
-| createdAt | Timestamp | Record creation timestamp |
+| Column       | Type      | Description                                |
+| ------------ | --------- | ------------------------------------------ |
+| id           | Serial    | Primary key                                |
+| username     | Text      | Unique username for authentication         |
+| password     | Text      | Hashed password                            |
+| name         | Text      | User's full name                           |
+| email        | Text      | User's email address (unique)              |
+| role         | Text      | User role (admin, user, etc.)              |
+| dealershipId | Integer   | Foreign key reference to dealerships table |
+| createdAt    | Timestamp | Record creation timestamp                  |
 
 ### Dealerships
 
 The `dealerships` table stores information about automotive dealerships in the system.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | Serial | Primary key |
-| name | Text | Dealership name |
-| location | Text | Physical address |
-| contactEmail | Text | Primary contact email |
-| contactPhone | Text | Primary contact phone |
-| domain | Text | Website domain |
-| handoverEmail | Text | Email for lead handovers |
-| createdAt | Timestamp | Record creation timestamp |
+| Column        | Type      | Description               |
+| ------------- | --------- | ------------------------- |
+| id            | Serial    | Primary key               |
+| name          | Text      | Dealership name           |
+| location      | Text      | Physical address          |
+| contactEmail  | Text      | Primary contact email     |
+| contactPhone  | Text      | Primary contact phone     |
+| domain        | Text      | Website domain            |
+| handoverEmail | Text      | Email for lead handovers  |
+| createdAt     | Timestamp | Record creation timestamp |
 
 ### Vehicles
 
 The `vehicles` table stores the vehicle inventory for each dealership. This data is updated daily via TSV file imports.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | Serial | Primary key |
-| dealershipId | Integer | Foreign key reference to dealerships table |
-| vin | Text | Vehicle Identification Number (unique) |
-| stockNumber | Text | Dealer's stock number |
-| make | Text | Vehicle manufacturer |
-| model | Text | Vehicle model |
-| year | Integer | Model year |
-| trim | Text | Trim level |
-| exteriorColor | Text | Exterior color |
-| interiorColor | Text | Interior color |
-| mileage | Integer | Odometer reading |
-| price | Numeric | Selling price |
-| msrp | Numeric | Manufacturer's suggested retail price |
-| bodyStyle | Text | Body style (sedan, SUV, etc.) |
-| transmission | Text | Transmission type |
-| engine | Text | Engine details |
-| fuelType | Text | Fuel type |
-| drivetrain | Text | Drivetrain type (FWD, AWD, etc.) |
-| features | JSONB | Array of vehicle features |
-| description | Text | Vehicle description |
-| images | JSONB | Array of image URLs |
-| status | Text | Status (active, sold, pending) |
-| isActive | Boolean | Whether vehicle is currently active in inventory |
-| createdAt | Timestamp | Record creation timestamp |
-| updatedAt | Timestamp | Record update timestamp |
+| Column        | Type      | Description                                      |
+| ------------- | --------- | ------------------------------------------------ |
+| id            | Serial    | Primary key                                      |
+| dealershipId  | Integer   | Foreign key reference to dealerships table       |
+| vin           | Text      | Vehicle Identification Number (unique)           |
+| stockNumber   | Text      | Dealer's stock number                            |
+| make          | Text      | Vehicle manufacturer                             |
+| model         | Text      | Vehicle model                                    |
+| year          | Integer   | Model year                                       |
+| trim          | Text      | Trim level                                       |
+| exteriorColor | Text      | Exterior color                                   |
+| interiorColor | Text      | Interior color                                   |
+| mileage       | Integer   | Odometer reading                                 |
+| price         | Numeric   | Selling price                                    |
+| msrp          | Numeric   | Manufacturer's suggested retail price            |
+| bodyStyle     | Text      | Body style (sedan, SUV, etc.)                    |
+| transmission  | Text      | Transmission type                                |
+| engine        | Text      | Engine details                                   |
+| fuelType      | Text      | Fuel type                                        |
+| drivetrain    | Text      | Drivetrain type (FWD, AWD, etc.)                 |
+| features      | JSONB     | Array of vehicle features                        |
+| description   | Text      | Vehicle description                              |
+| images        | JSONB     | Array of image URLs                              |
+| status        | Text      | Status (active, sold, pending)                   |
+| isActive      | Boolean   | Whether vehicle is currently active in inventory |
+| createdAt     | Timestamp | Record creation timestamp                        |
+| updatedAt     | Timestamp | Record update timestamp                          |
 
 ### Conversations
 
 The `conversations` table tracks customer interactions with the AI assistant.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | Serial | Primary key |
-| dealershipId | Integer | Foreign key reference to dealerships table |
-| customerName | Text | Customer's name |
-| customerPhone | Text | Customer's phone number |
-| customerEmail | Text | Customer's email address |
-| status | Enum | Conversation status (active, waiting, escalated, completed) |
-| escalatedToUserId | Integer | User ID conversation escalated to |
-| channel | Text | Communication channel (SMS, web, etc.) |
-| createdAt | Timestamp | Record creation timestamp |
-| updatedAt | Timestamp | Record update timestamp |
+| Column            | Type      | Description                                                 |
+| ----------------- | --------- | ----------------------------------------------------------- |
+| id                | Serial    | Primary key                                                 |
+| dealershipId      | Integer   | Foreign key reference to dealerships table                  |
+| customerName      | Text      | Customer's name                                             |
+| customerPhone     | Text      | Customer's phone number                                     |
+| customerEmail     | Text      | Customer's email address                                    |
+| status            | Enum      | Conversation status (active, waiting, escalated, completed) |
+| escalatedToUserId | Integer   | User ID conversation escalated to                           |
+| channel           | Text      | Communication channel (SMS, web, etc.)                      |
+| createdAt         | Timestamp | Record creation timestamp                                   |
+| updatedAt         | Timestamp | Record update timestamp                                     |
 
 ### Messages
 
 The `messages` table stores individual messages within conversations.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | Serial | Primary key |
-| conversationId | Integer | Foreign key reference to conversations table |
-| content | Text | Message content |
-| role | Text | Message sender role (customer, assistant) |
-| createdAt | Timestamp | Record creation timestamp |
+| Column         | Type      | Description                                  |
+| -------------- | --------- | -------------------------------------------- |
+| id             | Serial    | Primary key                                  |
+| conversationId | Integer   | Foreign key reference to conversations table |
+| content        | Text      | Message content                              |
+| role           | Text      | Message sender role (customer, assistant)    |
+| createdAt      | Timestamp | Record creation timestamp                    |
 
 ### Personas
 
 The `personas` table stores AI personality configurations for different dealerships.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | Serial | Primary key |
-| dealershipId | Integer | Foreign key reference to dealerships table |
-| name | Text | Persona name |
-| description | Text | Persona description |
-| promptTemplate | Text | OpenAI system prompt template |
-| arguments | JSONB | Configuration arguments (tone, priority features, etc.) |
-| isDefault | Boolean | Whether this is the default persona for the dealership |
-| createdAt | Timestamp | Record creation timestamp |
-| updatedAt | Timestamp | Record update timestamp |
+| Column         | Type      | Description                                             |
+| -------------- | --------- | ------------------------------------------------------- |
+| id             | Serial    | Primary key                                             |
+| dealershipId   | Integer   | Foreign key reference to dealerships table              |
+| name           | Text      | Persona name                                            |
+| description    | Text      | Persona description                                     |
+| promptTemplate | Text      | OpenAI system prompt template                           |
+| arguments      | JSONB     | Configuration arguments (tone, priority features, etc.) |
+| isDefault      | Boolean   | Whether this is the default persona for the dealership  |
+| createdAt      | Timestamp | Record creation timestamp                               |
+| updatedAt      | Timestamp | Record update timestamp                                 |
 
 ### API Keys
 
 The `apiKeys` table stores API keys for external integrations.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | Serial | Primary key |
-| dealershipId | Integer | Foreign key reference to dealerships table |
-| key | Text | The API key (hashed) |
-| description | Text | Key description/purpose |
-| isActive | Boolean | Whether key is active |
-| createdAt | Timestamp | Record creation timestamp |
-| lastUsed | Timestamp | Last usage timestamp |
+| Column       | Type      | Description                                |
+| ------------ | --------- | ------------------------------------------ |
+| id           | Serial    | Primary key                                |
+| dealershipId | Integer   | Foreign key reference to dealerships table |
+| key          | Text      | The API key (hashed)                       |
+| description  | Text      | Key description/purpose                    |
+| isActive     | Boolean   | Whether key is active                      |
+| createdAt    | Timestamp | Record creation timestamp                  |
+| lastUsed     | Timestamp | Last usage timestamp                       |
 
 ### A/B Testing Tables
 
@@ -245,7 +245,7 @@ It's recommended to:
 Common database issues and resolutions:
 
 1. **Connection Failures**: Verify DATABASE_URL and network connectivity
-2. **Slow Queries**: Check indexes and query optimization 
+2. **Slow Queries**: Check indexes and query optimization
 3. **Import Errors**: Validate TSV format and required fields
 4. **Migration Issues**: Ensure schema changes are compatible with existing data
 

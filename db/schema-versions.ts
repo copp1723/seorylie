@@ -34,7 +34,7 @@ const v1 = {
   users,
   conversations,
   dealerships: baseDealerships,
-  
+
   // Define v1 vehicles table (basic structure)
   vehicles: pgTable(
     "vehicles",
@@ -64,7 +64,7 @@ const v1 = {
         dealershipIdIdx: index("v1_dealership_id_idx").on(table.dealershipId),
         statusIdx: index("v1_status_idx").on(table.status),
       };
-    }
+    },
   ),
 };
 
@@ -73,7 +73,7 @@ const v2 = {
   // Re-export base tables that don't change
   users,
   conversations,
-  
+
   // Enhanced dealerships table with dual-mode fields
   dealerships: pgTable(
     "dealerships",
@@ -91,13 +91,15 @@ const v2 = {
       timezone: varchar("timezone", { length: 50 }).default("America/New_York"),
       isActive: boolean("is_active").default(true).notNull(),
       settings: json("settings").$type<Record<string, any>>(),
-      
+
       // Enhanced v2 fields
-      operationMode: varchar("operation_mode", { length: 50 }).default("rylie_ai"),
+      operationMode: varchar("operation_mode", { length: 50 }).default(
+        "rylie_ai",
+      ),
       aiConfig: jsonb("ai_config").default({}),
       agentConfig: jsonb("agent_config").default({}),
       leadRouting: jsonb("lead_routing").default({}),
-      
+
       createdAt: timestamp("created_at").defaultNow().notNull(),
       updatedAt: timestamp("updated_at").defaultNow().notNull(),
     },
@@ -105,11 +107,13 @@ const v2 = {
       return {
         subdomainIdx: index("subdomain_idx").on(table.subdomain),
         nameIdx: index("name_idx").on(table.name),
-        operationModeIdx: index("dealerships_operation_mode_idx").on(table.operationMode),
+        operationModeIdx: index("dealerships_operation_mode_idx").on(
+          table.operationMode,
+        ),
       };
-    }
+    },
   ),
-  
+
   // Enhanced vehicles table with additional fields for dual-mode functionality
   vehicles: pgTable(
     "vehicles",
@@ -130,9 +134,11 @@ const v2 = {
       description: text("description"),
       features: json("features").$type<string[]>(),
       images: json("images").$type<string[]>(),
-      
+
       // Enhanced fields for v2 schema
-      operationMode: varchar("operation_mode", { length: 50 }).default("rylie_ai"),
+      operationMode: varchar("operation_mode", { length: 50 }).default(
+        "rylie_ai",
+      ),
       aiConfig: jsonb("ai_config").default({}),
       leadScore: integer("lead_score").default(50),
       lifecycleStage: varchar("lifecycle_stage", { length: 50 }).default("new"),
@@ -142,7 +148,7 @@ const v2 = {
       testDriveCount: integer("test_drive_count").default(0),
       recommendationScore: integer("recommendation_score"),
       customAttributes: jsonb("custom_attributes").default({}),
-      
+
       createdAt: timestamp("created_at").defaultNow().notNull(),
       updatedAt: timestamp("updated_at").defaultNow().notNull(),
     },
@@ -154,7 +160,7 @@ const v2 = {
         lifecycleIdx: index("lifecycle_stage_idx").on(table.lifecycleStage),
         operationModeIdx: index("operation_mode_idx").on(table.operationMode),
       };
-    }
+    },
   ),
 };
 
