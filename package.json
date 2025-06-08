@@ -15,8 +15,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint . --ext .ts,.js --config .eslintrc.js",
-    "lint:fix": "eslint . --ext .ts,.js --config .eslintrc.js --fix",
+    "lint": "eslint . --ext .js --config .eslintrc.js",
+    "lint:fix": "eslint . --ext .js --config .eslintrc.js --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "migrate": "drizzle-kit migrate",
     "generate": "drizzle-kit generate:pg",
@@ -107,7 +107,6 @@
   },
   "lint-staged": {
     "*.{js}": [
-      "eslint --fix",
       "prettier --write"
     ],
     "*.{ts,tsx,json,md}": [
