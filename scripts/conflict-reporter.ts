@@ -5,29 +5,29 @@
  * Scans the codebase for git conflict markers and reports them
  */
 
-import fs from 'fs';
-import path from 'path';
-import { glob } from 'glob';
+import fs from "fs";
+import path from "path";
+import { glob } from "glob";
 
 const CONFLICT_MARKERS = [
-  '<<<<<<< HEAD',
-  '=======',
-  '>>>>>>> ',
-  '<user has removed the result of this tool call>'
+  "<<<<<<< HEAD",
+  "=======",
+  ">>>>>>> ",
+  "<user has removed the result of this tool call>",
 ];
 
 async function scanForConflicts() {
-  console.log('🔍 Scanning for git conflict markers...');
+  console.log("🔍 Scanning for git conflict markers...");
 
-  const files = await glob('**/*.{ts,tsx,js,jsx,json,md}', {
-    ignore: ['node_modules/**', 'dist/**', '.git/**']
+  const files = await glob("**/*.{ts,tsx,js,jsx,json,md}", {
+    ignore: ["node_modules/**", "dist/**", ".git/**"],
   });
 
   const conflictFiles: string[] = [];
 
   for (const file of files) {
     try {
-      const content = fs.readFileSync(file, 'utf-8');
+      const content = fs.readFileSync(file, "utf-8");
 
       for (const marker of CONFLICT_MARKERS) {
         if (content.includes(marker)) {
@@ -41,11 +41,11 @@ async function scanForConflicts() {
   }
 
   if (conflictFiles.length > 0) {
-    console.error('❌ Found conflict markers in the following files:');
-    conflictFiles.forEach(file => console.error(`   - ${file}`));
+    console.error("❌ Found conflict markers in the following files:");
+    conflictFiles.forEach((file) => console.error(`   - ${file}`));
     process.exit(1);
   } else {
-    console.log('✅ No conflict markers found');
+    console.log("✅ No conflict markers found");
   }
 }
 

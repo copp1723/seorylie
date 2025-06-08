@@ -4,11 +4,11 @@
  * This module manages scheduled tasks using a simple interval-based approach
  * with a fallback mechanism when cron or sophisticated schedulers are unavailable
  */
-import { queueReportGeneration } from './queue';
-import logger from '../utils/logger';
+import { queueReportGeneration } from "./queue";
+import logger from "../utils/logger";
 import db, { executeQuery } from "../db";
-import { dealerships, reportSchedules } from '../../shared/schema';
-import { eq } from 'drizzle-orm';
+import { dealerships, reportSchedules } from "../../shared/schema";
+import { eq } from "drizzle-orm";
 
 // Scheduler state
 const scheduledJobs = new Map<string, NodeJS.Timeout>();
@@ -30,9 +30,11 @@ const DEFAULT_INTERVALS = {
  */
 export const scheduleRecurringReport = (
   dealershipId: number,
-  reportType: 'daily' | 'weekly',
-  interval = reportType === 'daily' ? DEFAULT_INTERVALS.DAILY_REPORTS : DEFAULT_INTERVALS.WEEKLY_REPORTS,
-  initialDelay = 0
+  reportType: "daily" | "weekly",
+  interval = reportType === "daily"
+    ? DEFAULT_INTERVALS.DAILY_REPORTS
+    : DEFAULT_INTERVALS.WEEKLY_REPORTS,
+  initialDelay = 0,
 ) => {
   const jobId = `report_${reportType}_${dealershipId}`;
 
@@ -48,22 +50,38 @@ export const scheduleRecurringReport = (
     queueReportGeneration({
       dealershipId,
       reportType,
-    }).then((jobId) => {
-      logger.info(`Queued ${reportType} report for dealership ${dealershipId}`, { jobId });
-    }).catch((error) => {
-      logger.error(`Failed to queue ${reportType} report for dealership ${dealershipId}`, error);
-    });
+    })
+      .then((jobId) => {
+        logger.info(
+          `Queued ${reportType} report for dealership ${dealershipId}`,
+          { jobId },
+        );
+      })
+      .catch((error) => {
+        logger.error(
+          `Failed to queue ${reportType} report for dealership ${dealershipId}`,
+          error,
+        );
+      });
 
     // Set up recurring schedule
     const intervalId = setInterval(() => {
       queueReportGeneration({
         dealershipId,
         reportType,
-      }).then((jobId) => {
-        logger.info(`Queued recurring ${reportType} report for dealership ${dealershipId}`, { jobId });
-      }).catch((error) => {
-        logger.error(`Failed to queue recurring ${reportType} report for dealership ${dealershipId}`, error);
-      });
+      })
+        .then((jobId) => {
+          logger.info(
+            `Queued recurring ${reportType} report for dealership ${dealershipId}`,
+            { jobId },
+          );
+        })
+        .catch((error) => {
+          logger.error(
+            `Failed to queue recurring ${reportType} report for dealership ${dealershipId}`,
+            error,
+          );
+        });
     }, interval);
 
     // Store the interval ID
@@ -73,7 +91,9 @@ export const scheduleRecurringReport = (
   // Store the timeout ID until it's replaced by the interval
   scheduledJobs.set(jobId, timeoutId);
 
-  logger.info(`Scheduled recurring ${reportType} report for dealership ${dealershipId}`);
+  logger.info(
+    `Scheduled recurring ${reportType} report for dealership ${dealershipId}`,
+  );
 
   return jobId;
 };
@@ -106,8 +126,8 @@ export const initializeReportSchedules = async () => {
         return testQuery;
       });
     } catch (tableError: any) {
-      if (tableError.message && tableError.message.includes('does not exist')) {
-        logger.warn('report_schedules table does not exist, creating it...');
+      if (tableError.message && tableError.message.includes("does not exist")) {
+        logger.warn("report_schedules table does not exist, creating it...");
 
         // Create the table if it doesn't exist
         await executeQuery(async () => {
@@ -121,9 +141,15 @@ export const initializeReportSchedules = async () => {
           `);
         });
 
-        logger.info('Created report_schedules table');
-      } else if (tableError.message && tableError.message.includes('column') && tableError.message.includes('does not exist')) {
-        logger.warn('report_schedules table exists but missing columns, updating schema...');
+        logger.info("Created report_schedules table");
+      } else if (
+        tableError.message &&
+        tableError.message.includes("column") &&
+        tableError.message.includes("does not exist")
+      ) {
+        logger.warn(
+          "report_schedules table exists but missing columns, updating schema...",
+        );
 
         // Add missing columns
         await executeQuery(async () => {
@@ -136,7 +162,7 @@ export const initializeReportSchedules = async () => {
           `);
         });
 
-        logger.info('Updated report_schedules table schema');
+        logger.info("Updated report_schedules table schema");
       } else {
         // Re-throw if it's a different error
         throw tableError;
@@ -155,15 +181,27 @@ export const initializeReportSchedules = async () => {
       const initialWeeklyDelay = index * 10 * 60 * 1000; // 10 minutes stagger
 
       // Schedule daily reports
-      scheduleRecurringReport(dealership.id, 'daily', DEFAULT_INTERVALS.DAILY_REPORTS, initialDailyDelay);
+      scheduleRecurringReport(
+        dealership.id,
+        "daily",
+        DEFAULT_INTERVALS.DAILY_REPORTS,
+        initialDailyDelay,
+      );
 
       // Schedule weekly reports
-      scheduleRecurringReport(dealership.id, 'weekly', DEFAULT_INTERVALS.WEEKLY_REPORTS, initialWeeklyDelay);
+      scheduleRecurringReport(
+        dealership.id,
+        "weekly",
+        DEFAULT_INTERVALS.WEEKLY_REPORTS,
+        initialWeeklyDelay,
+      );
     });
 
-    logger.info(`Initialized report schedules for ${allDealerships.length} dealerships`);
+    logger.info(
+      `Initialized report schedules for ${allDealerships.length} dealerships`,
+    );
   } catch (error) {
-    logger.error('Failed to initialize report schedules', error);
+    logger.error("Failed to initialize report schedules", error);
     // Don't throw the error to prevent application startup failure
   }
 };
@@ -177,7 +215,7 @@ export const initializeReportSchedules = async () => {
 export const scheduleOneTimeReport = (
   dealershipId: number,
   reportType: string,
-  delay = 0
+  delay = 0,
 ) => {
   const jobId = `one_time_report_${reportType}_${dealershipId}_${Date.now()}`;
 
@@ -186,11 +224,19 @@ export const scheduleOneTimeReport = (
       dealershipId,
       reportType,
       oneTime: true,
-    }).then((jobId) => {
-      logger.info(`Queued one-time ${reportType} report for dealership ${dealershipId}`, { jobId });
-    }).catch((error) => {
-      logger.error(`Failed to queue one-time ${reportType} report for dealership ${dealershipId}`, error);
-    });
+    })
+      .then((jobId) => {
+        logger.info(
+          `Queued one-time ${reportType} report for dealership ${dealershipId}`,
+          { jobId },
+        );
+      })
+      .catch((error) => {
+        logger.error(
+          `Failed to queue one-time ${reportType} report for dealership ${dealershipId}`,
+          error,
+        );
+      });
 
     // Remove job from map once executed
     scheduledJobs.delete(jobId);
@@ -198,7 +244,9 @@ export const scheduleOneTimeReport = (
 
   scheduledJobs.set(jobId, timeoutId);
 
-  logger.info(`Scheduled one-time ${reportType} report for dealership ${dealershipId}`);
+  logger.info(
+    `Scheduled one-time ${reportType} report for dealership ${dealershipId}`,
+  );
 
   return jobId;
 };
@@ -214,16 +262,16 @@ export const shutdownScheduler = () => {
 
   scheduledJobs.clear();
 
-  logger.info('Scheduler shutdown complete');
+  logger.info("Scheduler shutdown complete");
 };
 
 // Add scheduler to graceful shutdown process
-if (typeof process !== 'undefined') {
-  process.on('SIGTERM', () => {
+if (typeof process !== "undefined") {
+  process.on("SIGTERM", () => {
     shutdownScheduler();
   });
 
-  process.on('SIGINT', () => {
+  process.on("SIGINT", () => {
     shutdownScheduler();
   });
 }
@@ -233,7 +281,7 @@ export interface EmailScheduleSettings {
   id: string;
   dealershipId: number;
   recipientEmails: string[];
-  frequency: 'daily' | 'weekly';
+  frequency: "daily" | "weekly";
   dayOfWeek?: number;
   timeOfDay: string;
   reportType: string;
@@ -250,18 +298,24 @@ const emailSchedules = new Map<string, EmailScheduleSettings>();
  * @param settings Email schedule settings
  * @returns Schedule ID
  */
-export const scheduleEmailReport = (settings: Omit<EmailScheduleSettings, 'id'>): string => {
+export const scheduleEmailReport = (
+  settings: Omit<EmailScheduleSettings, "id">,
+): string => {
   const id = `email_${settings.reportType}_${settings.dealershipId}_${Date.now()}`;
 
   // Calculate next run time
-  const nextRun = calculateNextRunTime(settings.frequency, settings.dayOfWeek, settings.timeOfDay);
+  const nextRun = calculateNextRunTime(
+    settings.frequency,
+    settings.dayOfWeek,
+    settings.timeOfDay,
+  );
 
   // Store schedule
   emailSchedules.set(id, {
     ...settings,
     id,
     nextRun,
-    enabled: true
+    enabled: true,
   });
 
   // Calculate delay until next run
@@ -272,10 +326,13 @@ export const scheduleEmailReport = (settings: Omit<EmailScheduleSettings, 'id'>)
     scheduleOneTimeReport(settings.dealershipId, settings.reportType, delay);
   }
 
-  logger.info(`Scheduled email report: ${settings.reportType} for dealership ${settings.dealershipId}`, {
-    id,
-    nextRun: nextRun.toISOString()
-  });
+  logger.info(
+    `Scheduled email report: ${settings.reportType} for dealership ${settings.dealershipId}`,
+    {
+      id,
+      nextRun: nextRun.toISOString(),
+    },
+  );
 
   return id;
 };
@@ -304,11 +361,15 @@ export const removeScheduledReport = (id: string): boolean => {
  * @param dealershipId Optional dealership ID filter
  * @returns Array of scheduled reports
  */
-export const getScheduledReports = (dealershipId?: number): EmailScheduleSettings[] => {
+export const getScheduledReports = (
+  dealershipId?: number,
+): EmailScheduleSettings[] => {
   const schedules = Array.from(emailSchedules.values());
 
   if (dealershipId !== undefined) {
-    return schedules.filter(schedule => schedule.dealershipId === dealershipId);
+    return schedules.filter(
+      (schedule) => schedule.dealershipId === dealershipId,
+    );
   }
 
   return schedules;
@@ -322,11 +383,11 @@ export const getScheduledReports = (dealershipId?: number): EmailScheduleSetting
  * @returns Next run date
  */
 const calculateNextRunTime = (
-  frequency: 'daily' | 'weekly',
+  frequency: "daily" | "weekly",
   dayOfWeek?: number,
-  timeOfDay: string = '00:00'
+  timeOfDay: string = "00:00",
 ): Date => {
-  const [hours, minutes] = timeOfDay.split(':').map(Number);
+  const [hours, minutes] = timeOfDay.split(":").map(Number);
   const now = new Date();
   const nextRun = new Date();
 
@@ -339,7 +400,7 @@ const calculateNextRunTime = (
   }
 
   // For weekly schedules, adjust to the specified day
-  if (frequency === 'weekly' && dayOfWeek !== undefined) {
+  if (frequency === "weekly" && dayOfWeek !== undefined) {
     const currentDay = nextRun.getDay();
     let daysToAdd = dayOfWeek - currentDay;
 
@@ -361,5 +422,5 @@ export default {
   shutdownScheduler,
   scheduleEmailReport,
   removeScheduledReport,
-  getScheduledReports
+  getScheduledReports,
 };

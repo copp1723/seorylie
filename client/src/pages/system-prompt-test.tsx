@@ -119,8 +119,14 @@ export default function NewSystemPromptTester() {
     setIsLoading(true);
     setError(null);
 
-    const newCustomerMessageEntry: ConversationEntry = { role: "customer", content: customerMessage };
-    const updatedConversationWithCustomer = [...conversation, newCustomerMessageEntry];
+    const newCustomerMessageEntry: ConversationEntry = {
+      role: "customer",
+      content: customerMessage,
+    };
+    const updatedConversationWithCustomer = [
+      ...conversation,
+      newCustomerMessageEntry,
+    ];
     setConversation(updatedConversationWithCustomer);
 
     const customizedPrompt = generateCustomizedPrompt();
@@ -146,9 +152,19 @@ export default function NewSystemPromptTester() {
       if (result && result.response) {
         setResponse(result.response);
 
-        const newAssistantMessageEntry: ConversationEntry = { role: "assistant", content: result.response };
-        setConversation(prevConversation => [...prevConversation.filter(msg => msg !== newCustomerMessageEntry || msg.content !== customerMessage), newCustomerMessageEntry, newAssistantMessageEntry]);
-
+        const newAssistantMessageEntry: ConversationEntry = {
+          role: "assistant",
+          content: result.response,
+        };
+        setConversation((prevConversation) => [
+          ...prevConversation.filter(
+            (msg) =>
+              msg !== newCustomerMessageEntry ||
+              msg.content !== customerMessage,
+          ),
+          newCustomerMessageEntry,
+          newAssistantMessageEntry,
+        ]);
 
         setCustomerMessage("");
       } else {
@@ -165,7 +181,14 @@ export default function NewSystemPromptTester() {
         content:
           "I'm sorry, but I encountered an error processing your request. Please try again or contact support if the issue persists.",
       };
-      setConversation(prevConversation => [...prevConversation.filter(msg => msg !== newCustomerMessageEntry || msg.content !== customerMessage), newCustomerMessageEntry, newErrorMessageEntry]);
+      setConversation((prevConversation) => [
+        ...prevConversation.filter(
+          (msg) =>
+            msg !== newCustomerMessageEntry || msg.content !== customerMessage,
+        ),
+        newCustomerMessageEntry,
+        newErrorMessageEntry,
+      ]);
     } finally {
       setIsLoading(false);
     }

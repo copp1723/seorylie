@@ -1,5 +1,5 @@
-import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
-import db from '../db';
+import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
+import db from "../db";
 import {
   conversations,
   messages,
@@ -9,10 +9,10 @@ import {
   type Conversation,
   type Message,
   type ConversationStatus,
-  type MessageSender
-} from '../../shared/lead-management-schema';
-import { users } from '../../shared/schema';
-import logger from '../utils/logger';
+  type MessageSender,
+} from "../../shared/lead-management-schema";
+import { users } from "../../shared/schema";
+import logger from "../utils/logger";
 
 export interface ConversationLogEntry {
   conversation: Conversation & {
@@ -36,8 +36,8 @@ export interface ConversationLogFilters {
   searchTerm?: string;
   limit?: number;
   offset?: number;
-  sortBy?: 'created_at' | 'last_message_at' | 'message_count';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "created_at" | "last_message_at" | "message_count";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface ConversationAnalytics {
@@ -58,7 +58,6 @@ export interface ConversationAnalytics {
 }
 
 export class ConversationLogsService {
-  
   /**
    * Get filtered conversation logs
    */
@@ -68,7 +67,7 @@ export class ConversationLogsService {
     analytics: Partial<ConversationAnalytics>;
   }> {
     try {
-      logger.info('Fetching conversation logs', filters);
+      logger.info("Fetching conversation logs", filters);
 
       const {
         dealershipId,
@@ -80,8 +79,8 @@ export class ConversationLogsService {
         searchTerm,
         limit = 50,
         offset = 0,
-        sortBy = 'last_message_at',
-        sortOrder = 'desc'
+        sortBy = "last_message_at",
+        sortOrder = "desc",
       } = filters;
 
       // Build where conditions
@@ -111,18 +110,18 @@ export class ConversationLogsService {
             id: customers.id,
             fullName: customers.fullName,
             email: customers.email,
-            phone: customers.phone
+            phone: customers.phone,
           },
           lead: {
             id: leads.id,
             leadNumber: leads.leadNumber,
-            status: leads.status
+            status: leads.status,
           },
           assignedUser: {
             id: users.id,
             name: users.name,
-            email: users.email
-          }
+            email: users.email,
+          },
         })
         .from(conversations)
         .leftJoin(customers, eq(conversations.customerId, customers.id))
@@ -152,12 +151,15 @@ export class ConversationLogsService {
       const total = totalCountResult[0]?.count || 0;
 
       // Get paginated results
-      const sortColumn = sortBy === 'created_at' ? conversations.createdAt :
-                        sortBy === 'last_message_at' ? conversations.lastMessageAt :
-                        conversations.messageCount;
+      const sortColumn =
+        sortBy === "created_at"
+          ? conversations.createdAt
+          : sortBy === "last_message_at"
+            ? conversations.lastMessageAt
+            : conversations.messageCount;
 
       const conversationsResult = await baseQuery
-        .orderBy(sortOrder === 'desc' ? desc(sortColumn) : sortColumn)
+        .orderBy(sortOrder === "desc" ? desc(sortColumn) : sortColumn)
         .limit(limit)
         .offset(offset);
 
@@ -166,10 +168,14 @@ export class ConversationLogsService {
 
       for (const row of conversationsResult) {
         // Get message count and last message
-        const messageStats = await this.getConversationMessageStats(row.conversation.id);
-        
+        const messageStats = await this.getConversationMessageStats(
+          row.conversation.id,
+        );
+
         // Check for escalations
-        const escalationStats = await this.getConversationEscalationStats(row.conversation.id);
+        const escalationStats = await this.getConversationEscalationStats(
+          row.conversation.id,
+        );
 
         // Apply escalation filter if requested
         if (escalatedOnly && escalationStats.escalationCount === 0) {
@@ -181,22 +187,25 @@ export class ConversationLogsService {
             ...row.conversation,
             customer: row.customer,
             lead: row.lead,
-            assignedUser: row.assignedUser
+            assignedUser: row.assignedUser,
           },
           messageCount: messageStats.count,
           lastMessage: messageStats.lastMessage,
           hasEscalations: escalationStats.escalationCount > 0,
-          escalationCount: escalationStats.escalationCount
+          escalationCount: escalationStats.escalationCount,
         });
       }
 
       // Get basic analytics
-      const analytics = await this.getBasicAnalytics(dealershipId, dateFrom, dateTo);
+      const analytics = await this.getBasicAnalytics(
+        dealershipId,
+        dateFrom,
+        dateTo,
+      );
 
       return { logs, total, analytics };
-
     } catch (error) {
-      logger.error('Error fetching conversation logs:', error);
+      logger.error("Error fetching conversation logs:", error);
       throw error;
     }
   }
@@ -206,7 +215,7 @@ export class ConversationLogsService {
    */
   async getDetailedConversation(
     conversationId: string,
-    dealershipId: number
+    dealershipId: number,
   ): Promise<{
     conversation: ConversationLogEntry;
     messages: Message[];
@@ -221,27 +230,29 @@ export class ConversationLogsService {
             id: customers.id,
             fullName: customers.fullName,
             email: customers.email,
-            phone: customers.phone
+            phone: customers.phone,
           },
           lead: {
             id: leads.id,
             leadNumber: leads.leadNumber,
-            status: leads.status
+            status: leads.status,
           },
           assignedUser: {
             id: users.id,
             name: users.name,
-            email: users.email
-          }
+            email: users.email,
+          },
         })
         .from(conversations)
         .leftJoin(customers, eq(conversations.customerId, customers.id))
         .leftJoin(leads, eq(conversations.leadId, leads.id))
         .leftJoin(users, eq(conversations.assignedUserId, users.id))
-        .where(and(
-          eq(conversations.id, conversationId),
-          eq(conversations.dealershipId, dealershipId)
-        ))
+        .where(
+          and(
+            eq(conversations.id, conversationId),
+            eq(conversations.dealershipId, dealershipId),
+          ),
+        )
         .limit(1);
 
       if (conversationResult.length === 0) {
@@ -265,30 +276,31 @@ export class ConversationLogsService {
         .orderBy(handovers.requestedAt);
 
       // Get message and escalation stats
-      const messageStats = await this.getConversationMessageStats(conversationId);
-      const escalationStats = await this.getConversationEscalationStats(conversationId);
+      const messageStats =
+        await this.getConversationMessageStats(conversationId);
+      const escalationStats =
+        await this.getConversationEscalationStats(conversationId);
 
       const conversationLog: ConversationLogEntry = {
         conversation: {
           ...row.conversation,
           customer: row.customer,
           lead: row.lead,
-          assignedUser: row.assignedUser
+          assignedUser: row.assignedUser,
         },
         messageCount: messageStats.count,
         lastMessage: messageStats.lastMessage,
         hasEscalations: escalationStats.escalationCount > 0,
-        escalationCount: escalationStats.escalationCount
+        escalationCount: escalationStats.escalationCount,
       };
 
       return {
         conversation: conversationLog,
         messages: conversationMessages,
-        escalations: conversationEscalations
+        escalations: conversationEscalations,
       };
-
     } catch (error) {
-      logger.error('Error fetching detailed conversation:', error);
+      logger.error("Error fetching detailed conversation:", error);
       throw error;
     }
   }
@@ -299,22 +311,26 @@ export class ConversationLogsService {
   async getAnalytics(
     dealershipId: number,
     dateFrom?: Date,
-    dateTo?: Date
+    dateTo?: Date,
   ): Promise<ConversationAnalytics> {
     try {
-      const analytics = await this.getBasicAnalytics(dealershipId, dateFrom, dateTo);
-      
+      const analytics = await this.getBasicAnalytics(
+        dealershipId,
+        dateFrom,
+        dateTo,
+      );
+
       // Get additional detailed analytics
       const [
         topEscalationReasons,
         conversationsByStatus,
         conversationsByChannel,
-        dailyStats
+        dailyStats,
       ] = await Promise.all([
         this.getTopEscalationReasons(dealershipId, dateFrom, dateTo),
         this.getConversationsByStatus(dealershipId, dateFrom, dateTo),
         this.getConversationsByChannel(dealershipId, dateFrom, dateTo),
-        this.getDailyStats(dealershipId, dateFrom, dateTo)
+        this.getDailyStats(dealershipId, dateFrom, dateTo),
       ]);
 
       return {
@@ -322,11 +338,10 @@ export class ConversationLogsService {
         topEscalationReasons,
         conversationsByStatus,
         conversationsByChannel,
-        dailyStats
+        dailyStats,
       } as ConversationAnalytics;
-
     } catch (error) {
-      logger.error('Error getting conversation analytics:', error);
+      logger.error("Error getting conversation analytics:", error);
       throw error;
     }
   }
@@ -348,7 +363,7 @@ export class ConversationLogsService {
 
     return {
       count: messageCountResult[0]?.count || 0,
-      lastMessage: lastMessageResult[0] || undefined
+      lastMessage: lastMessageResult[0] || undefined,
     };
   }
 
@@ -359,14 +374,14 @@ export class ConversationLogsService {
       .where(eq(handovers.conversationId, conversationId));
 
     return {
-      escalationCount: escalationCountResult[0]?.count || 0
+      escalationCount: escalationCountResult[0]?.count || 0,
     };
   }
 
   private async getBasicAnalytics(
     dealershipId: number,
     dateFrom?: Date,
-    dateTo?: Date
+    dateTo?: Date,
   ): Promise<Partial<ConversationAnalytics>> {
     let whereConditions = [eq(conversations.dealershipId, dealershipId)];
 
@@ -388,7 +403,7 @@ export class ConversationLogsService {
     const activeResult = await db
       .select({ count: sql`COUNT(*)` })
       .from(conversations)
-      .where(and(...whereConditions, eq(conversations.status, 'active')));
+      .where(and(...whereConditions, eq(conversations.status, "active")));
 
     // Escalated conversations
     const escalatedResult = await db
@@ -409,7 +424,7 @@ export class ConversationLogsService {
   private async getTopEscalationReasons(
     dealershipId: number,
     dateFrom?: Date,
-    dateTo?: Date
+    dateTo?: Date,
   ) {
     // TODO: Implement escalation reasons aggregation
     return [];
@@ -418,7 +433,7 @@ export class ConversationLogsService {
   private async getConversationsByStatus(
     dealershipId: number,
     dateFrom?: Date,
-    dateTo?: Date
+    dateTo?: Date,
   ) {
     // TODO: Implement status aggregation
     return [];
@@ -427,7 +442,7 @@ export class ConversationLogsService {
   private async getConversationsByChannel(
     dealershipId: number,
     dateFrom?: Date,
-    dateTo?: Date
+    dateTo?: Date,
   ) {
     // TODO: Implement channel aggregation
     return [];
@@ -436,7 +451,7 @@ export class ConversationLogsService {
   private async getDailyStats(
     dealershipId: number,
     dateFrom?: Date,
-    dateTo?: Date
+    dateTo?: Date,
   ) {
     // TODO: Implement daily stats aggregation
     return [];

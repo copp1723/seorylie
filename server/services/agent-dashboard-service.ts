@@ -1,12 +1,22 @@
-import logger from '../utils/logger';
-import db from '../db';
-import { sql } from 'drizzle-orm';
+import logger from "../utils/logger";
+import db from "../db";
+import { sql } from "drizzle-orm";
 
-export type AgentRole = 'agent' | 'supervisor' | 'admin';
-export type AgentStatus = 'online' | 'busy' | 'away' | 'offline';
-export type HandoverStatus = 'pending' | 'claimed' | 'in_progress' | 'resolved' | 'escalated';
-export type HandoverReason = 'customer_request' | 'ai_limitation' | 'complex_inquiry' | 'escalation' | 'technical_issue';
-export type ConversationPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type AgentRole = "agent" | "supervisor" | "admin";
+export type AgentStatus = "online" | "busy" | "away" | "offline";
+export type HandoverStatus =
+  | "pending"
+  | "claimed"
+  | "in_progress"
+  | "resolved"
+  | "escalated";
+export type HandoverReason =
+  | "customer_request"
+  | "ai_limitation"
+  | "complex_inquiry"
+  | "escalation"
+  | "technical_issue";
+export type ConversationPriority = "low" | "normal" | "high" | "urgent";
 
 export interface Agent {
   id: string;
@@ -88,7 +98,9 @@ export class AgentDashboardService {
   /**
    * Get agent dashboard summary
    */
-  async getAgentDashboard(agentId: string): Promise<AgentDashboardSummary | null> {
+  async getAgentDashboard(
+    agentId: string,
+  ): Promise<AgentDashboardSummary | null> {
     try {
       const result = await db.execute(sql`
         SELECT * FROM agent_dashboard_summary
@@ -109,12 +121,11 @@ export class AgentDashboardService {
         pendingHandovers: parseInt(row.pending_handovers) || 0,
         unreadNotifications: parseInt(row.unread_notifications) || 0,
         lastActiveAt: row.last_active_at,
-        dealershipName: row.dealership_name
+        dealershipName: row.dealership_name,
       };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get agent dashboard', err, { agentId });
+      logger.error("Failed to get agent dashboard", err, { agentId });
       throw err;
     }
   }
@@ -125,12 +136,12 @@ export class AgentDashboardService {
   async getEscalatedConversations(
     agentId: string,
     status?: HandoverStatus,
-    limit: number = 50
+    limit: number = 50,
   ): Promise<ConversationHandover[]> {
     try {
-      const whereClause = status ?
-        sql`WHERE (claimed_by = ${agentId} OR status = 'pending') AND status = ${status}` :
-        sql`WHERE claimed_by = ${agentId} OR status = 'pending'`;
+      const whereClause = status
+        ? sql`WHERE (claimed_by = ${agentId} OR status = 'pending') AND status = ${status}`
+        : sql`WHERE claimed_by = ${agentId} OR status = 'pending'`;
 
       const result = await db.execute(sql`
         SELECT
@@ -174,12 +185,14 @@ export class AgentDashboardService {
         customerSentiment: row.customer_sentiment,
         estimatedResolutionTime: row.estimated_resolution_time,
         actualResolutionTime: row.actual_resolution_time,
-        metadata: row.metadata || {}
+        metadata: row.metadata || {},
       }));
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get escalated conversations', err, { agentId, status });
+      logger.error("Failed to get escalated conversations", err, {
+        agentId,
+        status,
+      });
       throw err;
     }
   }
@@ -197,16 +210,16 @@ export class AgentDashboardService {
       `);
 
       if (!checkResult.rows || checkResult.rows.length === 0) {
-        throw new Error('Handover not found');
+        throw new Error("Handover not found");
       }
 
       const handover = checkResult.rows[0] as any;
-      if (handover.status !== 'pending') {
-        throw new Error('Handover is no longer available');
+      if (handover.status !== "pending") {
+        throw new Error("Handover is no longer available");
       }
 
       if (handover.claimed_by && handover.claimed_by !== agentId) {
-        throw new Error('Handover already claimed by another agent');
+        throw new Error("Handover already claimed by another agent");
       }
 
       // Claim the handover
@@ -230,18 +243,17 @@ export class AgentDashboardService {
       `);
 
       // Update agent status to busy if they weren't already
-      await this.updateAgentStatus(agentId, 'busy');
+      await this.updateAgentStatus(agentId, "busy");
 
-      logger.info('Handover claimed successfully', {
+      logger.info("Handover claimed successfully", {
         handoverId,
-        agentId
+        agentId,
       });
 
       return true;
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to claim handover', err, { handoverId, agentId });
+      logger.error("Failed to claim handover", err, { handoverId, agentId });
       throw err;
     }
   }
@@ -253,17 +265,17 @@ export class AgentDashboardService {
     handoverId: string,
     agentId: string,
     status: HandoverStatus,
-    notes?: string
+    notes?: string,
   ): Promise<void> {
     try {
       const updateData: any = {
         status,
-        updated_at: new Date()
+        updated_at: new Date(),
       };
 
-      if (status === 'in_progress') {
+      if (status === "in_progress") {
         // No additional fields needed
-      } else if (status === 'resolved') {
+      } else if (status === "resolved") {
         updateData.resolved_by = agentId;
         updateData.resolved_at = new Date();
         updateData.resolution_notes = notes;
@@ -277,7 +289,9 @@ export class AgentDashboardService {
           const claimedAt = handoverResult.rows[0].claimed_at;
           if (claimedAt) {
             const resolutionTime = Math.round(
-              (updateData.resolved_at.getTime() - new Date(claimedAt).getTime()) / 60000
+              (updateData.resolved_at.getTime() -
+                new Date(claimedAt).getTime()) /
+                60000,
             );
             updateData.actual_resolution_time = resolutionTime;
           }
@@ -296,7 +310,7 @@ export class AgentDashboardService {
       `);
 
       // If resolved, unassign from agent
-      if (status === 'resolved') {
+      if (status === "resolved") {
         await db.execute(sql`
           UPDATE agent_conversation_assignments
           SET unassigned_at = NOW()
@@ -305,19 +319,18 @@ export class AgentDashboardService {
         `);
       }
 
-      logger.info('Handover status updated', {
+      logger.info("Handover status updated", {
         handoverId,
         agentId,
         status,
-        notes
+        notes,
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to update handover status', err, {
+      logger.error("Failed to update handover status", err, {
         handoverId,
         agentId,
-        status
+        status,
       });
       throw err;
     }
@@ -330,7 +343,7 @@ export class AgentDashboardService {
     agentId: string,
     conversationId: number,
     content: string,
-    isInternal: boolean = false
+    isInternal: boolean = false,
   ): Promise<void> {
     try {
       // Verify agent has access to this conversation
@@ -342,7 +355,7 @@ export class AgentDashboardService {
       `);
 
       if (!accessResult.rows || accessResult.rows.length === 0) {
-        throw new Error('Agent does not have access to this conversation');
+        throw new Error("Agent does not have access to this conversation");
       }
 
       // Add message to conversation
@@ -360,20 +373,19 @@ export class AgentDashboardService {
       } else {
         // Add as regular message to conversation
         // This would typically integrate with the message delivery service
-        logger.info('Agent message sent', {
+        logger.info("Agent message sent", {
           agentId,
           conversationId,
           messageLength: content.length,
-          isInternal
+          isInternal,
         });
       }
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to send agent message', err, {
+      logger.error("Failed to send agent message", err, {
         agentId,
         conversationId,
-        isInternal
+        isInternal,
       });
       throw err;
     }
@@ -391,11 +403,10 @@ export class AgentDashboardService {
         WHERE id = ${agentId}
       `);
 
-      logger.info('Agent status updated', { agentId, status });
-
+      logger.info("Agent status updated", { agentId, status });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to update agent status', err, { agentId, status });
+      logger.error("Failed to update agent status", err, { agentId, status });
       throw err;
     }
   }
@@ -406,12 +417,12 @@ export class AgentDashboardService {
   async getAgentNotifications(
     agentId: string,
     unreadOnly: boolean = false,
-    limit: number = 50
+    limit: number = 50,
   ): Promise<AgentNotification[]> {
     try {
-      const whereClause = unreadOnly ?
-        sql`WHERE agent_id = ${agentId} AND read_at IS NULL AND dismissed_at IS NULL` :
-        sql`WHERE agent_id = ${agentId}`;
+      const whereClause = unreadOnly
+        ? sql`WHERE agent_id = ${agentId} AND read_at IS NULL AND dismissed_at IS NULL`
+        : sql`WHERE agent_id = ${agentId}`;
 
       const result = await db.execute(sql`
         SELECT * FROM agent_notifications
@@ -437,12 +448,11 @@ export class AgentDashboardService {
         relatedConversationId: row.related_conversation_id,
         relatedHandoverId: row.related_handover_id,
         readAt: row.read_at,
-        createdAt: row.created_at
+        createdAt: row.created_at,
       }));
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get agent notifications', err, { agentId });
+      logger.error("Failed to get agent notifications", err, { agentId });
       throw err;
     }
   }
@@ -450,7 +460,10 @@ export class AgentDashboardService {
   /**
    * Mark notification as read
    */
-  async markNotificationAsRead(notificationId: string, agentId: string): Promise<void> {
+  async markNotificationAsRead(
+    notificationId: string,
+    agentId: string,
+  ): Promise<void> {
     try {
       await db.execute(sql`
         UPDATE agent_notifications
@@ -460,13 +473,12 @@ export class AgentDashboardService {
         AND read_at IS NULL
       `);
 
-      logger.info('Notification marked as read', { notificationId, agentId });
-
+      logger.info("Notification marked as read", { notificationId, agentId });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to mark notification as read', err, {
+      logger.error("Failed to mark notification as read", err, {
         notificationId,
-        agentId
+        agentId,
       });
       throw err;
     }
@@ -475,7 +487,9 @@ export class AgentDashboardService {
   /**
    * Create handover notification for agents
    */
-  async createHandoverNotification(handover: ConversationHandover): Promise<void> {
+  async createHandoverNotification(
+    handover: ConversationHandover,
+  ): Promise<void> {
     try {
       // Get available agents for this dealership
       const agentsResult = await db.execute(sql`
@@ -497,7 +511,7 @@ export class AgentDashboardService {
             ${agent.id},
             'new_handover',
             ${`New ${handover.priority} priority handover`},
-            ${`Customer needs assistance: ${handover.reason.replace('_', ' ')}`},
+            ${`Customer needs assistance: ${handover.reason.replace("_", " ")}`},
             ${handover.priority},
             ${handover.conversationId},
             ${handover.id}
@@ -505,16 +519,15 @@ export class AgentDashboardService {
         `);
       }
 
-      logger.info('Handover notifications created', {
+      logger.info("Handover notifications created", {
         handoverId: handover.id,
         dealershipId: handover.dealershipId,
-        agentCount: agents.length
+        agentCount: agents.length,
       });
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to create handover notification', err, {
-        handoverId: handover.id
+      logger.error("Failed to create handover notification", err, {
+        handoverId: handover.id,
       });
     }
   }
@@ -524,7 +537,7 @@ export class AgentDashboardService {
    */
   async getConversationHistory(
     conversationId: number,
-    agentId: string
+    agentId: string,
   ): Promise<any> {
     try {
       // Verify agent has access
@@ -535,7 +548,7 @@ export class AgentDashboardService {
       `);
 
       if (!accessResult.rows || accessResult.rows.length === 0) {
-        throw new Error('Agent does not have access to this conversation');
+        throw new Error("Agent does not have access to this conversation");
       }
 
       // Get conversation messages and agent notes
@@ -557,16 +570,15 @@ export class AgentDashboardService {
           content: row.content,
           isVisibleToCustomer: row.is_visible_to_customer,
           tags: row.tags,
-          createdAt: row.created_at
+          createdAt: row.created_at,
         })),
         // messages: [] // Would be populated from main conversation system
       };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get conversation history', err, {
+      logger.error("Failed to get conversation history", err, {
         conversationId,
-        agentId
+        agentId,
       });
       throw err;
     }
@@ -578,7 +590,7 @@ export class AgentDashboardService {
   async getAgentPerformanceMetrics(
     agentId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<any> {
     try {
       const result = await db.execute(sql`
@@ -599,13 +611,12 @@ export class AgentDashboardService {
       `);
 
       return result || [];
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to get agent performance metrics', err, {
+      logger.error("Failed to get agent performance metrics", err, {
         agentId,
         startDate,
-        endDate
+        endDate,
       });
       throw err;
     }

@@ -22,14 +22,17 @@ This folder contains all files that were modified or created during the comprehe
 ## 📁 Files Created
 
 ### Scripts
+
 - `migrate-auth-schema.ts` - Database migration script for authentication schema updates
 - `seed-auth-data.ts` - Script to seed the database with test authentication data
 - `setup-new-features.ts` - Setup script for new feature database tables
 
 ### Schema Extensions
+
 - `shared/schema-extensions.ts` - New schema definitions for all advanced features
 
 ### Services
+
 - `server/services/escalation-triggers.ts` - Customizable escalation triggers service
 - `server/services/lead-scoring.ts` - Lead scoring system
 - `server/services/follow-up-scheduler.ts` - Follow-up scheduling service
@@ -37,17 +40,20 @@ This folder contains all files that were modified or created during the comprehe
 - `server/services/customer-insights.ts` - Customer journey tracking
 
 ### API Routes
+
 - `server/routes/escalation-routes.ts` - API routes for escalation triggers
 - `server/routes/lead-management-routes.ts` - API routes for lead management
 - `server/routes/user-management-routes.ts` - API routes for user management
 - `server/routes/customer-insights-routes.ts` - API routes for customer insights
 
 ### Components
+
 - `client/src/components/persona-preview.tsx` - Persona preview component
 
 ## 📝 Files Modified
 
 ### Database Schema
+
 - `schema.ts` - Updated database schema with:
   - Enhanced dealerships table with branding and persona fields
   - Updated users table to support both username and email login
@@ -55,7 +61,9 @@ This folder contains all files that were modified or created during the comprehe
   - Made username optional and email required for users
 
 ### Backend
+
 - `server/routes/local-auth-routes.ts` - Enhanced authentication routes:
+
   - `/api/login` - Supports both username and email login
   - `/api/register` - User registration with auto-login
   - `/api/logout` - Secure session termination
@@ -67,12 +75,15 @@ This folder contains all files that were modified or created during the comprehe
 - `server/index.ts` - Added follow-up scheduler initialization and new route registrations
 
 ### Frontend
+
 - `client/src/hooks/useAuth.ts` - Updated authentication hook:
+
   - Support for both username and email authentication
   - Improved error handling
   - Better TypeScript types
 
 - `client/src/pages/login.tsx` - Enhanced login page:
+
   - Toggle between username and email authentication
   - Better error handling and user feedback
   - Responsive design with loading states
@@ -83,12 +94,12 @@ This folder contains all files that were modified or created during the comprehe
 
 The system has been seeded with test users:
 
-| Role | Email | Username | Password |
-|------|-------|----------|----------|
-| Super Admin | admin@testmotors.com | admin | password123 |
-| Manager | manager@testmotors.com | manager | password123 |
-| User | user@testmotors.com | user | password123 |
-| Freelance | freelance@example.com | freelance | password123 |
+| Role        | Email                  | Username  | Password    |
+| ----------- | ---------------------- | --------- | ----------- |
+| Super Admin | admin@testmotors.com   | admin     | password123 |
+| Manager     | manager@testmotors.com | manager   | password123 |
+| User        | user@testmotors.com    | user      | password123 |
+| Freelance   | freelance@example.com  | freelance | password123 |
 
 ## 🚀 Deployment Instructions
 

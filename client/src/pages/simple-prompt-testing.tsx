@@ -271,21 +271,23 @@ export default function AdvancedPromptTesting() {
       customerMessage,
       dealershipId: dealershipContext.dealershipId,
       includeInventory: includeVehicles,
-      conversationHistory: includeHistory ? conversationHistory.map(msg => ({
-        role: msg.role === "customer" ? "user" : "assistant",
-        content: msg.content
-      })) : undefined
+      conversationHistory: includeHistory
+        ? conversationHistory.map((msg) => ({
+            role: msg.role === "customer" ? "user" : "assistant",
+            content: msg.content,
+          }))
+        : undefined,
     };
 
     try {
       const data = await apiRequest<ApiResponse>("/prompt-test/test", {
         method: "POST",
-        body: payload
+        body: payload,
       });
 
       // Store the complete test result
       setLastTestResult(data);
-      
+
       // Extract the analysis from the response
       if (data.analysis) {
         setAnalysis(data.analysis);
@@ -312,7 +314,11 @@ export default function AdvancedPromptTesting() {
       ]);
 
       // Update the response display
-      setResponse(showJson ? JSON.stringify(data, null, 2) : (data.aiResponse || data.response || ""));
+      setResponse(
+        showJson
+          ? JSON.stringify(data, null, 2)
+          : data.aiResponse || data.response || "",
+      );
 
       // Clear the customer message input for the next message
       setCustomerMessage("");
@@ -343,19 +349,23 @@ export default function AdvancedPromptTesting() {
 
     try {
       // Format conversation history for the API
-      const formattedHistory = conversationHistory.map(msg => ({
+      const formattedHistory = conversationHistory.map((msg) => ({
         role: msg.role,
-        content: msg.content
+        content: msg.content,
       }));
 
-      const data = await apiRequest<ApiResponse>("/prompt-test/generate-handover", {
-        method: "POST",
-        body: {
-          conversationHistory: formattedHistory,
-          customerScenario: customerMessage || "Customer interaction for handover"
-        }
-      });
-      
+      const data = await apiRequest<ApiResponse>(
+        "/prompt-test/generate-handover",
+        {
+          method: "POST",
+          body: {
+            conversationHistory: formattedHistory,
+            customerScenario:
+              customerMessage || "Customer interaction for handover",
+          },
+        },
+      );
+
       if (data.handoverDossier) {
         setHandoverDossier(data.handoverDossier);
       }
@@ -370,7 +380,7 @@ export default function AdvancedPromptTesting() {
       setIsHandoverLoading(false);
     }
   };
-  
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6">Advanced Prompt Testing</h1>
@@ -380,8 +390,12 @@ export default function AdvancedPromptTesting() {
           <TabsTrigger value="testing">Testing</TabsTrigger>
           <TabsTrigger value="customer_info">Customer Info</TabsTrigger>
           <TabsTrigger value="vehicle_inventory">Vehicle Inventory</TabsTrigger>
-          <TabsTrigger value="dealership_context">Dealership Context</TabsTrigger>
-          <TabsTrigger value="conversation_history">Conversation History</TabsTrigger>
+          <TabsTrigger value="dealership_context">
+            Dealership Context
+          </TabsTrigger>
+          <TabsTrigger value="conversation_history">
+            Conversation History
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -453,7 +467,9 @@ export default function AdvancedPromptTesting() {
                   <div className="flex justify-between items-center">
                     <CardTitle>AI Response</CardTitle>
                     <div className="flex items-center space-x-2">
-                      <Label htmlFor="show-json" className="text-sm">Show JSON</Label>
+                      <Label htmlFor="show-json" className="text-sm">
+                        Show JSON
+                      </Label>
                       <Switch
                         id="show-json"
                         checked={showJson}
@@ -601,7 +617,9 @@ export default function AdvancedPromptTesting() {
                   checked={includeVehicles}
                   onCheckedChange={setIncludeVehicles}
                 />
-                <Label htmlFor="include-vehicles">Include Inventory in Prompt</Label>
+                <Label htmlFor="include-vehicles">
+                  Include Inventory in Prompt
+                </Label>
               </div>
               <Button onClick={addVehicle} size="sm">
                 <Plus className="h-4 w-4 mr-1" /> Add Vehicle
@@ -610,9 +628,7 @@ export default function AdvancedPromptTesting() {
             {vehicles.map((vehicle, index) => (
               <Card key={index} className="mb-4">
                 <CardHeader className="flex flex-row justify-between items-center">
-                  <CardTitle className="text-lg">
-                    Vehicle {index + 1}
-                  </CardTitle>
+                  <CardTitle className="text-lg">Vehicle {index + 1}</CardTitle>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -625,7 +641,10 @@ export default function AdvancedPromptTesting() {
                   {Object.entries(vehicle).map(([key, value]) =>
                     key !== "id" ? (
                       <div key={key}>
-                        <Label htmlFor={`vehicle-${index}-${key}`} className="capitalize">
+                        <Label
+                          htmlFor={`vehicle-${index}-${key}`}
+                          className="capitalize"
+                        >
                           {key.replace(/([A-Z])/g, " $1")}
                         </Label>
                         <Input
@@ -635,9 +654,7 @@ export default function AdvancedPromptTesting() {
                               ? value.join(", ")
                               : value
                           }
-                          type={
-                            typeof value === "number" ? "number" : "text"
-                          }
+                          type={typeof value === "number" ? "number" : "text"}
                           onChange={(e) =>
                             updateVehicle(
                               index,
@@ -658,64 +675,121 @@ export default function AdvancedPromptTesting() {
         </Card>
       )}
       {activeTab === "dealership_context" && (
-         <Card>
-            <CardHeader>
-                <CardTitle>Dealership Context</CardTitle>
-                <CardDescription>Set global context for the dealership.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div>
-                    <Label htmlFor="dealership-id">Dealership ID</Label>
-                    <Input id="dealership-id" type="number" value={dealershipContext.dealershipId} onChange={(e) => setDealershipContext({...dealershipContext, dealershipId: parseInt(e.target.value)})} />
-                </div>
-                <div>
-                    <Label htmlFor="dealership-name">Dealership Name</Label>
-                    <Input id="dealership-name" value={dealershipContext.dealershipName} onChange={(e) => setDealershipContext({...dealershipContext, dealershipName: e.target.value})} />
-                </div>
-                <div>
-                    <Label htmlFor="brand-types">Brand Types</Label>
-                    <Input id="brand-types" value={dealershipContext.brandTypes} onChange={(e) => setDealershipContext({...dealershipContext, brandTypes: e.target.value})} />
-                </div>
-                <div>
-                    <Label htmlFor="dealership-location">Location</Label>
-                    <Input id="dealership-location" value={dealershipContext.dealershipLocation} onChange={(e) => setDealershipContext({...dealershipContext, dealershipLocation: e.target.value})} />
-                </div>
-                <div>
-                    <Label htmlFor="business-hours">Business Hours</Label>
-                    <Input id="business-hours" value={dealershipContext.businessHours} onChange={(e) => setDealershipContext({...dealershipContext, businessHours: e.target.value})} />
-                </div>
-            </CardContent>
-         </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Dealership Context</CardTitle>
+            <CardDescription>
+              Set global context for the dealership.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="dealership-id">Dealership ID</Label>
+              <Input
+                id="dealership-id"
+                type="number"
+                value={dealershipContext.dealershipId}
+                onChange={(e) =>
+                  setDealershipContext({
+                    ...dealershipContext,
+                    dealershipId: parseInt(e.target.value),
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="dealership-name">Dealership Name</Label>
+              <Input
+                id="dealership-name"
+                value={dealershipContext.dealershipName}
+                onChange={(e) =>
+                  setDealershipContext({
+                    ...dealershipContext,
+                    dealershipName: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="brand-types">Brand Types</Label>
+              <Input
+                id="brand-types"
+                value={dealershipContext.brandTypes}
+                onChange={(e) =>
+                  setDealershipContext({
+                    ...dealershipContext,
+                    brandTypes: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="dealership-location">Location</Label>
+              <Input
+                id="dealership-location"
+                value={dealershipContext.dealershipLocation}
+                onChange={(e) =>
+                  setDealershipContext({
+                    ...dealershipContext,
+                    dealershipLocation: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="business-hours">Business Hours</Label>
+              <Input
+                id="business-hours"
+                value={dealershipContext.businessHours}
+                onChange={(e) =>
+                  setDealershipContext({
+                    ...dealershipContext,
+                    businessHours: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </CardContent>
+        </Card>
       )}
       {activeTab === "conversation_history" && (
         <Card>
-            <CardHeader>
-                <CardTitle>Conversation History</CardTitle>
-                <CardDescription>View and manage the current conversation flow.</CardDescription>
-                 <div className="flex items-center space-x-2 pt-2">
-                    <Switch
-                    id="include-history"
-                    checked={includeHistory}
-                    onCheckedChange={setIncludeHistory}
-                    />
-                    <Label htmlFor="include-history">Include History in Prompt</Label>
-                </div>
-            </CardHeader>
-            <CardContent>
-                {conversationHistory.length === 0 ? (
-                    <p className="text-muted-foreground">No messages yet.</p>
-                ) : (
-                    <div className="space-y-4 max-h-[500px] overflow-y-auto">
-                        {conversationHistory.map((msg, index) => (
-                            <div key={index} className={`p-3 rounded-md ${msg.role === 'customer' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700'}`}>
-                                <p className="font-semibold capitalize">{msg.role}</p>
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
-                                {msg.timestamp && <p className="text-xs text-muted-foreground mt-1">{msg.timestamp.toLocaleString()}</p>}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </CardContent>
+          <CardHeader>
+            <CardTitle>Conversation History</CardTitle>
+            <CardDescription>
+              View and manage the current conversation flow.
+            </CardDescription>
+            <div className="flex items-center space-x-2 pt-2">
+              <Switch
+                id="include-history"
+                checked={includeHistory}
+                onCheckedChange={setIncludeHistory}
+              />
+              <Label htmlFor="include-history">Include History in Prompt</Label>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {conversationHistory.length === 0 ? (
+              <p className="text-muted-foreground">No messages yet.</p>
+            ) : (
+              <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                {conversationHistory.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`p-3 rounded-md ${msg.role === "customer" ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200" : "bg-gray-100 dark:bg-gray-700"}`}
+                  >
+                    <p className="font-semibold capitalize">{msg.role}</p>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    {msg.timestamp && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {msg.timestamp.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
         </Card>
       )}
     </div>

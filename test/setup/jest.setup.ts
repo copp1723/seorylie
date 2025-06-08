@@ -1,6 +1,6 @@
 // Jest setup file
-import './set-env-vars';
-import './unit-test-setup';
+import "./set-env-vars";
+import "./unit-test-setup";
 
 // Global test configuration
 global.console = {

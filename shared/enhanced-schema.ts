@@ -1,4 +1,4 @@
-import * as schema from './schema';
+import * as schema from "./schema";
 
 // Re‑export tables
 export const dealerships = schema.dealerships;
@@ -18,8 +18,10 @@ export const insertUserSchema = schema.insertUserSchema;
 export const insertVehicleSchema = schema.insertVehicleSchema;
 export const insertPersonaSchema = schema.insertPersonaSchema;
 export const insertApiKeySchema = schema.insertApiKeySchema;
-export const insertMagicLinkInvitationSchema = schema.insertMagicLinkInvitationSchema;
-export const insertDealershipVariableSchema = schema.insertDealershipVariableSchema;
+export const insertMagicLinkInvitationSchema =
+  schema.insertMagicLinkInvitationSchema;
+export const insertDealershipVariableSchema =
+  schema.insertDealershipVariableSchema;
 
 // Re‑export types
 export type UserRole = schema.UserRole;

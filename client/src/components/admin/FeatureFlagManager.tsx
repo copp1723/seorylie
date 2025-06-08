@@ -1,18 +1,18 @@
 /**
  * Feature Flag Management UI Component
- * 
+ *
  * Admin interface for managing feature flags
- * 
+ *
  * @file client/src/components/admin/FeatureFlagManager.tsx
  */
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Trash2, AlertTriangle, Settings } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Trash2, AlertTriangle, Settings } from "lucide-react";
 
 interface FeatureFlag {
   name: string;
@@ -35,79 +35,88 @@ export const FeatureFlagManager: React.FC = () => {
   const [status, setStatus] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [environment, setEnvironment] = useState<string>('development');
+  const [environment, setEnvironment] = useState<string>("development");
 
   // Fetch feature flags configuration
   const fetchConfig = async () => {
     try {
-      const response = await fetch('/api/admin/feature-flags');
-      if (!response.ok) throw new Error('Failed to fetch feature flags');
+      const response = await fetch("/api/admin/feature-flags");
+      if (!response.ok) throw new Error("Failed to fetch feature flags");
       const data = await response.json();
       setConfig(data.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     }
   };
 
   // Fetch current status
   const fetchStatus = async () => {
     try {
-      const response = await fetch('/api/admin/feature-flags/status');
-      if (!response.ok) throw new Error('Failed to fetch status');
+      const response = await fetch("/api/admin/feature-flags/status");
+      if (!response.ok) throw new Error("Failed to fetch status");
       const data = await response.json();
       setStatus(data.data.flags);
       setEnvironment(data.data.environment);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     }
   };
 
   // Toggle feature flag
   const toggleFlag = async (flagName: string, enabled: boolean) => {
     try {
-      const response = await fetch(`/api/admin/feature-flags/${flagName}/toggle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled })
-      });
-      
-      if (!response.ok) throw new Error('Failed to toggle flag');
-      
+      const response = await fetch(
+        `/api/admin/feature-flags/${flagName}/toggle`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled }),
+        },
+      );
+
+      if (!response.ok) throw new Error("Failed to toggle flag");
+
       // Refresh data
       await fetchConfig();
       await fetchStatus();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     }
   };
 
   // Deprecate flag
   const deprecateFlag = async (flagName: string) => {
     try {
-      const response = await fetch(`/api/admin/feature-flags/${flagName}/deprecate`, {
-        method: 'POST'
-      });
-      
-      if (!response.ok) throw new Error('Failed to deprecate flag');
-      
+      const response = await fetch(
+        `/api/admin/feature-flags/${flagName}/deprecate`,
+        {
+          method: "POST",
+        },
+      );
+
+      if (!response.ok) throw new Error("Failed to deprecate flag");
+
       await fetchConfig();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     }
   };
 
   // Cleanup deprecated flags
   const cleanupFlags = async (days: number = 30) => {
     try {
-      const response = await fetch(`/api/admin/feature-flags/cleanup?days=${days}`, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) throw new Error('Failed to cleanup flags');
-      
+      const response = await fetch(
+        `/api/admin/feature-flags/cleanup?days=${days}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (!response.ok) throw new Error("Failed to cleanup flags");
+
       await fetchConfig();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     }
   };
 
@@ -117,7 +126,7 @@ export const FeatureFlagManager: React.FC = () => {
       await Promise.all([fetchConfig(), fetchStatus()]);
       setLoading(false);
     };
-    
+
     loadData();
   }, []);
 
@@ -141,13 +150,19 @@ export const FeatureFlagManager: React.FC = () => {
   if (!config) {
     return (
       <Alert>
-        <AlertDescription>No feature flag configuration found.</AlertDescription>
+        <AlertDescription>
+          No feature flag configuration found.
+        </AlertDescription>
       </Alert>
     );
   }
 
-  const deprecatedFlags = Object.values(config.flags).filter(flag => flag.deprecated);
-  const activeFlags = Object.values(config.flags).filter(flag => !flag.deprecated);
+  const deprecatedFlags = Object.values(config.flags).filter(
+    (flag) => flag.deprecated,
+  );
+  const activeFlags = Object.values(config.flags).filter(
+    (flag) => !flag.deprecated,
+  );
 
   return (
     <div className="space-y-6">
@@ -157,13 +172,13 @@ export const FeatureFlagManager: React.FC = () => {
           <h1 className="text-3xl font-bold">Feature Flag Manager</h1>
           <p className="text-muted-foreground">
             Environment: <Badge variant="outline">{environment}</Badge>
-            {' | '}
+            {" | "}
             Last updated: {new Date(config.lastUpdated).toLocaleString()}
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => cleanupFlags(30)}
             disabled={deprecatedFlags.length === 0}
           >
@@ -177,7 +192,9 @@ export const FeatureFlagManager: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold">{Object.keys(config.flags).length}</div>
+            <div className="text-2xl font-bold">
+              {Object.keys(config.flags).length}
+            </div>
             <p className="text-sm text-muted-foreground">Total Flags</p>
           </CardContent>
         </Card>
@@ -192,7 +209,7 @@ export const FeatureFlagManager: React.FC = () => {
         <Card>
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-red-600">
-              {Object.values(status).filter(s => !s).length}
+              {Object.values(status).filter((s) => !s).length}
             </div>
             <p className="text-sm text-muted-foreground">Disabled</p>
           </CardContent>
@@ -218,7 +235,7 @@ export const FeatureFlagManager: React.FC = () => {
         <CardContent>
           <div className="space-y-4">
             {activeFlags.map((flag) => (
-              <div 
+              <div
                 key={flag.name}
                 className="flex items-center justify-between p-4 border rounded-lg"
               >
@@ -227,8 +244,12 @@ export const FeatureFlagManager: React.FC = () => {
                     <h3 className="font-semibold">{flag.name}</h3>
                     {flag.environments && (
                       <div className="flex gap-1">
-                        {flag.environments.map(env => (
-                          <Badge key={env} variant="secondary" className="text-xs">
+                        {flag.environments.map((env) => (
+                          <Badge
+                            key={env}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {env}
                           </Badge>
                         ))}
@@ -240,20 +261,24 @@ export const FeatureFlagManager: React.FC = () => {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{flag.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {flag.description}
+                  </p>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">
-                      {status[flag.name] ? 'Enabled' : 'Disabled'}
+                      {status[flag.name] ? "Enabled" : "Disabled"}
                     </span>
                     <Switch
                       checked={status[flag.name] || false}
-                      onCheckedChange={(enabled: boolean) => toggleFlag(flag.name, enabled)}
+                      onCheckedChange={(enabled: boolean) =>
+                        toggleFlag(flag.name, enabled)
+                      }
                     />
                   </div>
-                  
+
                   <Button
                     variant="ghost"
                     size="sm"
@@ -281,16 +306,21 @@ export const FeatureFlagManager: React.FC = () => {
           <CardContent>
             <div className="space-y-3">
               {deprecatedFlags.map((flag) => (
-                <div 
+                <div
                   key={flag.name}
                   className="flex items-center justify-between p-3 border rounded-lg bg-orange-50"
                 >
                   <div>
-                    <h3 className="font-semibold text-orange-800">{flag.name}</h3>
-                    <p className="text-sm text-orange-600">{flag.description}</p>
+                    <h3 className="font-semibold text-orange-800">
+                      {flag.name}
+                    </h3>
+                    <p className="text-sm text-orange-600">
+                      {flag.description}
+                    </p>
                     {flag.deprecationDate && (
                       <p className="text-xs text-orange-500">
-                        Deprecated: {new Date(flag.deprecationDate).toLocaleDateString()}
+                        Deprecated:{" "}
+                        {new Date(flag.deprecationDate).toLocaleDateString()}
                       </p>
                     )}
                   </div>

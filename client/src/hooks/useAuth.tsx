@@ -1,4 +1,10 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useState,
+  useEffect,
+} from "react";
 import { toastSuccess, toastError } from "@/components/ui/use-toast";
 
 export interface User {
@@ -149,7 +155,7 @@ export function useAuth() {
         setIsLoading(false);
       }
     };
-    
+
     loadUser();
   }, []);
 
@@ -160,7 +166,7 @@ export function useAuth() {
       const userData = await loginUser(credentials);
       setUser(userData);
       setError(null);
-      
+
       toastSuccess({
         title: "Login Successful",
         description: `Welcome back, ${userData.name || userData.username}!`,
@@ -185,17 +191,19 @@ export function useAuth() {
       const userData = await registerUser(credentials);
       setUser(userData);
       setError(null);
-      
+
       toastSuccess({
         title: "Account Created",
-        description: "Welcome to CleanRylie! Your account has been created successfully.",
+        description:
+          "Welcome to CleanRylie! Your account has been created successfully.",
       });
     } catch (err) {
       const error = err as Error;
       setError(error);
       toastError({
         title: "Registration Failed",
-        description: error.message || "Unable to create account. Please try again.",
+        description:
+          error.message || "Unable to create account. Please try again.",
       });
       throw error;
     } finally {
@@ -209,7 +217,7 @@ export function useAuth() {
       await logoutUser();
       setUser(null);
       setError(null);
-      
+
       toastSuccess({
         title: "Logged Out",
         description: "You have been successfully logged out.",
@@ -219,7 +227,8 @@ export function useAuth() {
       setUser(null); // Clear user locally even if logout fails
       toastError({
         title: "Logout Error",
-        description: "There was an issue logging out, but you have been signed out locally.",
+        description:
+          "There was an issue logging out, but you have been signed out locally.",
       });
     }
   };
@@ -236,7 +245,8 @@ export function useAuth() {
       const error = err as Error;
       toastError({
         title: "Failed to Send Magic Link",
-        description: error.message || "Unable to send magic link. Please try again.",
+        description:
+          error.message || "Unable to send magic link. Please try again.",
       });
       throw error;
     }
@@ -268,38 +278,40 @@ export function useAuth() {
     refetchUser,
     loginWithMagicLink: sendMagicLink,
     // Legacy mutation-style objects for backward compatibility
-    loginMutation: { 
-      mutate: login, 
+    loginMutation: {
+      mutate: login,
       mutateAsync: login,
       isPending: isLoading,
       isError: !!error,
-      error: error
+      error: error,
     },
-    logoutMutation: { 
+    logoutMutation: {
       mutate: logout,
       isPending: isLoading,
       isError: !!error,
-      error: error
+      error: error,
     },
-    registerMutation: { 
-      mutate: register, 
+    registerMutation: {
+      mutate: register,
       mutateAsync: register,
       isPending: isLoading,
       isError: !!error,
-      error: error
+      error: error,
     },
-    magicLinkMutation: { 
-      mutate: sendMagicLink, 
+    magicLinkMutation: {
+      mutate: sendMagicLink,
       mutateAsync: sendMagicLink,
       isPending: isLoading,
       isError: !!error,
-      error: error
+      error: error,
     },
   };
 }
 
 // Auth Context
-const AuthContext = createContext<ReturnType<typeof useAuth> | undefined>(undefined);
+const AuthContext = createContext<ReturnType<typeof useAuth> | undefined>(
+  undefined,
+);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -307,10 +319,6 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const auth = useAuth();
-  
-  return (
-    <AuthContext.Provider value={auth}>
-      {children}
-    </AuthContext.Provider>
-  );
+
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }

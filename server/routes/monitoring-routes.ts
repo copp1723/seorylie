@@ -21,30 +21,43 @@ router.get("/health", async (req, res) => {
       memory: process.memoryUsage(),
       components: overallHealth.components,
       summary: {
-        healthy: Object.values(overallHealth.components).filter(c => c.status === 'healthy').length,
-        degraded: Object.values(overallHealth.components).filter(c => c.status === 'degraded').length,
-        unhealthy: Object.values(overallHealth.components).filter(c => c.status === 'unhealthy').length,
-        unknown: Object.values(overallHealth.components).filter(c => c.status === 'unknown').length
-      }
+        healthy: Object.values(overallHealth.components).filter(
+          (c) => c.status === "healthy",
+        ).length,
+        degraded: Object.values(overallHealth.components).filter(
+          (c) => c.status === "degraded",
+        ).length,
+        unhealthy: Object.values(overallHealth.components).filter(
+          (c) => c.status === "unhealthy",
+        ).length,
+        unknown: Object.values(overallHealth.components).filter(
+          (c) => c.status === "unknown",
+        ).length,
+      },
     };
 
     // Set appropriate HTTP status code based on health
-    const statusCode = overallHealth.status === 'healthy' ? 200 :
-                      overallHealth.status === 'degraded' ? 200 :
-                      overallHealth.status === 'unhealthy' ? 503 : 500;
+    const statusCode =
+      overallHealth.status === "healthy"
+        ? 200
+        : overallHealth.status === "degraded"
+          ? 200
+          : overallHealth.status === "unhealthy"
+            ? 503
+            : 500;
 
     res.status(statusCode).json(healthResponse);
   } catch (error) {
-    logger.error('Health check failed', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error("Health check failed", {
+      error: error instanceof Error ? error.message : String(error),
     });
 
     res.status(500).json({
-      status: 'unhealthy',
+      status: "unhealthy",
       timestamp: new Date().toISOString(),
-      error: 'Health check system failure',
+      error: "Health check system failure",
       uptime: process.uptime(),
-      memory: process.memoryUsage()
+      memory: process.memoryUsage(),
     });
   }
 });
@@ -55,21 +68,26 @@ router.get("/health/:component", async (req, res) => {
     const { component } = req.params;
     const health = await monitoring.getComponentHealth(component);
 
-    const statusCode = health.status === 'healthy' ? 200 :
-                      health.status === 'degraded' ? 200 :
-                      health.status === 'unhealthy' ? 503 : 404;
+    const statusCode =
+      health.status === "healthy"
+        ? 200
+        : health.status === "degraded"
+          ? 200
+          : health.status === "unhealthy"
+            ? 503
+            : 404;
 
     res.status(statusCode).json({
       component,
       ...health,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     res.status(500).json({
       component: req.params.component,
-      status: 'unknown',
+      status: "unknown",
       error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -91,18 +109,18 @@ router.get("/metrics", async (req, res) => {
       deadLetterQueue: dlqStats,
       emailListener: emailListenerHealth,
       legacy: monitoring.getMetrics(), // Existing metrics format
-      prometheusMetrics: prometheusMetricsData // Add Prometheus metrics
+      prometheusMetrics: prometheusMetricsData, // Add Prometheus metrics
     });
   } catch (error) {
-    logger.error('Metrics collection failed', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error("Metrics collection failed", {
+      error: error instanceof Error ? error.message : String(error),
     });
 
     res.status(500).json({
       timestamp: new Date().toISOString(),
-      error: 'Metrics collection failed',
+      error: "Metrics collection failed",
       uptime: process.uptime(),
-      memory: process.memoryUsage()
+      memory: process.memoryUsage(),
     });
   }
 });
@@ -113,12 +131,12 @@ router.get("/dlq/stats", (req, res) => {
     const stats = dlqService.getStats();
     res.json({
       timestamp: new Date().toISOString(),
-      ...stats
+      ...stats,
     });
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -133,12 +151,12 @@ router.get("/dlq/entries", (req, res) => {
     res.json({
       timestamp: new Date().toISOString(),
       summary: stats,
-      note: "Entry details not exposed for security. Use specific entry ID endpoint if needed."
+      note: "Entry details not exposed for security. Use specific entry ID endpoint if needed.",
     });
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -149,12 +167,12 @@ router.get("/imap/status", (req, res) => {
     const status = adfEmailListener.getHealthStatus();
     res.json({
       timestamp: new Date().toISOString(),
-      ...status
+      ...status,
     });
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -164,16 +182,16 @@ router.get("/metrics/prometheus", async (req, res) => {
   try {
     // Get actual metrics from the Prometheus metrics service
     const metrics = await prometheusMetrics.getMetrics();
-    
+
     // Set proper content type for Prometheus metrics
-    res.set('Content-Type', 'text/plain');
+    res.set("Content-Type", "text/plain");
     res.send(metrics);
   } catch (error) {
-    logger.error('Prometheus metrics collection failed', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error("Prometheus metrics collection failed", {
+      error: error instanceof Error ? error.message : String(error),
     });
-    
-    res.status(500).send('# Error collecting metrics\n');
+
+    res.status(500).send("# Error collecting metrics\n");
   }
 });
 

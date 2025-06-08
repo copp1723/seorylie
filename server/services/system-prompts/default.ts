@@ -1,7 +1,7 @@
 /**
  * Default system prompt for Rylie AI
  * This is the core prompt template used for all dealership conversations
- * 
+ *
  * @file server/services/system-prompts/default.ts
  */
 

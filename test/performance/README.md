@@ -5,6 +5,7 @@ This directory contains comprehensive performance and load testing tools for the
 ## Overview
 
 The testing suite includes:
+
 - **API Load Testing**: Tests REST endpoints under various loads (20, 50, 100 concurrent users)
 - **WebSocket/Chat Load Testing**: Tests real-time chat functionality and AI conversation flows
 - **Inventory Load Testing**: Tests bulk operations and complex database queries
@@ -14,11 +15,13 @@ The testing suite includes:
 ## Prerequisites
 
 1. **k6 Load Testing Tool**: Already installed via Homebrew
+
    ```bash
    brew install k6  # Already done
    ```
 
 2. **Application Running**: Ensure the Rylie application is running locally
+
    ```bash
    npm run dev
    ```
@@ -28,6 +31,7 @@ The testing suite includes:
 ## Quick Start
 
 ### 1. Setup Test Data
+
 ```bash
 # Create test dealerships, users, vehicles, and conversations
 npm run test:setup-data
@@ -37,11 +41,12 @@ npm run test:verify-data
 ```
 
 ### 2. Run Individual Load Tests
+
 ```bash
 # API endpoints load test
 npm run test:load:api
 
-# WebSocket/Chat load test  
+# WebSocket/Chat load test
 npm run test:load:chat
 
 # Inventory operations load test
@@ -52,12 +57,14 @@ npm run test:load
 ```
 
 ### 3. Run Comprehensive Performance Testing
+
 ```bash
 # Full performance test suite with monitoring
 npm run test:performance:full
 ```
 
 ### 4. Cleanup Test Data
+
 ```bash
 # Remove test data after testing
 npm run test:cleanup-data
@@ -68,23 +75,27 @@ npm run test:cleanup-data
 ### Load Test Scenarios
 
 #### API Load Test (`test/load/api-load-test.js`)
+
 - **Light Load**: 20 concurrent users for 2 minutes
-- **Medium Load**: 50 concurrent users for 3 minutes  
+- **Medium Load**: 50 concurrent users for 3 minutes
 - **Heavy Load**: 100 concurrent users for 5 minutes
 
 **Endpoints Tested**:
+
 - Authentication (`/api/login`)
 - Vehicle search (`/api/vehicles`)
 - Admin endpoints (`/api/admin/*`)
 - Health monitoring (`/api/metrics/health`)
 
 #### Chat Load Test (`test/load/chat-load-test.js`)
+
 - **WebSocket Connections**: Up to 50 concurrent connections
 - **Message Throughput**: Multiple messages per connection
 - **AI Conversation Flow**: Customer inquiries and AI responses
 - **Agent Handover**: Escalation scenarios
 
 #### Inventory Load Test (`test/load/inventory-load-test.js`)
+
 - **Bulk Operations**: Up to 25 concurrent users
 - **Complex Searches**: Multi-filter inventory queries
 - **Bulk Imports**: CSV file uploads with 50+ vehicles
@@ -93,6 +104,7 @@ npm run test:cleanup-data
 ### Performance Thresholds
 
 #### Success Criteria (from Ticket #15)
+
 - ✅ **API Response Time**: 95% of requests < 1000ms under 50 concurrent users
 - ✅ **WebSocket Latency**: 95% of connections < 500ms
 - ✅ **Database Queries**: Complex queries < 2000ms
@@ -100,6 +112,7 @@ npm run test:cleanup-data
 - ✅ **Memory Stability**: No memory leaks, stable resource usage
 
 #### Monitoring Thresholds
+
 ```javascript
 thresholds: {
   http_req_duration: ['p(95)<1000', 'p(99)<2000'],
@@ -139,18 +152,21 @@ The test suite creates realistic test data:
 ## Monitoring & Reports
 
 ### Real-time Monitoring
+
 - **Database Query Performance**: Tracks slow queries (>100ms)
 - **Memory Usage**: Monitors heap usage every 5 seconds
 - **System Resources**: CPU and load average tracking
 - **WebSocket Connections**: Connection success rates and latency
 
 ### Generated Reports
+
 - **HTML Reports**: Visual performance dashboards
 - **JSON Reports**: Detailed metrics for analysis
 - **Database Reports**: Query performance analysis
 - **Recommendations**: Automated bottleneck identification
 
 ### Report Locations
+
 ```
 test/performance/
 ├── load-test-report-[timestamp].html
@@ -190,17 +206,20 @@ export DB_PASSWORD=your_password
 ### Common Issues
 
 1. **k6 Command Not Found**
+
    ```bash
    brew install k6
    ```
 
 2. **Application Not Running**
+
    ```bash
    npm run dev
    # Wait for "Server running on port 5000"
    ```
 
 3. **Database Connection Issues**
+
    - Verify PostgreSQL is running
    - Check DATABASE_URL environment variable
    - Ensure test data setup completed successfully
@@ -247,6 +266,7 @@ After running the performance tests:
 ## Support
 
 For issues with the performance testing suite:
+
 1. Check the troubleshooting section above
 2. Review generated error logs in test reports
 3. Verify all prerequisites are met

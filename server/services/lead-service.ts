@@ -1,9 +1,9 @@
-import { eq, and, desc, gte, lte, sql } from 'drizzle-orm';
-import db from '../db';
-import { 
-  customers, 
-  leads, 
-  vehicleInterests, 
+import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
+import db from "../db";
+import {
+  customers,
+  leads,
+  vehicleInterests,
   conversations,
   messages,
   leadActivities,
@@ -14,10 +14,10 @@ import {
   type InsertConversation,
   type Customer,
   type Lead,
-  type Conversation
-} from '../../shared/lead-management-schema';
-import logger from '../utils/logger';
-import crypto from 'crypto';
+  type Conversation,
+} from "../../shared/lead-management-schema";
+import logger from "../utils/logger";
+import crypto from "crypto";
 
 export interface InboundLeadData {
   customer: {
@@ -40,7 +40,7 @@ export interface InboundLeadData {
     trim?: string;
     vin?: string;
     stockNumber?: string;
-    condition?: 'new' | 'used' | 'cpo';
+    condition?: "new" | "used" | "cpo";
     minPrice?: number;
     maxPrice?: number;
     tradeIn?: {
@@ -59,7 +59,7 @@ export interface InboundLeadData {
     source: string;
     medium?: string;
     campaign?: string;
-    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    priority?: "low" | "medium" | "high" | "urgent";
   };
   attribution?: {
     source: string;
@@ -90,14 +90,14 @@ export class LeadService {
   private generateCustomerDeduplicationHash(
     email?: string,
     phone?: string,
-    fullName?: string
+    fullName?: string,
   ): string {
-    const normalizedEmail = email?.toLowerCase().trim() || '';
-    const normalizedPhone = phone?.replace(/[^0-9]/g, '') || '';
-    const normalizedName = fullName?.toLowerCase().trim() || '';
-    
+    const normalizedEmail = email?.toLowerCase().trim() || "";
+    const normalizedPhone = phone?.replace(/[^0-9]/g, "") || "";
+    const normalizedName = fullName?.toLowerCase().trim() || "";
+
     const hashInput = `${normalizedEmail}|${normalizedPhone}|${normalizedName}`;
-    return crypto.createHash('sha256').update(hashInput).digest('hex');
+    return crypto.createHash("sha256").update(hashInput).digest("hex");
   }
 
   /**
@@ -108,17 +108,17 @@ export class LeadService {
     requestType?: string,
     vehicleYear?: number,
     vehicleMake?: string,
-    vehicleModel?: string
+    vehicleModel?: string,
   ): string {
     const hashInput = [
       customerId,
-      requestType || '',
-      vehicleYear?.toString() || '',
-      vehicleMake?.toLowerCase().trim() || '',
-      vehicleModel?.toLowerCase().trim() || ''
-    ].join('|');
-    
-    return crypto.createHash('sha256').update(hashInput).digest('hex');
+      requestType || "",
+      vehicleYear?.toString() || "",
+      vehicleMake?.toLowerCase().trim() || "",
+      vehicleModel?.toLowerCase().trim() || "",
+    ].join("|");
+
+    return crypto.createHash("sha256").update(hashInput).digest("hex");
   }
 
   /**
@@ -126,7 +126,7 @@ export class LeadService {
    */
   private async generateLeadNumber(dealershipId: number): Promise<string> {
     const now = new Date();
-    const yearFull = now.getFullYear();           // e.g. 2025
+    const yearFull = now.getFullYear(); // e.g. 2025
     const yearShort = yearFull.toString().slice(-2); // "25"
 
     // Define the current calendar year window
@@ -135,17 +135,19 @@ export class LeadService {
 
     // Count existing leads for this dealership within the same year
     const [{ total }] = await db
-      .select({ total: sql`COUNT(${leads.id})`.as('total') })
+      .select({ total: sql`COUNT(${leads.id})`.as("total") })
       .from(leads)
-      .where(and(
-        eq(leads.dealershipId, dealershipId),
-        gte(leads.createdAt, startOfYear),
-        lte(leads.createdAt, endOfYear)
-      ))
+      .where(
+        and(
+          eq(leads.dealershipId, dealershipId),
+          gte(leads.createdAt, startOfYear),
+          lte(leads.createdAt, endOfYear),
+        ),
+      )
       .limit(1);
 
     const nextSeq = Number(total ?? 0) + 1;
-    return `LEAD-${dealershipId}-${yearShort}-${nextSeq.toString().padStart(4, '0')}`;
+    return `LEAD-${dealershipId}-${yearShort}-${nextSeq.toString().padStart(4, "0")}`;
   }
 
   /**
@@ -153,34 +155,36 @@ export class LeadService {
    */
   private async findOrCreateCustomer(
     dealershipId: number,
-    customerData: InboundLeadData['customer']
+    customerData: InboundLeadData["customer"],
   ): Promise<{ customer: Customer; isExisting: boolean }> {
     const deduplicationHash = this.generateCustomerDeduplicationHash(
       customerData.email,
       customerData.phone,
-      customerData.fullName
+      customerData.fullName,
     );
 
     // Try to find existing customer
     const existingCustomers = await db
       .select()
       .from(customers)
-      .where(and(
-        eq(customers.dealershipId, dealershipId),
-        eq(customers.deduplicationHash, deduplicationHash)
-      ))
+      .where(
+        and(
+          eq(customers.dealershipId, dealershipId),
+          eq(customers.deduplicationHash, deduplicationHash),
+        ),
+      )
       .limit(1);
 
     if (existingCustomers.length > 0) {
       const customer = existingCustomers[0];
-      
+
       // Update last contact date and increment lead count
       await db
         .update(customers)
         .set({
           lastContactDate: new Date(),
           totalLeads: customer.totalLeads + 1,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(customers.id, customer.id));
 
@@ -199,12 +203,12 @@ export class LeadService {
       city: customerData.city,
       state: customerData.state,
       zipCode: customerData.zipCode,
-      country: customerData.country || 'US',
-      preferredLanguage: customerData.preferredLanguage || 'en',
+      country: customerData.country || "US",
+      preferredLanguage: customerData.preferredLanguage || "en",
       firstContactDate: new Date(),
       lastContactDate: new Date(),
       totalLeads: 1,
-      deduplicationHash
+      deduplicationHash,
     };
 
     const [newCustomer] = await db
@@ -219,7 +223,7 @@ export class LeadService {
    * Create vehicle interest if provided
    */
   private async createVehicleInterest(
-    vehicleData: InboundLeadData['vehicleInterest']
+    vehicleData: InboundLeadData["vehicleInterest"],
   ): Promise<string | null> {
     if (!vehicleData) return null;
 
@@ -239,7 +243,7 @@ export class LeadService {
       tradeInModel: vehicleData.tradeIn?.model,
       tradeInVin: vehicleData.tradeIn?.vin,
       tradeInMileage: vehicleData.tradeIn?.mileage,
-      tradeInCondition: vehicleData.tradeIn?.condition
+      tradeInCondition: vehicleData.tradeIn?.condition,
     };
 
     const [vehicleInterest] = await db
@@ -256,24 +260,26 @@ export class LeadService {
   private async checkForDuplicateLead(
     dealershipId: number,
     customerId: string,
-    leadData: InboundLeadData['lead'],
-    vehicleData?: InboundLeadData['vehicleInterest']
+    leadData: InboundLeadData["lead"],
+    vehicleData?: InboundLeadData["vehicleInterest"],
   ): Promise<Lead | null> {
     const deduplicationHash = this.generateLeadDeduplicationHash(
       customerId,
       leadData.requestType,
       vehicleData?.year,
       vehicleData?.make,
-      vehicleData?.model
+      vehicleData?.model,
     );
 
     const existingLeads = await db
       .select()
       .from(leads)
-      .where(and(
-        eq(leads.dealershipId, dealershipId),
-        eq(leads.deduplicationHash, deduplicationHash)
-      ))
+      .where(
+        and(
+          eq(leads.dealershipId, dealershipId),
+          eq(leads.deduplicationHash, deduplicationHash),
+        ),
+      )
       .limit(1);
 
     return existingLeads[0] || null;
@@ -282,14 +288,19 @@ export class LeadService {
   /**
    * Find lead source by name or type
    */
-  private async findLeadSource(dealershipId: number, source: string): Promise<string | null> {
+  private async findLeadSource(
+    dealershipId: number,
+    source: string,
+  ): Promise<string | null> {
     const leadSources = await db
       .select()
       .from(leadSourcesTable)
-      .where(and(
-        eq(leadSourcesTable.dealershipId, dealershipId),
-        eq(leadSourcesTable.type, source as any)
-      ))
+      .where(
+        and(
+          eq(leadSourcesTable.dealershipId, dealershipId),
+          eq(leadSourcesTable.type, source as any),
+        ),
+      )
       .limit(1);
 
     return leadSources[0]?.id || null;
@@ -303,10 +314,10 @@ export class LeadService {
     customerId: string,
     vehicleInterestId: string | null,
     sourceId: string | null,
-    leadData: InboundLeadData['lead'],
-    attribution: InboundLeadData['attribution'],
+    leadData: InboundLeadData["lead"],
+    attribution: InboundLeadData["attribution"],
     customFields: Record<string, any>,
-    originalPayload: InboundLeadData
+    originalPayload: InboundLeadData,
   ): Promise<Lead> {
     const leadNumber = await this.generateLeadNumber(dealershipId);
     const deduplicationHash = this.generateLeadDeduplicationHash(
@@ -314,7 +325,7 @@ export class LeadService {
       leadData.requestType,
       originalPayload.vehicleInterest?.year,
       originalPayload.vehicleInterest?.make,
-      originalPayload.vehicleInterest?.model
+      originalPayload.vehicleInterest?.model,
     );
 
     const newLeadData: InsertLead = {
@@ -323,8 +334,8 @@ export class LeadService {
       vehicleInterestId,
       sourceId,
       leadNumber,
-      status: 'new',
-      priority: leadData.priority || 'medium',
+      status: "new",
+      priority: leadData.priority || "medium",
       requestType: leadData.requestType,
       description: leadData.description,
       timeframe: leadData.timeframe,
@@ -338,13 +349,10 @@ export class LeadService {
       lastContactDate: new Date(),
       originalPayload,
       customFields: customFields || {},
-      deduplicationHash
+      deduplicationHash,
     };
 
-    const [newLead] = await db
-      .insert(leads)
-      .values(newLeadData)
-      .returning();
+    const [newLead] = await db.insert(leads).values(newLeadData).returning();
 
     return newLead;
   }
@@ -356,18 +364,18 @@ export class LeadService {
     dealershipId: number,
     leadId: string,
     customerId: string,
-    channel: string = 'api'
+    channel: string = "api",
   ): Promise<Conversation> {
     const conversationData: InsertConversation = {
       dealershipId,
       leadId,
       customerId,
       subject: `New Lead Inquiry`,
-      status: 'active',
+      status: "active",
       channel,
       lastMessageAt: new Date(),
       messageCount: 0,
-      isAiAssisted: true
+      isAiAssisted: true,
     };
 
     const [conversation] = await db
@@ -385,13 +393,13 @@ export class LeadService {
     leadId: string,
     type: string,
     description: string,
-    userId?: number
+    userId?: number,
   ): Promise<void> {
     await db.insert(leadActivities).values({
       leadId,
       userId,
       type,
-      description
+      description,
     });
   }
 
@@ -400,26 +408,26 @@ export class LeadService {
    */
   async processInboundLead(
     dealershipId: number,
-    leadData: InboundLeadData
+    leadData: InboundLeadData,
   ): Promise<LeadCreationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
     try {
-      logger.info('Processing inbound lead', { 
-        dealershipId, 
-        customerName: leadData.customer.fullName 
+      logger.info("Processing inbound lead", {
+        dealershipId,
+        customerName: leadData.customer.fullName,
       });
 
       // Find or create customer
       const { customer, isExisting } = await this.findOrCreateCustomer(
         dealershipId,
-        leadData.customer
+        leadData.customer,
       );
 
       // Create vehicle interest if provided
       const vehicleInterestId = await this.createVehicleInterest(
-        leadData.vehicleInterest
+        leadData.vehicleInterest,
       );
 
       // Check for duplicate lead
@@ -427,30 +435,35 @@ export class LeadService {
         dealershipId,
         customer.id,
         leadData.lead,
-        leadData.vehicleInterest
+        leadData.vehicleInterest,
       );
 
       if (duplicateLead) {
-        logger.warn('Duplicate lead detected', { 
+        logger.warn("Duplicate lead detected", {
           duplicateLeadId: duplicateLead.id,
-          customerId: customer.id
+          customerId: customer.id,
         });
 
         return {
           success: false,
           leadId: duplicateLead.id,
           customerId: customer.id,
-          errors: ['Duplicate lead detected'],
+          errors: ["Duplicate lead detected"],
           warnings,
           isExistingCustomer: isExisting,
-          isDuplicateLead: true
+          isDuplicateLead: true,
         };
       }
 
       // Find lead source
-      const sourceId = await this.findLeadSource(dealershipId, leadData.lead.source);
+      const sourceId = await this.findLeadSource(
+        dealershipId,
+        leadData.lead.source,
+      );
       if (!sourceId) {
-        warnings.push(`Lead source '${leadData.lead.source}' not found, lead will be created without source reference`);
+        warnings.push(
+          `Lead source '${leadData.lead.source}' not found, lead will be created without source reference`,
+        );
       }
 
       // Create the lead
@@ -462,28 +475,28 @@ export class LeadService {
         leadData.lead,
         leadData.attribution,
         leadData.customFields || {},
-        leadData
+        leadData,
       );
 
       // Create initial conversation
       const conversation = await this.createInitialConversation(
         dealershipId,
         newLead.id,
-        customer.id
+        customer.id,
       );
 
       // Log lead creation activity
       await this.logLeadActivity(
         newLead.id,
-        'lead_created',
-        `Lead created from ${leadData.lead.source} source`
+        "lead_created",
+        `Lead created from ${leadData.lead.source} source`,
       );
 
-      logger.info('Lead processed successfully', {
+      logger.info("Lead processed successfully", {
         leadId: newLead.id,
         leadNumber: newLead.leadNumber,
         customerId: customer.id,
-        conversationId: conversation.id
+        conversationId: conversation.id,
       });
 
       return {
@@ -494,15 +507,14 @@ export class LeadService {
         errors,
         warnings,
         isExistingCustomer: isExisting,
-        isDuplicateLead: false
+        isDuplicateLead: false,
       };
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Lead processing failed', { 
-        error: err.message, 
+      logger.error("Lead processing failed", {
+        error: err.message,
         dealershipId,
-        customerName: leadData.customer.fullName
+        customerName: leadData.customer.fullName,
       });
 
       errors.push(`Lead processing failed: ${err.message}`);
@@ -512,7 +524,7 @@ export class LeadService {
         errors,
         warnings,
         isExistingCustomer: false,
-        isDuplicateLead: false
+        isDuplicateLead: false,
       };
     }
   }
@@ -520,14 +532,14 @@ export class LeadService {
   /**
    * Get lead by ID with full details
    */
-  async getLeadById(leadId: string, dealershipId: number): Promise<Lead | null> {
+  async getLeadById(
+    leadId: string,
+    dealershipId: number,
+  ): Promise<Lead | null> {
     const leadResults = await db
       .select()
       .from(leads)
-      .where(and(
-        eq(leads.id, leadId),
-        eq(leads.dealershipId, dealershipId)
-      ))
+      .where(and(eq(leads.id, leadId), eq(leads.dealershipId, dealershipId)))
       .limit(1);
 
     return leadResults[0] || null;
@@ -544,7 +556,7 @@ export class LeadService {
       status?: string;
       source?: string;
       customerId?: string;
-    } = {}
+    } = {},
   ): Promise<Lead[]> {
     const { limit = 50, offset = 0, status, source, customerId } = options;
 
@@ -554,29 +566,32 @@ export class LeadService {
       .where(eq(leads.dealershipId, dealershipId));
 
     if (status) {
-      query = query.where(and(
-        eq(leads.dealershipId, dealershipId),
-        eq(leads.status, status as any)
-      ));
+      query = query.where(
+        and(
+          eq(leads.dealershipId, dealershipId),
+          eq(leads.status, status as any),
+        ),
+      );
     }
 
     if (source) {
-      query = query.where(and(
-        eq(leads.dealershipId, dealershipId),
-        eq(leads.source, source as any)
-      ));
+      query = query.where(
+        and(
+          eq(leads.dealershipId, dealershipId),
+          eq(leads.source, source as any),
+        ),
+      );
     }
 
     if (customerId) {
-      query = query.where(and(
-        eq(leads.dealershipId, dealershipId),
-        eq(leads.customerId, customerId)
-      ));
+      query = query.where(
+        and(
+          eq(leads.dealershipId, dealershipId),
+          eq(leads.customerId, customerId),
+        ),
+      );
     }
 
-    return query
-      .orderBy(desc(leads.createdAt))
-      .limit(limit)
-      .offset(offset);
+    return query.orderBy(desc(leads.createdAt)).limit(limit).offset(offset);
   }
 }

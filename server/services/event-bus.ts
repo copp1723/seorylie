@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 export interface SystemEvent {
   type: string;
@@ -25,15 +25,24 @@ export class EventBus extends EventEmitter {
     return this.emit(event.type, event);
   }
 
-  public on(eventName: string | symbol, listener: (...args: any[]) => void): this {
+  public on(
+    eventName: string | symbol,
+    listener: (...args: any[]) => void,
+  ): this {
     return super.on(eventName, listener);
   }
 
-  public once(eventName: string | symbol, listener: (...args: any[]) => void): this {
+  public once(
+    eventName: string | symbol,
+    listener: (...args: any[]) => void,
+  ): this {
     return super.once(eventName, listener);
   }
 
-  public off(eventName: string | symbol, listener: (...args: any[]) => void): this {
+  public off(
+    eventName: string | symbol,
+    listener: (...args: any[]) => void,
+  ): this {
     return super.off(eventName, listener);
   }
 }

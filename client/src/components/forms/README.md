@@ -17,6 +17,7 @@ This directory contains reusable form components and form-related utilities.
 ## Usage Guidelines
 
 1. Form components should:
+
    - Handle validation and error states consistently
    - Support accessibility features (labels, ARIA attributes)
    - Work with form libraries (React Hook Form, Formik)

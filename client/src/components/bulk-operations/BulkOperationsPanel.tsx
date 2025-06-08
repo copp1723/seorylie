@@ -1,10 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { useLoadingContext } from '../../contexts/LoadingContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAnalytics } from '../../hooks/useAnalytics';
-import { useFeatureFlag } from '../../hooks/useFeatureFlag';
-import useKeyboardShortcut from '../../hooks/useKeyboardShortcut';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+import { createPortal } from "react-dom";
+import { useLoadingContext } from "../../contexts/LoadingContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useAnalytics } from "../../hooks/useAnalytics";
+import { useFeatureFlag } from "../../hooks/useFeatureFlag";
+import useKeyboardShortcut from "../../hooks/useKeyboardShortcut";
 
 // Types and interfaces
 export interface BulkOperationItem {
@@ -17,18 +23,18 @@ export interface BulkOperationItem {
   [key: string]: any;
 }
 
-export type BulkOperationType = 
-  | 'activate'
-  | 'deactivate'
-  | 'delete'
-  | 'tag'
-  | 'untag'
-  | 'assign'
-  | 'unassign'
-  | 'update'
-  | 'archive'
-  | 'restore'
-  | 'custom';
+export type BulkOperationType =
+  | "activate"
+  | "deactivate"
+  | "delete"
+  | "tag"
+  | "untag"
+  | "assign"
+  | "unassign"
+  | "update"
+  | "archive"
+  | "restore"
+  | "custom";
 
 export interface BulkOperationAction {
   id: string;
@@ -43,7 +49,7 @@ export interface BulkOperationAction {
   progressText?: string;
   batchSize?: number;
   maxItems?: number;
-  dangerLevel?: 'none' | 'low' | 'medium' | 'high';
+  dangerLevel?: "none" | "low" | "medium" | "high";
 }
 
 export interface BulkOperationResult {
@@ -69,11 +75,29 @@ interface BulkOperationsPanelProps {
   itemKeyField?: string;
   maxSelectableItems?: number;
   onSelectionChange?: (selectedItems: BulkOperationItem[]) => void;
-  onOperationComplete?: (result: BulkOperationResult, action: BulkOperationType, items: BulkOperationItem[]) => void;
-  onOperationStart?: (action: BulkOperationType, items: BulkOperationItem[]) => void;
-  onOperationError?: (error: Error, action: BulkOperationType, items: BulkOperationItem[]) => void;
-  onOperationCancel?: (action: BulkOperationType, items: BulkOperationItem[]) => void;
-  renderItem?: (item: BulkOperationItem, isSelected: boolean, onSelect: (selected: boolean) => void) => React.ReactNode;
+  onOperationComplete?: (
+    result: BulkOperationResult,
+    action: BulkOperationType,
+    items: BulkOperationItem[],
+  ) => void;
+  onOperationStart?: (
+    action: BulkOperationType,
+    items: BulkOperationItem[],
+  ) => void;
+  onOperationError?: (
+    error: Error,
+    action: BulkOperationType,
+    items: BulkOperationItem[],
+  ) => void;
+  onOperationCancel?: (
+    action: BulkOperationType,
+    items: BulkOperationItem[],
+  ) => void;
+  renderItem?: (
+    item: BulkOperationItem,
+    isSelected: boolean,
+    onSelect: (selected: boolean) => void,
+  ) => React.ReactNode;
   renderEmptyState?: () => React.ReactNode;
   className?: string;
   analyticsCategory?: string;
@@ -84,7 +108,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
   items,
   actions,
   filters = [],
-  itemKeyField = 'id',
+  itemKeyField = "id",
   maxSelectableItems = 100,
   onSelectionChange,
   onOperationComplete,
@@ -93,28 +117,31 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
   onOperationCancel,
   renderItem,
   renderEmptyState,
-  className = '',
-  analyticsCategory = 'bulk_operations'
+  className = "",
+  analyticsCategory = "bulk_operations",
 }) => {
   // Get loading context for integration with loading states
   const { startLoading, stopLoading, setProgress } = useLoadingContext();
-  
+
   // Get theme context for dark/light mode support
   const { theme } = useTheme();
-  
+
   // Analytics for performance monitoring
   const { trackEvent, trackTiming } = useAnalytics();
-  
+
   // Feature flag for progressive rollout
-  const isEnabled = useFeatureFlag('bulk_operations_enabled');
-  
+  const isEnabled = useFeatureFlag("bulk_operations_enabled");
+
   // Local state
   const [selectedItems, setSelectedItems] = useState<BulkOperationItem[]>([]);
-  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(
+    null,
+  );
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isOperationInProgress, setIsOperationInProgress] = useState(false);
-  const [currentOperation, setCurrentOperation] = useState<BulkOperationType | null>(null);
+  const [currentOperation, setCurrentOperation] =
+    useState<BulkOperationType | null>(null);
   const [operationProgress, setOperationProgress] = useState(0);
   const [confirmationDialog, setConfirmationDialog] = useState<{
     isOpen: boolean;
@@ -125,450 +152,531 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
     onCancel: () => void;
   }>({
     isOpen: false,
-    message: '',
-    action: 'custom',
+    message: "",
+    action: "custom",
     items: [],
     onConfirm: () => {},
-    onCancel: () => {}
+    onCancel: () => {},
   });
-  
+
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const cancelOperationRef = useRef<boolean>(false);
   const operationTimeoutRef = useRef<number | null>(null);
   const lastClickTimeRef = useRef<number>(0);
-  
+
   // Memoized filtered items
   const processedItems = useMemo(() => {
     // Start timing for performance tracking
     const startTime = performance.now();
-    
+
     // Apply search filter
-    let result = searchQuery 
-      ? items.filter(item => 
-          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.id.toLowerCase().includes(searchQuery.toLowerCase())
+    let result = searchQuery
+      ? items.filter(
+          (item) =>
+            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.id.toLowerCase().includes(searchQuery.toLowerCase()),
         )
       : [...items];
-    
+
     // Apply active filter
     if (activeFilter) {
-      const filter = filters.find(f => f.id === activeFilter);
+      const filter = filters.find((f) => f.id === activeFilter);
       if (filter) {
         result = result.filter(filter.predicate);
       }
     }
-    
+
     // End timing and track performance
     const endTime = performance.now();
-    trackTiming('bulk_operations_data_processing', endTime - startTime);
-    
+    trackTiming("bulk_operations_data_processing", endTime - startTime);
+
     return result;
   }, [items, searchQuery, activeFilter, filters, trackTiming]);
-  
+
   // Notify parent component when selection changes
   useEffect(() => {
     onSelectionChange?.(selectedItems);
-    
+
     // Track selection changes
     trackEvent(`${analyticsCategory}_selection_changed`, {
-      count: selectedItems.length
+      count: selectedItems.length,
     });
   }, [selectedItems, onSelectionChange, trackEvent, analyticsCategory]);
-  
+
   // Handle keyboard shortcuts
-  useKeyboardShortcut(['Meta+a', 'Control+a'], (e) => {
+  useKeyboardShortcut(["Meta+a", "Control+a"], (e) => {
     if (isEnabled && containerRef.current?.contains(document.activeElement)) {
       e.preventDefault();
       handleSelectAll();
       trackEvent(`${analyticsCategory}_shortcut_select_all`);
     }
   });
-  
-  useKeyboardShortcut(['Escape'], () => {
+
+  useKeyboardShortcut(["Escape"], () => {
     if (isEnabled && selectedItems.length > 0) {
       handleClearSelection();
       trackEvent(`${analyticsCategory}_shortcut_clear_selection`);
     }
   });
-  
+
   // Handle select all
   const handleSelectAll = useCallback(() => {
     const newSelection = processedItems.slice(0, maxSelectableItems);
     setSelectedItems(newSelection);
     setLastSelectedIndex(null);
-    
+
     // Track analytics
     trackEvent(`${analyticsCategory}_select_all`, {
       count: newSelection.length,
-      max_reached: newSelection.length === maxSelectableItems
+      max_reached: newSelection.length === maxSelectableItems,
     });
   }, [processedItems, maxSelectableItems, trackEvent, analyticsCategory]);
-  
+
   // Handle clear selection
   const handleClearSelection = useCallback(() => {
     setSelectedItems([]);
     setLastSelectedIndex(null);
-    
+
     // Track analytics
     trackEvent(`${analyticsCategory}_clear_selection`);
   }, [trackEvent, analyticsCategory]);
-  
+
   // Handle item selection
-  const handleItemSelect = useCallback((item: BulkOperationItem, index: number, isShiftKey: boolean) => {
-    // Start timing for performance tracking
-    const startTime = performance.now();
-    
-    setSelectedItems(prevSelected => {
-      const itemKey = item[itemKeyField];
-      const isSelected = prevSelected.some(i => i[itemKeyField] === itemKey);
-      
-      // Handle shift+click for range selection
-      if (isShiftKey && lastSelectedIndex !== null && lastSelectedIndex !== index) {
-        const start = Math.min(lastSelectedIndex, index);
-        const end = Math.max(lastSelectedIndex, index);
-        const rangeItems = processedItems.slice(start, end + 1);
-        
-        // Determine if we're selecting or deselecting the range
+  const handleItemSelect = useCallback(
+    (item: BulkOperationItem, index: number, isShiftKey: boolean) => {
+      // Start timing for performance tracking
+      const startTime = performance.now();
+
+      setSelectedItems((prevSelected) => {
+        const itemKey = item[itemKeyField];
+        const isSelected = prevSelected.some(
+          (i) => i[itemKeyField] === itemKey,
+        );
+
+        // Handle shift+click for range selection
+        if (
+          isShiftKey &&
+          lastSelectedIndex !== null &&
+          lastSelectedIndex !== index
+        ) {
+          const start = Math.min(lastSelectedIndex, index);
+          const end = Math.max(lastSelectedIndex, index);
+          const rangeItems = processedItems.slice(start, end + 1);
+
+          // Determine if we're selecting or deselecting the range
+          if (isSelected) {
+            // Deselect the range
+            const rangeItemKeys = new Set(
+              rangeItems.map((i) => i[itemKeyField]),
+            );
+            return prevSelected.filter(
+              (i) => !rangeItemKeys.has(i[itemKeyField]),
+            );
+          } else {
+            // Select the range, respecting the maximum limit
+            const existingKeys = new Set(
+              prevSelected.map((i) => i[itemKeyField]),
+            );
+            const newItems = rangeItems.filter(
+              (i) => !existingKeys.has(i[itemKeyField]),
+            );
+
+            // Check if adding would exceed the limit
+            if (prevSelected.length + newItems.length > maxSelectableItems) {
+              // Take only what we can fit
+              const itemsToAdd = newItems.slice(
+                0,
+                maxSelectableItems - prevSelected.length,
+              );
+
+              // Show warning about max limit
+              console.warn(
+                `Maximum selection limit of ${maxSelectableItems} items reached.`,
+              );
+
+              // Track analytics
+              trackEvent(`${analyticsCategory}_max_selection_limit_reached`, {
+                attempted: prevSelected.length + newItems.length,
+                limit: maxSelectableItems,
+              });
+
+              return [...prevSelected, ...itemsToAdd];
+            }
+
+            return [...prevSelected, ...newItems];
+          }
+        }
+
+        // Normal toggle selection
         if (isSelected) {
-          // Deselect the range
-          const rangeItemKeys = new Set(rangeItems.map(i => i[itemKeyField]));
-          return prevSelected.filter(i => !rangeItemKeys.has(i[itemKeyField]));
+          return prevSelected.filter((i) => i[itemKeyField] !== itemKey);
         } else {
-          // Select the range, respecting the maximum limit
-          const existingKeys = new Set(prevSelected.map(i => i[itemKeyField]));
-          const newItems = rangeItems.filter(i => !existingKeys.has(i[itemKeyField]));
-          
           // Check if adding would exceed the limit
-          if (prevSelected.length + newItems.length > maxSelectableItems) {
-            // Take only what we can fit
-            const itemsToAdd = newItems.slice(0, maxSelectableItems - prevSelected.length);
-            
+          if (prevSelected.length >= maxSelectableItems) {
             // Show warning about max limit
-            console.warn(`Maximum selection limit of ${maxSelectableItems} items reached.`);
-            
+            console.warn(
+              `Maximum selection limit of ${maxSelectableItems} items reached.`,
+            );
+
             // Track analytics
             trackEvent(`${analyticsCategory}_max_selection_limit_reached`, {
-              attempted: prevSelected.length + newItems.length,
-              limit: maxSelectableItems
+              attempted: prevSelected.length + 1,
+              limit: maxSelectableItems,
             });
-            
-            return [...prevSelected, ...itemsToAdd];
+
+            return prevSelected;
           }
-          
-          return [...prevSelected, ...newItems];
+
+          return [...prevSelected, item];
         }
-      }
-      
-      // Normal toggle selection
-      if (isSelected) {
-        return prevSelected.filter(i => i[itemKeyField] !== itemKey);
-      } else {
-        // Check if adding would exceed the limit
-        if (prevSelected.length >= maxSelectableItems) {
-          // Show warning about max limit
-          console.warn(`Maximum selection limit of ${maxSelectableItems} items reached.`);
-          
-          // Track analytics
-          trackEvent(`${analyticsCategory}_max_selection_limit_reached`, {
-            attempted: prevSelected.length + 1,
-            limit: maxSelectableItems
-          });
-          
-          return prevSelected;
-        }
-        
-        return [...prevSelected, item];
-      }
-    });
-    
-    setLastSelectedIndex(index);
-    
-    // End timing and track performance
-    const endTime = performance.now();
-    trackTiming('bulk_operations_selection', endTime - startTime);
-    
-    // Track analytics
-    trackEvent(`${analyticsCategory}_item_selected`, {
-      with_shift: isShiftKey
-    });
-  }, [lastSelectedIndex, processedItems, itemKeyField, maxSelectableItems, trackEvent, trackTiming, analyticsCategory]);
-  
+      });
+
+      setLastSelectedIndex(index);
+
+      // End timing and track performance
+      const endTime = performance.now();
+      trackTiming("bulk_operations_selection", endTime - startTime);
+
+      // Track analytics
+      trackEvent(`${analyticsCategory}_item_selected`, {
+        with_shift: isShiftKey,
+      });
+    },
+    [
+      lastSelectedIndex,
+      processedItems,
+      itemKeyField,
+      maxSelectableItems,
+      trackEvent,
+      trackTiming,
+      analyticsCategory,
+    ],
+  );
+
   // Check if an item is selected
-  const isItemSelected = useCallback((item: BulkOperationItem) => {
-    return selectedItems.some(i => i[itemKeyField] === item[itemKeyField]);
-  }, [selectedItems, itemKeyField]);
-  
+  const isItemSelected = useCallback(
+    (item: BulkOperationItem) => {
+      return selectedItems.some((i) => i[itemKeyField] === item[itemKeyField]);
+    },
+    [selectedItems, itemKeyField],
+  );
+
   // Handle search input changes
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    
-    // Track analytics
-    if (e.target.value) {
-      trackEvent(`${analyticsCategory}_search`, {
-        query_length: e.target.value.length
-      });
-    }
-  }, [trackEvent, analyticsCategory]);
-  
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value);
+
+      // Track analytics
+      if (e.target.value) {
+        trackEvent(`${analyticsCategory}_search`, {
+          query_length: e.target.value.length,
+        });
+      }
+    },
+    [trackEvent, analyticsCategory],
+  );
+
   // Handle filter changes
-  const handleFilterChange = useCallback((filterId: string) => {
-    setActiveFilter(prev => prev === filterId ? null : filterId);
-    
-    // Track analytics
-    trackEvent(`${analyticsCategory}_filter_changed`, {
-      filter: filterId
-    });
-  }, [trackEvent, analyticsCategory]);
-  
+  const handleFilterChange = useCallback(
+    (filterId: string) => {
+      setActiveFilter((prev) => (prev === filterId ? null : filterId));
+
+      // Track analytics
+      trackEvent(`${analyticsCategory}_filter_changed`, {
+        filter: filterId,
+      });
+    },
+    [trackEvent, analyticsCategory],
+  );
+
   // Execute bulk operation
-  const executeBulkOperation = useCallback(async (action: BulkOperationAction, items: BulkOperationItem[]) => {
-    // Validate items count
-    if (items.length === 0) {
-      console.warn('No items selected for bulk operation');
-      return;
-    }
-    
-    if (action.maxItems && items.length > action.maxItems) {
-      console.warn(`This operation supports a maximum of ${action.maxItems} items`);
-      items = items.slice(0, action.maxItems);
-    }
-    
-    // Start operation
-    setIsOperationInProgress(true);
-    setCurrentOperation(action.type);
-    setOperationProgress(0);
-    cancelOperationRef.current = false;
-    
-    // Start loading indicator
-    const loadingKey = `bulk_operation_${action.id}`;
-    startLoading(loadingKey);
-    
-    // Notify operation start
-    onOperationStart?.(action.type, items);
-    
-    // Track analytics
-    trackEvent(`${analyticsCategory}_operation_started`, {
-      action: action.type,
-      item_count: items.length
-    });
-    
-    try {
-      // Determine batch size
-      const batchSize = action.batchSize || 20;
-      const totalItems = items.length;
-      const batches = Math.ceil(totalItems / batchSize);
-      
-      let result: BulkOperationResult = {
-        success: true,
-        successCount: 0,
-        failureCount: 0,
-        errors: {},
-        warnings: []
-      };
-      
-      // Process in batches
-      for (let i = 0; i < batches; i++) {
-        // Check if operation was cancelled
-        if (cancelOperationRef.current) {
-          result.warnings = [...(result.warnings || []), 'Operation cancelled by user'];
-          break;
-        }
-        
-        const start = i * batchSize;
-        const end = Math.min(start + batchSize, totalItems);
-        const batchItems = items.slice(start, end);
-        
-        try {
-          // Execute batch
-          const batchResult = await action.action(batchItems);
-          
-          // Merge results
-          result.successCount += batchResult.successCount;
-          result.failureCount += batchResult.failureCount;
-          result.errors = { ...(result.errors || {}), ...(batchResult.errors || {}) };
-          result.warnings = [...(result.warnings || []), ...(batchResult.warnings || [])];
-          
-          // Update progress
-          const progress = Math.round(((i + 1) * batchSize / totalItems) * 100);
-          setOperationProgress(Math.min(progress, 100));
-          setProgress(loadingKey, Math.min(progress, 100));
-        } catch (error) {
-          console.error(`Error processing batch ${i + 1}/${batches}:`, error);
-          
-          // Update failure count for this batch
-          result.failureCount += batchItems.length;
-          result.success = false;
-          
-          // Add batch error
-          if (result.errors) {
-            result.errors[`batch_${i}`] = error as Error;
-          }
-          
-          // Notify error
-          onOperationError?.(error as Error, action.type, batchItems);
-          
-          // Track error
-          trackEvent(`${analyticsCategory}_operation_batch_error`, {
-            action: action.type,
-            batch: i,
-            error: (error as Error).message
-          });
-        }
-        
-        // Small delay between batches for UI responsiveness
-        if (i < batches - 1 && !cancelOperationRef.current) {
-          await new Promise(resolve => {
-            operationTimeoutRef.current = window.setTimeout(resolve, 50) as unknown as number;
-          });
-        }
+  const executeBulkOperation = useCallback(
+    async (action: BulkOperationAction, items: BulkOperationItem[]) => {
+      // Validate items count
+      if (items.length === 0) {
+        console.warn("No items selected for bulk operation");
+        return;
       }
-      
-      // Determine overall success
-      result.success = result.failureCount === 0 && !cancelOperationRef.current;
-      
-      // Notify operation complete
-      onOperationComplete?.(result, action.type, items);
-      
-      // Track completion
-      trackEvent(`${analyticsCategory}_operation_completed`, {
-        action: action.type,
-        success: result.success,
-        success_count: result.successCount,
-        failure_count: result.failureCount,
-        cancelled: cancelOperationRef.current
-      });
-      
-      // Clear selection if operation was successful
-      if (result.success) {
-        setSelectedItems([]);
+
+      if (action.maxItems && items.length > action.maxItems) {
+        console.warn(
+          `This operation supports a maximum of ${action.maxItems} items`,
+        );
+        items = items.slice(0, action.maxItems);
       }
-      
-      return result;
-    } catch (error) {
-      console.error('Error executing bulk operation:', error);
-      
-      // Notify error
-      onOperationError?.(error as Error, action.type, items);
-      
-      // Track error
-      trackEvent(`${analyticsCategory}_operation_error`, {
-        action: action.type,
-        error: (error as Error).message
-      });
-      
-      return {
-        success: false,
-        successCount: 0,
-        failureCount: items.length,
-        errors: { global: error as Error }
-      };
-    } finally {
-      // Cleanup
-      setIsOperationInProgress(false);
-      setCurrentOperation(null);
+
+      // Start operation
+      setIsOperationInProgress(true);
+      setCurrentOperation(action.type);
       setOperationProgress(0);
-      stopLoading(loadingKey);
-      
-      if (operationTimeoutRef.current) {
-        clearTimeout(operationTimeoutRef.current);
-        operationTimeoutRef.current = null;
-      }
-    }
-  }, [
-    startLoading, 
-    stopLoading, 
-    setProgress, 
-    onOperationStart, 
-    onOperationComplete, 
-    onOperationError, 
-    trackEvent,
-    analyticsCategory
-  ]);
-  
-  // Handle action click
-  const handleActionClick = useCallback((action: BulkOperationAction) => {
-    // Check if action is disabled
-    const isDisabled = typeof action.disabled === 'function' 
-      ? action.disabled(selectedItems)
-      : action.disabled;
-    
-    if (isDisabled) {
-      return;
-    }
-    
-    // Check if confirmation is required
-    if (action.confirmationRequired) {
-      setConfirmationDialog({
-        isOpen: true,
-        message: action.confirmationMessage || `Are you sure you want to ${action.label.toLowerCase()} ${selectedItems.length} items?`,
+      cancelOperationRef.current = false;
+
+      // Start loading indicator
+      const loadingKey = `bulk_operation_${action.id}`;
+      startLoading(loadingKey);
+
+      // Notify operation start
+      onOperationStart?.(action.type, items);
+
+      // Track analytics
+      trackEvent(`${analyticsCategory}_operation_started`, {
         action: action.type,
-        items: selectedItems,
-        onConfirm: () => {
-          setConfirmationDialog(prev => ({ ...prev, isOpen: false }));
-          executeBulkOperation(action, selectedItems);
-        },
-        onCancel: () => {
-          setConfirmationDialog(prev => ({ ...prev, isOpen: false }));
-          
-          // Track cancellation
-          trackEvent(`${analyticsCategory}_operation_confirmation_cancelled`, {
-            action: action.type
-          });
+        item_count: items.length,
+      });
+
+      try {
+        // Determine batch size
+        const batchSize = action.batchSize || 20;
+        const totalItems = items.length;
+        const batches = Math.ceil(totalItems / batchSize);
+
+        let result: BulkOperationResult = {
+          success: true,
+          successCount: 0,
+          failureCount: 0,
+          errors: {},
+          warnings: [],
+        };
+
+        // Process in batches
+        for (let i = 0; i < batches; i++) {
+          // Check if operation was cancelled
+          if (cancelOperationRef.current) {
+            result.warnings = [
+              ...(result.warnings || []),
+              "Operation cancelled by user",
+            ];
+            break;
+          }
+
+          const start = i * batchSize;
+          const end = Math.min(start + batchSize, totalItems);
+          const batchItems = items.slice(start, end);
+
+          try {
+            // Execute batch
+            const batchResult = await action.action(batchItems);
+
+            // Merge results
+            result.successCount += batchResult.successCount;
+            result.failureCount += batchResult.failureCount;
+            result.errors = {
+              ...(result.errors || {}),
+              ...(batchResult.errors || {}),
+            };
+            result.warnings = [
+              ...(result.warnings || []),
+              ...(batchResult.warnings || []),
+            ];
+
+            // Update progress
+            const progress = Math.round(
+              (((i + 1) * batchSize) / totalItems) * 100,
+            );
+            setOperationProgress(Math.min(progress, 100));
+            setProgress(loadingKey, Math.min(progress, 100));
+          } catch (error) {
+            console.error(`Error processing batch ${i + 1}/${batches}:`, error);
+
+            // Update failure count for this batch
+            result.failureCount += batchItems.length;
+            result.success = false;
+
+            // Add batch error
+            if (result.errors) {
+              result.errors[`batch_${i}`] = error as Error;
+            }
+
+            // Notify error
+            onOperationError?.(error as Error, action.type, batchItems);
+
+            // Track error
+            trackEvent(`${analyticsCategory}_operation_batch_error`, {
+              action: action.type,
+              batch: i,
+              error: (error as Error).message,
+            });
+          }
+
+          // Small delay between batches for UI responsiveness
+          if (i < batches - 1 && !cancelOperationRef.current) {
+            await new Promise((resolve) => {
+              operationTimeoutRef.current = window.setTimeout(
+                resolve,
+                50,
+              ) as unknown as number;
+            });
+          }
         }
-      });
-      
-      // Track confirmation dialog
-      trackEvent(`${analyticsCategory}_operation_confirmation_shown`, {
-        action: action.type,
-        item_count: selectedItems.length
-      });
-    } else {
-      // Execute directly
-      executeBulkOperation(action, selectedItems);
-    }
-  }, [selectedItems, executeBulkOperation, trackEvent, analyticsCategory]);
-  
+
+        // Determine overall success
+        result.success =
+          result.failureCount === 0 && !cancelOperationRef.current;
+
+        // Notify operation complete
+        onOperationComplete?.(result, action.type, items);
+
+        // Track completion
+        trackEvent(`${analyticsCategory}_operation_completed`, {
+          action: action.type,
+          success: result.success,
+          success_count: result.successCount,
+          failure_count: result.failureCount,
+          cancelled: cancelOperationRef.current,
+        });
+
+        // Clear selection if operation was successful
+        if (result.success) {
+          setSelectedItems([]);
+        }
+
+        return result;
+      } catch (error) {
+        console.error("Error executing bulk operation:", error);
+
+        // Notify error
+        onOperationError?.(error as Error, action.type, items);
+
+        // Track error
+        trackEvent(`${analyticsCategory}_operation_error`, {
+          action: action.type,
+          error: (error as Error).message,
+        });
+
+        return {
+          success: false,
+          successCount: 0,
+          failureCount: items.length,
+          errors: { global: error as Error },
+        };
+      } finally {
+        // Cleanup
+        setIsOperationInProgress(false);
+        setCurrentOperation(null);
+        setOperationProgress(0);
+        stopLoading(loadingKey);
+
+        if (operationTimeoutRef.current) {
+          clearTimeout(operationTimeoutRef.current);
+          operationTimeoutRef.current = null;
+        }
+      }
+    },
+    [
+      startLoading,
+      stopLoading,
+      setProgress,
+      onOperationStart,
+      onOperationComplete,
+      onOperationError,
+      trackEvent,
+      analyticsCategory,
+    ],
+  );
+
+  // Handle action click
+  const handleActionClick = useCallback(
+    (action: BulkOperationAction) => {
+      // Check if action is disabled
+      const isDisabled =
+        typeof action.disabled === "function"
+          ? action.disabled(selectedItems)
+          : action.disabled;
+
+      if (isDisabled) {
+        return;
+      }
+
+      // Check if confirmation is required
+      if (action.confirmationRequired) {
+        setConfirmationDialog({
+          isOpen: true,
+          message:
+            action.confirmationMessage ||
+            `Are you sure you want to ${action.label.toLowerCase()} ${selectedItems.length} items?`,
+          action: action.type,
+          items: selectedItems,
+          onConfirm: () => {
+            setConfirmationDialog((prev) => ({ ...prev, isOpen: false }));
+            executeBulkOperation(action, selectedItems);
+          },
+          onCancel: () => {
+            setConfirmationDialog((prev) => ({ ...prev, isOpen: false }));
+
+            // Track cancellation
+            trackEvent(
+              `${analyticsCategory}_operation_confirmation_cancelled`,
+              {
+                action: action.type,
+              },
+            );
+          },
+        });
+
+        // Track confirmation dialog
+        trackEvent(`${analyticsCategory}_operation_confirmation_shown`, {
+          action: action.type,
+          item_count: selectedItems.length,
+        });
+      } else {
+        // Execute directly
+        executeBulkOperation(action, selectedItems);
+      }
+    },
+    [selectedItems, executeBulkOperation, trackEvent, analyticsCategory],
+  );
+
   // Handle cancel operation
   const handleCancelOperation = useCallback(() => {
     cancelOperationRef.current = true;
-    
+
     // Notify cancellation
     if (currentOperation) {
       onOperationCancel?.(currentOperation, selectedItems);
-      
+
       // Track cancellation
       trackEvent(`${analyticsCategory}_operation_cancelled`, {
         action: currentOperation,
-        progress: operationProgress
+        progress: operationProgress,
       });
     }
-  }, [currentOperation, selectedItems, operationProgress, onOperationCancel, trackEvent, analyticsCategory]);
-  
+  }, [
+    currentOperation,
+    selectedItems,
+    operationProgress,
+    onOperationCancel,
+    trackEvent,
+    analyticsCategory,
+  ]);
+
   // Double-click detection for item selection
-  const handleItemClick = useCallback((item: BulkOperationItem, index: number, e: React.MouseEvent) => {
-    const now = Date.now();
-    const isDoubleClick = now - lastClickTimeRef.current < 300;
-    lastClickTimeRef.current = now;
-    
-    if (isDoubleClick) {
-      // Handle double-click (e.g., open details)
-      trackEvent(`${analyticsCategory}_item_double_clicked`, {
-        item_id: item.id
-      });
-      return;
-    }
-    
-    // Handle single click (selection)
-    handleItemSelect(item, index, e.shiftKey);
-  }, [handleItemSelect, trackEvent, analyticsCategory]);
-  
+  const handleItemClick = useCallback(
+    (item: BulkOperationItem, index: number, e: React.MouseEvent) => {
+      const now = Date.now();
+      const isDoubleClick = now - lastClickTimeRef.current < 300;
+      lastClickTimeRef.current = now;
+
+      if (isDoubleClick) {
+        // Handle double-click (e.g., open details)
+        trackEvent(`${analyticsCategory}_item_double_clicked`, {
+          item_id: item.id,
+        });
+        return;
+      }
+
+      // Handle single click (selection)
+      handleItemSelect(item, index, e.shiftKey);
+    },
+    [handleItemSelect, trackEvent, analyticsCategory],
+  );
+
   // Render nothing if disabled
   if (!isEnabled) return null;
-  
+
   // Render bulk operations panel
   return (
-    <div 
+    <div
       ref={containerRef}
       className={`bulk-operations-panel ${theme} ${className}`}
       role="region"
@@ -579,17 +687,27 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
           <div className="bulk-operations-count">
             {selectedItems.length > 0 ? (
               <>
-                <span className="bulk-operations-count-number">{selectedItems.length}</span>
-                <span className="bulk-operations-count-text"> items selected</span>
+                <span className="bulk-operations-count-number">
+                  {selectedItems.length}
+                </span>
+                <span className="bulk-operations-count-text">
+                  {" "}
+                  items selected
+                </span>
                 {selectedItems.length === maxSelectableItems && (
-                  <span className="bulk-operations-count-limit"> (maximum)</span>
+                  <span className="bulk-operations-count-limit">
+                    {" "}
+                    (maximum)
+                  </span>
                 )}
               </>
             ) : (
-              <span className="bulk-operations-count-text">No items selected</span>
+              <span className="bulk-operations-count-text">
+                No items selected
+              </span>
             )}
           </div>
-          
+
           {selectedItems.length > 0 && (
             <div className="bulk-operations-selection-actions">
               <button
@@ -603,7 +721,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
             </div>
           )}
         </div>
-        
+
         <div className="bulk-operations-filters">
           <div className="bulk-operations-search">
             <input
@@ -617,26 +735,30 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
               <button
                 type="button"
                 className="bulk-operations-search-clear"
-                onClick={() => setSearchQuery('')}
+                onClick={() => setSearchQuery("")}
                 aria-label="Clear search"
               >
                 ✕
               </button>
             )}
           </div>
-          
+
           {filters.length > 0 && (
             <div className="bulk-operations-filter-buttons">
-              {filters.map(filter => (
+              {filters.map((filter) => (
                 <button
                   key={filter.id}
                   type="button"
-                  className={`bulk-operations-filter-button ${activeFilter === filter.id ? 'active' : ''}`}
+                  className={`bulk-operations-filter-button ${activeFilter === filter.id ? "active" : ""}`}
                   onClick={() => handleFilterChange(filter.id)}
                   aria-label={`Filter by ${filter.label}`}
                   aria-pressed={activeFilter === filter.id}
                 >
-                  {filter.icon && <span className="bulk-operations-filter-icon">{filter.icon}</span>}
+                  {filter.icon && (
+                    <span className="bulk-operations-filter-icon">
+                      {filter.icon}
+                    </span>
+                  )}
                   {filter.label}
                 </button>
               ))}
@@ -644,33 +766,39 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
           )}
         </div>
       </div>
-      
+
       {selectedItems.length > 0 && (
         <div className="bulk-operations-toolbar">
           <div className="bulk-operations-actions">
-            {actions.map(action => {
+            {actions.map((action) => {
               // Check if action should be hidden
-              const isHidden = typeof action.hidden === 'function' 
-                ? action.hidden(selectedItems)
-                : action.hidden;
-              
+              const isHidden =
+                typeof action.hidden === "function"
+                  ? action.hidden(selectedItems)
+                  : action.hidden;
+
               if (isHidden) return null;
-              
+
               // Check if action is disabled
-              const isDisabled = typeof action.disabled === 'function' 
-                ? action.disabled(selectedItems)
-                : action.disabled;
-              
+              const isDisabled =
+                typeof action.disabled === "function"
+                  ? action.disabled(selectedItems)
+                  : action.disabled;
+
               return (
                 <button
                   key={action.id}
                   type="button"
-                  className={`bulk-operations-action ${action.dangerLevel ? `danger-${action.dangerLevel}` : ''}`}
+                  className={`bulk-operations-action ${action.dangerLevel ? `danger-${action.dangerLevel}` : ""}`}
                   onClick={() => handleActionClick(action)}
                   disabled={isDisabled}
                   aria-label={action.label}
                 >
-                  {action.icon && <span className="bulk-operations-action-icon">{action.icon}</span>}
+                  {action.icon && (
+                    <span className="bulk-operations-action-icon">
+                      {action.icon}
+                    </span>
+                  )}
                   {action.label}
                 </button>
               );
@@ -678,11 +806,13 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
           </div>
         </div>
       )}
-      
+
       <div className="bulk-operations-content">
         {processedItems.length === 0 ? (
           <div className="bulk-operations-empty">
-            {renderEmptyState ? renderEmptyState() : (
+            {renderEmptyState ? (
+              renderEmptyState()
+            ) : (
               <>
                 <div className="bulk-operations-empty-icon">📋</div>
                 <div className="bulk-operations-empty-text">No items found</div>
@@ -695,7 +825,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
             )}
           </div>
         ) : (
-          <div 
+          <div
             className="bulk-operations-items"
             role="grid"
             aria-multiselectable="true"
@@ -703,14 +833,14 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
           >
             {processedItems.map((item, index) => {
               const isSelected = isItemSelected(item);
-              
+
               return (
                 <div
                   key={item[itemKeyField]}
-                  className={`bulk-operations-item ${isSelected ? 'selected' : ''}`}
+                  className={`bulk-operations-item ${isSelected ? "selected" : ""}`}
                   onClick={(e) => handleItemClick(item, index, e)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       handleItemSelect(item, index, e.shiftKey);
                     }
@@ -746,9 +876,15 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
                           {item.name}
                         </div>
                         <div className="bulk-operations-item-details">
-                          <span className="bulk-operations-item-id">{item.id}</span>
-                          <span className="bulk-operations-item-type">{item.type}</span>
-                          <span className="bulk-operations-item-status">{item.status}</span>
+                          <span className="bulk-operations-item-id">
+                            {item.id}
+                          </span>
+                          <span className="bulk-operations-item-type">
+                            {item.type}
+                          </span>
+                          <span className="bulk-operations-item-status">
+                            {item.status}
+                          </span>
                         </div>
                       </div>
                     </>
@@ -759,18 +895,17 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
           </div>
         )}
       </div>
-      
+
       {isOperationInProgress && (
         <div className="bulk-operations-progress-overlay">
           <div className="bulk-operations-progress-container">
             <div className="bulk-operations-progress-title">
-              {currentOperation && (
-                `${currentOperation.charAt(0).toUpperCase() + currentOperation.slice(1)} in progress...`
-              )}
+              {currentOperation &&
+                `${currentOperation.charAt(0).toUpperCase() + currentOperation.slice(1)} in progress...`}
             </div>
-            
+
             <div className="bulk-operations-progress-bar-container">
-              <div 
+              <div
                 className="bulk-operations-progress-bar"
                 style={{ width: `${operationProgress}%` }}
                 role="progressbar"
@@ -779,11 +914,11 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
                 aria-valuemax={100}
               />
             </div>
-            
+
             <div className="bulk-operations-progress-status">
               {operationProgress}% complete
             </div>
-            
+
             <button
               type="button"
               className="bulk-operations-progress-cancel"
@@ -795,46 +930,50 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
           </div>
         </div>
       )}
-      
-      {confirmationDialog.isOpen && createPortal(
-        <div 
-          className={`bulk-operations-confirmation-overlay ${theme}`}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirmation-title"
-        >
-          <div className="bulk-operations-confirmation">
-            <div className="bulk-operations-confirmation-header" id="confirmation-title">
-              Confirm Action
-            </div>
-            
-            <div className="bulk-operations-confirmation-content">
-              {confirmationDialog.message}
-            </div>
-            
-            <div className="bulk-operations-confirmation-actions">
-              <button
-                type="button"
-                className="bulk-operations-confirmation-cancel"
-                onClick={confirmationDialog.onCancel}
-                aria-label="Cancel"
+
+      {confirmationDialog.isOpen &&
+        createPortal(
+          <div
+            className={`bulk-operations-confirmation-overlay ${theme}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirmation-title"
+          >
+            <div className="bulk-operations-confirmation">
+              <div
+                className="bulk-operations-confirmation-header"
+                id="confirmation-title"
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="bulk-operations-confirmation-confirm"
-                onClick={confirmationDialog.onConfirm}
-                aria-label="Confirm"
-              >
-                Confirm
-              </button>
+                Confirm Action
+              </div>
+
+              <div className="bulk-operations-confirmation-content">
+                {confirmationDialog.message}
+              </div>
+
+              <div className="bulk-operations-confirmation-actions">
+                <button
+                  type="button"
+                  className="bulk-operations-confirmation-cancel"
+                  onClick={confirmationDialog.onCancel}
+                  aria-label="Cancel"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="bulk-operations-confirmation-confirm"
+                  onClick={confirmationDialog.onConfirm}
+                  aria-label="Confirm"
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      
+          </div>,
+          document.body,
+        )}
+
       <style>{`
         .bulk-operations-panel {
           display: flex;

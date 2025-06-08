@@ -114,20 +114,26 @@ export const MonitoringDashboard = () => {
         // const response = await fetch('/api/system/metrics');
         // const data = await response.json();
         // setMetrics(data);
-        
+
         // For demo, we'll use sample data with slight variations
-        setMetrics(prevMetrics => ({
+        setMetrics((prevMetrics) => ({
           ...prevMetrics,
           cpu: {
             ...prevMetrics.cpu,
-            usage: Math.min(100, Math.max(10, prevMetrics.cpu.usage + (Math.random() * 10 - 5))),
-            loadAvg: prevMetrics.cpu.loadAvg.map(load => Math.max(0.1, load + (Math.random() * 0.4 - 0.2))),
-          }
+            usage: Math.min(
+              100,
+              Math.max(10, prevMetrics.cpu.usage + (Math.random() * 10 - 5)),
+            ),
+            loadAvg: prevMetrics.cpu.loadAvg.map((load) =>
+              Math.max(0.1, load + (Math.random() * 0.4 - 0.2)),
+            ),
+          },
         }));
       } catch (error) {
         toast({
           title: "Error fetching metrics",
-          description: "Could not retrieve system metrics. Please try again later.",
+          description:
+            "Could not retrieve system metrics. Please try again later.",
           variant: "destructive",
         });
       }
@@ -149,37 +155,39 @@ export const MonitoringDashboard = () => {
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">System Monitoring Dashboard</h1>
-      
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4">
           <h3 className="text-sm font-medium text-gray-500">System Uptime</h3>
           <p className="text-2xl font-bold">{formatUptime(metrics.uptime)}</p>
         </Card>
-        
+
         <Card className="p-4">
           <h3 className="text-sm font-medium text-gray-500">CPU Usage</h3>
           <p className="text-2xl font-bold">{metrics.cpu.usage.toFixed(1)}%</p>
           <p className="text-sm text-gray-500">{metrics.cpu.cores} cores</p>
         </Card>
-        
+
         <Card className="p-4">
           <h3 className="text-sm font-medium text-gray-500">Memory Usage</h3>
           <p className="text-2xl font-bold">{metrics.memory.percentUsed}%</p>
           <p className="text-sm text-gray-500">
-            {(metrics.memory.used / 1024).toFixed(1)} GB / {(metrics.memory.total / 1024).toFixed(1)} GB
+            {(metrics.memory.used / 1024).toFixed(1)} GB /{" "}
+            {(metrics.memory.total / 1024).toFixed(1)} GB
           </p>
         </Card>
-        
+
         <Card className="p-4">
           <h3 className="text-sm font-medium text-gray-500">Disk Usage</h3>
           <p className="text-2xl font-bold">{metrics.disk.percentUsed}%</p>
           <p className="text-sm text-gray-500">
-            {(metrics.disk.used / 1024).toFixed(1)} GB / {(metrics.disk.total / 1024).toFixed(1)} GB
+            {(metrics.disk.used / 1024).toFixed(1)} GB /{" "}
+            {(metrics.disk.total / 1024).toFixed(1)} GB
           </p>
         </Card>
       </div>
-      
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* System Load */}
@@ -200,14 +208,12 @@ export const MonitoringDashboard = () => {
             </LineChart>
           </ResponsiveContainer>
         </Card>
-        
+
         {/* Service Response Times */}
         <Card className="p-4">
           <h3 className="font-semibold mb-2">Service Response Times (ms)</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart
-              data={metrics.services}
-            >
+            <BarChart data={metrics.services}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
@@ -217,13 +223,16 @@ export const MonitoringDashboard = () => {
           </ResponsiveContainer>
         </Card>
       </div>
-      
+
       {/* Services Status */}
       <Card className="p-4">
         <h3 className="font-semibold mb-4">Services Status</h3>
         <div className="space-y-2">
           {metrics.services.map((service, index) => (
-            <div key={index} className="flex justify-between items-center border-b pb-2">
+            <div
+              key={index}
+              className="flex justify-between items-center border-b pb-2"
+            >
               <span>{service.name}</span>
               <div className="flex items-center">
                 <span className="mr-2">{service.responseTime}ms</span>
@@ -232,8 +241,8 @@ export const MonitoringDashboard = () => {
                     service.status === "healthy"
                       ? "bg-green-500"
                       : service.status === "degraded"
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
                   }
                 >
                   {service.status}
@@ -243,20 +252,23 @@ export const MonitoringDashboard = () => {
           ))}
         </div>
       </Card>
-      
+
       {/* Alerts */}
       <Card className="p-4">
         <h3 className="font-semibold mb-4">Recent Alerts</h3>
         <div className="space-y-3">
           {metrics.alerts.map((alert, index) => (
-            <div key={index} className="flex items-start space-x-3 border-b pb-3">
+            <div
+              key={index}
+              className="flex items-start space-x-3 border-b pb-3"
+            >
               <Badge
                 className={
                   alert.level === "info"
                     ? "bg-blue-500"
                     : alert.level === "warning"
-                    ? "bg-yellow-500"
-                    : "bg-red-500"
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
                 }
               >
                 {alert.level}

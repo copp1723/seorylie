@@ -5,6 +5,7 @@
 ### Phase 1: Critical Blockers (Day 1-2)
 
 #### DEP-001: Fix Missing Dependencies
+
 ```bash
 # Install missing dependencies
 npm install @tanstack/react-query chalk
@@ -21,6 +22,7 @@ npm ls @tanstack/react-query chalk
 ```
 
 #### DEP-002: Fix Schema Export Conflicts
+
 ```bash
 # Run diagnostic to see current conflicts
 npm run check 2>&1 | grep "has already exported"
@@ -33,6 +35,7 @@ cp shared/index.ts shared/index.ts.backup
 ```
 
 #### DEP-003: Fix Database Schema Mismatches
+
 ```bash
 # Check current database schema
 npm run db:studio
@@ -45,6 +48,7 @@ npm run migrate
 ```
 
 #### DEP-004: Fix Build Configuration
+
 ```bash
 # Test current build
 npm run build
@@ -59,6 +63,7 @@ npm run dev
 ### Phase 2: High Priority (Day 3-5)
 
 #### DEP-005: Complete Authentication System
+
 ```bash
 # Test auth endpoints
 curl -X POST http://localhost:3000/api/auth/login \
@@ -72,6 +77,7 @@ curl -X POST http://localhost:3000/api/auth/magic-link \
 ```
 
 #### DEP-006: Fix API Endpoint Type Mismatches
+
 ```bash
 # Run TypeScript check on API files
 npx tsc --noEmit client/src/lib/api-client.ts
@@ -82,6 +88,7 @@ npm run test:api
 ```
 
 #### DEP-007: Fix Frontend Component Issues
+
 ```bash
 # Check for missing UI components
 find client/src -name "*.tsx" -exec grep -l "import.*Tabs" {} \;
@@ -95,16 +102,19 @@ npx tsc --noEmit --project client/tsconfig.json
 ### DEP-001: Missing Dependencies Implementation
 
 1. **Install @tanstack/react-query**:
+
 ```bash
 npm install @tanstack/react-query
 ```
 
 2. **Install chalk**:
+
 ```bash
 npm install chalk
 ```
 
 3. **Handle agent-squad dependency**:
+
 ```bash
 # Option A: Install if available
 npm install agent-squad
@@ -115,10 +125,11 @@ grep -r "agent-squad" server/ --include="*.ts"
 ```
 
 4. **Fix package.json type**:
+
 ```json
 {
   "type": "module",
-  "name": "cleanrylie",
+  "name": "cleanrylie"
   // ... rest of package.json
 }
 ```
@@ -126,42 +137,43 @@ grep -r "agent-squad" server/ --include="*.ts"
 ### DEP-002: Schema Export Conflicts Implementation
 
 1. **Create new shared/index.ts**:
+
 ```typescript
 // Export core schema
-export * from './schema';
+export * from "./schema";
 
 // Export specific items from enhanced-schema to avoid conflicts
-export {
-  // Add only non-conflicting exports from enhanced-schema
-} from './enhanced-schema';
+export {} from // Add only non-conflicting exports from enhanced-schema
+"./enhanced-schema";
 
 // Export specific items from lead-management-schema
-export {
-  // Add only non-conflicting exports
-} from './lead-management-schema';
+export {} from // Add only non-conflicting exports
+"./lead-management-schema";
 
 // Export API schemas
-export * from './api-schemas';
+export * from "./api-schemas";
 
 // Export schema extensions
-export * from './schema-extensions';
+export * from "./schema-extensions";
 ```
 
 2. **Fix schema-resolver.ts**:
+
 ```typescript
 // Import from correct locations
-import { 
-  customers, 
-  customersRelations, 
+import {
+  customers,
+  customersRelations,
   insertCustomerSchema,
   Customer,
-  InsertCustomer 
-} from './schema';
+  InsertCustomer,
+} from "./schema";
 ```
 
 ### DEP-003: Database Schema Fixes
 
 1. **Fix authController.ts**:
+
 ```typescript
 // Replace user.name with user.username
 name: user.username || '',
@@ -171,6 +183,7 @@ dealership_id: user.dealershipId
 ```
 
 2. **Fix lead-management-schema.ts index syntax**:
+
 ```typescript
 // Replace invalid index syntax
 dossierIdx: index('handovers_dossier_gin').using('gin', table.dossier),
@@ -179,6 +192,7 @@ dossierIdx: index('handovers_dossier_gin').using('gin', table.dossier),
 ### DEP-004: Build Configuration Fixes
 
 1. **Update package.json**:
+
 ```json
 {
   "type": "module",
@@ -189,18 +203,20 @@ dossierIdx: index('handovers_dossier_gin').using('gin', table.dossier),
 ```
 
 2. **Fix postcss.config.js**:
+
 ```javascript
 export default {
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
   },
-}
+};
 ```
 
 ## TESTING COMMANDS
 
 ### Validate Phase 1 Completion:
+
 ```bash
 # Test dependencies
 npm install
@@ -217,6 +233,7 @@ timeout 10s npm run dev || echo "Server started successfully"
 ```
 
 ### Validate Phase 2 Completion:
+
 ```bash
 # Test authentication
 npm run test:auth
@@ -229,6 +246,7 @@ npm run build
 ```
 
 ### Validate Phase 3 Completion:
+
 ```bash
 # Test all services
 npm run test:integration
@@ -243,6 +261,7 @@ npm run test:websocket
 ## ROLLBACK PROCEDURES
 
 ### If Phase 1 Fails:
+
 ```bash
 # Restore package.json
 git checkout package.json
@@ -255,6 +274,7 @@ git checkout shared/
 ```
 
 ### If Phase 2 Fails:
+
 ```bash
 # Restore auth files
 git checkout server/routes/auth-routes.ts
@@ -263,6 +283,7 @@ git checkout client/src/hooks/useAuth.tsx
 ```
 
 ### If Phase 3 Fails:
+
 ```bash
 # Restore service files
 git checkout server/services/
@@ -272,6 +293,7 @@ git checkout server/ws-server.ts
 ## MONITORING AND VALIDATION
 
 ### Health Check Commands:
+
 ```bash
 # Basic health
 curl http://localhost:3000/api/health
@@ -287,6 +309,7 @@ curl http://localhost:3000/api/health/adf
 ```
 
 ### Performance Validation:
+
 ```bash
 # Run performance tests
 npm run test:performance
@@ -301,14 +324,18 @@ npm run db:monitor
 ## COMMON ISSUES AND SOLUTIONS
 
 ### Issue: "Cannot find module" errors
-**Solution**: 
+
+**Solution**:
+
 ```bash
 rm -rf node_modules package-lock.json
 npm install
 ```
 
 ### Issue: TypeScript compilation errors
+
 **Solution**:
+
 ```bash
 # Check specific file
 npx tsc --noEmit [filename]
@@ -318,7 +345,9 @@ npx tsc --noEmit --listFiles
 ```
 
 ### Issue: Database connection failures
+
 **Solution**:
+
 ```bash
 # Test database connection
 npm run env:check
@@ -331,7 +360,9 @@ psql $DATABASE_URL -c "SELECT 1;"
 ```
 
 ### Issue: Build failures
+
 **Solution**:
+
 ```bash
 # Clean build
 npm run clean
@@ -344,6 +375,7 @@ npx vite build --debug
 ## DEPLOYMENT VERIFICATION CHECKLIST
 
 ### Pre-Deployment:
+
 - [ ] All dependencies installed successfully
 - [ ] Build completes without errors
 - [ ] TypeScript compilation passes
@@ -351,6 +383,7 @@ npx vite build --debug
 - [ ] Environment variables configured
 
 ### Post-Deployment:
+
 - [ ] Health endpoints respond
 - [ ] Authentication flow works
 - [ ] API endpoints functional
@@ -359,6 +392,7 @@ npx vite build --debug
 - [ ] WebSocket connections stable
 
 ### Alpha Testing Ready:
+
 - [ ] All core features functional
 - [ ] Error handling implemented
 - [ ] Logging and monitoring active

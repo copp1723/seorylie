@@ -1,16 +1,16 @@
 #!/usr/bin/env tsx
 
-import { config } from 'dotenv';
-import { db } from '../server/db';
-import { sql } from 'drizzle-orm';
-import logger from '../server/utils/logger';
+import { config } from "dotenv";
+import { db } from "../server/db";
+import { sql } from "drizzle-orm";
+import logger from "../server/utils/logger";
 
 // Load environment variables
 config();
 
 async function createMissingTables() {
   try {
-    logger.info('Creating missing tables for migration compatibility...');
+    logger.info("Creating missing tables for migration compatibility...");
 
     // Create personas table
     await db.execute(sql`
@@ -34,7 +34,7 @@ async function createMissingTables() {
       CREATE INDEX IF NOT EXISTS idx_personas_default ON personas(is_default);
     `);
 
-    logger.info('Personas table created');
+    logger.info("Personas table created");
 
     // Create api_keys table
     await db.execute(sql`
@@ -58,7 +58,7 @@ async function createMissingTables() {
       CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);
     `);
 
-    logger.info('API keys table created');
+    logger.info("API keys table created");
 
     // Create vehicles table (basic structure)
     await db.execute(sql`
@@ -92,7 +92,7 @@ async function createMissingTables() {
       CREATE INDEX IF NOT EXISTS idx_vehicles_make_model ON vehicles(make, model);
     `);
 
-    logger.info('Vehicles table created');
+    logger.info("Vehicles table created");
 
     // Insert default persona for existing dealerships
     const dealerships = await db.execute(sql`
@@ -123,9 +123,9 @@ INFORMATION TO COLLECT:
 Always remember to personalize your responses and maintain a helpful, consultative approach.`;
 
         const personaArgs = JSON.stringify({
-          tone: 'professional',
-          priorityFeatures: ['Safety', 'Fuel Efficiency', 'Technology'],
-          handoverEmail: 'sales@dealership.com'
+          tone: "professional",
+          priorityFeatures: ["Safety", "Fuel Efficiency", "Technology"],
+          handoverEmail: "sales@dealership.com",
         });
 
         await db.execute(sql`
@@ -137,9 +137,9 @@ Always remember to personalize your responses and maintain a helpful, consultati
       }
     }
 
-    logger.info('Missing tables created successfully');
+    logger.info("Missing tables created successfully");
   } catch (error) {
-    logger.error('Error creating missing tables:', error);
+    logger.error("Error creating missing tables:", error);
     throw error;
   }
 }
@@ -147,10 +147,10 @@ Always remember to personalize your responses and maintain a helpful, consultati
 // Run the setup
 createMissingTables()
   .then(() => {
-    logger.info('Missing tables setup completed');
+    logger.info("Missing tables setup completed");
     process.exit(0);
   })
   .catch((error) => {
-    logger.error('Missing tables setup failed:', error);
+    logger.error("Missing tables setup failed:", error);
     process.exit(1);
   });

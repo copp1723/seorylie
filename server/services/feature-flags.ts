@@ -1,8 +1,8 @@
 /**
  * Feature Flag Configuration System
- * 
+ *
  * Provides runtime feature toggles for safe rollout and quick rollback
- * 
+ *
  * @file server/services/feature-flags.ts
  */
 
@@ -34,95 +34,95 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlagConfig = {
       name: "jwt-refresh-rotation",
       enabled: true,
       description: "JWT token refresh rotation for enhanced security",
-      environments: ["production", "staging"]
+      environments: ["production", "staging"],
     },
     "global-error-handling": {
       name: "global-error-handling",
       enabled: true,
       description: "Centralized error handling and reporting",
-      environments: ["production", "staging", "development"]
+      environments: ["production", "staging", "development"],
     },
-    
+
     // AI & Agent Features
     "agent-squad-integration": {
       name: "agent-squad-integration",
       enabled: false,
       description: "Multi-agent conversation handling",
       rolloutPercentage: 0,
-      environments: ["development"]
+      environments: ["development"],
     },
     "unified-ai-agent-squad": {
       name: "unified-ai-agent-squad",
       enabled: false,
       description: "Unified AI agent squad orchestration",
       rolloutPercentage: 0,
-      environments: ["development"]
+      environments: ["development"],
     },
-    
+
     // Infrastructure & Performance
     "redis-websocket-scaling": {
       name: "redis-websocket-scaling",
       enabled: false,
       description: "Redis-based WebSocket scaling for high availability",
       rolloutPercentage: 25,
-      environments: ["staging"]
+      environments: ["staging"],
     },
     "sandbox-pause-resume": {
       name: "sandbox-pause-resume",
       enabled: false,
       description: "Sandbox environment pause/resume functionality",
-      environments: ["development", "staging"]
+      environments: ["development", "staging"],
     },
-    
+
     // Data & Analytics
     "event-schema-validation": {
       name: "event-schema-validation",
       enabled: true,
       description: "Event schema validation for data integrity",
-      environments: ["production", "staging", "development"]
+      environments: ["production", "staging", "development"],
     },
     "mindsdb-service-hook": {
       name: "mindsdb-service-hook",
       enabled: false,
       description: "MindsDB integration service hooks",
       rolloutPercentage: 0,
-      environments: ["development"]
+      environments: ["development"],
     },
     "tempo-trace-correlation": {
       name: "tempo-trace-correlation",
       enabled: false,
       description: "Distributed tracing with Tempo correlation",
-      environments: ["staging", "development"]
+      environments: ["staging", "development"],
     },
-    
+
     // UI & User Experience
     "loading-progress-ui": {
       name: "loading-progress-ui",
       enabled: true,
       description: "Enhanced loading progress indicators",
-      environments: ["production", "staging", "development"]
+      environments: ["production", "staging", "development"],
     },
     "error-messages": {
       name: "error-messages",
       enabled: true,
       description: "Improved user-facing error messages",
-      environments: ["production", "staging", "development"]
+      environments: ["production", "staging", "development"],
     },
-    
+
     // Testing & Development
     "typescript-strict-mode": {
       name: "typescript-strict-mode",
       enabled: false,
       description: "TypeScript strict mode enforcement",
-      environments: ["development"]
+      environments: ["development"],
     },
     "performance-testing": {
       name: "performance-testing",
       enabled: false,
       description: "Performance testing and monitoring",
-      environments: ["staging", "development"]
-    }
-  }
+      environments: ["staging", "development"],
+    },
+  },
 };
 
 /**
@@ -134,7 +134,7 @@ export class FeatureFlagService {
 
   constructor(config: FeatureFlagConfig = DEFAULT_FEATURE_FLAGS) {
     this.config = config;
-    this.environment = process.env.NODE_ENV || 'development';
+    this.environment = process.env.NODE_ENV || "development";
   }
 
   /**
@@ -142,7 +142,7 @@ export class FeatureFlagService {
    */
   isEnabled(flagName: string, userId?: string): boolean {
     const flag = this.config.flags[flagName];
-    
+
     if (!flag) {
       console.warn(`Feature flag '${flagName}' not found, defaulting to false`);
       return false;
@@ -150,7 +150,9 @@ export class FeatureFlagService {
 
     // Check if flag is deprecated
     if (flag.deprecated) {
-      console.warn(`Feature flag '${flagName}' is deprecated and will be removed`);
+      console.warn(
+        `Feature flag '${flagName}' is deprecated and will be removed`,
+      );
     }
 
     // Check environment restrictions
@@ -172,8 +174,8 @@ export class FeatureFlagService {
    */
   getAllFlags(): Record<string, boolean> {
     const result: Record<string, boolean> = {};
-    
-    Object.keys(this.config.flags).forEach(flagName => {
+
+    Object.keys(this.config.flags).forEach((flagName) => {
       result[flagName] = this.isEnabled(flagName);
     });
 
@@ -193,7 +195,7 @@ export class FeatureFlagService {
   updateConfiguration(newConfig: FeatureFlagConfig): void {
     this.config = {
       ...newConfig,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     };
   }
 
@@ -223,7 +225,8 @@ export class FeatureFlagService {
   deprecateFlag(flagName: string, deprecationDate?: string): boolean {
     if (this.config.flags[flagName]) {
       this.config.flags[flagName].deprecated = true;
-      this.config.flags[flagName].deprecationDate = deprecationDate || new Date().toISOString();
+      this.config.flags[flagName].deprecationDate =
+        deprecationDate || new Date().toISOString();
       this.config.lastUpdated = new Date().toISOString();
       return true;
     }
@@ -236,9 +239,9 @@ export class FeatureFlagService {
   cleanupDeprecatedFlags(daysOld: number = 30): string[] {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-    
+
     const removedFlags: string[] = [];
-    
+
     Object.entries(this.config.flags).forEach(([flagName, flag]) => {
       if (flag.deprecated && flag.deprecationDate) {
         const deprecationDate = new Date(flag.deprecationDate);
@@ -263,7 +266,7 @@ export class FeatureFlagService {
     let hash = 0;
     for (let i = 0; i < userId.length; i++) {
       const char = userId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash) % 100;
@@ -284,9 +287,9 @@ export function isFeatureEnabled(flagName: string, userId?: string): boolean {
  * Environment variable override support
  */
 export function getFeatureFlagFromEnv(flagName: string): boolean | null {
-  const envVar = `FEATURE_${flagName.toUpperCase().replace(/-/g, '_')}`;
+  const envVar = `FEATURE_${flagName.toUpperCase().replace(/-/g, "_")}`;
   const value = process.env[envVar];
-  
+
   if (value === undefined) return null;
-  return value.toLowerCase() === 'true';
+  return value.toLowerCase() === "true";
 }

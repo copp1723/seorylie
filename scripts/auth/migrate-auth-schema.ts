@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import { db } from '../server/db';
-import { logger } from '../server/logger';
+import { db } from "../server/db";
+import { logger } from "../server/logger";
 
 /**
  * Migration script to update the database schema for authentication
@@ -10,10 +10,10 @@ import { logger } from '../server/logger';
 
 async function migrateAuthSchema() {
   try {
-    logger.info('Starting authentication schema migration...');
+    logger.info("Starting authentication schema migration...");
 
     // Add missing columns to dealerships table
-    logger.info('Adding missing columns to dealerships table...');
+    logger.info("Adding missing columns to dealerships table...");
     await db.execute(`
       ALTER TABLE dealerships
       ADD COLUMN IF NOT EXISTS subdomain VARCHAR(100),
@@ -35,7 +35,7 @@ async function migrateAuthSchema() {
     `);
 
     // Update users table to make username optional and email required
-    logger.info('Updating users table schema...');
+    logger.info("Updating users table schema...");
     await db.execute(`
       ALTER TABLE users
       ALTER COLUMN username DROP NOT NULL,
@@ -44,7 +44,7 @@ async function migrateAuthSchema() {
     `);
 
     // Create magic_link_invitations table if it doesn't exist
-    logger.info('Creating magic_link_invitations table...');
+    logger.info("Creating magic_link_invitations table...");
     await db.execute(`
       CREATE TABLE IF NOT EXISTS magic_link_invitations (
         id SERIAL PRIMARY KEY,
@@ -67,24 +67,23 @@ async function migrateAuthSchema() {
     `);
 
     // Create a unique constraint on subdomain for dealerships
-    logger.info('Adding unique constraint to dealerships subdomain...');
+    logger.info("Adding unique constraint to dealerships subdomain...");
     await db.execute(`
       ALTER TABLE dealerships
       ADD CONSTRAINT dealerships_subdomain_unique UNIQUE (subdomain);
     `);
 
     // Update existing dealerships to have a subdomain if they don't have one
-    logger.info('Setting default subdomains for existing dealerships...');
+    logger.info("Setting default subdomains for existing dealerships...");
     await db.execute(`
       UPDATE dealerships
       SET subdomain = LOWER(REPLACE(name, ' ', '-'))
       WHERE subdomain IS NULL;
     `);
 
-    logger.info('Authentication schema migration completed successfully!');
-
+    logger.info("Authentication schema migration completed successfully!");
   } catch (error) {
-    logger.error('Error during authentication schema migration:', error);
+    logger.error("Error during authentication schema migration:", error);
     throw error;
   }
 }
@@ -93,11 +92,11 @@ async function migrateAuthSchema() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   migrateAuthSchema()
     .then(() => {
-      logger.info('Migration completed successfully');
+      logger.info("Migration completed successfully");
       process.exit(0);
     })
     .catch((error) => {
-      logger.error('Migration failed:', error);
+      logger.error("Migration failed:", error);
       process.exit(1);
     });
 }

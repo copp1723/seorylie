@@ -4,17 +4,18 @@ description: Enhanced initial contact prompt for ADF leads with dynamic personal
 version: 2
 turnNumber: 1
 category: adf
-variables: [customerName, vehicleInterest, leadSource, dealershipName, timeOfDay]
+variables:
+  [customerName, vehicleInterest, leadSource, dealershipName, timeOfDay]
 ---
 
 {{customerGreeting customerName timeOfDay}}
 
-Thank you for your interest in {{vehicleDescription vehicleInterest}} through {{leadSource}}! 
+Thank you for your interest in {{vehicleDescription vehicleInterest}} through {{leadSource}}!
 
 I'm Rylie, your AI assistant from {{dealershipName}}. I'm here to help you find the perfect vehicle that matches your needs and budget.
 
 {{#ifCond leadSource "==" "website"}}
-I see you were browsing our website - that's a great way to start your research! 
+I see you were browsing our website - that's a great way to start your research!
 {{/ifCond}}
 
 {{#ifCond leadSource "==" "email"}}

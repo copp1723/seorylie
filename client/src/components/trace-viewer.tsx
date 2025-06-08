@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 interface TraceViewerProps {
   traceId?: string;
@@ -12,7 +12,10 @@ interface TraceInfo {
   timestamp: string;
 }
 
-export const TraceViewer: React.FC<TraceViewerProps> = ({ traceId, className = '' }) => {
+export const TraceViewer: React.FC<TraceViewerProps> = ({
+  traceId,
+  className = "",
+}) => {
   const [traceInfo, setTraceInfo] = useState<TraceInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +25,11 @@ export const TraceViewer: React.FC<TraceViewerProps> = ({ traceId, className = '
   useEffect(() => {
     const checkTraceHealth = async () => {
       try {
-        const response = await fetch('/api/trace/health');
+        const response = await fetch("/api/trace/health");
         const data = await response.json();
         setIsEnabled(data.config?.enabled || false);
       } catch (err) {
-        console.warn('Trace correlation not available:', err);
+        console.warn("Trace correlation not available:", err);
         setIsEnabled(false);
       }
     };
@@ -40,19 +43,21 @@ export const TraceViewer: React.FC<TraceViewerProps> = ({ traceId, className = '
 
     const extractTraceFromHeaders = () => {
       // Try to get trace ID from current request context
-      fetch('/api/trace/current')
-        .then(res => res.json())
-        .then(data => {
+      fetch("/api/trace/current")
+        .then((res) => res.json())
+        .then((data) => {
           if (data.success && data.traceContext) {
             setTraceInfo({
               traceId: data.traceContext.traceId,
               tempoUrl: data.tempoUrl,
               serviceName: data.traceContext.serviceName,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             });
           }
         })
-        .catch(err => console.warn('Could not get current trace context:', err));
+        .catch((err) =>
+          console.warn("Could not get current trace context:", err),
+        );
     };
 
     if (!traceId) {
@@ -76,15 +81,15 @@ export const TraceViewer: React.FC<TraceViewerProps> = ({ traceId, className = '
           setTraceInfo({
             traceId: data.traceId,
             tempoUrl: data.tempoUrl,
-            serviceName: 'cleanrylie-app',
-            timestamp: new Date().toISOString()
+            serviceName: "cleanrylie-app",
+            timestamp: new Date().toISOString(),
           });
         } else {
-          setError(data.message || 'Failed to get trace info');
+          setError(data.message || "Failed to get trace info");
         }
       } catch (err) {
-        setError('Error fetching trace information');
-        console.error('Trace fetch error:', err);
+        setError("Error fetching trace information");
+        console.error("Trace fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -105,7 +110,7 @@ export const TraceViewer: React.FC<TraceViewerProps> = ({ traceId, className = '
 
   const openInTempo = () => {
     if (traceInfo?.tempoUrl) {
-      window.open(traceInfo.tempoUrl, '_blank');
+      window.open(traceInfo.tempoUrl, "_blank");
     }
   };
 
@@ -134,7 +139,11 @@ export const TraceViewer: React.FC<TraceViewerProps> = ({ traceId, className = '
           <div className="trace-info">
             <div className="trace-header">
               <span className="trace-label">🔍 Trace</span>
-              <span className="trace-id" onClick={copyTraceId} title="Click to copy">
+              <span
+                className="trace-id"
+                onClick={copyTraceId}
+                title="Click to copy"
+              >
                 {traceInfo.traceId.substring(0, 8)}...
               </span>
             </div>
@@ -236,7 +245,7 @@ export const TraceViewer: React.FC<TraceViewerProps> = ({ traceId, className = '
         /* Hide in production unless explicitly enabled */
         @media (min-width: 1px) {
           .trace-viewer {
-            display: ${process.env.NODE_ENV === 'development' ? 'block' : 'none'};
+            display: ${process.env.NODE_ENV === "development" ? "block" : "none"};
           }
         }
       `}</style>

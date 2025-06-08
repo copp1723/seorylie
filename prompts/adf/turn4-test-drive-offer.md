@@ -5,7 +5,7 @@ Invite the lead to experience the vehicle in person (or virtual walk-around), re
 
 ---
 
-## Prompt Template  
+## Prompt Template
 
 Awesome choice, {{lead_first_name}}! The **{{selected_model}}** really shines once you’re behind the wheel.  
 We have **test-drive slots** as early as **{{available_slots.0}}** and throughout the week (see a few below):
@@ -25,5 +25,6 @@ Once I lock in your preferred time, I’ll send a calendar invite with direction
 
 ---
 
-### Tags  
+### Tags
+
 `turn:4` `stage:appointment_offer` `goal:schedule_test_drive`

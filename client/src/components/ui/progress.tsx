@@ -25,31 +25,28 @@ const progressVariants = cva(
       size: "default",
       variant: "default",
     },
-  }
+  },
 );
 
 // Define variants for the indicator
-const indicatorVariants = cva(
-  "h-full w-full flex-1 transition-all",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary",
-        primary: "bg-primary",
-        success: "bg-green-500 dark:bg-green-600",
-        warning: "bg-yellow-500 dark:bg-yellow-600",
-        destructive: "bg-destructive",
-      },
-      indeterminate: {
-        true: "animate-progress-indeterminate",
-      },
+const indicatorVariants = cva("h-full w-full flex-1 transition-all", {
+  variants: {
+    variant: {
+      default: "bg-primary",
+      primary: "bg-primary",
+      success: "bg-green-500 dark:bg-green-600",
+      warning: "bg-yellow-500 dark:bg-yellow-600",
+      destructive: "bg-destructive",
     },
-    defaultVariants: {
-      variant: "default",
-      indeterminate: false,
+    indeterminate: {
+      true: "animate-progress-indeterminate",
     },
-  }
-);
+  },
+  defaultVariants: {
+    variant: "default",
+    indeterminate: false,
+  },
+});
 
 // Extend the Progress component props with our variants
 export interface ProgressProps
@@ -83,11 +80,11 @@ const Progress = React.forwardRef<
       variant,
       ...props
     },
-    ref
+    ref,
   ) => {
     // Calculate the percentage for ARIA attributes
     const percentage = Math.round((value / max) * 100);
-    
+
     // Format the value for display
     const formattedValue = React.useMemo(() => {
       if (formatValue) {
@@ -104,7 +101,7 @@ const Progress = React.forwardRef<
             <span>{max}</span>
           </div>
         )}
-        
+
         <ProgressPrimitive.Root
           ref={ref}
           className={cn(progressVariants({ size, variant }), className)}
@@ -121,16 +118,16 @@ const Progress = React.forwardRef<
         >
           <ProgressPrimitive.Indicator
             className={cn(
-              indicatorVariants({ 
-                variant, 
-                indeterminate 
+              indicatorVariants({
+                variant,
+                indeterminate,
               }),
-              indeterminate ? "w-[30%]" : "w-[var(--progress)]"
+              indeterminate ? "w-[30%]" : "w-[var(--progress)]",
             )}
             style={
               indeterminate
                 ? {}
-                : { "--progress": `${percentage}%` } as React.CSSProperties
+                : ({ "--progress": `${percentage}%` } as React.CSSProperties)
             }
           >
             {showValue && labelPosition === "inside" && (
@@ -142,7 +139,7 @@ const Progress = React.forwardRef<
         </ProgressPrimitive.Root>
       </div>
     );
-  }
+  },
 );
 
 Progress.displayName = ProgressPrimitive.Root.displayName;

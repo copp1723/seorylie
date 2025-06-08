@@ -1,17 +1,17 @@
-import { db } from '../server/db';
-import { sql } from 'drizzle-orm';
-import * as crypto from 'crypto';
-import bcrypt from 'bcrypt';
+import { db } from "../server/db";
+import { sql } from "drizzle-orm";
+import * as crypto from "crypto";
+import bcrypt from "bcrypt";
 
 /**
  * This script sets up a minimal test environment for the Rylie AI platform
  */
 async function testSetup() {
-  console.log('Setting up test environment...');
+  console.log("Setting up test environment...");
 
   try {
     // 1. Create test dealership if it doesn't exist
-    console.log('Creating test dealership...');
+    console.log("Creating test dealership...");
     const existingDealershipResult = await db.execute(sql`
       SELECT id FROM dealerships WHERE name = 'Test Dealership' LIMIT 1
     `);
@@ -19,7 +19,7 @@ async function testSetup() {
     let dealershipId: number;
 
     if (existingDealershipResult && existingDealershipResult.length > 0) {
-      console.log('Test dealership already exists.');
+      console.log("Test dealership already exists.");
       dealershipId = existingDealershipResult[0].id;
     } else {
       const newDealershipResult = await db.execute(sql`
@@ -33,27 +33,27 @@ async function testSetup() {
     }
 
     // 2. Create admin user if it doesn't exist
-    console.log('Creating admin user...');
-    const adminId = '1234567890'; // Sample user ID for testing
+    console.log("Creating admin user...");
+    const adminId = "1234567890"; // Sample user ID for testing
     const existingAdminResult = await db.execute(sql`
       SELECT id FROM users WHERE id = ${adminId} LIMIT 1
     `);
 
     if (existingAdminResult && existingAdminResult.length > 0) {
-      console.log('Admin user already exists.');
+      console.log("Admin user already exists.");
     } else {
       // Hash the password properly
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      
+      const hashedPassword = await bcrypt.hash("admin123", 10);
+
       await db.execute(sql`
         INSERT INTO users (id, username, name, email, password, role, dealership_id)
         VALUES (${adminId}, 'admin_user', 'Admin User', 'admin@testdealership.com', ${hashedPassword}, 'dealership_admin', ${dealershipId})
       `);
-      console.log('Created admin user with credentials: admin_user / admin123');
+      console.log("Created admin user with credentials: admin_user / admin123");
     }
 
     // 3. Create API key if it doesn't exist
-    console.log('Creating API key...');
+    console.log("Creating API key...");
     const existingApiKeyResult = await db.execute(sql`
       SELECT key FROM api_keys WHERE dealership_id = ${dealershipId} LIMIT 1
     `);
@@ -61,10 +61,10 @@ async function testSetup() {
     let apiKeyValue: string;
 
     if (existingApiKeyResult.rows && existingApiKeyResult.rows.length > 0) {
-      console.log('API key already exists.');
+      console.log("API key already exists.");
       apiKeyValue = existingApiKeyResult.rows[0].key;
     } else {
-      apiKeyValue = `key_${crypto.randomBytes(16).toString('hex')}`;
+      apiKeyValue = `key_${crypto.randomBytes(16).toString("hex")}`;
       await db.execute(sql`
         INSERT INTO api_keys (dealership_id, key, description, is_active)
         VALUES (${dealershipId}, ${apiKeyValue}, 'Test API Key', true)
@@ -73,13 +73,13 @@ async function testSetup() {
     }
 
     // 4. Create default persona if it doesn't exist
-    console.log('Creating default persona...');
+    console.log("Creating default persona...");
     const existingPersonaResult = await db.execute(sql`
       SELECT id FROM personas WHERE dealership_id = ${dealershipId} LIMIT 1
     `);
 
     if (existingPersonaResult.rows && existingPersonaResult.rows.length > 0) {
-      console.log('Default persona already exists.');
+      console.log("Default persona already exists.");
     } else {
       const promptTemplate = `You are Rylie, an AI assistant for {{dealershipName}}. Your role is to help customers find the right vehicle for their needs and connect them with our sales team when appropriate.
 
@@ -109,30 +109,30 @@ INFORMATION TO COLLECT:
 Always remember to personalize your responses for {{customerName}}.`;
 
       const personaArgs = JSON.stringify({
-        tone: 'professional',
-        priorityFeatures: ['Safety', 'Fuel Efficiency', 'Technology'],
-        tradeInUrl: 'https://testdealership.com/trade-in',
-        financingUrl: 'https://testdealership.com/financing',
-        handoverEmail: 'sales@testdealership.com'
+        tone: "professional",
+        priorityFeatures: ["Safety", "Fuel Efficiency", "Technology"],
+        tradeInUrl: "https://testdealership.com/trade-in",
+        financingUrl: "https://testdealership.com/financing",
+        handoverEmail: "sales@testdealership.com",
       });
 
       await db.execute(sql`
         INSERT INTO personas (dealership_id, name, prompt_template, arguments, is_default)
         VALUES (${dealershipId}, 'Default Sales Assistant', ${promptTemplate}, ${personaArgs}::jsonb, true)
       `);
-      console.log('Created default persona.');
+      console.log("Created default persona.");
     }
 
     // 5. Create sample vehicle if none exist
-    console.log('Checking for vehicles...');
+    console.log("Checking for vehicles...");
     const existingVehiclesResult = await db.execute(sql`
       SELECT id FROM vehicles WHERE dealership_id = ${dealershipId} LIMIT 1
     `);
 
     if (existingVehiclesResult.rows && existingVehiclesResult.rows.length > 0) {
-      console.log('Vehicles already exist.');
+      console.log("Vehicles already exist.");
     } else {
-      console.log('Creating sample vehicles...');
+      console.log("Creating sample vehicles...");
 
       // Toyota RAV4
       await db.execute(sql`
@@ -182,25 +182,24 @@ Always remember to personalize your responses for {{customerName}}.`;
         )
       `);
 
-      console.log('Created 3 sample vehicles.');
+      console.log("Created 3 sample vehicles.");
     }
 
-    console.log('\nTEST ENVIRONMENT READY:');
-    console.log('============================');
+    console.log("\nTEST ENVIRONMENT READY:");
+    console.log("============================");
     console.log(`Dealership ID: ${dealershipId}`);
-    console.log(`API Key: ${apiKeyValue || '(use existing key)'}`);
-    console.log('Admin User ID: 1234567890');
-    console.log('============================');
+    console.log(`API Key: ${apiKeyValue || "(use existing key)"}`);
+    console.log("Admin User ID: 1234567890");
+    console.log("============================");
 
-    console.log('\nNext steps:');
-    console.log('1. Make sure to add these environment variables:');
-    console.log('   - SESSION_SECRET=your_secure_session_secret');
-    console.log('   - OPENAI_API_KEY=your_openai_api_key');
-    console.log('   - SENDGRID_API_KEY=your_sendgrid_api_key');
-    console.log('   - REPLIT_DOMAINS=your_replit_domain');
-
+    console.log("\nNext steps:");
+    console.log("1. Make sure to add these environment variables:");
+    console.log("   - SESSION_SECRET=your_secure_session_secret");
+    console.log("   - OPENAI_API_KEY=your_openai_api_key");
+    console.log("   - SENDGRID_API_KEY=your_sendgrid_api_key");
+    console.log("   - REPLIT_DOMAINS=your_replit_domain");
   } catch (error) {
-    console.error('Error setting up test environment:', error);
+    console.error("Error setting up test environment:", error);
     process.exit(1);
   }
 }
@@ -208,10 +207,10 @@ Always remember to personalize your responses for {{customerName}}.`;
 // Run the setup
 testSetup()
   .then(() => {
-    console.log('Test environment setup complete.');
+    console.log("Test environment setup complete.");
     process.exit(0);
   })
   .catch((error) => {
-    console.error('Failed to set up test environment:', error);
+    console.error("Failed to set up test environment:", error);
     process.exit(1);
   });

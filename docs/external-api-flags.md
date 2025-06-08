@@ -15,12 +15,12 @@ External API Integration Guards allow administrators to enable or disable specif
 
 The system currently supports the following external API integration flags:
 
-| Flag Name | Description | Default |
-|-----------|-------------|---------|
-| `google-ads-etl` | Google Ads ETL data integration | Enabled |
-| `twilio-sms` | Twilio SMS messaging service | Enabled |
-| `sendgrid-email` | SendGrid email delivery service | Enabled |
-| `openai-chat` | OpenAI chat completions API | Enabled |
+| Flag Name         | Description                             | Default |
+| ----------------- | --------------------------------------- | ------- |
+| `google-ads-etl`  | Google Ads ETL data integration         | Enabled |
+| `twilio-sms`      | Twilio SMS messaging service            | Enabled |
+| `sendgrid-email`  | SendGrid email delivery service         | Enabled |
+| `openai-chat`     | OpenAI chat completions API             | Enabled |
 | `adf-integration` | ADF (Auto-lead Data Format) integration | Enabled |
 
 ## Usage
@@ -30,7 +30,10 @@ The system currently supports the following external API integration flags:
 To check if an external API is enabled in backend code:
 
 ```typescript
-import { ExternalAPIFlags, isExternalAPIEnabled } from './services/external-api-flags';
+import {
+  ExternalAPIFlags,
+  isExternalAPIEnabled,
+} from "./services/external-api-flags";
 
 // Check if an API is enabled
 if (isExternalAPIEnabled(ExternalAPIFlags.TwilioSMS, dealershipId)) {
@@ -43,13 +46,20 @@ if (isExternalAPIEnabled(ExternalAPIFlags.TwilioSMS, dealershipId)) {
 To enable or disable an API programmatically:
 
 ```typescript
-import { ExternalAPIFlags, enableExternalAPI, disableExternalAPI } from './services/external-api-flags';
+import {
+  ExternalAPIFlags,
+  enableExternalAPI,
+  disableExternalAPI,
+} from "./services/external-api-flags";
 
 // Enable an API
 enableExternalAPI(ExternalAPIFlags.OpenAIChat);
 
 // Disable an API with reason
-disableExternalAPI(ExternalAPIFlags.TwilioSMS, 'Service outage reported by Twilio');
+disableExternalAPI(
+  ExternalAPIFlags.TwilioSMS,
+  "Service outage reported by Twilio",
+);
 ```
 
 ### Frontend Usage
@@ -61,10 +71,10 @@ import useExternalAPIFlags, { ExternalAPIFlags } from '../hooks/useExternalAPIFl
 
 function MyComponent() {
   const { flags, isLoading, error, isFlagEnabled } = useExternalAPIFlags();
-  
+
   // Check if a specific API is enabled
   const isTwilioEnabled = isFlagEnabled(ExternalAPIFlags.TwilioSMS);
-  
+
   return (
     <div>
       <p>Twilio SMS is {isTwilioEnabled ? 'enabled' : 'disabled'}</p>

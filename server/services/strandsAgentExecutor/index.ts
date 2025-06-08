@@ -22,14 +22,14 @@ interface Tool {
   handler: (params: any) => Promise<any>;
 }
 
-import logger from '../../utils/logger';
-import { 
-  AgentType, 
-  AgentResponse, 
-  StrandsConfig, 
+import logger from "../../utils/logger";
+import {
+  AgentType,
+  AgentResponse,
+  StrandsConfig,
   StrandsExecutorOptions,
-  ConversationMessage 
-} from '../../types';
+  ConversationMessage,
+} from "../../types";
 
 export class StrandsAgentExecutor {
   private agents: Map<AgentType, Agent>;
@@ -42,74 +42,92 @@ export class StrandsAgentExecutor {
     this.defaultAgentType = options.defaultAgentType || AgentType.GENERAL;
 
     // Initialize agents for each type
-    Object.values(AgentType).forEach(agentType => {
+    Object.values(AgentType).forEach((agentType) => {
       this.initializeAgent(agentType as AgentType, options);
     });
 
-    logger.info('StrandsAgentExecutor initialized', {
+    logger.info("StrandsAgentExecutor initialized", {
       agentCount: this.agents.size,
       defaultAgent: this.defaultAgentType,
-      voiceEnabled: options.config.enableVoice
+      voiceEnabled: options.config.enableVoice,
     });
   }
 
-  private initializeAgent(agentType: AgentType, options: StrandsExecutorOptions) {
-    const systemPrompt = options.systemPrompts?.[agentType] || this.getDefaultSystemPrompt(agentType);
-    
+  private initializeAgent(
+    agentType: AgentType,
+    options: StrandsExecutorOptions,
+  ) {
+    const systemPrompt =
+      options.systemPrompts?.[agentType] ||
+      this.getDefaultSystemPrompt(agentType);
+
     const tools: Tool[] = [
       // Core tools available to all agents
       {
-        name: 'speak',
-        description: 'Convert text to speech using configured voice provider',
+        name: "speak",
+        description: "Convert text to speech using configured voice provider",
         parameters: {
-          text: { type: 'string', description: 'Text to convert to speech' },
-          voice: { type: 'string', optional: true, description: 'Voice ID to use' }
+          text: { type: "string", description: "Text to convert to speech" },
+          voice: {
+            type: "string",
+            optional: true,
+            description: "Voice ID to use",
+          },
         },
         handler: async (params: { text: string; voice?: string }) => {
           try {
             // Implementation will vary based on voice provider (Polly/ElevenLabs)
-            const audioData = await this.generateSpeech(params.text, params.voice);
+            const audioData = await this.generateSpeech(
+              params.text,
+              params.voice,
+            );
             return {
               success: true,
               audioOutput: {
                 data: audioData,
-                format: 'mp3',
-                tool_used: 'speak_polly',
-                text_spoken: params.text
-              }
+                format: "mp3",
+                tool_used: "speak_polly",
+                text_spoken: params.text,
+              },
             };
           } catch (error) {
-            logger.error('Speech generation failed:', error);
-            return { success: false, error: 'Failed to generate speech' };
+            logger.error("Speech generation failed:", error);
+            return { success: false, error: "Failed to generate speech" };
           }
-        }
+        },
       },
       {
-        name: 'journal',
-        description: 'Save important information or steps for multi-turn interactions',
+        name: "journal",
+        description:
+          "Save important information or steps for multi-turn interactions",
         parameters: {
-          entry: { type: 'string', description: 'Information to save' },
-          key: { type: 'string', description: 'Identifier for this information' }
+          entry: { type: "string", description: "Information to save" },
+          key: {
+            type: "string",
+            description: "Identifier for this information",
+          },
         },
         handler: async (params: { entry: string; key: string }) => {
           // Simple in-memory storage for now, could be expanded to persistent storage
           return { success: true, saved: true };
-        }
+        },
       },
-      ...(options.tools || [])
+      ...(options.tools || []),
     ];
 
     // Temporary mock Agent implementation until @strands/agents is installed
     const agent = {
       process: async (message: string, options: any) => {
         return {
-          message: { content: "This is a mock response until Strands SDK is integrated" },
-          confidence: 0.8
+          message: {
+            content: "This is a mock response until Strands SDK is integrated",
+          },
+          confidence: 0.8,
         };
       },
       executeTool: async (name: string, parameters: any) => {
         return { success: true };
-      }
+      },
     };
 
     this.agents.set(agentType, agent);
@@ -135,7 +153,7 @@ export class StrandsAgentExecutor {
       [AgentType.CREDIT]: `You are a credit specialist helping customers understand their financing options.
         Provide clear guidance on credit-related matters. Use speak for important credit information.`,
       [AgentType.LEASE]: `You are a lease specialist helping customers understand leasing options.
-        Explain lease terms and benefits clearly. Use speak for important lease details.`
+        Explain lease terms and benefits clearly. Use speak for important lease details.`,
     };
 
     return prompts[agentType];
@@ -143,13 +161,13 @@ export class StrandsAgentExecutor {
 
   private async generateSpeech(text: string, voice?: string): Promise<string> {
     // Implementation will depend on the configured voice provider
-    if (this.config.voiceProvider === 'elevenlabs') {
+    if (this.config.voiceProvider === "elevenlabs") {
       // Implement ElevenLabs integration
-      throw new Error('ElevenLabs integration not implemented');
+      throw new Error("ElevenLabs integration not implemented");
     } else {
       // Default to AWS Polly
       // Implement AWS Polly integration
-      throw new Error('AWS Polly integration not implemented');
+      throw new Error("AWS Polly integration not implemented");
     }
   }
 
@@ -160,7 +178,7 @@ export class StrandsAgentExecutor {
     sessionId: string,
     userId: string,
     sandboxId?: string,
-    conversationHistory?: ConversationMessage[]
+    conversationHistory?: ConversationMessage[],
   ): Promise<AgentResponse> {
     try {
       // Validate and normalize agent type
@@ -168,12 +186,12 @@ export class StrandsAgentExecutor {
       const agent = this.agents.get(normalizedAgentType);
 
       if (!agent) {
-        logger.error('Agent not found:', { agentType, normalizedAgentType });
+        logger.error("Agent not found:", { agentType, normalizedAgentType });
         return {
           success: false,
-          response: 'Agent not available. Falling back to general assistant.',
+          response: "Agent not available. Falling back to general assistant.",
           selectedAgent: AgentType.GENERAL,
-          fallback: true
+          fallback: true,
         };
       }
 
@@ -183,55 +201,56 @@ export class StrandsAgentExecutor {
         sessionId,
         userId,
         sandboxId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       // Process message through Strands Agent
       const startTime = Date.now();
       const agentResult = await agent.process(message, {
         context,
-        history: this.convertToStrandsHistory(conversationHistory)
+        history: this.convertToStrandsHistory(conversationHistory),
       });
 
       return this.parseAgentResult(agentResult, normalizedAgentType, startTime);
-
     } catch (error) {
-      logger.error('Error processing message:', error);
+      logger.error("Error processing message:", error);
       return {
         success: false,
-        response: 'I apologize, but I encountered an error processing your request. Please try again.',
+        response:
+          "I apologize, but I encountered an error processing your request. Please try again.",
         selectedAgent: agentType,
-        processingTime: Date.now()
+        processingTime: Date.now(),
       };
     }
   }
 
   private normalizeAgentType(agentType: AgentType | string): AgentType {
-    if (agentType.startsWith('strands_agent:')) {
-      const type = agentType.replace('strands_agent:', '');
-      return (AgentType[type.toUpperCase()] || this.defaultAgentType);
+    if (agentType.startsWith("strands_agent:")) {
+      const type = agentType.replace("strands_agent:", "");
+      return AgentType[type.toUpperCase()] || this.defaultAgentType;
     }
-    return (AgentType[agentType.toUpperCase()] || this.defaultAgentType);
+    return AgentType[agentType.toUpperCase()] || this.defaultAgentType;
   }
 
   private convertToStrandsHistory(history?: ConversationMessage[]): any[] {
     if (!history) return [];
-    return history.map(msg => ({
+    return history.map((msg) => ({
       role: msg.role,
       content: msg.content,
-      metadata: msg.metadata
+      metadata: msg.metadata,
     }));
   }
 
   private parseAgentResult(
     result: AgentResult,
     agentType: AgentType,
-    startTime: number
+    startTime: number,
   ): AgentResponse {
     const processingTime = Date.now() - startTime;
 
     // Extract audio output if present
-    const audioOutput = result.tools?.find(t => t.name === 'speak')?.result?.audioOutput;
+    const audioOutput = result.tools?.find((t) => t.name === "speak")?.result
+      ?.audioOutput;
 
     return {
       success: true,
@@ -239,14 +258,14 @@ export class StrandsAgentExecutor {
       selectedAgent: agentType,
       processingTime,
       audioOutput,
-      confidence: result.confidence || 0.8
+      confidence: result.confidence || 0.8,
     };
   }
 
   async executeStrandsTool(
     toolName: string,
     parameters: Record<string, any>,
-    agentType: AgentType = AgentType.GENERAL
+    agentType: AgentType = AgentType.GENERAL,
   ): Promise<any> {
     const agent = this.agents.get(agentType);
     if (!agent) {
@@ -257,7 +276,7 @@ export class StrandsAgentExecutor {
       const result = await agent.executeTool(toolName, parameters);
       return result;
     } catch (error) {
-      logger.error('Tool execution failed:', { toolName, error });
+      logger.error("Tool execution failed:", { toolName, error });
       throw error;
     }
   }

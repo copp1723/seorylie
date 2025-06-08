@@ -12,76 +12,75 @@
  * - Replayable logs for Agent Studio
  * - Workflow checkpoints and rollback support
  */
-import { v4 as uuidv4 } from 'uuid';
-import { logger } from '../utils/logger';
-import { db } from '../db';
+import { v4 as uuidv4 } from "uuid";
+import { logger } from "../utils/logger";
+import { db } from "../db";
 import {
   sandboxes,
   sandboxSessions,
   tokenUsageLogs,
   tools as toolsTable,
-  agentTools
-} from '../../shared/schema';
-import {
-  eq,
-  and,
-  lte,
-  gte,
-  sum,
-  sql,
-  desc,
-  asc,
-  isNull
-} from 'drizzle-orm';
-import { WebSocketService } from './websocket-service';
-import { ToolRegistryService } from './tool-registry';
-import { EventBus, EventType } from './event-bus';
-import { AdsAutomationWorker, AdsTaskType } from './ads-automation-worker';
-import { analyticsClient } from './analytics-client';
-import { CircuitBreaker } from './circuit-breaker';
+  agentTools,
+} from "../../shared/schema";
+import { eq, and, lte, gte, sum, sql, desc, asc, isNull } from "drizzle-orm";
+import { WebSocketService } from "./websocket-service";
+import { ToolRegistryService } from "./tool-registry";
+import { EventBus, EventType } from "./event-bus";
+import { AdsAutomationWorker, AdsTaskType } from "./ads-automation-worker";
+import { analyticsClient } from "./analytics-client";
+import { CircuitBreaker } from "./circuit-breaker";
 
 // Error types
 export class RateLimitExceededError extends Error {
-  constructor(message: string, public limit: number, public usage: number, public type: string) {
+  constructor(
+    message: string,
+    public limit: number,
+    public usage: number,
+    public type: string,
+  ) {
     super(message);
-    this.name = 'RateLimitExceededError';
+    this.name = "RateLimitExceededError";
   }
 }
 
 export class SandboxNotFoundError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'SandboxNotFoundError';
+    this.name = "SandboxNotFoundError";
   }
 }
 
 export class SessionNotFoundError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'SessionNotFoundError';
+    this.name = "SessionNotFoundError";
   }
 }
 
 export class WorkflowExecutionError extends Error {
-  constructor(message: string, public step: string, public details: any) {
+  constructor(
+    message: string,
+    public step: string,
+    public details: any,
+  ) {
     super(message);
-    this.name = 'WorkflowExecutionError';
+    this.name = "WorkflowExecutionError";
   }
 }
 
 // Workflow types
 export enum WorkflowPattern {
-  SEQUENTIAL = 'sequential',
-  PARALLEL = 'parallel',
-  CONDITIONAL = 'conditional'
+  SEQUENTIAL = "sequential",
+  PARALLEL = "parallel",
+  CONDITIONAL = "conditional",
 }
 
 export enum WorkflowStepStatus {
-  PENDING = 'pending',
-  RUNNING = 'running',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  SKIPPED = 'skipped'
+  PENDING = "pending",
+  RUNNING = "running",
+  COMPLETED = "completed",
+  FAILED = "failed",
+  SKIPPED = "skipped",
 }
 
 export interface WorkflowStep {
@@ -119,166 +118,191 @@ export interface Workflow {
 }
 
 // Predefined workflows
-export const PREDEFINED_WORKFLOWS: Record<string, Omit<Workflow, 'id' | 'correlationId' | 'sandboxId' | 'status'>> = {
-  'sales-analysis-update': {
-    name: 'Sales Analysis and VinSolutions Update',
-    description: 'Analyze sales data and update VinSolutions CRM',
+export const PREDEFINED_WORKFLOWS: Record<
+  string,
+  Omit<Workflow, "id" | "correlationId" | "sandboxId" | "status">
+> = {
+  "sales-analysis-update": {
+    name: "Sales Analysis and VinSolutions Update",
+    description: "Analyze sales data and update VinSolutions CRM",
     pattern: WorkflowPattern.SEQUENTIAL,
     steps: [
       {
-        id: 'step1',
-        name: 'Analyze Sales Data',
-        tool: 'watchdog_analysis',
+        id: "step1",
+        name: "Analyze Sales Data",
+        tool: "watchdog_analysis",
         parameters: {
-          question: 'What are the top-performing sales reps this month?',
-          includeMetrics: ['total_sales', 'conversion_rate', 'average_deal_value']
+          question: "What are the top-performing sales reps this month?",
+          includeMetrics: [
+            "total_sales",
+            "conversion_rate",
+            "average_deal_value",
+          ],
         },
         status: WorkflowStepStatus.PENDING,
-        checkpoint: true
+        checkpoint: true,
       },
       {
-        id: 'step2',
-        name: 'Update VinSolutions CRM',
-        tool: 'vin_agent_task',
+        id: "step2",
+        name: "Update VinSolutions CRM",
+        tool: "vin_agent_task",
         parameters: {
-          taskType: 'update_crm_dashboard',
-          platformId: 'vinsolutions',
-          updateType: 'sales_performance'
+          taskType: "update_crm_dashboard",
+          platformId: "vinsolutions",
+          updateType: "sales_performance",
         },
-        status: WorkflowStepStatus.PENDING
-      }
+        status: WorkflowStepStatus.PENDING,
+      },
     ],
-    rollbackOnFailure: true
+    rollbackOnFailure: true,
   },
-  'inventory-analysis-campaign': {
-    name: 'Inventory Analysis and Google Ads Campaign',
-    description: 'Analyze inventory and create targeted Google Ads campaign',
+  "inventory-analysis-campaign": {
+    name: "Inventory Analysis and Google Ads Campaign",
+    description: "Analyze inventory and create targeted Google Ads campaign",
     pattern: WorkflowPattern.SEQUENTIAL,
     steps: [
       {
-        id: 'step1',
-        name: 'Analyze Inventory',
-        tool: 'watchdog_analysis',
+        id: "step1",
+        name: "Analyze Inventory",
+        tool: "watchdog_analysis",
         parameters: {
-          question: 'Which vehicle models have the highest inventory levels?',
-          includeMetrics: ['inventory_count', 'days_on_lot', 'price_competitiveness']
+          question: "Which vehicle models have the highest inventory levels?",
+          includeMetrics: [
+            "inventory_count",
+            "days_on_lot",
+            "price_competitiveness",
+          ],
         },
         status: WorkflowStepStatus.PENDING,
-        checkpoint: true
+        checkpoint: true,
       },
       {
-        id: 'step2',
-        name: 'Create Google Ads Campaign',
-        tool: 'google_ads.createCampaign',
+        id: "step2",
+        name: "Create Google Ads Campaign",
+        tool: "google_ads.createCampaign",
         parameters: {
-          campaignName: 'High Inventory Promotion',
+          campaignName: "High Inventory Promotion",
           budget: {
             amount: 100,
-            deliveryMethod: 'STANDARD'
+            deliveryMethod: "STANDARD",
           },
           bidStrategy: {
-            type: 'MAXIMIZE_CONVERSIONS'
+            type: "MAXIMIZE_CONVERSIONS",
           },
-          isDryRun: true
+          isDryRun: true,
         },
-        status: WorkflowStepStatus.PENDING
-      }
+        status: WorkflowStepStatus.PENDING,
+      },
     ],
-    rollbackOnFailure: false
+    rollbackOnFailure: false,
   },
-  'customer-insight-automation': {
-    name: 'Customer Insight and Automation',
-    description: 'Generate customer insights and automate follow-up tasks',
+  "customer-insight-automation": {
+    name: "Customer Insight and Automation",
+    description: "Generate customer insights and automate follow-up tasks",
     pattern: WorkflowPattern.PARALLEL,
     steps: [
       {
-        id: 'step1',
-        name: 'Customer Segmentation Analysis',
-        tool: 'watchdog_analysis',
+        id: "step1",
+        name: "Customer Segmentation Analysis",
+        tool: "watchdog_analysis",
         parameters: {
-          question: 'What are the key customer segments based on purchase history?',
-          includeMetrics: ['customer_lifetime_value', 'purchase_frequency', 'service_visits']
+          question:
+            "What are the key customer segments based on purchase history?",
+          includeMetrics: [
+            "customer_lifetime_value",
+            "purchase_frequency",
+            "service_visits",
+          ],
         },
-        status: WorkflowStepStatus.PENDING
+        status: WorkflowStepStatus.PENDING,
       },
       {
-        id: 'step2',
-        name: 'Lead Source Analysis',
-        tool: 'watchdog_analysis',
+        id: "step2",
+        name: "Lead Source Analysis",
+        tool: "watchdog_analysis",
         parameters: {
-          question: 'Which lead sources have the highest conversion rates?',
-          includeMetrics: ['conversion_rate', 'cost_per_lead', 'lead_quality_score']
+          question: "Which lead sources have the highest conversion rates?",
+          includeMetrics: [
+            "conversion_rate",
+            "cost_per_lead",
+            "lead_quality_score",
+          ],
         },
-        status: WorkflowStepStatus.PENDING
+        status: WorkflowStepStatus.PENDING,
       },
       {
-        id: 'step3',
-        name: 'Schedule Follow-up Tasks',
-        tool: 'vin_agent_task',
+        id: "step3",
+        name: "Schedule Follow-up Tasks",
+        tool: "vin_agent_task",
         parameters: {
-          taskType: 'schedule_followups',
-          platformId: 'vinsolutions',
-          targetSegment: 'high_value_customers'
+          taskType: "schedule_followups",
+          platformId: "vinsolutions",
+          targetSegment: "high_value_customers",
         },
-        dependsOn: ['step1', 'step2'],
-        status: WorkflowStepStatus.PENDING
-      }
+        dependsOn: ["step1", "step2"],
+        status: WorkflowStepStatus.PENDING,
+      },
     ],
-    rollbackOnFailure: false
+    rollbackOnFailure: false,
   },
-  'conditional-marketing-workflow': {
-    name: 'Conditional Marketing Workflow',
-    description: 'Analyze performance and conditionally create marketing campaigns',
+  "conditional-marketing-workflow": {
+    name: "Conditional Marketing Workflow",
+    description:
+      "Analyze performance and conditionally create marketing campaigns",
     pattern: WorkflowPattern.CONDITIONAL,
     steps: [
       {
-        id: 'step1',
-        name: 'Performance Analysis',
-        tool: 'watchdog_analysis',
+        id: "step1",
+        name: "Performance Analysis",
+        tool: "watchdog_analysis",
         parameters: {
-          question: 'What is our current ROI on marketing spend?',
-          includeMetrics: ['marketing_roi', 'cost_per_acquisition', 'conversion_rate']
+          question: "What is our current ROI on marketing spend?",
+          includeMetrics: [
+            "marketing_roi",
+            "cost_per_acquisition",
+            "conversion_rate",
+          ],
         },
         status: WorkflowStepStatus.PENDING,
-        checkpoint: true
+        checkpoint: true,
       },
       {
-        id: 'step2a',
-        name: 'Create High-Budget Campaign',
-        tool: 'google_ads.createCampaign',
+        id: "step2a",
+        name: "Create High-Budget Campaign",
+        tool: "google_ads.createCampaign",
         parameters: {
-          campaignName: 'High ROI Expansion Campaign',
+          campaignName: "High ROI Expansion Campaign",
           budget: {
             amount: 200,
-            deliveryMethod: 'STANDARD'
+            deliveryMethod: "STANDARD",
           },
           bidStrategy: {
-            type: 'MAXIMIZE_CONVERSIONS'
-          }
+            type: "MAXIMIZE_CONVERSIONS",
+          },
         },
-        condition: 'step1.result.metrics.marketing_roi > 3',
-        status: WorkflowStepStatus.PENDING
+        condition: "step1.result.metrics.marketing_roi > 3",
+        status: WorkflowStepStatus.PENDING,
       },
       {
-        id: 'step2b',
-        name: 'Create Conservative Campaign',
-        tool: 'google_ads.createCampaign',
+        id: "step2b",
+        name: "Create Conservative Campaign",
+        tool: "google_ads.createCampaign",
         parameters: {
-          campaignName: 'Conservative Optimization Campaign',
+          campaignName: "Conservative Optimization Campaign",
           budget: {
             amount: 50,
-            deliveryMethod: 'STANDARD'
+            deliveryMethod: "STANDARD",
           },
           bidStrategy: {
-            type: 'MAXIMIZE_CONVERSIONS_VALUE'
-          }
+            type: "MAXIMIZE_CONVERSIONS_VALUE",
+          },
         },
-        condition: 'step1.result.metrics.marketing_roi <= 3',
-        status: WorkflowStepStatus.PENDING
-      }
+        condition: "step1.result.metrics.marketing_roi <= 3",
+        status: WorkflowStepStatus.PENDING,
+      },
     ],
-    rollbackOnFailure: false
-  }
+    rollbackOnFailure: false,
+  },
 };
 
 /**
@@ -299,7 +323,7 @@ export class OrchestratorService {
     webSocketService: WebSocketService,
     toolRegistry: ToolRegistryService,
     eventBus: EventBus,
-    adsAutomationWorker: AdsAutomationWorker
+    adsAutomationWorker: AdsAutomationWorker,
   ) {
     this.webSocketService = webSocketService;
     this.toolRegistry = toolRegistry;
@@ -308,19 +332,19 @@ export class OrchestratorService {
 
     // Set up circuit breakers for external services
     this.analyticsCircuitBreaker = new CircuitBreaker({
-      name: 'analytics-api',
+      name: "analytics-api",
       maxFailures: 3,
       resetTimeout: 30000,
       timeout: 10000,
-      failureStatusCodes: [500, 502, 503, 504]
+      failureStatusCodes: [500, 502, 503, 504],
     });
 
     this.adsCircuitBreaker = new CircuitBreaker({
-      name: 'google-ads-api',
+      name: "google-ads-api",
       maxFailures: 3,
       resetTimeout: 60000,
       timeout: 15000,
-      failureStatusCodes: [500, 502, 503, 504]
+      failureStatusCodes: [500, 502, 503, 504],
     });
 
     // Subscribe to relevant events
@@ -339,7 +363,9 @@ export class OrchestratorService {
         consumerId,
         [EventType.TASK_COMPLETED, EventType.TASK_FAILED],
         async (event) => {
-          logger.debug(`Received task event: ${event.type}`, { eventData: event });
+          logger.debug(`Received task event: ${event.type}`, {
+            eventData: event,
+          });
 
           // Find any workflows waiting on this task
           for (const [workflowId, workflow] of this.activeWorkflows.entries()) {
@@ -348,7 +374,7 @@ export class OrchestratorService {
               await this.updateWorkflowWithTaskResult(workflowId, event);
             }
           }
-        }
+        },
       );
 
       // Subscribe to ads automation events
@@ -356,33 +382,35 @@ export class OrchestratorService {
         consumerId,
         [EventType.CAMPAIGN_CREATED, EventType.CAMPAIGN_DRY_RUN],
         async (event) => {
-          logger.debug(`Received ads event: ${event.type}`, { eventData: event });
+          logger.debug(`Received ads event: ${event.type}`, {
+            eventData: event,
+          });
 
           // Add to replayable logs if correlation ID exists
           if (event.correlationId) {
             this.addToReplayableLogs(event.correlationId, {
-              type: 'ads_event',
+              type: "ads_event",
               event: event.type,
               data: event,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             });
           }
-        }
+        },
       );
 
-      logger.info('Orchestrator subscribed to events', {
+      logger.info("Orchestrator subscribed to events", {
         consumerId,
         events: [
           EventType.TASK_COMPLETED,
           EventType.TASK_FAILED,
           EventType.CAMPAIGN_CREATED,
-          EventType.CAMPAIGN_DRY_RUN
-        ]
+          EventType.CAMPAIGN_DRY_RUN,
+        ],
       });
     } catch (error) {
-      logger.error('Failed to subscribe to events', {
+      logger.error("Failed to subscribe to events", {
         error: (error as Error).message,
-        stack: (error as Error).stack
+        stack: (error as Error).stack,
       });
     }
   }
@@ -401,29 +429,32 @@ export class OrchestratorService {
   }): Promise<any> {
     try {
       // Set default limits if not provided
-      const hourlyTokenLimit = params.hourlyTokenLimit || 10000;  // 10k tokens per hour
-      const dailyTokenLimit = params.dailyTokenLimit || 100000;   // 100k tokens per day
-      const dailyCostLimit = params.dailyCostLimit || 5.0;        // $5 per day
+      const hourlyTokenLimit = params.hourlyTokenLimit || 10000; // 10k tokens per hour
+      const dailyTokenLimit = params.dailyTokenLimit || 100000; // 100k tokens per day
+      const dailyCostLimit = params.dailyCostLimit || 5.0; // $5 per day
 
       // Insert sandbox into database
-      const [sandbox] = await db.insert(sandboxes).values({
-        name: params.name,
-        description: params.description,
-        userId: params.userId,
-        dealershipId: params.dealershipId,
-        hourlyTokenLimit,
-        dailyTokenLimit,
-        dailyCostLimit,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }).returning();
+      const [sandbox] = await db
+        .insert(sandboxes)
+        .values({
+          name: params.name,
+          description: params.description,
+          userId: params.userId,
+          dealershipId: params.dealershipId,
+          hourlyTokenLimit,
+          dailyTokenLimit,
+          dailyCostLimit,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
 
       logger.info(`Created sandbox: ${sandbox.id}`, {
         sandboxId: sandbox.id,
         name: params.name,
         userId: params.userId,
-        dealershipId: params.dealershipId
+        dealershipId: params.dealershipId,
       });
 
       // Publish sandbox creation event
@@ -432,15 +463,15 @@ export class OrchestratorService {
         name: params.name,
         userId: params.userId,
         dealershipId: params.dealershipId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return sandbox;
     } catch (error) {
-      logger.error('Error creating sandbox', {
+      logger.error("Error creating sandbox", {
         error: (error as Error).message,
         stack: (error as Error).stack,
-        params
+        params,
       });
       throw error;
     }
@@ -452,10 +483,7 @@ export class OrchestratorService {
   public async getSandbox(sandboxId: number): Promise<any> {
     try {
       const sandbox = await db.query.sandboxes.findFirst({
-        where: and(
-          eq(sandboxes.id, sandboxId),
-          eq(sandboxes.isActive, true)
-        )
+        where: and(eq(sandboxes.id, sandboxId), eq(sandboxes.isActive, true)),
       });
 
       if (!sandbox) {
@@ -467,9 +495,9 @@ export class OrchestratorService {
       if (error instanceof SandboxNotFoundError) {
         throw error;
       }
-      logger.error('Error getting sandbox', {
+      logger.error("Error getting sandbox", {
         error: (error as Error).message,
-        sandboxId
+        sandboxId,
       });
       throw new Error(`Failed to get sandbox: ${(error as Error).message}`);
     }
@@ -490,25 +518,28 @@ export class OrchestratorService {
       const sandbox = await this.getSandbox(params.sandboxId);
 
       // Generate session ID
-      const sessionId = `sess_${uuidv4().replace(/-/g, '')}`;
+      const sessionId = `sess_${uuidv4().replace(/-/g, "")}`;
 
       // Insert session into database
-      const [session] = await db.insert(sandboxSessions).values({
-        sandboxId: params.sandboxId,
-        sessionId,
-        userId: params.userId,
-        dealershipId: params.dealershipId,
-        clientId: params.clientId,
-        metadata: params.metadata || {},
-        isActive: true,
-        startedAt: new Date(),
-        lastActivityAt: new Date()
-      }).returning();
+      const [session] = await db
+        .insert(sandboxSessions)
+        .values({
+          sandboxId: params.sandboxId,
+          sessionId,
+          userId: params.userId,
+          dealershipId: params.dealershipId,
+          clientId: params.clientId,
+          metadata: params.metadata || {},
+          isActive: true,
+          startedAt: new Date(),
+          lastActivityAt: new Date(),
+        })
+        .returning();
 
       logger.info(`Created sandbox session: ${sessionId}`, {
         sandboxId: params.sandboxId,
         sessionId,
-        userId: params.userId
+        userId: params.userId,
       });
 
       // Publish session creation event
@@ -517,15 +548,15 @@ export class OrchestratorService {
         sessionId,
         userId: params.userId,
         dealershipId: params.dealershipId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return session;
     } catch (error) {
-      logger.error('Error creating sandbox session', {
+      logger.error("Error creating sandbox session", {
         error: (error as Error).message,
         sandboxId: params.sandboxId,
-        userId: params.userId
+        userId: params.userId,
       });
       throw error;
     }
@@ -539,8 +570,8 @@ export class OrchestratorService {
       const session = await db.query.sandboxSessions.findFirst({
         where: and(
           eq(sandboxSessions.sessionId, sessionId),
-          eq(sandboxSessions.isActive, true)
-        )
+          eq(sandboxSessions.isActive, true),
+        ),
       });
 
       if (!session) {
@@ -552,11 +583,13 @@ export class OrchestratorService {
       if (error instanceof SessionNotFoundError) {
         throw error;
       }
-      logger.error('Error getting sandbox session', {
+      logger.error("Error getting sandbox session", {
         error: (error as Error).message,
-        sessionId
+        sessionId,
       });
-      throw new Error(`Failed to get sandbox session: ${(error as Error).message}`);
+      throw new Error(
+        `Failed to get sandbox session: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -565,13 +598,14 @@ export class OrchestratorService {
    */
   public async updateSessionActivity(sessionId: string): Promise<void> {
     try {
-      await db.update(sandboxSessions)
+      await db
+        .update(sandboxSessions)
         .set({ lastActivityAt: new Date() })
         .where(eq(sandboxSessions.sessionId, sessionId));
     } catch (error) {
-      logger.error('Error updating session activity', {
+      logger.error("Error updating session activity", {
         error: (error as Error).message,
-        sessionId
+        sessionId,
       });
     }
   }
@@ -599,18 +633,18 @@ export class OrchestratorService {
         .where(
           and(
             eq(tokenUsageLogs.sandboxId, sandboxId),
-            gte(tokenUsageLogs.timestamp, hourAgo)
-          )
+            gte(tokenUsageLogs.timestamp, hourAgo),
+          ),
         );
 
       const hourlyTotal = hourlyUsage[0]?.total || 0;
       if (hourlyTotal + estimatedTokens > sandbox.hourlyTokenLimit) {
-        logger.warn('Hourly token limit exceeded', {
+        logger.warn("Hourly token limit exceeded", {
           sandboxId,
           sessionId,
           hourlyUsage: hourlyTotal,
           hourlyLimit: sandbox.hourlyTokenLimit,
-          estimatedTokens
+          estimatedTokens,
         });
         return false;
       }
@@ -623,28 +657,28 @@ export class OrchestratorService {
         .where(
           and(
             eq(tokenUsageLogs.sandboxId, sandboxId),
-            gte(tokenUsageLogs.timestamp, dayAgo)
-          )
+            gte(tokenUsageLogs.timestamp, dayAgo),
+          ),
         );
 
       const dailyTotal = dailyUsage[0]?.total || 0;
       if (dailyTotal + estimatedTokens > sandbox.dailyTokenLimit) {
-        logger.warn('Daily token limit exceeded', {
+        logger.warn("Daily token limit exceeded", {
           sandboxId,
           sessionId,
           dailyUsage: dailyTotal,
           dailyLimit: sandbox.dailyTokenLimit,
-          estimatedTokens
+          estimatedTokens,
         });
         return false;
       }
 
       return true;
     } catch (error) {
-      logger.error('Error checking rate limits', {
+      logger.error("Error checking rate limits", {
         error: (error as Error).message,
         sandboxId: params.sandboxId,
-        sessionId: params.sessionId
+        sessionId: params.sessionId,
       });
       // Default to allowing the request in case of errors
       return true;
@@ -662,7 +696,8 @@ export class OrchestratorService {
     metadata?: Record<string, any>;
   }): Promise<void> {
     try {
-      const { sandboxId, sessionId, tokenCount, operationType, metadata } = params;
+      const { sandboxId, sessionId, tokenCount, operationType, metadata } =
+        params;
 
       // Insert token usage log
       await db.insert(tokenUsageLogs).values({
@@ -671,17 +706,17 @@ export class OrchestratorService {
         tokenCount,
         operationType,
         metadata: metadata || {},
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
       // Update session activity
       await this.updateSessionActivity(sessionId);
     } catch (error) {
-      logger.error('Error logging token usage', {
+      logger.error("Error logging token usage", {
         error: (error as Error).message,
         sandboxId: params.sandboxId,
         sessionId: params.sessionId,
-        tokenCount: params.tokenCount
+        tokenCount: params.tokenCount,
       });
     }
   }
@@ -703,7 +738,13 @@ export class OrchestratorService {
     let startTime = Date.now();
 
     try {
-      const { sandboxId, sessionId, toolName, parameters, estimatedTokens = 500 } = params;
+      const {
+        sandboxId,
+        sessionId,
+        toolName,
+        parameters,
+        estimatedTokens = 500,
+      } = params;
 
       // Check if sandbox and session exist
       const sandbox = await this.getSandbox(sandboxId);
@@ -713,7 +754,7 @@ export class OrchestratorService {
       const withinLimits = await this.checkRateLimits({
         sandboxId,
         sessionId,
-        estimatedTokens
+        estimatedTokens,
       });
 
       if (!withinLimits) {
@@ -724,15 +765,15 @@ export class OrchestratorService {
           .where(
             and(
               eq(tokenUsageLogs.sandboxId, sandboxId),
-              gte(tokenUsageLogs.timestamp, hourAgo)
-            )
+              gte(tokenUsageLogs.timestamp, hourAgo),
+            ),
           );
 
         const hourlyTotal = hourlyUsage[0]?.total || 0;
 
         // Send rate limit exceeded event to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'rate_limit_exceeded',
+          type: "rate_limit_exceeded",
           data: {
             sandboxId,
             sessionId,
@@ -740,8 +781,8 @@ export class OrchestratorService {
             limit: sandbox.hourlyTokenLimit,
             usage: hourlyTotal,
             estimatedTokens,
-            timestamp: new Date().toISOString()
-          }
+            timestamp: new Date().toISOString(),
+          },
         });
 
         // Publish rate limit event
@@ -753,29 +794,29 @@ export class OrchestratorService {
           usage: hourlyTotal,
           estimatedTokens,
           timestamp: new Date().toISOString(),
-          correlationId
+          correlationId,
         });
 
         // Add to replayable logs
         this.addToReplayableLogs(correlationId, {
-          type: 'error',
-          error: 'rate_limit_exceeded',
+          type: "error",
+          error: "rate_limit_exceeded",
           data: {
             sandboxId,
             sessionId,
             toolName,
             limit: sandbox.hourlyTokenLimit,
             usage: hourlyTotal,
-            estimatedTokens
+            estimatedTokens,
           },
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
 
         throw new RateLimitExceededError(
-          'Rate limit exceeded',
+          "Rate limit exceeded",
           sandbox.hourlyTokenLimit,
           hourlyTotal,
-          'hourly'
+          "hourly",
         );
       }
 
@@ -785,26 +826,26 @@ export class OrchestratorService {
         sessionId,
         toolName,
         correlationId,
-        estimatedTokens
+        estimatedTokens,
       });
 
       // Add to replayable logs
       this.addToReplayableLogs(correlationId, {
-        type: 'tool_start',
+        type: "tool_start",
         tool: toolName,
         parameters,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Send tool execution start event to WebSocket
       this.webSocketService.sendToSession(sessionId, {
-        type: 'tool_start',
+        type: "tool_start",
         data: {
           tool: toolName,
           parameters,
           timestamp: new Date().toISOString(),
-          correlationId
-        }
+          correlationId,
+        },
       });
 
       // Publish tool execution started event
@@ -816,14 +857,14 @@ export class OrchestratorService {
         timestamp: new Date().toISOString(),
         correlationId,
         userId: params.userId,
-        dealershipId: params.dealershipId
+        dealershipId: params.dealershipId,
       });
 
       // Execute the tool based on its type
       let result;
 
       // Check if it's a Watchdog analytics tool
-      if (toolName === 'watchdog_analysis') {
+      if (toolName === "watchdog_analysis") {
         // Execute analytics query with circuit breaker
         result = await this.analyticsCircuitBreaker.execute(async () => {
           return await analyticsClient.answerQuestion(
@@ -832,25 +873,25 @@ export class OrchestratorService {
             {
               correlationId,
               sandboxId,
-              sessionId
-            }
+              sessionId,
+            },
           );
         });
 
         // Stream results to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'tool_stream',
+          type: "tool_stream",
           data: {
             tool: toolName,
-            streamEvent: 'data',
+            streamEvent: "data",
             data: result,
             timestamp: new Date().toISOString(),
-            correlationId
-          }
+            correlationId,
+          },
         });
       }
       // Check if it's a Google Ads tool
-      else if (toolName === 'google_ads.createCampaign') {
+      else if (toolName === "google_ads.createCampaign") {
         // Execute Google Ads operation with circuit breaker
         result = await this.adsCircuitBreaker.execute(async () => {
           // Queue the task in the ads automation worker
@@ -864,28 +905,28 @@ export class OrchestratorService {
             campaignName: parameters.campaignName,
             budget: parameters.budget,
             bidStrategy: parameters.bidStrategy,
-            isDryRun: parameters.isDryRun || false
+            isDryRun: parameters.isDryRun || false,
           });
 
           // Return initial response with task ID
           return {
             success: true,
             taskId,
-            status: 'queued',
-            message: 'Campaign creation task queued successfully'
+            status: "queued",
+            message: "Campaign creation task queued successfully",
           };
         });
 
         // Stream initial response to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'tool_stream',
+          type: "tool_stream",
           data: {
             tool: toolName,
-            streamEvent: 'data',
+            streamEvent: "data",
             data: result,
             timestamp: new Date().toISOString(),
-            correlationId
-          }
+            correlationId,
+          },
         });
       }
       // For other tools, use the tool registry
@@ -899,24 +940,24 @@ export class OrchestratorService {
           onProgress: (data) => {
             // Stream progress events to WebSocket
             this.webSocketService.sendToSession(sessionId, {
-              type: 'tool_stream',
+              type: "tool_stream",
               data: {
                 tool: toolName,
-                streamEvent: 'progress',
+                streamEvent: "progress",
                 data,
                 timestamp: new Date().toISOString(),
-                correlationId
-              }
+                correlationId,
+              },
             });
 
             // Add to replayable logs
             this.addToReplayableLogs(correlationId, {
-              type: 'tool_progress',
+              type: "tool_progress",
               tool: toolName,
               data,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             });
-          }
+          },
         });
       }
 
@@ -932,31 +973,31 @@ export class OrchestratorService {
         metadata: {
           correlationId,
           parameters,
-          executionTime: Date.now() - startTime
-        }
+          executionTime: Date.now() - startTime,
+        },
       });
 
       // Add to replayable logs
       this.addToReplayableLogs(correlationId, {
-        type: 'tool_complete',
+        type: "tool_complete",
         tool: toolName,
         result,
         tokensUsed,
         executionTime: Date.now() - startTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Send tool execution complete event to WebSocket
       this.webSocketService.sendToSession(sessionId, {
-        type: 'tool_complete',
+        type: "tool_complete",
         data: {
           tool: toolName,
           result,
           tokensUsed,
           executionTime: Date.now() - startTime,
           timestamp: new Date().toISOString(),
-          correlationId
-        }
+          correlationId,
+        },
       });
 
       // Publish tool execution completed event
@@ -970,7 +1011,7 @@ export class OrchestratorService {
         timestamp: new Date().toISOString(),
         correlationId,
         userId: params.userId,
-        dealershipId: params.dealershipId
+        dealershipId: params.dealershipId,
       });
 
       logger.info(`Tool execution completed: ${toolName}`, {
@@ -979,7 +1020,7 @@ export class OrchestratorService {
         toolName,
         correlationId,
         tokensUsed,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       });
 
       return result;
@@ -993,35 +1034,35 @@ export class OrchestratorService {
         sessionId: params.sessionId,
         toolName: params.toolName,
         correlationId,
-        executionTime
+        executionTime,
       });
 
       // Add to replayable logs
       this.addToReplayableLogs(correlationId, {
-        type: 'tool_error',
+        type: "tool_error",
         tool: params.toolName,
         error: {
           message: (error as Error).message,
           name: (error as Error).name,
-          stack: (error as Error).stack
+          stack: (error as Error).stack,
         },
         executionTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Send error event to WebSocket
       this.webSocketService.sendToSession(params.sessionId, {
-        type: 'tool_error',
+        type: "tool_error",
         data: {
           tool: params.toolName,
           error: {
             message: (error as Error).message,
-            name: (error as Error).name
+            name: (error as Error).name,
           },
           executionTime,
           timestamp: new Date().toISOString(),
-          correlationId
-        }
+          correlationId,
+        },
       });
 
       // Publish tool execution failed event
@@ -1031,13 +1072,13 @@ export class OrchestratorService {
         toolName: params.toolName,
         error: {
           message: (error as Error).message,
-          name: (error as Error).name
+          name: (error as Error).name,
         },
         executionTime,
         timestamp: new Date().toISOString(),
         correlationId,
         userId: params.userId,
-        dealershipId: params.dealershipId
+        dealershipId: params.dealershipId,
       });
 
       // Rethrow the error
@@ -1075,14 +1116,14 @@ export class OrchestratorService {
           userId: params.userId,
           dealershipId: params.dealershipId,
           status: WorkflowStepStatus.PENDING,
-          startTime: new Date()
+          startTime: new Date(),
         };
 
         // Apply parameters to workflow steps
-        workflow.steps = workflow.steps.map(step => {
+        workflow.steps = workflow.steps.map((step) => {
           // Apply parameters that match step.parameters keys
           const updatedParameters = { ...step.parameters };
-          Object.keys(parameters).forEach(key => {
+          Object.keys(parameters).forEach((key) => {
             if (key in updatedParameters) {
               updatedParameters[key] = parameters[key];
             }
@@ -1103,33 +1144,33 @@ export class OrchestratorService {
 
       // Add workflow start to replayable logs
       this.addToReplayableLogs(correlationId, {
-        type: 'workflow_start',
+        type: "workflow_start",
         workflow: {
           id: workflow.id,
           name: workflow.name,
-          pattern: workflow.pattern
+          pattern: workflow.pattern,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Send workflow started event to WebSocket
       this.webSocketService.sendToSession(sessionId, {
-        type: 'workflow_start',
+        type: "workflow_start",
         data: {
           workflow: {
             id: workflow.id,
             name: workflow.name,
             pattern: workflow.pattern,
-            steps: workflow.steps.map(s => ({
+            steps: workflow.steps.map((s) => ({
               id: s.id,
               name: s.name,
               tool: s.tool,
-              status: s.status
-            }))
+              status: s.status,
+            })),
           },
           timestamp: new Date().toISOString(),
-          correlationId
-        }
+          correlationId,
+        },
       });
 
       // Publish workflow started event
@@ -1139,11 +1180,11 @@ export class OrchestratorService {
         pattern: workflow.pattern,
         sandboxId,
         sessionId,
-        tools: workflow.steps.map(s => s.tool),
+        tools: workflow.steps.map((s) => s.tool),
         timestamp: new Date().toISOString(),
         correlationId,
         userId: params.userId,
-        dealershipId: params.dealershipId
+        dealershipId: params.dealershipId,
       });
 
       // Update workflow status
@@ -1174,38 +1215,38 @@ export class OrchestratorService {
 
       // Add workflow completion to replayable logs
       this.addToReplayableLogs(correlationId, {
-        type: 'workflow_complete',
+        type: "workflow_complete",
         workflow: {
           id: workflow.id,
           name: workflow.name,
-          pattern: workflow.pattern
+          pattern: workflow.pattern,
         },
         result,
         executionTime: Date.now() - startTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Send workflow completed event to WebSocket
       this.webSocketService.sendToSession(sessionId, {
-        type: 'workflow_complete',
+        type: "workflow_complete",
         data: {
           workflow: {
             id: workflow.id,
             name: workflow.name,
             pattern: workflow.pattern,
-            steps: workflow.steps.map(s => ({
+            steps: workflow.steps.map((s) => ({
               id: s.id,
               name: s.name,
               tool: s.tool,
               status: s.status,
-              result: s.result
-            }))
+              result: s.result,
+            })),
           },
           result,
           executionTime: Date.now() - startTime,
           timestamp: new Date().toISOString(),
-          correlationId
-        }
+          correlationId,
+        },
       });
 
       // Publish workflow completed event
@@ -1215,18 +1256,18 @@ export class OrchestratorService {
         pattern: workflow.pattern,
         sandboxId,
         sessionId,
-        tools: workflow.steps.map(s => s.tool),
-        results: workflow.steps.map(s => ({
+        tools: workflow.steps.map((s) => s.tool),
+        results: workflow.steps.map((s) => ({
           stepId: s.id,
           tool: s.tool,
           status: s.status,
-          result: s.result
+          result: s.result,
         })),
         executionTime: Date.now() - startTime,
         timestamp: new Date().toISOString(),
         correlationId,
         userId: params.userId,
-        dealershipId: params.dealershipId
+        dealershipId: params.dealershipId,
       });
 
       logger.info(`Workflow execution completed: ${workflow.name}`, {
@@ -1234,22 +1275,22 @@ export class OrchestratorService {
         sandboxId,
         sessionId,
         correlationId,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       });
 
       return {
         workflowId: workflow.id,
         name: workflow.name,
         status: workflow.status,
-        steps: workflow.steps.map(s => ({
+        steps: workflow.steps.map((s) => ({
           id: s.id,
           name: s.name,
           tool: s.tool,
           status: s.status,
-          result: s.result
+          result: s.result,
         })),
         result,
-        executionTime: Date.now() - startTime
+        executionTime: Date.now() - startTime,
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
@@ -1261,35 +1302,35 @@ export class OrchestratorService {
         sessionId: params.sessionId,
         workflowId: params.workflowId,
         correlationId,
-        executionTime
+        executionTime,
       });
 
       // Add to replayable logs
       this.addToReplayableLogs(correlationId, {
-        type: 'workflow_error',
+        type: "workflow_error",
         workflowId: params.workflowId,
         error: {
           message: (error as Error).message,
           name: (error as Error).name,
-          stack: (error as Error).stack
+          stack: (error as Error).stack,
         },
         executionTime,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Send error event to WebSocket
       this.webSocketService.sendToSession(params.sessionId, {
-        type: 'workflow_error',
+        type: "workflow_error",
         data: {
           workflowId: params.workflowId,
           error: {
             message: (error as Error).message,
-            name: (error as Error).name
+            name: (error as Error).name,
           },
           executionTime,
           timestamp: new Date().toISOString(),
-          correlationId
-        }
+          correlationId,
+        },
       });
 
       // Publish workflow failed event
@@ -1299,13 +1340,13 @@ export class OrchestratorService {
         sessionId: params.sessionId,
         error: {
           message: (error as Error).message,
-          name: (error as Error).name
+          name: (error as Error).name,
         },
         executionTime,
         timestamp: new Date().toISOString(),
         correlationId,
         userId: params.userId,
-        dealershipId: params.dealershipId
+        dealershipId: params.dealershipId,
       });
 
       // Rethrow the error
@@ -1316,7 +1357,10 @@ export class OrchestratorService {
   /**
    * Execute a sequential workflow
    */
-  private async executeSequentialWorkflow(workflow: Workflow, sessionId: string): Promise<any> {
+  private async executeSequentialWorkflow(
+    workflow: Workflow,
+    sessionId: string,
+  ): Promise<any> {
     const results = [];
 
     for (let i = 0; i < workflow.steps.length; i++) {
@@ -1330,7 +1374,7 @@ export class OrchestratorService {
 
       // Send step started event to WebSocket
       this.webSocketService.sendToSession(sessionId, {
-        type: 'workflow_step_start',
+        type: "workflow_step_start",
         data: {
           workflowId: workflow.id,
           stepId: step.id,
@@ -1338,8 +1382,8 @@ export class OrchestratorService {
           tool: step.tool,
           parameters: step.parameters,
           timestamp: new Date().toISOString(),
-          correlationId: workflow.correlationId
-        }
+          correlationId: workflow.correlationId,
+        },
       });
 
       try {
@@ -1351,7 +1395,7 @@ export class OrchestratorService {
           parameters: step.parameters,
           userId: workflow.userId,
           dealershipId: workflow.dealershipId,
-          correlationId: workflow.correlationId
+          correlationId: workflow.correlationId,
         });
 
         // Update step with result
@@ -1362,7 +1406,7 @@ export class OrchestratorService {
 
         // Send step completed event to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'workflow_step_complete',
+          type: "workflow_step_complete",
           data: {
             workflowId: workflow.id,
             stepId: step.id,
@@ -1370,19 +1414,22 @@ export class OrchestratorService {
             tool: step.tool,
             result,
             timestamp: new Date().toISOString(),
-            correlationId: workflow.correlationId
-          }
+            correlationId: workflow.correlationId,
+          },
         });
 
         results.push(result);
 
         // If this is a checkpoint step and it failed, stop the workflow
         if (step.checkpoint && !this.isStepSuccessful(step)) {
-          logger.warn(`Checkpoint step failed, stopping workflow: ${workflow.id}`, {
-            workflowId: workflow.id,
-            stepId: step.id,
-            stepName: step.name
-          });
+          logger.warn(
+            `Checkpoint step failed, stopping workflow: ${workflow.id}`,
+            {
+              workflowId: workflow.id,
+              stepId: step.id,
+              stepName: step.name,
+            },
+          );
           break;
         }
       } catch (error) {
@@ -1390,14 +1437,14 @@ export class OrchestratorService {
         step.status = WorkflowStepStatus.FAILED;
         step.error = {
           message: (error as Error).message,
-          name: (error as Error).name
+          name: (error as Error).name,
         };
         step.endTime = new Date();
         this.activeWorkflows.set(workflow.id, { ...workflow });
 
         // Send step failed event to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'workflow_step_error',
+          type: "workflow_step_error",
           data: {
             workflowId: workflow.id,
             stepId: step.id,
@@ -1405,11 +1452,11 @@ export class OrchestratorService {
             tool: step.tool,
             error: {
               message: (error as Error).message,
-              name: (error as Error).name
+              name: (error as Error).name,
             },
             timestamp: new Date().toISOString(),
-            correlationId: workflow.correlationId
-          }
+            correlationId: workflow.correlationId,
+          },
         });
 
         // If rollback is enabled, perform rollback
@@ -1421,24 +1468,31 @@ export class OrchestratorService {
         throw new WorkflowExecutionError(
           `Step ${step.name} failed: ${(error as Error).message}`,
           step.id,
-          error
+          error,
         );
       }
     }
 
     return {
       success: true,
-      results
+      results,
     };
   }
 
   /**
    * Execute a parallel workflow
    */
-  private async executeParallelWorkflow(workflow: Workflow, sessionId: string): Promise<any> {
+  private async executeParallelWorkflow(
+    workflow: Workflow,
+    sessionId: string,
+  ): Promise<any> {
     // Group steps by dependencies
-    const independentSteps = workflow.steps.filter(step => !step.dependsOn || step.dependsOn.length === 0);
-    const dependentSteps = workflow.steps.filter(step => step.dependsOn && step.dependsOn.length > 0);
+    const independentSteps = workflow.steps.filter(
+      (step) => !step.dependsOn || step.dependsOn.length === 0,
+    );
+    const dependentSteps = workflow.steps.filter(
+      (step) => step.dependsOn && step.dependsOn.length > 0,
+    );
 
     // Execute independent steps in parallel
     const independentPromises = independentSteps.map(async (step, index) => {
@@ -1449,7 +1503,7 @@ export class OrchestratorService {
 
       // Send step started event to WebSocket
       this.webSocketService.sendToSession(sessionId, {
-        type: 'workflow_step_start',
+        type: "workflow_step_start",
         data: {
           workflowId: workflow.id,
           stepId: step.id,
@@ -1457,8 +1511,8 @@ export class OrchestratorService {
           tool: step.tool,
           parameters: step.parameters,
           timestamp: new Date().toISOString(),
-          correlationId: workflow.correlationId
-        }
+          correlationId: workflow.correlationId,
+        },
       });
 
       try {
@@ -1470,7 +1524,7 @@ export class OrchestratorService {
           parameters: step.parameters,
           userId: workflow.userId,
           dealershipId: workflow.dealershipId,
-          correlationId: workflow.correlationId
+          correlationId: workflow.correlationId,
         });
 
         // Update step with result
@@ -1481,7 +1535,7 @@ export class OrchestratorService {
 
         // Send step completed event to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'workflow_step_complete',
+          type: "workflow_step_complete",
           data: {
             workflowId: workflow.id,
             stepId: step.id,
@@ -1489,8 +1543,8 @@ export class OrchestratorService {
             tool: step.tool,
             result,
             timestamp: new Date().toISOString(),
-            correlationId: workflow.correlationId
-          }
+            correlationId: workflow.correlationId,
+          },
         });
 
         return { stepId: step.id, result };
@@ -1499,14 +1553,14 @@ export class OrchestratorService {
         step.status = WorkflowStepStatus.FAILED;
         step.error = {
           message: (error as Error).message,
-          name: (error as Error).name
+          name: (error as Error).name,
         };
         step.endTime = new Date();
         this.activeWorkflows.set(workflow.id, { ...workflow });
 
         // Send step failed event to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'workflow_step_error',
+          type: "workflow_step_error",
           data: {
             workflowId: workflow.id,
             stepId: step.id,
@@ -1514,11 +1568,11 @@ export class OrchestratorService {
             tool: step.tool,
             error: {
               message: (error as Error).message,
-              name: (error as Error).name
+              name: (error as Error).name,
             },
             timestamp: new Date().toISOString(),
-            correlationId: workflow.correlationId
-          }
+            correlationId: workflow.correlationId,
+          },
         });
 
         // If this is a checkpoint step, throw error to stop workflow
@@ -1526,7 +1580,7 @@ export class OrchestratorService {
           throw new WorkflowExecutionError(
             `Checkpoint step ${step.name} failed: ${(error as Error).message}`,
             step.id,
-            error
+            error,
           );
         }
 
@@ -1539,7 +1593,7 @@ export class OrchestratorService {
 
     // Check if any checkpoint steps failed
     const checkpointFailed = independentSteps.some(
-      step => step.checkpoint && step.status === WorkflowStepStatus.FAILED
+      (step) => step.checkpoint && step.status === WorkflowStepStatus.FAILED,
     );
 
     if (checkpointFailed) {
@@ -1549,9 +1603,9 @@ export class OrchestratorService {
       }
 
       throw new WorkflowExecutionError(
-        'Workflow execution failed: checkpoint step failed',
-        'checkpoint',
-        { workflow }
+        "Workflow execution failed: checkpoint step failed",
+        "checkpoint",
+        { workflow },
       );
     }
 
@@ -1560,21 +1614,21 @@ export class OrchestratorService {
       // Create a map of step IDs to results
       const stepResults = new Map<string, any>();
       independentResults.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
+        if (result.status === "fulfilled") {
           stepResults.set(result.value.stepId, result.value.result);
         }
       });
 
       // Execute dependent steps that have all dependencies satisfied
       const dependentPromises = dependentSteps
-        .filter(step => {
+        .filter((step) => {
           // Check if all dependencies are completed successfully
-          return step.dependsOn!.every(depId => {
-            const depStep = workflow.steps.find(s => s.id === depId);
+          return step.dependsOn!.every((depId) => {
+            const depStep = workflow.steps.find((s) => s.id === depId);
             return depStep && depStep.status === WorkflowStepStatus.COMPLETED;
           });
         })
-        .map(async step => {
+        .map(async (step) => {
           // Update step status
           step.status = WorkflowStepStatus.RUNNING;
           step.startTime = new Date();
@@ -1582,7 +1636,7 @@ export class OrchestratorService {
 
           // Send step started event to WebSocket
           this.webSocketService.sendToSession(sessionId, {
-            type: 'workflow_step_start',
+            type: "workflow_step_start",
             data: {
               workflowId: workflow.id,
               stepId: step.id,
@@ -1590,14 +1644,14 @@ export class OrchestratorService {
               tool: step.tool,
               parameters: step.parameters,
               timestamp: new Date().toISOString(),
-              correlationId: workflow.correlationId
-            }
+              correlationId: workflow.correlationId,
+            },
           });
 
           try {
             // Prepare parameters with dependency results
             const enhancedParams = { ...step.parameters };
-            step.dependsOn!.forEach(depId => {
+            step.dependsOn!.forEach((depId) => {
               if (stepResults.has(depId)) {
                 // Add dependency results to parameters
                 enhancedParams[`dep_${depId}`] = stepResults.get(depId);
@@ -1612,7 +1666,7 @@ export class OrchestratorService {
               parameters: enhancedParams,
               userId: workflow.userId,
               dealershipId: workflow.dealershipId,
-              correlationId: workflow.correlationId
+              correlationId: workflow.correlationId,
             });
 
             // Update step with result
@@ -1623,7 +1677,7 @@ export class OrchestratorService {
 
             // Send step completed event to WebSocket
             this.webSocketService.sendToSession(sessionId, {
-              type: 'workflow_step_complete',
+              type: "workflow_step_complete",
               data: {
                 workflowId: workflow.id,
                 stepId: step.id,
@@ -1631,8 +1685,8 @@ export class OrchestratorService {
                 tool: step.tool,
                 result,
                 timestamp: new Date().toISOString(),
-                correlationId: workflow.correlationId
-              }
+                correlationId: workflow.correlationId,
+              },
             });
 
             return { stepId: step.id, result };
@@ -1641,14 +1695,14 @@ export class OrchestratorService {
             step.status = WorkflowStepStatus.FAILED;
             step.error = {
               message: (error as Error).message,
-              name: (error as Error).name
+              name: (error as Error).name,
             };
             step.endTime = new Date();
             this.activeWorkflows.set(workflow.id, { ...workflow });
 
             // Send step failed event to WebSocket
             this.webSocketService.sendToSession(sessionId, {
-              type: 'workflow_step_error',
+              type: "workflow_step_error",
               data: {
                 workflowId: workflow.id,
                 stepId: step.id,
@@ -1656,11 +1710,11 @@ export class OrchestratorService {
                 tool: step.tool,
                 error: {
                   message: (error as Error).message,
-                  name: (error as Error).name
+                  name: (error as Error).name,
                 },
                 timestamp: new Date().toISOString(),
-                correlationId: workflow.correlationId
-              }
+                correlationId: workflow.correlationId,
+              },
             });
 
             return { stepId: step.id, error };
@@ -1671,44 +1725,49 @@ export class OrchestratorService {
       const dependentResults = await Promise.allSettled(dependentPromises);
 
       // Add dependent results to the step results map
-      dependentResults.forEach(result => {
-        if (result.status === 'fulfilled') {
+      dependentResults.forEach((result) => {
+        if (result.status === "fulfilled") {
           stepResults.set(result.value.stepId, result.value.result);
         }
       });
 
       // Collect all results
-      const allResults = Array.from(stepResults.entries()).map(([stepId, result]) => {
-        const step = workflow.steps.find(s => s.id === stepId);
-        return {
-          stepId,
-          stepName: step?.name,
-          tool: step?.tool,
-          result
-        };
-      });
+      const allResults = Array.from(stepResults.entries()).map(
+        ([stepId, result]) => {
+          const step = workflow.steps.find((s) => s.id === stepId);
+          return {
+            stepId,
+            stepName: step?.name,
+            tool: step?.tool,
+            result,
+          };
+        },
+      );
 
       return {
         success: true,
-        results: allResults
+        results: allResults,
       };
     }
 
     // Collect results from independent steps
     const results = independentResults
-      .filter(result => result.status === 'fulfilled')
-      .map(result => (result as PromiseFulfilledResult<any>).value);
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => (result as PromiseFulfilledResult<any>).value);
 
     return {
       success: true,
-      results
+      results,
     };
   }
 
   /**
    * Execute a conditional workflow
    */
-  private async executeConditionalWorkflow(workflow: Workflow, sessionId: string): Promise<any> {
+  private async executeConditionalWorkflow(
+    workflow: Workflow,
+    sessionId: string,
+  ): Promise<any> {
     const results = [];
 
     // Execute steps in order, but only if conditions are met
@@ -1719,7 +1778,10 @@ export class OrchestratorService {
       // Check if step has a condition
       if (step.condition && i > 0) {
         // Evaluate condition against previous step results
-        const shouldExecute = await this.evaluateCondition(step.condition, workflow);
+        const shouldExecute = await this.evaluateCondition(
+          step.condition,
+          workflow,
+        );
 
         if (!shouldExecute) {
           // Skip this step
@@ -1728,7 +1790,7 @@ export class OrchestratorService {
 
           // Send step skipped event to WebSocket
           this.webSocketService.sendToSession(sessionId, {
-            type: 'workflow_step_skip',
+            type: "workflow_step_skip",
             data: {
               workflowId: workflow.id,
               stepId: step.id,
@@ -1736,8 +1798,8 @@ export class OrchestratorService {
               tool: step.tool,
               condition: step.condition,
               timestamp: new Date().toISOString(),
-              correlationId: workflow.correlationId
-            }
+              correlationId: workflow.correlationId,
+            },
           });
 
           continue;
@@ -1751,7 +1813,7 @@ export class OrchestratorService {
 
       // Send step started event to WebSocket
       this.webSocketService.sendToSession(sessionId, {
-        type: 'workflow_step_start',
+        type: "workflow_step_start",
         data: {
           workflowId: workflow.id,
           stepId: step.id,
@@ -1759,8 +1821,8 @@ export class OrchestratorService {
           tool: step.tool,
           parameters: step.parameters,
           timestamp: new Date().toISOString(),
-          correlationId: workflow.correlationId
-        }
+          correlationId: workflow.correlationId,
+        },
       });
 
       try {
@@ -1772,7 +1834,7 @@ export class OrchestratorService {
           parameters: step.parameters,
           userId: workflow.userId,
           dealershipId: workflow.dealershipId,
-          correlationId: workflow.correlationId
+          correlationId: workflow.correlationId,
         });
 
         // Update step with result
@@ -1783,7 +1845,7 @@ export class OrchestratorService {
 
         // Send step completed event to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'workflow_step_complete',
+          type: "workflow_step_complete",
           data: {
             workflowId: workflow.id,
             stepId: step.id,
@@ -1791,19 +1853,22 @@ export class OrchestratorService {
             tool: step.tool,
             result,
             timestamp: new Date().toISOString(),
-            correlationId: workflow.correlationId
-          }
+            correlationId: workflow.correlationId,
+          },
         });
 
         results.push(result);
 
         // If this is a checkpoint step and it failed, stop the workflow
         if (step.checkpoint && !this.isStepSuccessful(step)) {
-          logger.warn(`Checkpoint step failed, stopping workflow: ${workflow.id}`, {
-            workflowId: workflow.id,
-            stepId: step.id,
-            stepName: step.name
-          });
+          logger.warn(
+            `Checkpoint step failed, stopping workflow: ${workflow.id}`,
+            {
+              workflowId: workflow.id,
+              stepId: step.id,
+              stepName: step.name,
+            },
+          );
           break;
         }
       } catch (error) {
@@ -1811,14 +1876,14 @@ export class OrchestratorService {
         step.status = WorkflowStepStatus.FAILED;
         step.error = {
           message: (error as Error).message,
-          name: (error as Error).name
+          name: (error as Error).name,
         };
         step.endTime = new Date();
         this.activeWorkflows.set(workflow.id, { ...workflow });
 
         // Send step failed event to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'workflow_step_error',
+          type: "workflow_step_error",
           data: {
             workflowId: workflow.id,
             stepId: step.id,
@@ -1826,11 +1891,11 @@ export class OrchestratorService {
             tool: step.tool,
             error: {
               message: (error as Error).message,
-              name: (error as Error).name
+              name: (error as Error).name,
             },
             timestamp: new Date().toISOString(),
-            correlationId: workflow.correlationId
-          }
+            correlationId: workflow.correlationId,
+          },
         });
 
         // If rollback is enabled, perform rollback
@@ -1842,21 +1907,24 @@ export class OrchestratorService {
         throw new WorkflowExecutionError(
           `Step ${step.name} failed: ${(error as Error).message}`,
           step.id,
-          error
+          error,
         );
       }
     }
 
     return {
       success: true,
-      results
+      results,
     };
   }
 
   /**
    * Evaluate a condition against workflow step results
    */
-  private async evaluateCondition(condition: string, workflow: Workflow): Promise<boolean> {
+  private async evaluateCondition(
+    condition: string,
+    workflow: Workflow,
+  ): Promise<boolean> {
     try {
       // Parse the condition (e.g., "step1.result.metrics.marketing_roi > 3")
       const [stepRef, comparison] = condition.split(/\s*(>|<|>=|<=|==|!=)\s*/);
@@ -1869,8 +1937,8 @@ export class OrchestratorService {
       }
 
       // Extract step ID from the reference
-      const stepId = stepRef.split('.')[0];
-      const step = workflow.steps.find(s => s.id === stepId);
+      const stepId = stepRef.split(".")[0];
+      const step = workflow.steps.find((s) => s.id === stepId);
 
       if (!step || step.status !== WorkflowStepStatus.COMPLETED) {
         logger.error(`Referenced step not found or not completed: ${stepId}`);
@@ -1878,14 +1946,18 @@ export class OrchestratorService {
       }
 
       // Extract the value from the step result using the path
-      const path = stepRef.split('.').slice(1);
+      const path = stepRef.split(".").slice(1);
       let actualValue = step.result;
 
       for (const segment of path) {
-        if (actualValue && typeof actualValue === 'object' && segment in actualValue) {
+        if (
+          actualValue &&
+          typeof actualValue === "object" &&
+          segment in actualValue
+        ) {
           actualValue = actualValue[segment];
         } else {
-          logger.error(`Path not found in step result: ${path.join('.')}`);
+          logger.error(`Path not found in step result: ${path.join(".")}`);
           return false;
         }
       }
@@ -1901,24 +1973,24 @@ export class OrchestratorService {
 
       // Perform the comparison
       switch (operator) {
-        case '>':
+        case ">":
           return actualValue > comparisonValue;
-        case '<':
+        case "<":
           return actualValue < comparisonValue;
-        case '>=':
+        case ">=":
           return actualValue >= comparisonValue;
-        case '<=':
+        case "<=":
           return actualValue <= comparisonValue;
-        case '==':
+        case "==":
           return actualValue == comparisonValue;
-        case '!=':
+        case "!=":
           return actualValue != comparisonValue;
         default:
           return false;
       }
     } catch (error) {
       logger.error(`Error evaluating condition: ${condition}`, {
-        error: (error as Error).message
+        error: (error as Error).message,
       });
       return false;
     }
@@ -1927,27 +1999,32 @@ export class OrchestratorService {
   /**
    * Roll back a workflow to a previous state
    */
-  private async rollbackWorkflow(workflow: Workflow, failedStepIndex: number, sessionId: string): Promise<void> {
+  private async rollbackWorkflow(
+    workflow: Workflow,
+    failedStepIndex: number,
+    sessionId: string,
+  ): Promise<void> {
     logger.info(`Rolling back workflow: ${workflow.id}`, {
       workflowId: workflow.id,
-      failedStepIndex
+      failedStepIndex,
     });
 
     // Send rollback started event to WebSocket
     this.webSocketService.sendToSession(sessionId, {
-      type: 'workflow_rollback_start',
+      type: "workflow_rollback_start",
       data: {
         workflowId: workflow.id,
         timestamp: new Date().toISOString(),
-        correlationId: workflow.correlationId
-      }
+        correlationId: workflow.correlationId,
+      },
     });
 
     // Identify steps that need rollback (completed steps up to the failed step)
     const stepsToRollback = workflow.steps
-      .filter((step, index) =>
-        index < failedStepIndex &&
-        step.status === WorkflowStepStatus.COMPLETED
+      .filter(
+        (step, index) =>
+          index < failedStepIndex &&
+          step.status === WorkflowStepStatus.COMPLETED,
       )
       .reverse(); // Roll back in reverse order
 
@@ -1960,19 +2037,19 @@ export class OrchestratorService {
         logger.info(`Rolling back step: ${step.id}`, {
           workflowId: workflow.id,
           stepId: step.id,
-          stepName: step.name
+          stepName: step.name,
         });
 
         // Send step rollback event to WebSocket
         this.webSocketService.sendToSession(sessionId, {
-          type: 'workflow_step_rollback',
+          type: "workflow_step_rollback",
           data: {
             workflowId: workflow.id,
             stepId: step.id,
             stepName: step.name,
             timestamp: new Date().toISOString(),
-            correlationId: workflow.correlationId
-          }
+            correlationId: workflow.correlationId,
+          },
         });
 
         // Perform actual rollback action
@@ -1982,34 +2059,38 @@ export class OrchestratorService {
         logger.error(`Error rolling back step: ${step.id}`, {
           error: (error as Error).message,
           workflowId: workflow.id,
-          stepId: step.id
+          stepId: step.id,
         });
       }
     }
 
     // Send rollback completed event to WebSocket
     this.webSocketService.sendToSession(sessionId, {
-      type: 'workflow_rollback_complete',
+      type: "workflow_rollback_complete",
       data: {
         workflowId: workflow.id,
         timestamp: new Date().toISOString(),
-        correlationId: workflow.correlationId
-      }
+        correlationId: workflow.correlationId,
+      },
     });
   }
 
   /**
    * Update a workflow with task result from event
    */
-  private async updateWorkflowWithTaskResult(workflowId: string, event: any): Promise<void> {
+  private async updateWorkflowWithTaskResult(
+    workflowId: string,
+    event: any,
+  ): Promise<void> {
     try {
       const workflow = this.activeWorkflows.get(workflowId);
       if (!workflow) return;
 
       // Find the step that corresponds to this task
-      const stepIndex = workflow.steps.findIndex(step =>
-        step.tool === event.taskType &&
-        step.status === WorkflowStepStatus.RUNNING
+      const stepIndex = workflow.steps.findIndex(
+        (step) =>
+          step.tool === event.taskType &&
+          step.status === WorkflowStepStatus.RUNNING,
       );
 
       if (stepIndex === -1) return;
@@ -2032,7 +2113,10 @@ export class OrchestratorService {
 
       // Send step update to WebSocket
       this.webSocketService.sendToSession(workflow.sandboxId.toString(), {
-        type: event.type === EventType.TASK_COMPLETED ? 'workflow_step_complete' : 'workflow_step_error',
+        type:
+          event.type === EventType.TASK_COMPLETED
+            ? "workflow_step_complete"
+            : "workflow_step_error",
         data: {
           workflowId,
           stepId: step.id,
@@ -2041,14 +2125,14 @@ export class OrchestratorService {
           result: step.result,
           error: step.error,
           timestamp: new Date().toISOString(),
-          correlationId: workflow.correlationId
-        }
+          correlationId: workflow.correlationId,
+        },
       });
     } catch (error) {
       logger.error(`Error updating workflow with task result: ${workflowId}`, {
         error: (error as Error).message,
         workflowId,
-        eventType: event.type
+        eventType: event.type,
       });
     }
   }
@@ -2061,7 +2145,7 @@ export class OrchestratorService {
 
     // Check if result indicates success
     // This would depend on the specific tool and result format
-    if (step.result && typeof step.result === 'object') {
+    if (step.result && typeof step.result === "object") {
       return step.result.success === true;
     }
 
@@ -2102,13 +2186,13 @@ export class OrchestratorService {
         where: eq(toolsTable.isActive, true),
         with: {
           agentTools: {
-            where: eq(agentTools.sandboxId, sandboxId)
-          }
-        }
+            where: eq(agentTools.sandboxId, sandboxId),
+          },
+        },
       });
 
       // Transform to include enabled status
-      return tools.map(tool => ({
+      return tools.map((tool) => ({
         id: tool.id,
         name: tool.name,
         description: tool.description,
@@ -2117,12 +2201,12 @@ export class OrchestratorService {
         endpoint: tool.endpoint,
         enabled: tool.agentTools.length > 0,
         inputSchema: tool.inputSchema,
-        outputSchema: tool.outputSchema
+        outputSchema: tool.outputSchema,
       }));
     } catch (error) {
-      logger.error('Error getting available tools', {
+      logger.error("Error getting available tools", {
         error: (error as Error).message,
-        sandboxId
+        sandboxId,
       });
       throw error;
     }
@@ -2143,8 +2227,8 @@ export class OrchestratorService {
       const existing = await db.query.agentTools.findFirst({
         where: and(
           eq(agentTools.sandboxId, sandboxId),
-          eq(agentTools.toolId, toolId)
-        )
+          eq(agentTools.toolId, toolId),
+        ),
       });
 
       if (existing) return;
@@ -2154,19 +2238,19 @@ export class OrchestratorService {
         sandboxId,
         toolId,
         enabledBy: userId,
-        enabledAt: new Date()
+        enabledAt: new Date(),
       });
 
       logger.info(`Tool enabled for sandbox: ${toolId}`, {
         sandboxId,
         toolId,
-        userId
+        userId,
       });
     } catch (error) {
-      logger.error('Error enabling tool', {
+      logger.error("Error enabling tool", {
         error: (error as Error).message,
         sandboxId: params.sandboxId,
-        toolId: params.toolId
+        toolId: params.toolId,
       });
       throw error;
     }
@@ -2183,23 +2267,24 @@ export class OrchestratorService {
       const { sandboxId, toolId } = params;
 
       // Disable tool
-      await db.delete(agentTools)
+      await db
+        .delete(agentTools)
         .where(
           and(
             eq(agentTools.sandboxId, sandboxId),
-            eq(agentTools.toolId, toolId)
-          )
+            eq(agentTools.toolId, toolId),
+          ),
         );
 
       logger.info(`Tool disabled for sandbox: ${toolId}`, {
         sandboxId,
-        toolId
+        toolId,
       });
     } catch (error) {
-      logger.error('Error disabling tool', {
+      logger.error("Error disabling tool", {
         error: (error as Error).message,
         sandboxId: params.sandboxId,
-        toolId: params.toolId
+        toolId: params.toolId,
       });
       throw error;
     }
@@ -2224,8 +2309,8 @@ export class OrchestratorService {
         .where(
           and(
             eq(tokenUsageLogs.sandboxId, sandboxId),
-            gte(tokenUsageLogs.timestamp, hourAgo)
-          )
+            gte(tokenUsageLogs.timestamp, hourAgo),
+          ),
         );
 
       // Get daily usage
@@ -2236,15 +2321,15 @@ export class OrchestratorService {
         .where(
           and(
             eq(tokenUsageLogs.sandboxId, sandboxId),
-            gte(tokenUsageLogs.timestamp, dayAgo)
-          )
+            gte(tokenUsageLogs.timestamp, dayAgo),
+          ),
         );
 
       // Get usage by operation type
       const usageByType = await db
         .select({
           operationType: tokenUsageLogs.operationType,
-          total: sum(tokenUsageLogs.tokenCount)
+          total: sum(tokenUsageLogs.tokenCount),
         })
         .from(tokenUsageLogs)
         .where(eq(tokenUsageLogs.sandboxId, sandboxId))
@@ -2257,8 +2342,8 @@ export class OrchestratorService {
         .where(
           and(
             eq(sandboxSessions.sandboxId, sandboxId),
-            eq(sandboxSessions.isActive, true)
-          )
+            eq(sandboxSessions.isActive, true),
+          ),
         );
 
       // Get sandbox details
@@ -2272,18 +2357,18 @@ export class OrchestratorService {
         dailyTokens: dailyUsage[0]?.total || 0,
         hourlyLimit: sandbox.hourlyTokenLimit,
         dailyLimit: sandbox.dailyTokenLimit,
-        usageByType: usageByType.map(item => ({
+        usageByType: usageByType.map((item) => ({
           operationType: item.operationType,
-          tokens: item.total
+          tokens: item.total,
         })),
         activeSessions: activeSessions[0]?.count || 0,
         isActive: sandbox.isActive,
-        createdAt: sandbox.createdAt
+        createdAt: sandbox.createdAt,
       };
     } catch (error) {
-      logger.error('Error getting sandbox usage', {
+      logger.error("Error getting sandbox usage", {
         error: (error as Error).message,
-        sandboxId
+        sandboxId,
       });
       throw error;
     }
@@ -2300,8 +2385,9 @@ export class OrchestratorService {
    * Get active workflows for a sandbox
    */
   public getActiveWorkflows(sandboxId: number): Workflow[] {
-    return Array.from(this.activeWorkflows.values())
-      .filter(workflow => workflow.sandboxId === sandboxId);
+    return Array.from(this.activeWorkflows.values()).filter(
+      (workflow) => workflow.sandboxId === sandboxId,
+    );
   }
 
   /**
@@ -2312,7 +2398,10 @@ export class OrchestratorService {
 
     // Clean up workflows older than 24 hours
     for (const [workflowId, workflow] of this.activeWorkflows.entries()) {
-      if (workflow.endTime && now - workflow.endTime.getTime() > 24 * 60 * 60 * 1000) {
+      if (
+        workflow.endTime &&
+        now - workflow.endTime.getTime() > 24 * 60 * 60 * 1000
+      ) {
         this.activeWorkflows.delete(workflowId);
       }
     }
@@ -2321,7 +2410,10 @@ export class OrchestratorService {
     for (const [correlationId, logs] of this.replayableLogs.entries()) {
       if (logs.length > 0) {
         const lastLog = logs[logs.length - 1];
-        if (lastLog.timestamp && now - new Date(lastLog.timestamp).getTime() > 24 * 60 * 60 * 1000) {
+        if (
+          lastLog.timestamp &&
+          now - new Date(lastLog.timestamp).getTime() > 24 * 60 * 60 * 1000
+        ) {
           this.replayableLogs.delete(correlationId);
         }
       }
@@ -2335,7 +2427,7 @@ export const orchestratorService = new OrchestratorService(
   null as any, // webSocketService will be injected
   null as any, // toolRegistry will be injected
   null as any, // eventBus will be injected
-  null as any  // adsAutomationWorker will be injected
+  null as any, // adsAutomationWorker will be injected
 );
 
 export default orchestratorService;

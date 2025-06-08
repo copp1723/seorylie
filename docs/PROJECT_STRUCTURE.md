@@ -1,6 +1,7 @@
 # CleanRylie Project Structure
 
 ## Overview
+
 CleanRylie is a full-stack automotive dealership AI assistant platform built with React (Frontend), Node.js/Express (Backend), and PostgreSQL (Database). The application provides intelligent conversation management, lead tracking, and dealership operations automation.
 
 ## Repository Structure
@@ -27,6 +28,7 @@ cleanrylie/
 ## 🎯 Frontend (`/client`)
 
 ### Structure
+
 ```
 client/
 ├── src/
@@ -50,6 +52,7 @@ client/
 ```
 
 ### Key Technologies
+
 - **Framework**: React 18 with TypeScript
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **State Management**: React Query (TanStack Query)
@@ -60,13 +63,17 @@ client/
 ### Component Organization
 
 #### UI Components (`/client/src/components/ui/`)
+
 Base design system components following shadcn/ui patterns:
+
 - Form controls (Button, Input, Select, etc.)
 - Layout components (Card, Dialog, Sheet, etc.)
 - Feedback components (Toast, Alert, Progress, etc.)
 
 #### Feature Components
+
 Organized by domain:
+
 - `auth/` - Authentication flows
 - `chat/` - Conversation interfaces
 - `dashboard/` - Analytics and overview
@@ -74,14 +81,18 @@ Organized by domain:
 - `inventory/` - Vehicle management
 
 #### Pages (`/client/src/pages/`)
+
 Route-level components:
+
 - Authentication pages
 - Dashboard views
 - Administrative interfaces
 - Feature-specific pages
 
 ### Custom Hooks (`/client/src/hooks/`)
+
 Reusable logic abstraction:
+
 - `useAuth.ts` - Authentication state management
 - `useLocalStorage.ts` - Browser storage utilities
 - `useDebounce.ts` - Input debouncing
@@ -90,6 +101,7 @@ Reusable logic abstraction:
 ## 🔧 Backend (`/server`)
 
 ### Structure
+
 ```
 server/
 ├── routes/                      # API route handlers
@@ -104,6 +116,7 @@ server/
 ```
 
 ### Key Technologies
+
 - **Runtime**: Node.js 18+
 - **Framework**: Express.js
 - **Database**: PostgreSQL with Drizzle ORM
@@ -114,7 +127,9 @@ server/
 - **API Documentation**: OpenAPI/Swagger
 
 ### Service Layer (`/server/services/`)
+
 Domain-driven service organization:
+
 - `conversation-service.ts` - Chat and messaging logic
 - `lead-service.ts` - Lead management and scoring
 - `auth-service.ts` - Authentication and authorization
@@ -122,7 +137,9 @@ Domain-driven service organization:
 - `inventory-service.ts` - Vehicle inventory management
 
 ### Routes (`/server/routes/`)
+
 RESTful API endpoints:
+
 - `auth-routes.ts` - Authentication endpoints
 - `conversation-api.ts` - Chat and messaging API
 - `lead-api-routes.ts` - Lead management
@@ -130,7 +147,9 @@ RESTful API endpoints:
 - `monitoring-routes.ts` - Health and metrics
 
 ### Middleware (`/server/middleware/`)
+
 Request processing pipeline:
+
 - `auth.ts` - Authentication verification
 - `rate-limit.ts` - API rate limiting
 - `validation.ts` - Request validation
@@ -140,6 +159,7 @@ Request processing pipeline:
 ## 🗄️ Database (`/migrations`)
 
 ### Migration Structure
+
 ```
 migrations/
 ├── 0001_initial_schema.sql           # Base tables
@@ -151,6 +171,7 @@ migrations/
 ```
 
 ### Schema Organization
+
 - **Core Tables**: Users, dealerships, configurations
 - **Conversation System**: Messages, chat sessions, AI responses
 - **Lead Management**: Leads, scoring, handover tracking
@@ -160,6 +181,7 @@ migrations/
 ## 📊 Shared Code (`/shared`)
 
 ### Schema Definitions
+
 ```
 shared/
 ├── schema.ts                    # Core database schema
@@ -172,6 +194,7 @@ shared/
 ```
 
 ### Purpose
+
 - **Type Safety**: Shared TypeScript interfaces
 - **Validation**: Zod schemas for runtime validation
 - **API Contracts**: Request/response type definitions
@@ -180,6 +203,7 @@ shared/
 ## 🧪 Testing (`/test`)
 
 ### Test Organization
+
 ```
 test/
 ├── unit/                       # Unit tests
@@ -192,6 +216,7 @@ test/
 ```
 
 ### Testing Strategy
+
 - **Unit Tests**: Individual function/component testing
 - **Integration Tests**: API endpoint testing
 - **E2E Tests**: Full user journey testing (Cypress)
@@ -200,10 +225,12 @@ test/
 ## 🐳 Deployment (`/docker-compose.*.yml`)
 
 ### Environment Configurations
+
 - `docker-compose.platform.yml` - Main application stack
 - `docker-compose.monitoring.yml` - Observability stack
 
 ### Container Strategy
+
 - **Application**: Node.js container for server
 - **Frontend**: Nginx serving static React build
 - **Database**: PostgreSQL with persistence
@@ -213,6 +240,7 @@ test/
 ## 📝 Scripts (`/scripts`)
 
 ### Utility Scripts
+
 ```
 scripts/
 ├── database/                   # Database utilities
@@ -223,6 +251,7 @@ scripts/
 ```
 
 ### Key Scripts
+
 - `setup-database.ts` - Database initialization
 - `migrate.ts` - Migration runner
 - `seed-data.ts` - Test data seeding
@@ -231,6 +260,7 @@ scripts/
 ## 📚 Documentation (`/docs`)
 
 ### Documentation Structure
+
 ```
 docs/
 ├── tickets/                   # Completed ticket summaries
@@ -245,6 +275,7 @@ docs/
 ## 🔍 Monitoring (`/monitoring`)
 
 ### Observability Stack
+
 ```
 monitoring/
 ├── prometheus/                # Metrics collection
@@ -254,6 +285,7 @@ monitoring/
 ```
 
 ### Monitoring Features
+
 - **Application Metrics**: Performance, errors, usage
 - **Infrastructure Metrics**: Resource utilization
 - **Business Metrics**: Conversations, leads, revenue
@@ -262,7 +294,9 @@ monitoring/
 ## 🚀 Development Workflow
 
 ### Local Development
+
 1. **Environment Setup**
+
    ```bash
    npm install                    # Install dependencies
    cp .env.example .env          # Configure environment
@@ -270,6 +304,7 @@ monitoring/
    ```
 
 2. **Development Servers**
+
    ```bash
    npm run dev:client            # Start React dev server
    npm run dev:server            # Start Express dev server
@@ -284,6 +319,7 @@ monitoring/
    ```
 
 ### Code Quality
+
 - **Linting**: ESLint for code quality
 - **Formatting**: Prettier for code style
 - **Type Checking**: TypeScript strict mode
@@ -291,6 +327,7 @@ monitoring/
 - **Pre-commit Hooks**: Husky + lint-staged
 
 ### Build Process
+
 ```bash
 npm run build:client           # Build React app
 npm run build:server           # Build server
@@ -300,18 +337,21 @@ npm run build                  # Build entire application
 ## 🔐 Security Considerations
 
 ### Authentication & Authorization
+
 - JWT tokens with refresh mechanism
 - Magic link authentication
 - Role-based access control (RBAC)
 - Multi-tenant data isolation
 
 ### Data Protection
+
 - Row-level security (RLS) in PostgreSQL
 - Environment variable security
 - API rate limiting
 - Input validation and sanitization
 
 ### Infrastructure Security
+
 - Container security scanning
 - Dependency vulnerability monitoring
 - SSL/TLS encryption
@@ -320,18 +360,21 @@ npm run build                  # Build entire application
 ## 📈 Performance Optimization
 
 ### Frontend Performance
+
 - Code splitting with React.lazy()
 - Memoization with React.memo()
 - Optimized bundle sizes
 - CDN asset delivery
 
 ### Backend Performance
+
 - Database connection pooling
 - Redis caching strategy
 - API response optimization
 - Background job processing
 
 ### Database Performance
+
 - Proper indexing strategy
 - Query optimization
 - Connection pooling
@@ -340,6 +383,7 @@ npm run build                  # Build entire application
 ## 🔄 Integration Points
 
 ### External Services
+
 - **Twilio**: SMS messaging
 - **SendGrid**: Email delivery
 - **OpenAI**: AI conversation processing
@@ -347,6 +391,7 @@ npm run build                  # Build entire application
 - **ADF Providers**: Lead data ingestion
 
 ### Internal APIs
+
 - Authentication service
 - Conversation AI engine
 - Lead management system

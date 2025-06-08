@@ -1,14 +1,14 @@
-import { WebSocketServer, WebSocket } from 'ws';
-import { Server } from 'http';
-import logger from './utils/logger';
-import { v4 as uuidv4 } from 'uuid';
-import { db } from './db';
-import { sql } from 'drizzle-orm';
+import { WebSocketServer, WebSocket } from "ws";
+import { Server } from "http";
+import logger from "./utils/logger";
+import { v4 as uuidv4 } from "uuid";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 interface Client {
   connectionId: string;
   userId?: number;
-  userType?: 'agent' | 'customer';
+  userType?: "agent" | "customer";
   dealershipId?: number;
   isAuthenticated: boolean;
   activeConversationId?: number;
@@ -20,9 +20,9 @@ interface ChatMessage {
   id: string;
   conversationId: number;
   senderId: number;
-  senderType: 'agent' | 'customer';
+  senderType: "agent" | "customer";
   content: string;
-  messageType: 'text' | 'image' | 'file';
+  messageType: "text" | "image" | "file";
   timestamp: Date;
   metadata?: any;
 }
@@ -41,16 +41,16 @@ class WebSocketChatServer {
 
   initialize(server: Server): this {
     try {
-      this.wss = new WebSocketServer({ server, path: '/ws' });
+      this.wss = new WebSocketServer({ server, path: "/ws" });
 
-      logger.info('WebSocket server initialized');
+      logger.info("WebSocket server initialized");
 
-      this.wss.on('connection', (socket: WebSocket) => {
+      this.wss.on("connection", (socket: WebSocket) => {
         this.handleConnection(socket);
       });
 
-      this.wss.on('error', (error: Error) => {
-        logger.error('WebSocket server error:', error);
+      this.wss.on("error", (error: Error) => {
+        logger.error("WebSocket server error:", error);
         this.handleServerError(error);
       });
 
@@ -58,16 +58,16 @@ class WebSocketChatServer {
       return this;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to initialize WebSocket server:', err);
+      logger.error("Failed to initialize WebSocket server:", err);
       throw new Error(`WebSocket server initialization failed: ${err.message}`);
     }
   }
 
   private handleServerError(error: Error): void {
     // Log the error and attempt recovery if possible
-    logger.error('WebSocket server encountered an error:', {
+    logger.error("WebSocket server encountered an error:", {
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
 
     // In production, you might want to implement recovery logic here
@@ -76,7 +76,9 @@ class WebSocketChatServer {
 
   private ensureInitialized(): void {
     if (!this.isInitialized || !this.wss) {
-      throw new Error('WebSocket server not initialized. Call initialize() first.');
+      throw new Error(
+        "WebSocket server not initialized. Call initialize() first.",
+      );
     }
   }
 
@@ -91,7 +93,7 @@ class WebSocketChatServer {
       connectionId,
       isAuthenticated: false,
       socket,
-      lastActivity: new Date()
+      lastActivity: new Date(),
     };
 
     this.clients.set(connectionId, client);
@@ -100,21 +102,21 @@ class WebSocketChatServer {
 
     // Send connection established message
     this.sendToClient(connectionId, {
-      type: 'connection_established',
+      type: "connection_established",
       connectionId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Set up event handlers
-    socket.on('message', (message: WebSocket.Data) => {
+    socket.on("message", (message: WebSocket.Data) => {
       this.handleMessage(connectionId, message);
     });
 
-    socket.on('close', (code: number, reason: Buffer) => {
+    socket.on("close", (code: number, reason: Buffer) => {
       this.handleDisconnect(connectionId, code, reason.toString());
     });
 
-    socket.on('error', (error) => {
+    socket.on("error", (error) => {
       logger.error(`WebSocket error for connection ${connectionId}:`, error);
     });
   }
@@ -136,48 +138,54 @@ class WebSocketChatServer {
 
       // Process message based on type
       switch (data.type) {
-        case 'ping':
+        case "ping":
           this.handlePing(connectionId);
           break;
 
-        case 'authenticate':
+        case "authenticate":
           this.handleAuthentication(connectionId, data);
           break;
 
-        case 'join_conversation':
+        case "join_conversation":
           this.handleJoinConversation(connectionId, data);
           break;
 
-        case 'leave_conversation':
+        case "leave_conversation":
           this.handleLeaveConversation(connectionId, data);
           break;
 
-        case 'send_message':
+        case "send_message":
           this.handleSendMessage(connectionId, data);
           break;
 
-        case 'typing':
+        case "typing":
           this.handleTypingIndicator(connectionId, data);
           break;
 
         default:
-          logger.warn(`Unknown message type from ${connectionId}: ${data.type}`);
+          logger.warn(
+            `Unknown message type from ${connectionId}: ${data.type}`,
+          );
           this.sendToClient(connectionId, {
-            type: 'error',
-            error: 'Unknown message type',
-            originalType: data.type
+            type: "error",
+            error: "Unknown message type",
+            originalType: data.type,
           });
       }
     } catch (error) {
       logger.error(`Error processing message from ${connectionId}:`, error);
       this.sendToClient(connectionId, {
-        type: 'error',
-        error: 'Invalid message format'
+        type: "error",
+        error: "Invalid message format",
       });
     }
   }
 
-  private handleDisconnect(connectionId: string, code?: number, reason?: string) {
+  private handleDisconnect(
+    connectionId: string,
+    code?: number,
+    reason?: string,
+  ) {
     const client = this.clients.get(connectionId);
 
     if (!client) {
@@ -186,22 +194,31 @@ class WebSocketChatServer {
 
     // If client was in a conversation, notify others and remove from conversation
     if (client.activeConversationId && client.isAuthenticated) {
-      this.notifyConversation(client.activeConversationId, {
-        type: 'user_left',
-        userId: client.userId,
-        userType: client.userType,
-        timestamp: new Date().toISOString()
-      }, connectionId);
+      this.notifyConversation(
+        client.activeConversationId,
+        {
+          type: "user_left",
+          userId: client.userId,
+          userType: client.userType,
+          timestamp: new Date().toISOString(),
+        },
+        connectionId,
+      );
 
       // Remove from conversation clients map
-      const conversationClients = this.conversationClients.get(client.activeConversationId);
+      const conversationClients = this.conversationClients.get(
+        client.activeConversationId,
+      );
       if (conversationClients) {
         conversationClients.delete(connectionId);
 
         if (conversationClients.size === 0) {
           this.conversationClients.delete(client.activeConversationId);
         } else {
-          this.conversationClients.set(client.activeConversationId, conversationClients);
+          this.conversationClients.set(
+            client.activeConversationId,
+            conversationClients,
+          );
         }
       }
     }
@@ -209,13 +226,15 @@ class WebSocketChatServer {
     // Remove client from clients map
     this.clients.delete(connectionId);
 
-    logger.info(`WebSocket disconnected: ${connectionId}, code: ${code}, reason: ${reason || 'No reason provided'}`);
+    logger.info(
+      `WebSocket disconnected: ${connectionId}, code: ${code}, reason: ${reason || "No reason provided"}`,
+    );
   }
 
   private handlePing(connectionId: string) {
     this.sendToClient(connectionId, {
-      type: 'pong',
-      timestamp: new Date().toISOString()
+      type: "pong",
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -229,8 +248,8 @@ class WebSocketChatServer {
     // Basic validation
     if (!data.userId || !data.userType || !data.dealershipId) {
       this.sendToClient(connectionId, {
-        type: 'error',
-        error: 'Authentication failed: Missing required fields'
+        type: "error",
+        error: "Authentication failed: Missing required fields",
       });
       return;
     }
@@ -247,13 +266,15 @@ class WebSocketChatServer {
     this.clients.set(connectionId, client);
 
     this.sendToClient(connectionId, {
-      type: 'authenticated',
+      type: "authenticated",
       userId: client.userId,
       userType: client.userType,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
-    logger.info(`Client authenticated: ${connectionId}, userId: ${client.userId}, userType: ${client.userType}`);
+    logger.info(
+      `Client authenticated: ${connectionId}, userId: ${client.userId}, userType: ${client.userType}`,
+    );
   }
 
   private async handleJoinConversation(connectionId: string, data: any) {
@@ -261,16 +282,16 @@ class WebSocketChatServer {
 
     if (!client || !client.isAuthenticated) {
       this.sendToClient(connectionId, {
-        type: 'error',
-        error: 'Not authenticated'
+        type: "error",
+        error: "Not authenticated",
       });
       return;
     }
 
     if (!data.conversationId) {
       this.sendToClient(connectionId, {
-        type: 'error',
-        error: 'Missing conversationId'
+        type: "error",
+        error: "Missing conversationId",
       });
       return;
     }
@@ -299,26 +320,35 @@ class WebSocketChatServer {
       // For demonstration, we'll return empty or mock data
       recentMessages = await this.fetchRecentMessages(conversationId);
     } catch (error) {
-      logger.error(`Error fetching recent messages for conversation ${conversationId}:`, error);
+      logger.error(
+        `Error fetching recent messages for conversation ${conversationId}:`,
+        error,
+      );
     }
 
     // Send join confirmation and recent messages
     this.sendToClient(connectionId, {
-      type: 'joined_conversation',
+      type: "joined_conversation",
       conversationId,
       recentMessages,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // Notify other clients in the conversation
-    this.notifyConversation(conversationId, {
-      type: 'user_joined',
-      userId: client.userId,
-      userType: client.userType,
-      timestamp: new Date().toISOString()
-    }, connectionId);
+    this.notifyConversation(
+      conversationId,
+      {
+        type: "user_joined",
+        userId: client.userId,
+        userType: client.userType,
+        timestamp: new Date().toISOString(),
+      },
+      connectionId,
+    );
 
-    logger.info(`Client joined conversation: ${connectionId}, conversationId: ${conversationId}`);
+    logger.info(
+      `Client joined conversation: ${connectionId}, conversationId: ${conversationId}`,
+    );
   }
 
   private handleLeaveConversation(connectionId: string, data: any) {
@@ -331,12 +361,16 @@ class WebSocketChatServer {
     const conversationId = client.activeConversationId;
 
     // Notify other clients in the conversation
-    this.notifyConversation(conversationId, {
-      type: 'user_left',
-      userId: client.userId,
-      userType: client.userType,
-      timestamp: new Date().toISOString()
-    }, connectionId);
+    this.notifyConversation(
+      conversationId,
+      {
+        type: "user_left",
+        userId: client.userId,
+        userType: client.userType,
+        timestamp: new Date().toISOString(),
+      },
+      connectionId,
+    );
 
     // Remove client from conversation
     const conversationClients = this.conversationClients.get(conversationId);
@@ -355,7 +389,9 @@ class WebSocketChatServer {
     client.activeConversationId = undefined;
     this.clients.set(connectionId, client);
 
-    logger.info(`Client left conversation: ${connectionId}, conversationId: ${conversationId}`);
+    logger.info(
+      `Client left conversation: ${connectionId}, conversationId: ${conversationId}`,
+    );
   }
 
   private async handleSendMessage(connectionId: string, data: any) {
@@ -363,16 +399,16 @@ class WebSocketChatServer {
 
     if (!client || !client.isAuthenticated || !client.activeConversationId) {
       this.sendToClient(connectionId, {
-        type: 'error',
-        error: 'Not authenticated or not in a conversation'
+        type: "error",
+        error: "Not authenticated or not in a conversation",
       });
       return;
     }
 
     if (!data.content) {
       this.sendToClient(connectionId, {
-        type: 'error',
-        error: 'Message content is required'
+        type: "error",
+        error: "Message content is required",
       });
       return;
     }
@@ -388,9 +424,9 @@ class WebSocketChatServer {
       senderId: client.userId!,
       senderType: client.userType!,
       content: data.content,
-      messageType: data.messageType || 'text',
+      messageType: data.messageType || "text",
       timestamp,
-      metadata: data.metadata || {}
+      metadata: data.metadata || {},
     };
 
     // Save message to database
@@ -399,20 +435,22 @@ class WebSocketChatServer {
     } catch (error) {
       logger.error(`Error saving message to database:`, error);
       this.sendToClient(connectionId, {
-        type: 'error',
-        error: 'Failed to save message'
+        type: "error",
+        error: "Failed to save message",
       });
       return;
     }
 
     // Broadcast to all clients in the conversation
     this.notifyConversation(conversationId, {
-      type: 'new_message',
+      type: "new_message",
       message,
-      timestamp: timestamp.toISOString()
+      timestamp: timestamp.toISOString(),
     });
 
-    logger.info(`Message sent in conversation ${conversationId} by user ${client.userId}`);
+    logger.info(
+      `Message sent in conversation ${conversationId} by user ${client.userId}`,
+    );
   }
 
   private handleTypingIndicator(connectionId: string, data: any) {
@@ -425,13 +463,17 @@ class WebSocketChatServer {
     const conversationId = client.activeConversationId;
 
     // Broadcast typing indicator to all clients in the conversation
-    this.notifyConversation(conversationId, {
-      type: 'typing_indicator',
-      userId: client.userId,
-      userType: client.userType,
-      isTyping: !!data.isTyping,
-      timestamp: new Date().toISOString()
-    }, connectionId);
+    this.notifyConversation(
+      conversationId,
+      {
+        type: "typing_indicator",
+        userId: client.userId,
+        userType: client.userType,
+        isTyping: !!data.isTyping,
+        timestamp: new Date().toISOString(),
+      },
+      connectionId,
+    );
   }
 
   private sendToClient(connectionId: string, data: any) {
@@ -446,7 +488,11 @@ class WebSocketChatServer {
     }
   }
 
-  private notifyConversation(conversationId: number, data: any, excludeConnectionId?: string) {
+  private notifyConversation(
+    conversationId: number,
+    data: any,
+    excludeConnectionId?: string,
+  ) {
     const conversationClients = this.conversationClients.get(conversationId);
 
     if (!conversationClients) {
@@ -467,8 +513,8 @@ class WebSocketChatServer {
    */
   publishToChannel(channel: string, data: any): void {
     // Parse channel to get conversation ID
-    const conversationId = parseInt(channel.replace('conversation_', ''), 10);
-    
+    const conversationId = parseInt(channel.replace("conversation_", ""), 10);
+
     if (isNaN(conversationId)) {
       logger.warn(`Invalid channel format: ${channel}`);
       return;
@@ -513,16 +559,18 @@ class WebSocketChatServer {
 
         // Close the connection if still open
         if (client.socket.readyState === WebSocket.OPEN) {
-          client.socket.close(1000, 'Inactive timeout');
+          client.socket.close(1000, "Inactive timeout");
         }
 
         // Clean up as if it disconnected
-        this.handleDisconnect(connectionId, 1000, 'Inactive timeout');
+        this.handleDisconnect(connectionId, 1000, "Inactive timeout");
       }
     }
   }
 
-  private async fetchRecentMessages(conversationId: number): Promise<ChatMessage[]> {
+  private async fetchRecentMessages(
+    conversationId: number,
+  ): Promise<ChatMessage[]> {
     try {
       // In a real implementation, you would fetch from your database
       // For demonstration, we'll return mock data
@@ -545,7 +593,9 @@ class WebSocketChatServer {
     try {
       // In a real implementation, you would save to your database
       // For demonstration, we'll just log it
-      logger.info(`Message saved: ${message.id} in conversation ${message.conversationId}`);
+      logger.info(
+        `Message saved: ${message.id} in conversation ${message.conversationId}`,
+      );
 
       // Ideally you'd have something like:
       // await db.insert(chatMessages).values({
@@ -578,7 +628,7 @@ class WebSocketChatServer {
     // Close all connections
     for (const client of this.clients.values()) {
       if (client.socket.readyState === WebSocket.OPEN) {
-        client.socket.close(1000, 'Server shutdown');
+        client.socket.close(1000, "Server shutdown");
       }
     }
 
@@ -592,7 +642,7 @@ class WebSocketChatServer {
     }
 
     this.isInitialized = false;
-    logger.info('WebSocket server shut down');
+    logger.info("WebSocket server shut down");
   }
 }
 

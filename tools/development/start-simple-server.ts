@@ -17,13 +17,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser(process.env.SESSION_SECRET || 'rylie-secure-secret'));
+app.use(cookieParser(process.env.SESSION_SECRET || "rylie-secure-secret"));
 
 // Security headers
 app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
   next();
 });
 
@@ -31,7 +31,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  
+
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
@@ -39,7 +39,7 @@ app.use((req, res, next) => {
         method: req.method,
         path: path,
         statusCode: res.statusCode,
-        duration: `${duration}ms`
+        duration: `${duration}ms`,
       });
     }
   });
@@ -54,14 +54,14 @@ const staticPath = path.join(__dirname, "client/dist");
 app.use(express.static(staticPath, { fallthrough: true }));
 
 // Catch-all handler for frontend routes
-app.get('*', (req, res) => {
-  const indexPath = path.join(staticPath, 'index.html');
+app.get("*", (req, res) => {
+  const indexPath = path.join(staticPath, "index.html");
   res.sendFile(indexPath, (err) => {
     if (err) {
-      res.status(404).json({ 
-        message: 'Frontend not built. API endpoints available at /api/*',
-        apiHealth: '/api/health',
-        adminRoutes: '/api/admin/*'
+      res.status(404).json({
+        message: "Frontend not built. API endpoints available at /api/*",
+        apiHealth: "/api/health",
+        adminRoutes: "/api/admin/*",
       });
     }
   });
@@ -72,11 +72,14 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || "Internal Server Error";
 
-  logger.error(`Error handling request: ${message}`, { error: err, stack: err.stack });
+  logger.error(`Error handling request: ${message}`, {
+    error: err,
+    stack: err.stack,
+  });
 
-  res.status(status).json({ 
+  res.status(status).json({
     message: message,
-    success: false
+    success: false,
   });
 });
 
@@ -90,9 +93,9 @@ const server = app.listen(port, "0.0.0.0", () => {
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
+process.on("SIGTERM", () => {
+  logger.info("SIGTERM received, shutting down gracefully");
   server.close(() => {
-    logger.info('Process terminated');
+    logger.info("Process terminated");
   });
 });

@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import { z, ZodError } from 'zod';
-import logger from '../utils/logger';
+import { Request, Response, NextFunction } from "express";
+import { z, ZodError } from "zod";
+import logger from "../utils/logger";
 
 // Enhanced validation error details
 interface ValidationErrorDetail {
@@ -23,23 +23,23 @@ interface ValidationResult {
 export const validateBody = <T extends z.ZodTypeAny>(schema: T) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const result = validateData(schema, req.body);
-    
+
     if (result.success) {
       req.body = result.data;
       next();
     } else {
-      logger.warn('Request body validation failed', {
+      logger.warn("Request body validation failed", {
         endpoint: req.path,
         method: req.method,
         errors: result.errors,
-        dealershipId: req.dealershipId
+        dealershipId: req.dealershipId,
       });
 
       res.status(400).json({
         success: false,
-        error: 'Validation failed',
+        error: "Validation failed",
         details: result.errors,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   };
@@ -51,23 +51,23 @@ export const validateBody = <T extends z.ZodTypeAny>(schema: T) => {
 export const validateQuery = <T extends z.ZodTypeAny>(schema: T) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const result = validateData(schema, req.query);
-    
+
     if (result.success) {
       req.query = result.data;
       next();
     } else {
-      logger.warn('Query parameter validation failed', {
+      logger.warn("Query parameter validation failed", {
         endpoint: req.path,
         method: req.method,
         errors: result.errors,
-        dealershipId: req.dealershipId
+        dealershipId: req.dealershipId,
       });
 
       res.status(400).json({
         success: false,
-        error: 'Invalid query parameters',
+        error: "Invalid query parameters",
         details: result.errors,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   };
@@ -79,23 +79,23 @@ export const validateQuery = <T extends z.ZodTypeAny>(schema: T) => {
 export const validateParams = <T extends z.ZodTypeAny>(schema: T) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const result = validateData(schema, req.params);
-    
+
     if (result.success) {
       req.params = result.data;
       next();
     } else {
-      logger.warn('URL parameter validation failed', {
+      logger.warn("URL parameter validation failed", {
         endpoint: req.path,
         method: req.method,
         errors: result.errors,
-        dealershipId: req.dealershipId
+        dealershipId: req.dealershipId,
       });
 
       res.status(400).json({
         success: false,
-        error: 'Invalid URL parameters',
+        error: "Invalid URL parameters",
         details: result.errors,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   };
@@ -106,19 +106,19 @@ export const validateParams = <T extends z.ZodTypeAny>(schema: T) => {
  */
 function validateData<T extends z.ZodTypeAny>(
   schema: T,
-  data: unknown
+  data: unknown,
 ): ValidationResult {
   try {
     const parsed = schema.parse(data);
     return { success: true, data: parsed };
   } catch (error) {
     if (error instanceof ZodError) {
-      const errors = error.errors.map(err => ({
-        field: err.path.join('.') || 'root',
+      const errors = error.errors.map((err) => ({
+        field: err.path.join(".") || "root",
         message: err.message,
         code: err.code,
         received: err.received,
-        expected: getExpectedType(err)
+        expected: getExpectedType(err),
       }));
 
       return { success: false, errors };
@@ -127,11 +127,14 @@ function validateData<T extends z.ZodTypeAny>(
     // Handle non-Zod errors
     return {
       success: false,
-      errors: [{
-        field: 'unknown',
-        message: error instanceof Error ? error.message : 'Unknown validation error',
-        code: 'unknown_error'
-      }]
+      errors: [
+        {
+          field: "unknown",
+          message:
+            error instanceof Error ? error.message : "Unknown validation error",
+          code: "unknown_error",
+        },
+      ],
     };
   }
 }
@@ -141,22 +144,22 @@ function validateData<T extends z.ZodTypeAny>(
  */
 function getExpectedType(error: z.ZodIssue): string {
   switch (error.code) {
-    case 'invalid_type':
+    case "invalid_type":
       return error.expected;
-    case 'invalid_string':
-      return error.validation ? `string (${error.validation})` : 'string';
-    case 'too_small':
-      return `${error.type} with minimum ${error.minimum}${error.inclusive ? ' (inclusive)' : ' (exclusive)'}`;
-    case 'too_big':
-      return `${error.type} with maximum ${error.maximum}${error.inclusive ? ' (inclusive)' : ' (exclusive)'}`;
-    case 'invalid_enum_value':
-      return `one of: ${error.options.join(', ')}`;
-    case 'invalid_date':
-      return 'valid date';
-    case 'custom':
-      return error.params?.expected || 'custom validation';
+    case "invalid_string":
+      return error.validation ? `string (${error.validation})` : "string";
+    case "too_small":
+      return `${error.type} with minimum ${error.minimum}${error.inclusive ? " (inclusive)" : " (exclusive)"}`;
+    case "too_big":
+      return `${error.type} with maximum ${error.maximum}${error.inclusive ? " (inclusive)" : " (exclusive)"}`;
+    case "invalid_enum_value":
+      return `one of: ${error.options.join(", ")}`;
+    case "invalid_date":
+      return "valid date";
+    case "custom":
+      return error.params?.expected || "custom validation";
     default:
-      return 'valid value';
+      return "valid value";
   }
 }
 
@@ -165,7 +168,7 @@ function getExpectedType(error: z.ZodIssue): string {
  */
 export const validateUuidParam = (paramName: string) => {
   const uuidSchema = z.object({
-    [paramName]: z.string().uuid(`Invalid ${paramName} format`)
+    [paramName]: z.string().uuid(`Invalid ${paramName} format`),
   });
 
   return validateParams(uuidSchema);
@@ -176,9 +179,10 @@ export const validateUuidParam = (paramName: string) => {
  */
 export const validateNumericParam = (paramName: string) => {
   const numericSchema = z.object({
-    [paramName]: z.string()
+    [paramName]: z
+      .string()
       .regex(/^\d+$/, `${paramName} must be a valid number`)
-      .transform(val => parseInt(val, 10))
+      .transform((val) => parseInt(val, 10)),
   });
 
   return validateParams(numericSchema);
@@ -190,31 +194,31 @@ export const validateNumericParam = (paramName: string) => {
  */
 export const validateResponse = <T extends z.ZodTypeAny>(schema: T) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       // Skip response validation in production for performance
       return next();
     }
 
     const originalJson = res.json;
-    
-    res.json = function(data: any) {
+
+    res.json = function (data: any) {
       // Validate response data in development
       const result = validateData(schema, data);
-      
+
       if (!result.success) {
-        logger.error('Response validation failed', {
+        logger.error("Response validation failed", {
           endpoint: req.path,
           method: req.method,
           errors: result.errors,
-          responseData: data
+          responseData: data,
         });
-        
+
         // In development, return validation error
         return originalJson.call(this, {
           success: false,
-          error: 'Response validation failed',
+          error: "Response validation failed",
           details: result.errors,
-          originalData: data
+          originalData: data,
         });
       }
 
@@ -228,30 +232,32 @@ export const validateResponse = <T extends z.ZodTypeAny>(schema: T) => {
 /**
  * Content-Type validation middleware
  */
-export const validateContentType = (expectedTypes: string[] = ['application/json']) => {
+export const validateContentType = (
+  expectedTypes: string[] = ["application/json"],
+) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const contentType = req.get('Content-Type');
-    
+    const contentType = req.get("Content-Type");
+
     if (!contentType) {
       return res.status(400).json({
         success: false,
-        error: 'Missing Content-Type header',
+        error: "Missing Content-Type header",
         expected: expectedTypes,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
-    const isValidType = expectedTypes.some(type => 
-      contentType.toLowerCase().includes(type.toLowerCase())
+    const isValidType = expectedTypes.some((type) =>
+      contentType.toLowerCase().includes(type.toLowerCase()),
     );
 
     if (!isValidType) {
       return res.status(415).json({
         success: false,
-        error: 'Unsupported Media Type',
+        error: "Unsupported Media Type",
         received: contentType,
         expected: expectedTypes,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -262,17 +268,18 @@ export const validateContentType = (expectedTypes: string[] = ['application/json
 /**
  * JSON body size validation middleware
  */
-export const validateBodySize = (maxSizeBytes: number = 1024 * 1024) => { // 1MB default
+export const validateBodySize = (maxSizeBytes: number = 1024 * 1024) => {
+  // 1MB default
   return (req: Request, res: Response, next: NextFunction) => {
-    const contentLength = req.get('Content-Length');
-    
+    const contentLength = req.get("Content-Length");
+
     if (contentLength && parseInt(contentLength) > maxSizeBytes) {
       return res.status(413).json({
         success: false,
-        error: 'Request body too large',
+        error: "Request body too large",
         maxSize: `${Math.round(maxSizeBytes / 1024)}KB`,
         received: `${Math.round(parseInt(contentLength) / 1024)}KB`,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -283,9 +290,13 @@ export const validateBodySize = (maxSizeBytes: number = 1024 * 1024) => { // 1MB
 /**
  * Middleware to sanitize input data
  */
-export const sanitizeInput = (req: Request, res: Response, next: NextFunction) => {
+export const sanitizeInput = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   // Basic XSS protection - strip HTML tags from string fields
-  if (req.body && typeof req.body === 'object') {
+  if (req.body && typeof req.body === "object") {
     req.body = sanitizeObject(req.body);
   }
 
@@ -296,18 +307,19 @@ export const sanitizeInput = (req: Request, res: Response, next: NextFunction) =
  * Recursively sanitize object properties
  */
 function sanitizeObject(obj: any): any {
-  if (typeof obj === 'string') {
+  if (typeof obj === "string") {
     // Basic HTML tag removal (for XSS protection)
-    return obj.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-              .replace(/<[^>]+>/g, '')
-              .trim();
+    return obj
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<[^>]+>/g, "")
+      .trim();
   }
 
   if (Array.isArray(obj)) {
     return obj.map(sanitizeObject);
   }
 
-  if (obj && typeof obj === 'object') {
+  if (obj && typeof obj === "object") {
     const sanitized: any = {};
     for (const [key, value] of Object.entries(obj)) {
       sanitized[key] = sanitizeObject(value);
@@ -324,7 +336,7 @@ function sanitizeObject(obj: any): any {
 export const createValidationMiddleware = <
   TBody extends z.ZodTypeAny,
   TQuery extends z.ZodTypeAny,
-  TParams extends z.ZodTypeAny
+  TParams extends z.ZodTypeAny,
 >(options: {
   body?: TBody;
   query?: TQuery;
@@ -333,7 +345,9 @@ export const createValidationMiddleware = <
   maxBodySize?: number;
   sanitize?: boolean;
 }) => {
-  const middlewares: Array<(req: Request, res: Response, next: NextFunction) => void> = [];
+  const middlewares: Array<
+    (req: Request, res: Response, next: NextFunction) => void
+  > = [];
 
   // Content-Type validation
   if (options.contentType) {

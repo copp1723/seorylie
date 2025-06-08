@@ -11,6 +11,7 @@
 ### Available Scripts
 
 **Deployment Commands:**
+
 ```bash
 # Development
 npm run dev                    # Start development server
@@ -36,6 +37,7 @@ npm run deploy:check         # Pre-deployment readiness check
 ✅ Automated readiness check available
 
 **Required Checks:**
+
 1. **Environment Variables**: All required env vars configured
 2. **Database Health**: Migrations applied, connections working
 3. **External Services**: API keys valid, services accessible
@@ -44,6 +46,7 @@ npm run deploy:check         # Pre-deployment readiness check
 6. **Dependencies**: No security vulnerabilities
 
 **Manual Verification:**
+
 ```bash
 npm run deploy:check           # Run automated checks
 npm run health                # Verify health endpoints
@@ -53,6 +56,7 @@ npm run env:validate          # Check environment configuration
 ### Production Deployment Process
 
 **Step 1: Pre-deployment**
+
 ```bash
 # Backup current database
 pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql
@@ -62,6 +66,7 @@ npm run deploy:check
 ```
 
 **Step 2: Deploy Application**
+
 ```bash
 # Deploy to staging first
 npm run deploy:staging
@@ -74,6 +79,7 @@ npm run deploy:production
 ```
 
 **Step 3: Post-deployment Verification**
+
 ```bash
 # Check health endpoints
 npm run health
@@ -88,10 +94,12 @@ tail -f logs/application.log
 ### Rollback Procedures
 
 **Automatic Rollback:**
+
 - Health checks fail → automatic rollback
 - Error rate > 5% → automatic rollback
 
 **Manual Rollback:**
+
 ```bash
 # Revert to previous version
 git revert HEAD
@@ -106,7 +114,7 @@ npm run migrate:down
 CleanRylie supports blue-green deployment for zero-downtime updates:
 
 1. **Green Environment**: Deploy new version to green environment
-2. **Verification**: Run full test suite on green environment  
+2. **Verification**: Run full test suite on green environment
 3. **Traffic Switch**: Gradually shift traffic from blue to green
 4. **Monitoring**: Monitor metrics during traffic migration
 5. **Cleanup**: Decommission blue environment after success
@@ -118,6 +126,7 @@ CleanRylie supports blue-green deployment for zero-downtime updates:
 ### Completed STAB Tickets
 
 #### STAB-305: Supabase SDK Compatibility ✅ COMPLETED
+
 - **Objective**: Validate Supabase client compatibility with all dependency upgrades
 - **Status**: Successfully implemented with 71% test pass rate
 - **Key Achievements**:
@@ -130,10 +139,12 @@ CleanRylie supports blue-green deployment for zero-downtime updates:
 **Test Results**: 10/14 tests passed (remaining issues are expected limitations)
 
 #### STAB-103: Bundle Size Guard ✅ COMPLETED
+
 - **Objective**: Implement bundle size monitoring and optimization
 - **Status**: Bundle size guard implemented and active
 
 ### STAB-601: Migration Guide & Runbook 🚧 IN PROGRESS
+
 - **Objective**: Generate human-readable documentation from stabilization artifacts
 - **Status**: Currently generating comprehensive migration guide and runbook
 - **Deliverables**:
@@ -147,18 +158,21 @@ CleanRylie supports blue-green deployment for zero-downtime updates:
 All STAB tickets must meet these criteria before marking complete:
 
 **✅ Technical Requirements**
+
 - All tests passing (> 95% success rate)
 - No breaking changes introduced
 - Backward compatibility maintained
 - Performance benchmarks met
 
 **✅ Documentation Requirements**
+
 - Implementation summary completed
 - Migration guide updated
 - Troubleshooting procedures documented
 - Runbook entries added
 
 **✅ Operational Requirements**
+
 - Monitoring and alerting configured
 - Health checks implemented
 - Rollback procedures tested
@@ -179,18 +193,21 @@ All STAB tickets must meet these criteria before marking complete:
 ### Incident Classification
 
 **P1 - Critical (< 15 min response)**
+
 - Complete system outage
 - Database corruption/loss
 - Security breach
 - Data integrity issues
 
 **P2 - High (< 1 hour response)**
+
 - Partial system outage
 - Performance degradation > 10x normal
 - External service failures
 - Memory/disk space critical
 
 **P3 - Medium (< 4 hours response)**
+
 - Non-critical feature failures
 - Monitoring alerts
 - Performance degradation < 10x normal
@@ -198,11 +215,13 @@ All STAB tickets must meet these criteria before marking complete:
 ### Emergency Contacts
 
 **On-Call Rotation:**
+
 - Primary: Engineering Team Lead
 - Secondary: Platform Engineer
 - Escalation: CTO/Technical Director
 
 **External Vendors:**
+
 - Database: PostgreSQL support
 - Hosting: Cloud provider support
 - Monitoring: Observability platform support
@@ -210,18 +229,21 @@ All STAB tickets must meet these criteria before marking complete:
 ### Immediate Response Actions
 
 **Step 1: Assessment (0-5 minutes)**
+
 1. Check health endpoints: `curl /health`
 2. Review recent deployments and changes
 3. Check external service status pages
 4. Verify monitoring dashboards
 
 **Step 2: Containment (5-15 minutes)**
+
 1. Stop affected services if necessary
 2. Enable maintenance mode if available
 3. Scale down problematic components
 4. Isolate affected systems
 
 **Step 3: Communication (15-30 minutes)**
+
 1. Update status page with initial assessment
 2. Notify stakeholders via established channels
 3. Create incident tracking ticket
@@ -230,6 +252,7 @@ All STAB tickets must meet these criteria before marking complete:
 ### Common Emergency Scenarios
 
 #### Database Connection Failures
+
 ```bash
 # Check database status
 pg_isready -h $DB_HOST -p $DB_PORT
@@ -242,6 +265,7 @@ systemctl restart postgresql
 ```
 
 #### Memory/CPU Exhaustion
+
 ```bash
 # Check resource usage
 top
@@ -255,6 +279,7 @@ kubectl scale deployment/app --replicas=3
 ```
 
 #### External API Failures
+
 ```bash
 # Enable fallback mode
 export OPENAI_FALLBACK_MODE=true
@@ -267,6 +292,7 @@ npm run start
 ### Recovery Procedures
 
 **Database Recovery:**
+
 1. Restore from latest backup
 2. Apply incremental transaction logs
 3. Verify data integrity
@@ -274,6 +300,7 @@ npm run start
 5. Restart application services
 
 **Application Recovery:**
+
 1. Rollback to last known good version
 2. Clear caches and temporary data
 3. Restart all services
@@ -281,6 +308,7 @@ npm run start
 5. Monitor for recurring issues
 
 **Data Recovery:**
+
 1. Identify scope of data loss
 2. Restore from backup to staging
 3. Extract and verify affected data
@@ -290,6 +318,7 @@ npm run start
 ### Post-Incident Actions
 
 **Within 24 Hours:**
+
 1. Complete root cause analysis
 2. Document timeline of events
 3. Identify preventive measures
@@ -297,6 +326,7 @@ npm run start
 5. Conduct team retrospective
 
 **Within 1 Week:**
+
 1. Implement preventive measures
 2. Update emergency procedures
 3. Test recovery procedures
@@ -306,6 +336,7 @@ npm run start
 ### Emergency Tooling
 
 **Quick Commands:**
+
 ```bash
 # Emergency health check
 npm run health
@@ -321,6 +352,7 @@ npm run logs:emergency
 ```
 
 **Emergency Scripts:**
+
 - `scripts/emergency-restart.sh` - Safe application restart
 - `scripts/emergency-backup.sh` - Database backup
 - `scripts/emergency-rollback.sh` - Rollback deployment
@@ -331,11 +363,13 @@ npm run logs:emergency
 ### Deployment Windows
 
 **Preferred Times:**
+
 - Staging: Any time during business hours
 - Production: Outside business hours (nights/weekends)
 - Emergency: Any time with proper approval
 
 **Maintenance Windows:**
+
 - Weekly: Sunday 2:00 AM - 4:00 AM PST
 - Monthly: First Sunday 1:00 AM - 5:00 AM PST
 - Emergency: As needed with 1-hour notice
@@ -343,11 +377,13 @@ npm run logs:emergency
 ### Approval Process
 
 **Staging Deployments:**
+
 - Developer approval required
 - Automated testing must pass
 - No additional approvals needed
 
 **Production Deployments:**
+
 - Team lead approval required
 - QA verification completed
 - Security review for major changes
@@ -356,15 +392,17 @@ npm run logs:emergency
 ### Communication Plan
 
 **Internal Communication:**
+
 - Slack: #deployments channel
 - Email: engineering team distribution list
 - Calendar: Deployment calendar invites
 
 **External Communication:**
+
 - Status page updates for customer-facing changes
 - Customer notifications for breaking changes
 - Support team briefings for new features
 
 ---
 
-*This runbook was generated automatically by STAB-601 Migration Guide & Runbook Generator*
+_This runbook was generated automatically by STAB-601 Migration Guide & Runbook Generator_

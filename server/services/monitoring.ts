@@ -1,9 +1,9 @@
 // Temporary stub for monitoring service to avoid OpenTelemetry import issues
 
 export enum ComponentHealthStatus {
-  HEALTHY = 'healthy',
-  DEGRADED = 'degraded',
-  UNHEALTHY = 'unhealthy'
+  HEALTHY = "healthy",
+  DEGRADED = "degraded",
+  UNHEALTHY = "unhealthy",
 }
 
 export class MonitoringService {
@@ -22,31 +22,41 @@ export class MonitoringService {
   incrementCounter(name: string, labels?: Record<string, string>) {}
   recordDuration() {}
   updateGauge() {}
-  getHealthStatus() { return ComponentHealthStatus.HEALTHY; }
+  getHealthStatus() {
+    return ComponentHealthStatus.HEALTHY;
+  }
   trackPerformance() {}
   trackError() {}
   trackDatabaseOperation() {}
   trackAPICall() {}
   recordKPI() {}
-  
+
   // Enhanced methods for adf-email-listener compatibility
   registerCounter(name: string, description: string) {}
   registerHistogram(name: string, description: string) {}
   registerUpDownCounter(name: string, description: string) {}
-  registerObservableGauge(name: string, description: string, callback?: Function) {}
-  recordHistogram(name: string, value: number, labels?: Record<string, string>) {}
+  registerObservableGauge(
+    name: string,
+    description: string,
+    callback?: Function,
+  ) {}
+  recordHistogram(
+    name: string,
+    value: number,
+    labels?: Record<string, string>,
+  ) {}
   decrementUpDownCounter(name: string) {}
   incrementUpDownCounter(name: string) {}
   registerHealthCheck(name: string, checkFunction: Function) {
     this.healthChecks.set(name, checkFunction);
   }
-  
+
   // Additional method for ADF SMS service compatibility
   registerMetric(name: string, type: string, description?: string) {
     // Stub implementation - just log the registration
     console.debug(`Registering metric: ${name} (${type})`);
   }
-  
+
   async runHealthCheck(name: string) {
     const check = this.healthChecks.get(name);
     if (check) {
@@ -55,13 +65,15 @@ export class MonitoringService {
       } catch (error) {
         return {
           status: ComponentHealthStatus.UNHEALTHY,
-          details: { error: error instanceof Error ? error.message : String(error) }
+          details: {
+            error: error instanceof Error ? error.message : String(error),
+          },
         };
       }
     }
     return {
       status: ComponentHealthStatus.HEALTHY,
-      details: { message: 'No health check registered' }
+      details: { message: "No health check registered" },
     };
   }
 }

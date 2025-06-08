@@ -15,6 +15,7 @@ This directory contains reusable UI components that are used across multiple fea
 ## Usage Guidelines
 
 1. Components in this directory should be:
+
    - Highly reusable
    - Presentational (minimal business logic)
    - Well-documented with prop types

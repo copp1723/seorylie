@@ -5,19 +5,19 @@
  * Validates all aspects of the application before deployment
  */
 
-import fs from 'fs';
-import path from 'path';
-import { config } from 'dotenv';
-import { checkDatabaseConnection } from '../server/db';
-import logger from '../server/utils/logger';
-import { migrationRunner } from '../server/utils/migration-runner';
+import fs from "fs";
+import path from "path";
+import { config } from "dotenv";
+import { checkDatabaseConnection } from "../server/db";
+import logger from "../server/utils/logger";
+import { migrationRunner } from "../server/utils/migration-runner";
 
 // Load environment variables from .env file
 config();
 
 interface CheckResult {
   name: string;
-  status: 'pass' | 'fail' | 'warning';
+  status: "pass" | "fail" | "warning";
   message: string;
   details?: string[];
 }
@@ -25,23 +25,31 @@ interface CheckResult {
 class DeploymentReadinessChecker {
   private results: CheckResult[] = [];
 
-  private addResult(name: string, status: 'pass' | 'fail' | 'warning', message: string, details?: string[]) {
+  private addResult(
+    name: string,
+    status: "pass" | "fail" | "warning",
+    message: string,
+    details?: string[],
+  ) {
     this.results.push({ name, status, message, details });
   }
 
-  private getStatusIcon(status: 'pass' | 'fail' | 'warning'): string {
+  private getStatusIcon(status: "pass" | "fail" | "warning"): string {
     switch (status) {
-      case 'pass': return '✅';
-      case 'fail': return '❌';
-      case 'warning': return '⚠️';
+      case "pass":
+        return "✅";
+      case "fail":
+        return "❌";
+      case "warning":
+        return "⚠️";
     }
   }
 
   async checkEnvironmentVariables(): Promise<void> {
-    console.log('🔍 Checking Environment Variables...');
+    console.log("🔍 Checking Environment Variables...");
 
     // Use the comprehensive environment validator
-    const { EnvironmentValidator } = await import('./validate-environment');
+    const { EnvironmentValidator } = await import("./validate-environment");
     const validator = new EnvironmentValidator();
 
     // Run environment validation and capture results
@@ -54,68 +62,67 @@ class DeploymentReadinessChecker {
       // Extract results from validator (this is a simplified approach)
       // In a real implementation, you'd want to expose the results from the validator
       this.addResult(
-        'Environment Variables',
-        'pass',
-        'Environment validation completed - see detailed output above'
+        "Environment Variables",
+        "pass",
+        "Environment validation completed - see detailed output above",
       );
-
     } catch (error: any) {
       this.addResult(
-        'Environment Variables',
-        'fail',
-        'Environment validation failed',
-        [error.message]
+        "Environment Variables",
+        "fail",
+        "Environment validation failed",
+        [error.message],
       );
     }
   }
 
   async checkDatabaseConnection(): Promise<void> {
-    console.log('🔍 Checking Database Connection...');
+    console.log("🔍 Checking Database Connection...");
 
     try {
       const isConnected = await checkDatabaseConnection();
       if (isConnected) {
         this.addResult(
-          'Database Connection',
-          'pass',
-          'Database connection successful'
+          "Database Connection",
+          "pass",
+          "Database connection successful",
         );
       } else {
         this.addResult(
-          'Database Connection',
-          'fail',
-          'Database connection failed'
+          "Database Connection",
+          "fail",
+          "Database connection failed",
         );
       }
     } catch (error) {
       const err = error as Error;
       this.addResult(
-        'Database Connection',
-        'fail',
-        'Database connection error',
-        [err.message]
+        "Database Connection",
+        "fail",
+        "Database connection error",
+        [err.message],
       );
     }
   }
 
   async checkMigrations(): Promise<void> {
-    console.log('🔍 Checking Database Migrations...');
+    console.log("🔍 Checking Database Migrations...");
 
     try {
       const status = await migrationRunner.status();
 
       if (status.pendingCount === 0) {
         this.addResult(
-          'Database Migrations',
-          'pass',
-          `All migrations applied (${status.appliedCount} total)`
+          "Database Migrations",
+          "pass",
+          `All migrations applied (${status.appliedCount} total)`,
         );
       } else {
         this.addResult(
-          'Database Migrations',
-          'warning',
+          "Database Migrations",
+          "warning",
           `${status.pendingCount} pending migrations found`,
-          status.pendingMigrations.map(m => m.filename)
+          status.pendingMigrations.map((m) => m.filename),
         );
       }
 
@@ -123,38 +130,35 @@ class DeploymentReadinessChecker {
       const validation = await migrationRunner.validate();
       if (validation.valid) {
         this.addResult(
-          'Migration Files',
-          'pass',
-          'All migration files are valid'
+          "Migration Files",
+          "pass",
+          "All migration files are valid",
         );
       } else {
         this.addResult(
-          'Migration Files',
-          'fail',
-          'Migration file validation failed',
-          validation.errors
+          "Migration Files",
+          "fail",
+          "Migration file validation failed",
+          validation.errors,
         );
       }
     } catch (error) {
       const err = error as Error;
-      this.addResult(
-        'Database Migrations',
-        'fail',
-        'Migration check failed',
-        [err.message]
-      );
+      this.addResult("Database Migrations", "fail", "Migration check failed", [
+        err.message,
+      ]);
     }
   }
 
   async checkRequiredFiles(): Promise<void> {
-    console.log('🔍 Checking Required Files...');
+    console.log("🔍 Checking Required Files...");
 
     const requiredFiles = [
-      'package.json',
-      'tsconfig.json',
-      '.env',
-      'server/index.ts',
-      'server/db.ts'
+      "package.json",
+      "tsconfig.json",
+      ".env",
+      "server/index.ts",
+      "server/db.ts",
     ];
 
     const missing: string[] = [];
@@ -170,28 +174,28 @@ class DeploymentReadinessChecker {
 
     if (missing.length === 0) {
       this.addResult(
-        'Required Files',
-        'pass',
+        "Required Files",
+        "pass",
         `All ${requiredFiles.length} required files present`,
-        present
+        present,
       );
     } else {
       this.addResult(
-        'Required Files',
-        'fail',
+        "Required Files",
+        "fail",
         `Missing ${missing.length} required files`,
-        missing
+        missing,
       );
     }
   }
 
   async checkBuildConfiguration(): Promise<void> {
-    console.log('🔍 Checking Build Configuration...');
+    console.log("🔍 Checking Build Configuration...");
 
     try {
-      const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+      const packageJson = JSON.parse(fs.readFileSync("package.json", "utf-8"));
 
-      const requiredScripts = ['build', 'start', 'dev'];
+      const requiredScripts = ["build", "start", "dev"];
       const missingScripts: string[] = [];
 
       for (const script of requiredScripts) {
@@ -202,21 +206,21 @@ class DeploymentReadinessChecker {
 
       if (missingScripts.length === 0) {
         this.addResult(
-          'Build Scripts',
-          'pass',
-          'All required npm scripts are configured'
+          "Build Scripts",
+          "pass",
+          "All required npm scripts are configured",
         );
       } else {
         this.addResult(
-          'Build Scripts',
-          'fail',
-          'Missing required npm scripts',
-          missingScripts
+          "Build Scripts",
+          "fail",
+          "Missing required npm scripts",
+          missingScripts,
         );
       }
 
       // Check for essential dependencies
-      const requiredDeps = ['express', 'drizzle-orm', 'postgres'];
+      const requiredDeps = ["express", "drizzle-orm", "postgres"];
       const missingDeps: string[] = [];
 
       for (const dep of requiredDeps) {
@@ -227,32 +231,32 @@ class DeploymentReadinessChecker {
 
       if (missingDeps.length === 0) {
         this.addResult(
-          'Dependencies',
-          'pass',
-          'All essential dependencies are installed'
+          "Dependencies",
+          "pass",
+          "All essential dependencies are installed",
         );
       } else {
         this.addResult(
-          'Dependencies',
-          'fail',
-          'Missing essential dependencies',
-          missingDeps
+          "Dependencies",
+          "fail",
+          "Missing essential dependencies",
+          missingDeps,
         );
       }
     } catch (error) {
       const err = error as Error;
       this.addResult(
-        'Build Configuration',
-        'fail',
-        'Failed to read package.json',
-        [err.message]
+        "Build Configuration",
+        "fail",
+        "Failed to read package.json",
+        [err.message],
       );
     }
   }
 
   async runAllChecks(): Promise<void> {
-    console.log('🚀 Starting Deployment Readiness Check\n');
-    console.log('=' .repeat(60));
+    console.log("🚀 Starting Deployment Readiness Check\n");
+    console.log("=".repeat(60));
 
     await this.checkEnvironmentVariables();
     await this.checkRequiredFiles();
@@ -260,8 +264,8 @@ class DeploymentReadinessChecker {
     await this.checkDatabaseConnection();
     await this.checkMigrations();
 
-    console.log('\n' + '=' .repeat(60));
-    console.log('📊 DEPLOYMENT READINESS REPORT\n');
+    console.log("\n" + "=".repeat(60));
+    console.log("📊 DEPLOYMENT READINESS REPORT\n");
 
     let passCount = 0;
     let failCount = 0;
@@ -272,29 +276,37 @@ class DeploymentReadinessChecker {
       console.log(`${icon} ${result.name}: ${result.message}`);
 
       if (result.details && result.details.length > 0) {
-        result.details.forEach(detail => {
+        result.details.forEach((detail) => {
           console.log(`   • ${detail}`);
         });
       }
       console.log();
 
       switch (result.status) {
-        case 'pass': passCount++; break;
-        case 'fail': failCount++; break;
-        case 'warning': warningCount++; break;
+        case "pass":
+          passCount++;
+          break;
+        case "fail":
+          failCount++;
+          break;
+        case "warning":
+          warningCount++;
+          break;
       }
     }
 
-    console.log('=' .repeat(60));
-    console.log(`📈 SUMMARY: ${passCount} passed, ${failCount} failed, ${warningCount} warnings\n`);
+    console.log("=".repeat(60));
+    console.log(
+      `📈 SUMMARY: ${passCount} passed, ${failCount} failed, ${warningCount} warnings\n`,
+    );
 
     if (failCount === 0) {
-      console.log('🎉 DEPLOYMENT READY! All critical checks passed.');
+      console.log("🎉 DEPLOYMENT READY! All critical checks passed.");
       if (warningCount > 0) {
-        console.log('⚠️  Please review warnings before deploying.');
+        console.log("⚠️  Please review warnings before deploying.");
       }
     } else {
-      console.log('🚫 NOT READY FOR DEPLOYMENT! Please fix the failed checks.');
+      console.log("🚫 NOT READY FOR DEPLOYMENT! Please fix the failed checks.");
       process.exit(1);
     }
   }
@@ -306,7 +318,7 @@ async function main() {
   await checker.runAllChecks();
 }
 
-main().catch(error => {
-  console.error('Deployment readiness check failed:', error);
+main().catch((error) => {
+  console.error("Deployment readiness check failed:", error);
   process.exit(1);
 });

@@ -14,6 +14,7 @@ This directory contains components specific to the dashboard functionality of th
 ## Usage Guidelines
 
 1. Dashboard components should:
+
    - Focus on data visualization and metrics display
    - Support responsive layouts
    - Handle loading and error states gracefully

@@ -1,11 +1,13 @@
 # Email Service Integration - Deployment Guide
 
 ## Overview
+
 This guide covers the email service integration testing results and deployment instructions for the CleanRylie project.
 
 ## Test Results Summary
 
 ### ✅ Completed Tests
+
 - **Email Service Structure Exploration**: SendGrid integration with nodemailer
 - **Template Validation**: All email templates render correctly
 - **Notification System**: Working notification infrastructure
@@ -13,6 +15,7 @@ This guide covers the email service integration testing results and deployment i
 - **Bounce Handling**: Proper error handling and retry logic
 
 ### 📊 Test Coverage
+
 - **26/26 tests passed** in mock environment (100% success rate)
 - Email template structure validation
 - Function interface validation
@@ -26,6 +29,7 @@ This guide covers the email service integration testing results and deployment i
 ### 1. Environment Configuration
 
 #### Required Environment Variables
+
 ```bash
 # Email Service Configuration
 EMAIL_SERVICE=sendgrid
@@ -42,7 +46,9 @@ FRONTEND_URL=https://your-production-domain.com
 ```
 
 #### Alternative Email Services
+
 The system supports multiple email services:
+
 - **SendGrid** (recommended for production)
 - **Gmail** (development/testing)
 - **SMTP** (custom SMTP server)
@@ -50,11 +56,13 @@ The system supports multiple email services:
 ### 2. SendGrid Setup
 
 1. **Create SendGrid Account**
+
    - Sign up at [SendGrid](https://sendgrid.com)
    - Verify your domain
    - Create an API key with mail sending permissions
 
 2. **Domain Authentication**
+
    - Set up domain authentication in SendGrid
    - Add DNS records as instructed
    - Verify domain ownership
@@ -66,6 +74,7 @@ The system supports multiple email services:
 ### 3. Database Configuration
 
 For inventory email processing:
+
 ```bash
 # Database connection required for inventory features
 DATABASE_URL=your_database_connection_string
@@ -74,12 +83,14 @@ DATABASE_URL=your_database_connection_string
 ### 4. Testing in Production
 
 #### Basic Email Test
+
 ```bash
 cd /path/to/cleanrylie
 npm run test:email
 ```
 
 #### Comprehensive Testing
+
 ```bash
 cd /path/to/cleanrylie
 SENDGRID_API_KEY=your_key EMAIL_SERVICE=sendgrid tsx scripts/test-email-comprehensive.ts
@@ -90,26 +101,28 @@ SENDGRID_API_KEY=your_key EMAIL_SERVICE=sendgrid tsx scripts/test-email-comprehe
 ### 📧 Available Email Functions
 
 1. **Basic Email Sending**
+
    ```typescript
    await sendEmail({
-     to: 'user@example.com',
-     subject: 'Subject',
-     html: '<p>HTML content</p>',
-     text: 'Plain text content'
+     to: "user@example.com",
+     subject: "Subject",
+     html: "<p>HTML content</p>",
+     text: "Plain text content",
    });
    ```
 
 2. **Template-based Emails**
+
    ```typescript
-   await sendWelcomeEmail('user@example.com', 'User Name');
-   await sendPasswordResetEmail('user@example.com', 'reset-token');
-   await sendNotificationEmail('user@example.com', 'Subject', 'Message');
+   await sendWelcomeEmail("user@example.com", "User Name");
+   await sendPasswordResetEmail("user@example.com", "reset-token");
+   await sendNotificationEmail("user@example.com", "Subject", "Message");
    ```
 
 3. **Business-specific Emails**
    ```typescript
-   await sendHandoverEmail('agent@dealer.com', handoverData);
-   await sendReportEmail('user@example.com', 'report-123', 'Weekly');
+   await sendHandoverEmail("agent@dealer.com", handoverData);
+   await sendReportEmail("user@example.com", "report-123", "Weekly");
    ```
 
 ### 📦 Inventory Email Processing
@@ -133,6 +146,7 @@ The system includes sophisticated error handling:
 ### 📊 Monitoring & Logging
 
 All email operations are logged with:
+
 - Success/failure status
 - Message IDs for tracking
 - Error details for debugging
@@ -141,11 +155,13 @@ All email operations are logged with:
 ## Security Considerations
 
 1. **API Key Protection**
+
    - Store SendGrid API key securely
    - Use environment variables
    - Rotate keys regularly
 
 2. **Email Validation**
+
    - Input validation on all email addresses
    - XSS protection in HTML templates
    - Rate limiting on email sending
@@ -158,11 +174,13 @@ All email operations are logged with:
 ## Performance Optimization
 
 1. **Connection Pooling**
+
    - Configured for optimal throughput
    - Maximum 5 connections for SendGrid
    - Connection reuse for efficiency
 
 2. **Rate Limiting**
+
    - Built-in retry mechanisms
    - Exponential backoff
    - Maximum delay caps
@@ -177,11 +195,13 @@ All email operations are logged with:
 ### Common Issues
 
 1. **Authentication Errors**
+
    - Verify SendGrid API key
    - Check domain authentication
    - Ensure proper permissions
 
 2. **Delivery Issues**
+
    - Check spam filters
    - Verify sender reputation
    - Monitor bounce rates
@@ -194,6 +214,7 @@ All email operations are logged with:
 ### Log Analysis
 
 Check application logs for:
+
 ```
 [Email Service] - Success/failure messages
 [Template] - Variable substitution issues
@@ -217,6 +238,7 @@ Check application logs for:
 ## Support & Maintenance
 
 ### Regular Tasks
+
 1. Monitor email delivery rates
 2. Review bounce reports
 3. Update templates as needed
@@ -224,6 +246,7 @@ Check application logs for:
 5. Review and optimize retry configurations
 
 ### Scaling Considerations
+
 - SendGrid scaling plans
 - Database performance for inventory processing
 - Queue system for high volume (future enhancement)

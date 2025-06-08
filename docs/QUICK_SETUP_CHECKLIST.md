@@ -23,11 +23,13 @@
 ## Phase 3: CleanRylie Database Configuration
 
 - [ ] **Check existing dealerships:**
+
   ```bash
   node scripts/check-dealerships.js
   ```
 
 - [ ] **Configure client in database:**
+
   ```bash
   node scripts/setup-client-domain-node.js \
     "Client Name" \
@@ -97,7 +99,7 @@
 ✅ **SendGrid verified:** Green status in dashboard  
 ✅ **IMAP processing:** CleanRylie connects successfully  
 ✅ **Professional emails:** Custom domain sender  
-✅ **Complete flow:** ADF → processing → professional response  
+✅ **Complete flow:** ADF → processing → professional response
 
 ## Client Communication
 
@@ -108,30 +110,33 @@
 
 ## Time Estimates
 
-| Phase | Time Required | Notes |
-|-------|---------------|-------|
-| Domain/Email Purchase | 15 minutes | Client side |
-| Gmail Setup | 10 minutes | Create account + 2FA |
-| Database Configuration | 5 minutes | Run script |
-| Email Forwarding | 10 minutes | Namecheap interface |
-| SendGrid Setup | 15 minutes | Domain authentication |
-| DNS Configuration | 15 minutes | Add 4 records |
-| Verification/Testing | 30 minutes | Wait for propagation |
-| **Total Active Time** | **1.5 hours** | Plus 24-48h DNS wait |
+| Phase                  | Time Required | Notes                 |
+| ---------------------- | ------------- | --------------------- |
+| Domain/Email Purchase  | 15 minutes    | Client side           |
+| Gmail Setup            | 10 minutes    | Create account + 2FA  |
+| Database Configuration | 5 minutes     | Run script            |
+| Email Forwarding       | 10 minutes    | Namecheap interface   |
+| SendGrid Setup         | 15 minutes    | Domain authentication |
+| DNS Configuration      | 15 minutes    | Add 4 records         |
+| Verification/Testing   | 30 minutes    | Wait for propagation  |
+| **Total Active Time**  | **1.5 hours** | Plus 24-48h DNS wait  |
 
 ## Common Issues & Solutions
 
 **Forwarding not working:**
+
 - Check Private Email settings
 - Verify auto-forward enabled
 - Test with simple email
 
 **SendGrid verification failed:**
+
 - Double-check DNS records
 - Wait longer for propagation
 - Use DNS checker tools
 
 **IMAP connection issues:**
+
 - Verify app password correct
 - Check database configuration
 - Ensure 2FA enabled on Gmail
@@ -145,6 +150,7 @@
 ## Next Client Setup
 
 For subsequent clients, repeat this checklist with:
+
 - Different domain name
 - Different Gmail account for IMAP
 - Different professional email address

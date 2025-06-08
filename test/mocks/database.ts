@@ -5,10 +5,10 @@
  * compatible with Drizzle ORM for testing purposes.
  */
 
-import { newDb, DataType } from 'pg-mem';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import * as schema from '../../shared/index';
+import { newDb, DataType } from "pg-mem";
+import { drizzle } from "drizzle-orm/node-postgres";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import * as schema from "../../shared/index";
 
 // Type definitions for our mock database
 export type MockDatabase = NodePgDatabase<typeof schema>;
@@ -55,7 +55,10 @@ interface MockTransaction {
 /**
  * Creates enhanced mock query builder with method chaining support
  */
-function createMockQueryBuilder(client: any, mockData: any[] = []): MockQueryBuilder {
+function createMockQueryBuilder(
+  client: any,
+  mockData: any[] = [],
+): MockQueryBuilder {
   const builder: MockQueryBuilder = {
     select: () => builder,
     from: (table: any) => builder,
@@ -68,17 +71,30 @@ function createMockQueryBuilder(client: any, mockData: any[] = []): MockQueryBui
     values: (data: any) => createMockInsertBuilder(client, null, data),
     returning: async (columns?: any) => {
       // Return mock data with generated IDs
-      return mockData.length > 0 ? mockData : [
-        { id: Math.floor(Math.random() * 1000), externalId: 'test-123', dealershipId: 1 }
-      ];
+      return mockData.length > 0
+        ? mockData
+        : [
+            {
+              id: Math.floor(Math.random() * 1000),
+              externalId: "test-123",
+              dealershipId: 1,
+            },
+          ];
     },
     execute: async () => ({ rows: mockData, rowCount: mockData.length }),
     then: async (callback: (result: any) => any) => {
-      const result = mockData.length > 0 ? mockData : [
-        { id: Math.floor(Math.random() * 1000), externalId: 'test-123', dealershipId: 1 }
-      ];
+      const result =
+        mockData.length > 0
+          ? mockData
+          : [
+              {
+                id: Math.floor(Math.random() * 1000),
+                externalId: "test-123",
+                dealershipId: 1,
+              },
+            ];
       return callback(result);
-    }
+    },
   };
   return builder;
 }
@@ -86,7 +102,11 @@ function createMockQueryBuilder(client: any, mockData: any[] = []): MockQueryBui
 /**
  * Creates enhanced mock insert builder with returning support
  */
-function createMockInsertBuilder(client: any, table?: any, initialData?: any): MockInsertBuilder {
+function createMockInsertBuilder(
+  client: any,
+  table?: any,
+  initialData?: any,
+): MockInsertBuilder {
   let insertData = initialData || {};
 
   const builder: MockInsertBuilder = {
@@ -99,10 +119,10 @@ function createMockInsertBuilder(client: any, table?: any, initialData?: any): M
       const result = {
         id: Math.floor(Math.random() * 1000),
         ...insertData,
-        externalId: insertData.externalId || 'test-123',
+        externalId: insertData.externalId || "test-123",
         dealershipId: insertData.dealershipId || 1,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       return [result];
     },
@@ -111,7 +131,7 @@ function createMockInsertBuilder(client: any, table?: any, initialData?: any): M
         id: Math.floor(Math.random() * 1000),
         ...insertData,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       return { rows: [result], rowCount: 1 };
     },
@@ -119,13 +139,13 @@ function createMockInsertBuilder(client: any, table?: any, initialData?: any): M
       const result = {
         id: Math.floor(Math.random() * 1000),
         ...insertData,
-        externalId: insertData.externalId || 'test-123',
+        externalId: insertData.externalId || "test-123",
         dealershipId: insertData.dealershipId || 1,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
       return callback([result]);
-    }
+    },
   };
   return builder;
 }
@@ -139,20 +159,23 @@ export async function createMockDatabase(): Promise<DatabaseMock> {
 
   // Add common PostgreSQL extensions and types that Drizzle might use
   mem.public.registerFunction({
-    name: 'now',
+    name: "now",
     implementation: () => new Date(),
     returns: DataType.timestamptz,
   });
 
   mem.public.registerFunction({
-    name: 'gen_random_uuid',
+    name: "gen_random_uuid",
     implementation: () => {
       // Simple UUID v4 generator
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
+      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+        /[xy]/g,
+        function (c) {
+          const r = (Math.random() * 16) | 0;
+          const v = c === "x" ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        },
+      );
     },
     returns: DataType.uuid,
   });
@@ -165,14 +188,16 @@ export async function createMockDatabase(): Promise<DatabaseMock> {
   const db = drizzle(client, { schema }) as MockDatabase;
 
   // Add enhanced mock methods to support method chaining
-  (db as any).transaction = async (callback: (tx: MockTransaction) => Promise<any>) => {
+  (db as any).transaction = async (
+    callback: (tx: MockTransaction) => Promise<any>,
+  ) => {
     const mockTx: MockTransaction = {
       select: () => createMockQueryBuilder(client),
       insert: (table: any) => createMockInsertBuilder(client, table),
       update: (table: any) => createMockQueryBuilder(client),
       delete: () => createMockQueryBuilder(client),
       rollback: async () => {},
-      commit: async () => {}
+      commit: async () => {},
     };
     return await callback(mockTx);
   };
@@ -191,14 +216,14 @@ export async function createMockDatabase(): Promise<DatabaseMock> {
     client,
     cleanup: async () => {
       // Close any connections
-      if (client && typeof client.end === 'function') {
+      if (client && typeof client.end === "function") {
         await client.end();
       }
     },
     reset: async () => {
       // Clear all data from tables
       await clearAllTables(client);
-    }
+    },
   };
 }
 
@@ -208,7 +233,7 @@ export async function createMockDatabase(): Promise<DatabaseMock> {
 async function createTables(client: any): Promise<void> {
   // Create tables using direct SQL execution on the pg-mem client
   // This creates the basic tables needed for testing
-  
+
   // Users and dealerships first (no dependencies)
   await client.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -296,11 +321,11 @@ async function createTables(client: any): Promise<void> {
 async function clearAllTables(client: any): Promise<void> {
   // Clear tables in reverse dependency order
   const tables = [
-    'messages',
-    'conversations', 
-    'email_messages',
-    'users',
-    'dealerships'
+    "messages",
+    "conversations",
+    "email_messages",
+    "users",
+    "dealerships",
   ];
 
   for (const table of tables) {

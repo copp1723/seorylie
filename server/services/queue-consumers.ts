@@ -3,9 +3,9 @@
  *
  * This module sets up consumers for the various queue types in the system
  */
-import { processEmailQueue, processReportQueue } from './queue';
-import logger from '../utils/logger';
-import * as emailService from './email-service';
+import { processEmailQueue, processReportQueue } from "./queue";
+import logger from "../utils/logger";
+import * as emailService from "./email-service";
 
 /**
  * Initialize all queue processors
@@ -19,23 +19,34 @@ export async function initializeQueueConsumers() {
 
     try {
       switch (type) {
-        case 'welcome':
+        case "welcome":
           await emailService.sendWelcomeEmail(data.email, data.name);
           break;
 
-        case 'report':
-          await emailService.sendReportEmail(data.email, data.reportId, data.reportType);
+        case "report":
+          await emailService.sendReportEmail(
+            data.email,
+            data.reportId,
+            data.reportType,
+          );
           break;
 
-        case 'notification':
-          await emailService.sendNotificationEmail(data.email, data.subject, data.message);
+        case "notification":
+          await emailService.sendNotificationEmail(
+            data.email,
+            data.subject,
+            data.message,
+          );
           break;
 
-        case 'password_reset':
-          await emailService.sendPasswordResetEmail(data.email, data.resetToken);
+        case "password_reset":
+          await emailService.sendPasswordResetEmail(
+            data.email,
+            data.resetToken,
+          );
           break;
 
-        case 'handover':
+        case "handover":
           await emailService.sendHandoverEmail(data.email, data.handoverData);
           break;
 
@@ -58,19 +69,25 @@ export async function initializeQueueConsumers() {
 
     try {
       switch (type) {
-        case 'daily_summary':
+        case "daily_summary":
           // Implementation would go here (mocked for now)
-          logger.info(`Generated daily summary report for dealership ${data.dealershipId}`);
+          logger.info(
+            `Generated daily summary report for dealership ${data.dealershipId}`,
+          );
           break;
 
-        case 'weekly_analytics':
+        case "weekly_analytics":
           // Implementation would go here (mocked for now)
-          logger.info(`Generated weekly analytics report for dealership ${data.dealershipId}`);
+          logger.info(
+            `Generated weekly analytics report for dealership ${data.dealershipId}`,
+          );
           break;
 
-        case 'conversation_metrics':
+        case "conversation_metrics":
           // Implementation would go here (mocked for now)
-          logger.info(`Generated conversation metrics report for dealership ${data.dealershipId}`);
+          logger.info(
+            `Generated conversation metrics report for dealership ${data.dealershipId}`,
+          );
           break;
 
         default:
@@ -84,7 +101,7 @@ export async function initializeQueueConsumers() {
     }
   });
 
-  logger.info('Queue consumers initialized');
+  logger.info("Queue consumers initialized");
 }
 
 export default { initializeQueueConsumers };

@@ -1,16 +1,16 @@
 /**
  * Telemetry Utilities for WebSocket and Distributed Tracing
- * 
+ *
  * This module provides utility functions for OpenTelemetry tracing
  * specifically designed for WebSocket operations and cross-service communication.
  */
 
-import { trace, context, SpanStatusCode, Span } from '@opentelemetry/api';
-import { v4 as uuidv4 } from 'uuid';
-import logger from './logger';
+import { trace, context, SpanStatusCode, Span } from "@opentelemetry/api";
+import { v4 as uuidv4 } from "uuid";
+import logger from "./logger";
 
 // Service name for telemetry
-const SERVICE_NAME = process.env.OTEL_SERVICE_NAME || 'cleanrylie-websocket';
+const SERVICE_NAME = process.env.OTEL_SERVICE_NAME || "cleanrylie-websocket";
 
 /**
  * Generate a unique trace ID for correlation
@@ -25,22 +25,22 @@ export function generateTraceId(): string {
 export function createWebSocketSpan(
   operationName: string,
   connectionId?: string,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): Span {
   const tracer = trace.getTracer(SERVICE_NAME);
   const span = tracer.startSpan(`websocket:${operationName}`);
-  
+
   // Add default attributes
   span.setAttributes({
-    'service.name': SERVICE_NAME,
-    'operation.type': 'websocket',
-    'websocket.operation': operationName,
-    ...attributes
+    "service.name": SERVICE_NAME,
+    "operation.type": "websocket",
+    "websocket.operation": operationName,
+    ...attributes,
   });
 
   // Add connection ID if provided
   if (connectionId) {
-    span.setAttribute('websocket.connection.id', connectionId);
+    span.setAttribute("websocket.connection.id", connectionId);
   }
 
   return span;
@@ -53,21 +53,21 @@ export function createMessageSpan(
   messageType: string,
   connectionId: string,
   messageSize?: number,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): Span {
   const tracer = trace.getTracer(SERVICE_NAME);
   const span = tracer.startSpan(`websocket:message:${messageType}`);
-  
+
   span.setAttributes({
-    'service.name': SERVICE_NAME,
-    'operation.type': 'websocket_message',
-    'websocket.message.type': messageType,
-    'websocket.connection.id': connectionId,
-    ...attributes
+    "service.name": SERVICE_NAME,
+    "operation.type": "websocket_message",
+    "websocket.message.type": messageType,
+    "websocket.connection.id": connectionId,
+    ...attributes,
   });
 
   if (messageSize !== undefined) {
-    span.setAttribute('websocket.message.size_bytes', messageSize);
+    span.setAttribute("websocket.message.size_bytes", messageSize);
   }
 
   return span;
@@ -77,19 +77,19 @@ export function createMessageSpan(
  * Create a span for connection lifecycle events
  */
 export function createConnectionSpan(
-  event: 'connect' | 'disconnect' | 'health_check' | 'cleanup',
+  event: "connect" | "disconnect" | "health_check" | "cleanup",
   connectionId: string,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): Span {
   const tracer = trace.getTracer(SERVICE_NAME);
   const span = tracer.startSpan(`websocket:connection:${event}`);
-  
+
   span.setAttributes({
-    'service.name': SERVICE_NAME,
-    'operation.type': 'websocket_connection',
-    'websocket.connection.event': event,
-    'websocket.connection.id': connectionId,
-    ...attributes
+    "service.name": SERVICE_NAME,
+    "operation.type": "websocket_connection",
+    "websocket.connection.event": event,
+    "websocket.connection.id": connectionId,
+    ...attributes,
   });
 
   return span;
@@ -98,19 +98,23 @@ export function createConnectionSpan(
 /**
  * Add error information to a span
  */
-export function addSpanError(span: Span, error: Error, errorType?: string): void {
+export function addSpanError(
+  span: Span,
+  error: Error,
+  errorType?: string,
+): void {
   span.recordException(error);
   span.setStatus({
     code: SpanStatusCode.ERROR,
-    message: error.message
+    message: error.message,
   });
 
   if (errorType) {
-    span.setAttribute('error.type', errorType);
+    span.setAttribute("error.type", errorType);
   }
 
-  span.setAttribute('error.name', error.name);
-  span.setAttribute('error.message', error.message);
+  span.setAttribute("error.name", error.name);
+  span.setAttribute("error.message", error.message);
 }
 
 /**
@@ -119,7 +123,7 @@ export function addSpanError(span: Span, error: Error, errorType?: string): void
 export function addSpanSuccess(span: Span, message?: string): void {
   span.setStatus({
     code: SpanStatusCode.OK,
-    message: message || 'Operation completed successfully'
+    message: message || "Operation completed successfully",
   });
 }
 
@@ -129,11 +133,11 @@ export function addSpanSuccess(span: Span, message?: string): void {
 export async function traceAsyncOperation<T>(
   operationName: string,
   operation: (span: Span) => Promise<T>,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): Promise<T> {
   const tracer = trace.getTracer(SERVICE_NAME);
   const span = tracer.startSpan(operationName);
-  
+
   if (attributes) {
     span.setAttributes(attributes);
   }
@@ -156,11 +160,11 @@ export async function traceAsyncOperation<T>(
 export function traceSyncOperation<T>(
   operationName: string,
   operation: (span: Span) => T,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): T {
   const tracer = trace.getTracer(SERVICE_NAME);
   const span = tracer.startSpan(operationName);
-  
+
   if (attributes) {
     span.setAttributes(attributes);
   }
@@ -182,7 +186,7 @@ export function traceSyncOperation<T>(
  */
 export function createTimer(): () => number {
   const start = process.hrtime.bigint();
-  
+
   return () => {
     const end = process.hrtime.bigint();
     return Number(end - start) / 1e9; // Convert to seconds
@@ -192,12 +196,16 @@ export function createTimer(): () => number {
 /**
  * Add timing information to a span
  */
-export function addTimingToSpan(span: Span, durationSeconds: number, operationType?: string): void {
-  span.setAttribute('duration.seconds', durationSeconds);
-  span.setAttribute('duration.milliseconds', durationSeconds * 1000);
-  
+export function addTimingToSpan(
+  span: Span,
+  durationSeconds: number,
+  operationType?: string,
+): void {
+  span.setAttribute("duration.seconds", durationSeconds);
+  span.setAttribute("duration.milliseconds", durationSeconds * 1000);
+
   if (operationType) {
-    span.setAttribute('operation.duration_type', operationType);
+    span.setAttribute("operation.duration_type", operationType);
   }
 }
 
@@ -211,22 +219,24 @@ export function createCorrelationId(): string {
 /**
  * Extract trace context from HTTP headers
  */
-export function extractTraceContext(headers: Record<string, string | string[] | undefined>): any {
+export function extractTraceContext(
+  headers: Record<string, string | string[] | undefined>,
+): any {
   try {
     // Extract W3C trace context headers
-    const traceParent = headers['traceparent'];
-    const traceState = headers['tracestate'];
-    
+    const traceParent = headers["traceparent"];
+    const traceState = headers["tracestate"];
+
     if (traceParent) {
       return {
         traceParent: Array.isArray(traceParent) ? traceParent[0] : traceParent,
-        traceState: Array.isArray(traceState) ? traceState[0] : traceState
+        traceState: Array.isArray(traceState) ? traceState[0] : traceState,
       };
     }
-    
+
     return null;
   } catch (error) {
-    logger.warn('Failed to extract trace context from headers:', error);
+    logger.warn("Failed to extract trace context from headers:", error);
     return null;
   }
 }
@@ -234,7 +244,10 @@ export function extractTraceContext(headers: Record<string, string | string[] | 
 /**
  * Inject trace context into HTTP headers
  */
-export function injectTraceContext(headers: Record<string, string>, span?: Span): Record<string, string> {
+export function injectTraceContext(
+  headers: Record<string, string>,
+  span?: Span,
+): Record<string, string> {
   try {
     const activeSpan = span || trace.getActiveSpan();
     if (!activeSpan) {
@@ -245,13 +258,13 @@ export function injectTraceContext(headers: Record<string, string>, span?: Span)
     // you would use the OpenTelemetry propagator API
     const spanContext = activeSpan.spanContext();
     if (spanContext) {
-      headers['x-trace-id'] = spanContext.traceId;
-      headers['x-span-id'] = spanContext.spanId;
+      headers["x-trace-id"] = spanContext.traceId;
+      headers["x-span-id"] = spanContext.spanId;
     }
 
     return headers;
   } catch (error) {
-    logger.warn('Failed to inject trace context into headers:', error);
+    logger.warn("Failed to inject trace context into headers:", error);
     return headers;
   }
 }
@@ -262,14 +275,18 @@ export function injectTraceContext(headers: Record<string, string>, span?: Span)
 export function createChildSpan(
   operationName: string,
   parentSpan?: Span,
-  attributes?: Record<string, string | number | boolean>
+  attributes?: Record<string, string | number | boolean>,
 ): Span {
   const tracer = trace.getTracer(SERVICE_NAME);
-  
+
   const span = parentSpan
-    ? tracer.startSpan(operationName, {}, trace.setSpan(context.active(), parentSpan))
+    ? tracer.startSpan(
+        operationName,
+        {},
+        trace.setSpan(context.active(), parentSpan),
+      )
     : tracer.startSpan(operationName);
-  
+
   if (attributes) {
     span.setAttributes(attributes);
   }
@@ -280,13 +297,17 @@ export function createChildSpan(
 /**
  * Log trace information for debugging
  */
-export function logTraceInfo(span: Span, message: string, additionalData?: Record<string, any>): void {
+export function logTraceInfo(
+  span: Span,
+  message: string,
+  additionalData?: Record<string, any>,
+): void {
   const spanContext = span.spanContext();
-  
+
   logger.debug(message, {
     traceId: spanContext.traceId,
     spanId: spanContext.spanId,
-    ...additionalData
+    ...additionalData,
   });
 }
 
@@ -302,7 +323,7 @@ export function createBaggage(key: string, value: string): void {
       activeSpan.setAttribute(`baggage.${key}`, value);
     }
   } catch (error) {
-    logger.warn('Failed to create baggage:', error);
+    logger.warn("Failed to create baggage:", error);
   }
 }
 
@@ -322,5 +343,5 @@ export default {
   injectTraceContext,
   createChildSpan,
   logTraceInfo,
-  createBaggage
+  createBaggage,
 };

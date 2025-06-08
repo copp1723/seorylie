@@ -2,9 +2,9 @@
 
 /**
  * ADF Lead Ingestion Endpoint Test Script
- * 
+ *
  * Tests the POST /api/adf/lead endpoint for DEP-004/005 validation
- * 
+ *
  * Features tested:
  * - Basic ADF XML processing
  * - Rate limiting (30 req/min/IP)
@@ -14,9 +14,9 @@
  * - V2/V1 parser fallback
  */
 
-import { performance } from 'perf_hooks';
+import { performance } from "perf_hooks";
 
-const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:3000";
 const ADF_ENDPOINT = `${BASE_URL}/api/adf/lead`;
 
 // Sample ADF XML for testing
@@ -77,7 +77,7 @@ class AdfEndpointTester {
   private results: TestResult[] = [];
 
   async runAllTests(): Promise<void> {
-    console.log('🚀 Starting ADF Lead Ingestion Endpoint Tests\n');
+    console.log("🚀 Starting ADF Lead Ingestion Endpoint Tests\n");
 
     // Test 1: Basic ADF XML Processing
     await this.testBasicAdfProcessing();
@@ -108,178 +108,174 @@ class AdfEndpointTester {
 
   private async testBasicAdfProcessing(): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
       const response = await fetch(ADF_ENDPOINT, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/xml',
+          "Content-Type": "application/xml",
         },
-        body: SAMPLE_ADF_XML
+        body: SAMPLE_ADF_XML,
       });
 
       const data = await response.json();
       const duration = performance.now() - startTime;
 
       this.results.push({
-        name: 'Basic ADF XML Processing',
+        name: "Basic ADF XML Processing",
         success: response.status === 201 || response.status === 200,
         duration,
         details: {
           status: response.status,
-          response: data
-        }
+          response: data,
+        },
       });
-
     } catch (error) {
       this.results.push({
-        name: 'Basic ADF XML Processing',
+        name: "Basic ADF XML Processing",
         success: false,
         duration: performance.now() - startTime,
         details: {},
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   private async testJsonPayload(): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
       const response = await fetch(ADF_ENDPOINT, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           xmlContent: SAMPLE_ADF_XML,
-          source: 'test_api',
-          dealershipId: 1
-        })
+          source: "test_api",
+          dealershipId: 1,
+        }),
       });
 
       const data = await response.json();
       const duration = performance.now() - startTime;
 
       this.results.push({
-        name: 'JSON Payload with XML Content',
+        name: "JSON Payload with XML Content",
         success: response.status === 201 || response.status === 200,
         duration,
         details: {
           status: response.status,
-          response: data
-        }
+          response: data,
+        },
       });
-
     } catch (error) {
       this.results.push({
-        name: 'JSON Payload with XML Content',
+        name: "JSON Payload with XML Content",
         success: false,
         duration: performance.now() - startTime,
         details: {},
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   private async testSizeLimit(): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
       // Create XML larger than 500KB
-      const largeXml = SAMPLE_ADF_XML + 'x'.repeat(600 * 1024);
-      
+      const largeXml = SAMPLE_ADF_XML + "x".repeat(600 * 1024);
+
       const response = await fetch(ADF_ENDPOINT, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/xml',
+          "Content-Type": "application/xml",
         },
-        body: largeXml
+        body: largeXml,
       });
 
       const data = await response.json();
       const duration = performance.now() - startTime;
 
       this.results.push({
-        name: 'Size Limit Validation (500KB)',
+        name: "Size Limit Validation (500KB)",
         success: response.status === 413, // Should be rejected
         duration,
         details: {
           status: response.status,
           response: data,
-          payloadSize: `${Math.round(largeXml.length / 1024)}KB`
-        }
+          payloadSize: `${Math.round(largeXml.length / 1024)}KB`,
+        },
       });
-
     } catch (error) {
       this.results.push({
-        name: 'Size Limit Validation (500KB)',
+        name: "Size Limit Validation (500KB)",
         success: false,
         duration: performance.now() - startTime,
         details: {},
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   private async testRateLimiting(): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
-      console.log('⏳ Testing rate limiting (sending 35 requests rapidly)...');
-      
+      console.log("⏳ Testing rate limiting (sending 35 requests rapidly)...");
+
       const promises = [];
       for (let i = 0; i < 35; i++) {
         promises.push(
           fetch(ADF_ENDPOINT, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
               xmlContent: SAMPLE_ADF_XML,
-              source: `rate_test_${i}`
-            })
-          })
+              source: `rate_test_${i}`,
+            }),
+          }),
         );
       }
 
       const responses = await Promise.all(promises);
-      const rateLimitedCount = responses.filter(r => r.status === 429).length;
+      const rateLimitedCount = responses.filter((r) => r.status === 429).length;
       const duration = performance.now() - startTime;
 
       this.results.push({
-        name: 'Rate Limiting (30 req/min/IP)',
+        name: "Rate Limiting (30 req/min/IP)",
         success: rateLimitedCount > 0, // Should have some rate limited requests
         duration,
         details: {
           totalRequests: 35,
           rateLimitedRequests: rateLimitedCount,
-          successfulRequests: responses.filter(r => r.status < 400).length
-        }
+          successfulRequests: responses.filter((r) => r.status < 400).length,
+        },
       });
-
     } catch (error) {
       this.results.push({
-        name: 'Rate Limiting (30 req/min/IP)',
+        name: "Rate Limiting (30 req/min/IP)",
         success: false,
         duration: performance.now() - startTime,
         details: {},
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   private async testXxeProtection(): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
       const response = await fetch(ADF_ENDPOINT, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/xml',
+          "Content-Type": "application/xml",
         },
-        body: XXE_ATTACK_XML
+        body: XXE_ATTACK_XML,
       });
 
       const data = await response.json();
@@ -287,108 +283,106 @@ class AdfEndpointTester {
 
       // Should either reject the XML or process it safely without exposing file contents
       const responseText = JSON.stringify(data).toLowerCase();
-      const hasFileContents = responseText.includes('root:') || responseText.includes('/bin/bash');
+      const hasFileContents =
+        responseText.includes("root:") || responseText.includes("/bin/bash");
 
       this.results.push({
-        name: 'XXE Protection',
+        name: "XXE Protection",
         success: !hasFileContents, // Success if no file contents are exposed
         duration,
         details: {
           status: response.status,
           response: data,
-          exposedFileContents: hasFileContents
-        }
+          exposedFileContents: hasFileContents,
+        },
       });
-
     } catch (error) {
       this.results.push({
-        name: 'XXE Protection',
+        name: "XXE Protection",
         success: true, // Error is acceptable for XXE protection
         duration: performance.now() - startTime,
         details: {},
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   private async testInvalidXml(): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
       const response = await fetch(ADF_ENDPOINT, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/xml',
+          "Content-Type": "application/xml",
         },
-        body: '<invalid>xml<unclosed>'
+        body: "<invalid>xml<unclosed>",
       });
 
       const data = await response.json();
       const duration = performance.now() - startTime;
 
       this.results.push({
-        name: 'Invalid XML Handling',
+        name: "Invalid XML Handling",
         success: response.status === 400, // Should be rejected
         duration,
         details: {
           status: response.status,
-          response: data
-        }
+          response: data,
+        },
       });
-
     } catch (error) {
       this.results.push({
-        name: 'Invalid XML Handling',
+        name: "Invalid XML Handling",
         success: false,
         duration: performance.now() - startTime,
         details: {},
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   private async testMissingXml(): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
       const response = await fetch(ADF_ENDPOINT, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          source: 'test_api'
+          source: "test_api",
           // Missing xmlContent
-        })
+        }),
       });
 
       const data = await response.json();
       const duration = performance.now() - startTime;
 
       this.results.push({
-        name: 'Missing XML Content',
+        name: "Missing XML Content",
         success: response.status === 400, // Should be rejected
         duration,
         details: {
           status: response.status,
-          response: data
-        }
+          response: data,
+        },
       });
-
     } catch (error) {
       this.results.push({
-        name: 'Missing XML Content',
+        name: "Missing XML Content",
         success: false,
         duration: performance.now() - startTime,
         details: {},
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   private async testPrometheusMetrics(): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
       const response = await fetch(`${BASE_URL}/metrics`);
       const metricsText = await response.text();
@@ -396,57 +390,58 @@ class AdfEndpointTester {
 
       // Check for ADF-specific metrics
       const hasAdfMetrics = [
-        'adf_ingest_success_total',
-        'adf_parse_failure_total',
-        'adf_ingest_duration_seconds'
-      ].every(metric => metricsText.includes(metric));
+        "adf_ingest_success_total",
+        "adf_parse_failure_total",
+        "adf_ingest_duration_seconds",
+      ].every((metric) => metricsText.includes(metric));
 
       this.results.push({
-        name: 'Prometheus Metrics',
+        name: "Prometheus Metrics",
         success: response.status === 200 && hasAdfMetrics,
         duration,
         details: {
           status: response.status,
           hasAdfMetrics,
-          metricsSize: `${Math.round(metricsText.length / 1024)}KB`
-        }
+          metricsSize: `${Math.round(metricsText.length / 1024)}KB`,
+        },
       });
-
     } catch (error) {
       this.results.push({
-        name: 'Prometheus Metrics',
+        name: "Prometheus Metrics",
         success: false,
         duration: performance.now() - startTime,
         details: {},
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
 
   private printResults(): void {
-    console.log('\n📊 Test Results Summary\n');
-    console.log('=' .repeat(80));
-    
+    console.log("\n📊 Test Results Summary\n");
+    console.log("=".repeat(80));
+
     let passed = 0;
     let failed = 0;
 
     this.results.forEach((result, index) => {
-      const status = result.success ? '✅ PASS' : '❌ FAIL';
+      const status = result.success ? "✅ PASS" : "❌ FAIL";
       const duration = `${Math.round(result.duration)}ms`;
-      
+
       console.log(`${index + 1}. ${result.name}`);
       console.log(`   Status: ${status} (${duration})`);
-      
+
       if (result.error) {
         console.log(`   Error: ${result.error}`);
       }
-      
+
       if (result.details && Object.keys(result.details).length > 0) {
-        console.log(`   Details: ${JSON.stringify(result.details, null, 2).replace(/\n/g, '\n            ')}`);
+        console.log(
+          `   Details: ${JSON.stringify(result.details, null, 2).replace(/\n/g, "\n            ")}`,
+        );
       }
-      
-      console.log('');
-      
+
+      console.log("");
+
       if (result.success) {
         passed++;
       } else {
@@ -454,13 +449,17 @@ class AdfEndpointTester {
       }
     });
 
-    console.log('=' .repeat(80));
-    console.log(`📈 Summary: ${passed} passed, ${failed} failed, ${this.results.length} total`);
-    
+    console.log("=".repeat(80));
+    console.log(
+      `📈 Summary: ${passed} passed, ${failed} failed, ${this.results.length} total`,
+    );
+
     if (failed === 0) {
-      console.log('🎉 All tests passed! ADF endpoint is ready for production.');
+      console.log("🎉 All tests passed! ADF endpoint is ready for production.");
     } else {
-      console.log('⚠️  Some tests failed. Please review and fix issues before deployment.');
+      console.log(
+        "⚠️  Some tests failed. Please review and fix issues before deployment.",
+      );
     }
   }
 }

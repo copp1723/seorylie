@@ -3635,9 +3635,7 @@
         "duration": 0,
         "message": "Missing environment variables: NODE_ENV",
         "details": {
-          "missingVars": [
-            "NODE_ENV"
-          ]
+          "missingVars": ["NODE_ENV"]
         },
         "severity": "medium"
       },
@@ -3948,9 +3946,7 @@
         "duration": 0,
         "message": "Missing environment variables: NODE_ENV",
         "details": {
-          "missingVars": [
-            "NODE_ENV"
-          ]
+          "missingVars": ["NODE_ENV"]
         },
         "severity": "medium"
       },

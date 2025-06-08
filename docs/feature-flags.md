@@ -7,6 +7,7 @@ The feature flag system provides runtime feature toggles for safe rollout and qu
 ## Feature Flag Naming Conventions
 
 ### Naming Format
+
 - Use kebab-case: `feature-name-description`
 - Keep names concise but descriptive
 - Include scope when relevant: `service-feature-name`
@@ -14,38 +15,45 @@ The feature flag system provides runtime feature toggles for safe rollout and qu
 ### Categories and Prefixes
 
 #### Authentication & Security
+
 - `jwt-*`: JWT and authentication related features
 - `auth-*`: General authentication features
 - `security-*`: Security enhancements
 
-#### AI & Agent Features  
+#### AI & Agent Features
+
 - `agent-*`: AI agent functionality
 - `ai-*`: General AI features
 - `squad-*`: Multi-agent features
 
 #### Infrastructure & Performance
+
 - `redis-*`: Redis-related features
 - `websocket-*`: WebSocket functionality
 - `sandbox-*`: Sandbox environment features
 - `performance-*`: Performance optimizations
 
 #### Data & Analytics
+
 - `event-*`: Event processing features
 - `schema-*`: Data schema features
 - `trace-*`: Tracing and monitoring
 - `analytics-*`: Analytics features
 
 #### UI & User Experience
+
 - `ui-*`: User interface features
 - `ux-*`: User experience improvements
 - `loading-*`: Loading states and progress
 
 #### Testing & Development
+
 - `test-*`: Testing features
 - `dev-*`: Development tools
 - `debug-*`: Debugging features
 
 ### Examples
+
 ```
 ✅ Good names:
 - jwt-refresh-rotation
@@ -66,38 +74,40 @@ The feature flag system provides runtime feature toggles for safe rollout and qu
 ### Backend Usage
 
 ```typescript
-import { isFeatureEnabled } from '../services/feature-flags';
+import { isFeatureEnabled } from "../services/feature-flags";
 
 // Simple check
-if (isFeatureEnabled('agent-squad-integration')) {
+if (isFeatureEnabled("agent-squad-integration")) {
   // Enable multi-agent features
 }
 
 // User-based rollout
-if (isFeatureEnabled('redis-websocket-scaling', userId)) {
+if (isFeatureEnabled("redis-websocket-scaling", userId)) {
   // Enable for specific users based on rollout percentage
 }
 
 // Middleware usage
-app.use('/api/new-feature', requireFeatureFlag('new-feature'), handler);
+app.use("/api/new-feature", requireFeatureFlag("new-feature"), handler);
 
 // Conditional middleware
-app.use(conditionalFeatureFlag(
-  'enhanced-auth',
-  enhancedAuthMiddleware,
-  basicAuthMiddleware
-));
+app.use(
+  conditionalFeatureFlag(
+    "enhanced-auth",
+    enhancedAuthMiddleware,
+    basicAuthMiddleware,
+  ),
+);
 ```
 
 ### Express Request Usage
 
 ```typescript
 // Available on all requests via middleware
-app.get('/api/data', (req, res) => {
-  if (req.featureFlags.isEnabled('enhanced-data-processing')) {
+app.get("/api/data", (req, res) => {
+  if (req.featureFlags.isEnabled("enhanced-data-processing")) {
     // Use enhanced processing
   }
-  
+
   // Get all flags for client
   const flags = req.featureFlags.getAll();
   res.json({ data, _featureFlags: flags });
@@ -152,6 +162,7 @@ DELETE /api/admin/feature-flags/cleanup?days=30
 ### Authentication
 
 All admin endpoints require admin privileges:
+
 - User role: `admin`
 - Permission: `manage-feature-flags`
 - Admin API key via `X-Admin-Key` header
@@ -165,8 +176,8 @@ interface FeatureFlag {
   description: string;
   deprecated?: boolean;
   deprecationDate?: string;
-  rolloutPercentage?: number;  // 0-100 for gradual rollout
-  environments?: string[];     // Restrict to specific environments
+  rolloutPercentage?: number; // 0-100 for gradual rollout
+  environments?: string[]; // Restrict to specific environments
 }
 ```
 
@@ -208,11 +219,13 @@ Created (disabled) → Development → Staging → Production (gradual) → Full
 ## Integration with CI/CD
 
 ### Pre-commit Hooks
+
 - Validate flag names match conventions
 - Check for deprecated flag usage
 - Ensure new flags are documented
 
 ### Build Pipeline
+
 - Environment-specific flag validation
 - Flag consistency checks across environments
 - Automated cleanup of old deprecated flags
@@ -220,12 +233,14 @@ Created (disabled) → Development → Staging → Production (gradual) → Full
 ## Monitoring
 
 ### Metrics to Track
+
 - Flag toggle frequency
 - Flag evaluation performance
 - Feature adoption rates (when enabled)
 - Error rates during flag rollouts
 
 ### Alerts
+
 - Flag configuration changes
 - High error rates after flag toggles
 - Deprecated flags approaching cleanup date

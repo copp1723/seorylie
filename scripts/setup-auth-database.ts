@@ -11,10 +11,10 @@ import { sql } from "drizzle-orm";
 async function setupAuthDatabase() {
   try {
     console.log("Checking database connection...");
-    
+
     // Check if sessions table exists, if not create it
     console.log("Creating authentication tables if they don't exist...");
-    
+
     // Push the schema to the database
     // This will create the tables if they don't exist
     const result = await db.query.sessions.findFirst();
@@ -34,7 +34,7 @@ async function setupAuthDatabase() {
     } else {
       console.log("Sessions table already exists");
     }
-    
+
     console.log("Authentication database setup completed successfully!");
   } catch (error) {
     console.error("Error setting up authentication database:", error);

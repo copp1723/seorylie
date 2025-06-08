@@ -140,9 +140,15 @@ export default function SystemPromptTester() {
     setIsLoading(true);
     setError("");
 
-    const newCustomerMessageEntry: ConversationEntry = { role: "customer", content: customerMessage };
+    const newCustomerMessageEntry: ConversationEntry = {
+      role: "customer",
+      content: customerMessage,
+    };
     // Add customer message to conversation immediately for UI update
-    setConversation(prevConversation => [...prevConversation, newCustomerMessageEntry]);
+    setConversation((prevConversation) => [
+      ...prevConversation,
+      newCustomerMessageEntry,
+    ]);
 
     try {
       const customizedPrompt = generateCustomizedPrompt();
@@ -184,22 +190,35 @@ export default function SystemPromptTester() {
 
       setResponse(data.response);
 
-      const newAssistantMessageEntry: ConversationEntry = { role: "assistant", content: data.response };
+      const newAssistantMessageEntry: ConversationEntry = {
+        role: "assistant",
+        content: data.response,
+      };
       // Update conversation: remove the temp customer message if it was added, then add both confirmed customer and assistant message
       // This ensures no duplicate customer messages if the request fails or if state updates are tricky.
       // A more robust way might be to only add to conversation on success.
-      setConversation(prevConversation => {
+      setConversation((prevConversation) => {
         // Filter out the optimistic customer message if it's the last one and matches
         const currentHistory = prevConversation.filter(
-          (msg, index) => !(index === prevConversation.length - 1 && msg.role === "customer" && msg.content === newCustomerMessageEntry.content)
+          (msg, index) =>
+            !(
+              index === prevConversation.length - 1 &&
+              msg.role === "customer" &&
+              msg.content === newCustomerMessageEntry.content
+            ),
         );
-        return [...currentHistory, newCustomerMessageEntry, newAssistantMessageEntry];
+        return [
+          ...currentHistory,
+          newCustomerMessageEntry,
+          newAssistantMessageEntry,
+        ];
       });
-      
+
       setCustomerMessage("");
     } catch (err) {
       console.error("Error testing prompt:", err);
-      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+      const errorMessage =
+        err instanceof Error ? err.message : "An unknown error occurred";
       setError(errorMessage);
 
       // If an error occurs, add an error message from the assistant
@@ -207,11 +226,20 @@ export default function SystemPromptTester() {
         role: "assistant",
         content: `Sorry, I encountered an error: ${errorMessage}`,
       };
-       setConversation(prevConversation => {
+      setConversation((prevConversation) => {
         const currentHistory = prevConversation.filter(
-          (msg, index) => !(index === prevConversation.length - 1 && msg.role === "customer" && msg.content === newCustomerMessageEntry.content)
+          (msg, index) =>
+            !(
+              index === prevConversation.length - 1 &&
+              msg.role === "customer" &&
+              msg.content === newCustomerMessageEntry.content
+            ),
         );
-        return [...currentHistory, newCustomerMessageEntry, errorAssistantMessage];
+        return [
+          ...currentHistory,
+          newCustomerMessageEntry,
+          errorAssistantMessage,
+        ];
       });
     } finally {
       setIsLoading(false);
@@ -746,12 +774,14 @@ function TestConversation({
           ))
         )}
 
-        {isLoading && conversation.length > 0 && conversation[conversation.length -1].role === 'customer' && (
-          <div className="self-start bg-white dark:bg-gray-800 shadow-sm max-w-[80%] mb-3 rounded-lg p-3 flex items-center space-x-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Typing response...</span>
-          </div>
-        )}
+        {isLoading &&
+          conversation.length > 0 &&
+          conversation[conversation.length - 1].role === "customer" && (
+            <div className="self-start bg-white dark:bg-gray-800 shadow-sm max-w-[80%] mb-3 rounded-lg p-3 flex items-center space-x-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Typing response...</span>
+            </div>
+          )}
       </div>
 
       {error && (

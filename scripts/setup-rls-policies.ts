@@ -1,16 +1,18 @@
 /**
  * This script sets up Row-Level Security (RLS) policies in PostgreSQL
  * to enforce proper isolation between dealerships in our multi-tenant system.
- * 
+ *
  * Run with: npx tsx scripts/setup-rls-policies.ts
  */
 
-import { db } from '../server/db';
-import { logger } from '../server/logger';
+import { db } from "../server/db";
+import { logger } from "../server/logger";
 
 async function setupRLSPolicies() {
-  logger.info('Setting up Row-Level Security (RLS) policies for multi-tenancy...');
-  
+  logger.info(
+    "Setting up Row-Level Security (RLS) policies for multi-tenancy...",
+  );
+
   try {
     // Enable RLS on all tenant tables
     await db.execute(`
@@ -26,9 +28,9 @@ async function setupRLSPolicies() {
       ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
       ALTER TABLE magic_link_invitations ENABLE ROW LEVEL SECURITY;
     `);
-    
-    logger.info('RLS enabled on all tenant tables');
-    
+
+    logger.info("RLS enabled on all tenant tables");
+
     // Create RLS policies for dealerships table
     await db.execute(`
       -- Super admins can see and manage all dealerships
@@ -41,7 +43,7 @@ async function setupRLSPolicies() {
         USING (id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER))
         WITH CHECK (false); -- They cannot modify dealership records
     `);
-    
+
     // Create RLS policies for users table
     await db.execute(`
       -- Super admins can see and manage all users
@@ -70,7 +72,7 @@ async function setupRLSPolicies() {
         USING (id = CAST(current_setting('app.current_user_id') AS INTEGER))
         WITH CHECK (id = CAST(current_setting('app.current_user_id') AS INTEGER));
     `);
-    
+
     // Create RLS policies for system_prompts table
     await db.execute(`
       -- Super admins can see and manage all prompts
@@ -83,7 +85,7 @@ async function setupRLSPolicies() {
         USING (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER))
         WITH CHECK (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER));
     `);
-    
+
     // Create RLS policies for dealership_variables table
     await db.execute(`
       -- Super admins can see and manage all variables
@@ -96,7 +98,7 @@ async function setupRLSPolicies() {
         USING (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER))
         WITH CHECK (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER));
     `);
-    
+
     // Create RLS policies for vehicles table
     await db.execute(`
       -- Super admins can see and manage all vehicles
@@ -109,7 +111,7 @@ async function setupRLSPolicies() {
         USING (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER))
         WITH CHECK (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER));
     `);
-    
+
     // Create RLS policies for customers table
     await db.execute(`
       -- Super admins can see and manage all customers
@@ -122,7 +124,7 @@ async function setupRLSPolicies() {
         USING (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER))
         WITH CHECK (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER));
     `);
-    
+
     // Create RLS policies for conversations table
     await db.execute(`
       -- Super admins can see and manage all conversations
@@ -135,7 +137,7 @@ async function setupRLSPolicies() {
         USING (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER))
         WITH CHECK (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER));
     `);
-    
+
     // Create RLS policies for messages table
     // Messages don't have a direct dealership_id, so we need to reference the conversation
     await db.execute(`
@@ -161,7 +163,7 @@ async function setupRLSPolicies() {
           )
         );
     `);
-    
+
     // Create RLS policies for prompt_tests table
     await db.execute(`
       -- Super admins can see and manage all prompt tests
@@ -174,7 +176,7 @@ async function setupRLSPolicies() {
         USING (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER))
         WITH CHECK (dealership_id = CAST(current_setting('app.current_user_dealership_id') AS INTEGER));
     `);
-    
+
     // Create RLS policies for activity_logs table
     await db.execute(`
       -- Super admins can see all activity logs
@@ -201,7 +203,7 @@ async function setupRLSPolicies() {
         )
         WITH CHECK (false); -- They cannot modify logs
     `);
-    
+
     // Create RLS policies for magic_link_invitations table
     await db.execute(`
       -- Super admins can see and manage all invitations
@@ -227,9 +229,9 @@ async function setupRLSPolicies() {
         )
         WITH CHECK (false);
     `);
-    
-    logger.info('RLS policies created successfully');
-    
+
+    logger.info("RLS policies created successfully");
+
     // Create a function to set the app context variables
     await db.execute(`
       CREATE OR REPLACE FUNCTION set_tenant_context(user_id INTEGER, user_role TEXT, dealership_id INTEGER)
@@ -241,12 +243,12 @@ async function setupRLSPolicies() {
       END;
       $$ LANGUAGE plpgsql;
     `);
-    
-    logger.info('Created tenant context function');
-    
-    logger.info('RLS setup completed successfully');
+
+    logger.info("Created tenant context function");
+
+    logger.info("RLS setup completed successfully");
   } catch (error) {
-    logger.error('Error setting up RLS policies:', error);
+    logger.error("Error setting up RLS policies:", error);
     throw error;
   }
 }
@@ -255,11 +257,11 @@ async function setupRLSPolicies() {
 if (require.main === module) {
   setupRLSPolicies()
     .then(() => {
-      logger.info('RLS policies setup completed');
+      logger.info("RLS policies setup completed");
       process.exit(0);
     })
     .catch((error) => {
-      logger.error('Failed to setup RLS policies:', error);
+      logger.error("Failed to setup RLS policies:", error);
       process.exit(1);
     });
 }

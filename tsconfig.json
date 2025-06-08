@@ -7,18 +7,12 @@
   // =============================================================================
 
   // Files to include in compilation
-  "include": [
-    "client/src/**/*",
-    "server/**/*", 
-    "shared/**/*",
-    "*.ts",
-    "*.tsx"
-  ],
+  "include": ["client/src/**/*", "server/**/*", "shared/**/*", "*.ts", "*.tsx"],
 
   // Files to exclude from compilation
   "exclude": [
     "node_modules",
-    "build", 
+    "build",
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",

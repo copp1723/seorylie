@@ -1,6 +1,6 @@
 /**
  * Centralized SendGrid Mock Helper
- * 
+ *
  * This file provides a standardized SendGrid mock that works consistently
  * across all test files, supporting both CommonJS and ES6 import patterns.
  */
@@ -27,41 +27,43 @@ interface MockSendGridClient {
 /**
  * Creates a standardized SendGrid mock with configurable behavior
  */
-export function createSendGridMock(options: {
-  shouldSucceed?: boolean;
-  shouldRateLimit?: boolean;
-  shouldTimeout?: boolean;
-  customError?: string;
-  responseDelay?: number;
-} = {}): MockSendGridClient {
+export function createSendGridMock(
+  options: {
+    shouldSucceed?: boolean;
+    shouldRateLimit?: boolean;
+    shouldTimeout?: boolean;
+    customError?: string;
+    responseDelay?: number;
+  } = {},
+): MockSendGridClient {
   const {
     shouldSucceed = true,
     shouldRateLimit = false,
     shouldTimeout = false,
     customError,
-    responseDelay = 0
+    responseDelay = 0,
   } = options;
 
   const sendMock = jest.fn().mockImplementation(async (msg: any) => {
     // Add response delay if specified
     if (responseDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, responseDelay));
+      await new Promise((resolve) => setTimeout(resolve, responseDelay));
     }
 
     // Handle rate limiting
     if (shouldRateLimit) {
-      const error: SendGridError = new Error('Too many requests');
+      const error: SendGridError = new Error("Too many requests");
       error.code = 429;
       error.response = {
         statusCode: 429,
-        body: { errors: [{ message: 'Too many requests' }] }
+        body: { errors: [{ message: "Too many requests" }] },
       };
       throw error;
     }
 
     // Handle timeout
     if (shouldTimeout) {
-      const error: SendGridError = new Error('Request timeout');
+      const error: SendGridError = new Error("Request timeout");
       error.code = 408;
       throw error;
     }
@@ -72,18 +74,18 @@ export function createSendGridMock(options: {
       error.code = 400;
       error.response = {
         statusCode: 400,
-        body: { errors: [{ message: customError }] }
+        body: { errors: [{ message: customError }] },
       };
       throw error;
     }
 
     // Handle failure
     if (!shouldSucceed) {
-      const error: SendGridError = new Error('SendGrid API error');
+      const error: SendGridError = new Error("SendGrid API error");
       error.code = 500;
       error.response = {
         statusCode: 500,
-        body: { errors: [{ message: 'Internal server error' }] }
+        body: { errors: [{ message: "Internal server error" }] },
       };
       throw error;
     }
@@ -92,10 +94,10 @@ export function createSendGridMock(options: {
     const messageId = `sg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const response: SendGridResponse = {
       statusCode: 202,
-      body: '',
+      body: "",
       headers: {
-        'x-message-id': messageId
-      }
+        "x-message-id": messageId,
+      },
     };
 
     return [response, {}];
@@ -103,7 +105,7 @@ export function createSendGridMock(options: {
 
   return {
     send: sendMock,
-    setApiKey: jest.fn()
+    setApiKey: jest.fn(),
   };
 }
 
@@ -124,10 +126,12 @@ export function getRateLimitedSendGridMock(): MockSendGridClient {
 /**
  * Gets a SendGrid mock that simulates API errors
  */
-export function getFailingSendGridMock(errorMessage?: string): MockSendGridClient {
-  return createSendGridMock({ 
-    shouldSucceed: false, 
-    customError: errorMessage 
+export function getFailingSendGridMock(
+  errorMessage?: string,
+): MockSendGridClient {
+  return createSendGridMock({
+    shouldSucceed: false,
+    customError: errorMessage,
   });
 }
 
@@ -157,7 +161,7 @@ export const SendGridMockFactory = {
   rateLimited: getRateLimitedSendGridMock,
   failing: getFailingSendGridMock,
   custom: getCustomSendGridMock,
-  default: defaultSendGridMock
+  default: defaultSendGridMock,
 };
 
 // Export for CommonJS compatibility
@@ -168,5 +172,5 @@ module.exports = {
   getFailingSendGridMock,
   getCustomSendGridMock,
   defaultSendGridMock,
-  SendGridMockFactory
+  SendGridMockFactory,
 };

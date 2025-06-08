@@ -1,9 +1,9 @@
 /**
  * Supabase Database Type Definitions
- * 
+ *
  * Auto-generated types based on the Supabase schema
  * These types provide type safety when using the Supabase client
- * 
+ *
  * @file types/supabase.ts
  */
 

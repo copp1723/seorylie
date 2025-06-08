@@ -1,17 +1,21 @@
-import { ConversationService } from './conversation-service';
-import { generateAIResponse } from './openai';
-import { enhancedAIService } from './enhanced-ai-service';
-import { conversationIntelligence } from './conversation-intelligence';
-import { eq, desc } from 'drizzle-orm';
-import db from '../db';
-import { messages, conversations, personas } from '../../shared/lead-management-schema';
-import logger from '../utils/logger';
+import { ConversationService } from "./conversation-service";
+import { generateAIResponse } from "./openai";
+import { enhancedAIService } from "./enhanced-ai-service";
+import { conversationIntelligence } from "./conversation-intelligence";
+import { eq, desc } from "drizzle-orm";
+import db from "../db";
+import {
+  messages,
+  conversations,
+  personas,
+} from "../../shared/lead-management-schema";
+import logger from "../utils/logger";
 
 export interface EnhancedReplyOptions {
   conversationId: string;
   dealershipId: number;
   content: string;
-  sender: 'customer' | 'ai' | 'agent' | 'system';
+  sender: "customer" | "ai" | "agent" | "system";
   senderUserId?: number;
   includeInventoryContext?: boolean;
   useConversationHistory?: boolean;
@@ -31,26 +35,25 @@ export interface ConversationContext {
 }
 
 export class EnhancedConversationService extends ConversationService {
-  
   /**
    * Generate AI response with conversation history and inventory context
    */
   async generateAIResponseWithContext(
-    options: EnhancedReplyOptions
+    options: EnhancedReplyOptions,
   ): Promise<{ response: string; context: ConversationContext }> {
     try {
-      logger.info('Generating AI response with context', {
+      logger.info("Generating AI response with context", {
         conversationId: options.conversationId,
         dealershipId: options.dealershipId,
         includeInventory: options.includeInventoryContext,
-        useHistory: options.useConversationHistory
+        useHistory: options.useConversationHistory,
       });
 
       // Get conversation context
       const context = await this.getConversationContext(
         options.conversationId,
         options.dealershipId,
-        options.useConversationHistory
+        options.useConversationHistory,
       );
 
       // Build conversation history for AI
@@ -59,12 +62,13 @@ export class EnhancedConversationService extends ConversationService {
         : undefined;
 
       // Get persona prompt template
-      const systemPrompt = context.persona?.promptTemplate || this.getDefaultPrompt();
+      const systemPrompt =
+        context.persona?.promptTemplate || this.getDefaultPrompt();
 
       // Process prompt with persona arguments
       const processedPrompt = this.processPromptTemplate(
         systemPrompt,
-        context.persona?.arguments || {}
+        context.persona?.arguments || {},
       );
 
       // Use enhanced AI service for intelligent, contextual responses
@@ -72,18 +76,17 @@ export class EnhancedConversationService extends ConversationService {
         options.conversationId,
         options.content,
         options.dealershipId,
-        conversationHistory.map(msg => ({
+        conversationHistory.map((msg) => ({
           id: `${Date.now()}-${Math.random()}`,
           content: msg.content,
-          role: msg.role as 'user' | 'assistant',
-          timestamp: new Date()
-        }))
+          role: msg.role as "user" | "assistant",
+          timestamp: new Date(),
+        })),
       );
 
       return { response, context };
-
     } catch (error) {
-      logger.error('Error generating AI response with context:', error);
+      logger.error("Error generating AI response with context:", error);
       throw error;
     }
   }
@@ -94,40 +97,39 @@ export class EnhancedConversationService extends ConversationService {
   async generateIntelligentChatResponse(
     conversationId: string,
     userMessage: string,
-    dealershipId: number
+    dealershipId: number,
   ): Promise<string> {
     try {
-      logger.info('Generating intelligent chat response', {
+      logger.info("Generating intelligent chat response", {
         conversationId,
         dealershipId,
-        messageLength: userMessage.length
+        messageLength: userMessage.length,
       });
 
       // Use enhanced AI service directly for the most intelligent response
       const response = await enhancedAIService.generateResponse(
         conversationId,
         userMessage,
-        dealershipId
+        dealershipId,
       );
 
       // Store the conversation in our regular system as well
       await this.addMessage({
         conversationId,
         content: userMessage,
-        sender: 'customer'
+        sender: "customer",
       });
 
       await this.addMessage({
         conversationId,
         content: response,
-        sender: 'ai'
+        sender: "ai",
       });
 
       return response;
-
     } catch (error) {
-      logger.error('Error generating intelligent chat response:', error);
-      
+      logger.error("Error generating intelligent chat response:", error);
+
       // Fallback to basic response
       return "I apologize, but I'm having a technical issue right now. Could you please repeat your question? I want to make sure I give you the best help possible.";
     }
@@ -138,32 +140,34 @@ export class EnhancedConversationService extends ConversationService {
    */
   async startIntelligentConversation(
     dealershipId: number,
-    customerId?: string
+    customerId?: string,
   ): Promise<{ conversationId: string; greeting: string }> {
     try {
       // Create a new conversation ID
       const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Generate contextual greeting
-      const greeting = await enhancedAIService.generateContextualGreeting(conversationId, dealershipId);
-      
+      const greeting = await enhancedAIService.generateContextualGreeting(
+        conversationId,
+        dealershipId,
+      );
+
       // Store the greeting as the first message
       await this.addMessage({
         conversationId,
         content: greeting,
-        sender: 'ai'
+        sender: "ai",
       });
 
-      logger.info('Started intelligent conversation', {
+      logger.info("Started intelligent conversation", {
         conversationId,
         dealershipId,
-        customerId
+        customerId,
       });
 
       return { conversationId, greeting };
-
     } catch (error) {
-      logger.error('Error starting intelligent conversation:', error);
+      logger.error("Error starting intelligent conversation:", error);
       throw error;
     }
   }
@@ -174,7 +178,7 @@ export class EnhancedConversationService extends ConversationService {
   private async getConversationContext(
     conversationId: string,
     dealershipId: number,
-    includeMessages: boolean = true
+    includeMessages: boolean = true,
   ): Promise<ConversationContext> {
     try {
       // Get conversation details
@@ -186,8 +190,8 @@ export class EnhancedConversationService extends ConversationService {
             id: personas.id,
             name: personas.name,
             promptTemplate: personas.promptTemplate,
-            arguments: personas.arguments
-          }
+            arguments: personas.arguments,
+          },
         })
         .from(conversations)
         .leftJoin(personas, eq(conversations.aiPersonaId, personas.id))
@@ -195,11 +199,15 @@ export class EnhancedConversationService extends ConversationService {
         .limit(1);
 
       if (conversationResult.length === 0) {
-        throw new Error('Conversation not found');
+        throw new Error("Conversation not found");
       }
 
       const conversation = conversationResult[0];
-      let conversationMessages: Array<{role: string; content: string; timestamp: Date}> = [];
+      let conversationMessages: Array<{
+        role: string;
+        content: string;
+        timestamp: Date;
+      }> = [];
 
       if (includeMessages) {
         // Get recent messages (last 10 for context)
@@ -207,7 +215,7 @@ export class EnhancedConversationService extends ConversationService {
           .select({
             content: messages.content,
             sender: messages.sender,
-            createdAt: messages.createdAt
+            createdAt: messages.createdAt,
           })
           .from(messages)
           .where(eq(messages.conversationId, conversationId))
@@ -215,24 +223,25 @@ export class EnhancedConversationService extends ConversationService {
           .limit(10);
 
         // Convert to conversation format (reverse to chronological order)
-        conversationMessages = messageResults.reverse().map(msg => ({
+        conversationMessages = messageResults.reverse().map((msg) => ({
           role: this.mapSenderToRole(msg.sender),
           content: msg.content,
-          timestamp: msg.createdAt
+          timestamp: msg.createdAt,
         }));
       }
 
       return {
         messages: conversationMessages,
-        persona: conversation.persona ? {
-          name: conversation.persona.name,
-          promptTemplate: conversation.persona.promptTemplate,
-          arguments: conversation.persona.arguments || {}
-        } : undefined
+        persona: conversation.persona
+          ? {
+              name: conversation.persona.name,
+              promptTemplate: conversation.persona.promptTemplate,
+              arguments: conversation.persona.arguments || {},
+            }
+          : undefined,
       };
-
     } catch (error) {
-      logger.error('Error getting conversation context:', error);
+      logger.error("Error getting conversation context:", error);
       throw error;
     }
   }
@@ -240,10 +249,12 @@ export class EnhancedConversationService extends ConversationService {
   /**
    * Format conversation history for AI context
    */
-  private formatConversationHistory(messages: Array<{role: string; content: string; timestamp: Date}>) {
-    return messages.map(msg => ({
+  private formatConversationHistory(
+    messages: Array<{ role: string; content: string; timestamp: Date }>,
+  ) {
+    return messages.map((msg) => ({
       role: msg.role,
-      content: msg.content
+      content: msg.content,
     }));
   }
 
@@ -252,28 +263,31 @@ export class EnhancedConversationService extends ConversationService {
    */
   private mapSenderToRole(sender: string): string {
     switch (sender) {
-      case 'customer':
-        return 'user';
-      case 'ai':
-        return 'assistant';
-      case 'agent':
-        return 'assistant';
-      case 'system':
-        return 'system';
+      case "customer":
+        return "user";
+      case "ai":
+        return "assistant";
+      case "agent":
+        return "assistant";
+      case "system":
+        return "system";
       default:
-        return 'user';
+        return "user";
     }
   }
 
   /**
    * Process prompt template with variables
    */
-  private processPromptTemplate(template: string, args: Record<string, any>): string {
+  private processPromptTemplate(
+    template: string,
+    args: Record<string, any>,
+  ): string {
     let processedTemplate = template;
 
     // Replace template variables (e.g., {{variable_name}})
     Object.entries(args).forEach(([key, value]) => {
-      const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+      const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
       processedTemplate = processedTemplate.replace(regex, String(value));
     });
 
@@ -303,17 +317,17 @@ Respond in JSON format with an "answer" field containing your response.`;
    */
   async sendEnhancedReply(options: EnhancedReplyOptions) {
     try {
-      if (options.sender === 'ai') {
+      if (options.sender === "ai") {
         // Generate AI response with context
         const { response } = await this.generateAIResponseWithContext(options);
-        
+
         // Send the AI-generated response
         return await this.sendReply(options.dealershipId, {
           conversationId: options.conversationId,
           content: response,
-          sender: 'ai',
+          sender: "ai",
           senderUserId: options.senderUserId,
-          senderName: 'Rylie'
+          senderName: "Rylie",
         });
       } else {
         // Send user message as-is
@@ -321,11 +335,11 @@ Respond in JSON format with an "answer" field containing your response.`;
           conversationId: options.conversationId,
           content: options.content,
           sender: options.sender,
-          senderUserId: options.senderUserId
+          senderUserId: options.senderUserId,
         });
       }
     } catch (error) {
-      logger.error('Error sending enhanced reply:', error);
+      logger.error("Error sending enhanced reply:", error);
       throw error;
     }
   }
@@ -335,26 +349,35 @@ Respond in JSON format with an "answer" field containing your response.`;
    */
   async getConversationSummary(
     conversationId: string,
-    dealershipId: number
+    dealershipId: number,
   ): Promise<string> {
     try {
-      const context = await this.getConversationContext(conversationId, dealershipId, true);
-      
+      const context = await this.getConversationContext(
+        conversationId,
+        dealershipId,
+        true,
+      );
+
       if (context.messages.length === 0) {
         return "No conversation history available.";
       }
 
       // Create a summary of the conversation
-      const messagesSummary = context.messages.map((msg, index) => {
-        const role = msg.role === 'user' ? 'Customer' : 
-                     msg.role === 'assistant' ? 'Agent' : 'System';
-        return `${index + 1}. ${role}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`;
-      }).join('\n');
+      const messagesSummary = context.messages
+        .map((msg, index) => {
+          const role =
+            msg.role === "user"
+              ? "Customer"
+              : msg.role === "assistant"
+                ? "Agent"
+                : "System";
+          return `${index + 1}. ${role}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? "..." : ""}`;
+        })
+        .join("\n");
 
       return `Conversation Summary:\n${messagesSummary}`;
-
     } catch (error) {
-      logger.error('Error getting conversation summary:', error);
+      logger.error("Error getting conversation summary:", error);
       return "Error retrieving conversation summary.";
     }
   }

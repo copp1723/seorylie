@@ -2,7 +2,7 @@
 
 **Issue**: localhost refused to connect / ERR_CONNECTION_REFUSED  
 **Status**: ❌ **SERVER CRASHED DURING STARTUP**  
-**Root Cause**: Frontend build error causing process exit  
+**Root Cause**: Frontend build error causing process exit
 
 ---
 
@@ -22,6 +22,7 @@ Based on your terminal output, here's the sequence of events:
 ## 🔧 **IMMEDIATE FIX STEPS**
 
 ### **Step 1: Check if Process is Running**
+
 ```bash
 cd /Users/copp1723/Downloads/cleanrylie-main
 
@@ -34,6 +35,7 @@ lsof -ti:3000 | xargs kill -9
 ```
 
 ### **Step 2: Fix Build Issues**
+
 ```bash
 # Clean rebuild everything
 rm -rf node_modules package-lock.json dist
@@ -44,6 +46,7 @@ npm run check
 ```
 
 ### **Step 3: Fix Potential Import Issues**
+
 ```bash
 # Check for duplicate exports (common cause)
 grep -r "export.*ApiError" client/src/
@@ -54,6 +57,7 @@ grep -r "import.*from.*api-client" client/src/
 ```
 
 ### **Step 4: Start with Verbose Logging**
+
 ```bash
 # Start with debug logging to see exact error
 DEBUG=* npm run dev
@@ -67,6 +71,7 @@ NODE_ENV=development npm run dev 2>&1 | tee startup.log
 ## 🚨 **SPECIFIC FIXES TO TRY**
 
 ### **Fix A: API Client Duplicate Export**
+
 Based on your error, check this file:
 
 ```bash
@@ -75,6 +80,7 @@ nano client/src/lib/api-client.ts
 ```
 
 Look for and **remove any duplicate exports** like:
+
 ```typescript
 // BAD - Remove duplicates like this:
 export class ApiError extends Error { ... }
@@ -86,6 +92,7 @@ export { ApiError };  // <- DELETE THIS
 ```
 
 ### **Fix B: Clean Import Paths**
+
 Check these files for import issues:
 
 ```bash
@@ -96,6 +103,7 @@ client/src/lib/utils.ts
 ```
 
 ### **Fix C: Missing Dependencies**
+
 ```bash
 # Reinstall specific problematic packages
 npm install @types/node@latest
@@ -104,6 +112,7 @@ npm install typescript@latest
 ```
 
 ### **Fix D: Port Configuration**
+
 Your `.env` has `PORT=3000`, but the code might default to 5000:
 
 ```bash
@@ -123,6 +132,7 @@ PORT=5000 npm run dev
 ## 🔧 **SYSTEMATIC DEBUGGING**
 
 ### **Step 1: Minimal Start**
+
 ```bash
 # Try starting just the backend
 cd /Users/copp1723/Downloads/cleanrylie-main
@@ -141,6 +151,7 @@ node minimal-start.js
 Visit http://localhost:3000 - if this works, the issue is in the CleanRylie code.
 
 ### **Step 2: Backend Only**
+
 ```bash
 # Start just the backend server (no frontend build)
 cd server
@@ -150,6 +161,7 @@ npx tsx index.ts
 Test the API: http://localhost:3000/api/health
 
 ### **Step 3: Frontend Only**
+
 ```bash
 # Start just the frontend
 cd client
@@ -190,26 +202,32 @@ grep -A 5 -B 5 '"dev"' package.json
 ## 🚨 **COMMON ISSUES & FIXES**
 
 ### **Issue 1: Duplicate Exports**
+
 **Symptom**: "export 'ApiError' was already exported"
 **Fix**: Remove duplicate export statements
 
 ### **Issue 2: Missing Dependencies**
+
 **Symptom**: "Cannot resolve module"
 **Fix**: `npm install` or install specific missing packages
 
 ### **Issue 3: TypeScript Errors**
+
 **Symptom**: Build fails with TS errors
 **Fix**: Run `npm run check` and fix type errors
 
 ### **Issue 4: Port Conflicts**
+
 **Symptom**: "Port already in use"
 **Fix**: Kill existing process or use different port
 
 ### **Issue 5: CORS Issues**
+
 **Symptom**: Frontend loads but API calls fail
 **Fix**: Check CORS configuration in server
 
 ### **Issue 6: SSL/Database Issues**
+
 **Symptom**: Database connection errors
 **Fix**: Check DATABASE_URL and SSL configuration
 
@@ -218,6 +236,7 @@ grep -A 5 -B 5 '"dev"' package.json
 ## 📋 **STEP-BY-STEP RECOVERY PROCESS**
 
 ### **Phase 1: Clean Slate**
+
 ```bash
 cd /Users/copp1723/Downloads/cleanrylie-main
 
@@ -233,6 +252,7 @@ npm install
 ```
 
 ### **Phase 2: Fix Code Issues**
+
 ```bash
 # 1. Check TypeScript
 npm run check
@@ -245,6 +265,7 @@ npm run check
 ```
 
 ### **Phase 3: Start Carefully**
+
 ```bash
 # 1. Start with verbose logging
 DEBUG=vite:* npm run dev
@@ -254,6 +275,7 @@ DEBUG=vite:* npm run dev
 ```
 
 ### **Phase 4: Test Components**
+
 ```bash
 # 1. Test backend: curl http://localhost:3000/api/health
 # 2. Test frontend: visit http://localhost:3000
@@ -267,6 +289,7 @@ DEBUG=vite:* npm run dev
 When properly working, you should see:
 
 ### **Terminal Output**
+
 ```
 ✅ PostgreSQL connection test successful
 ✅ PostgreSQL session store initialized successfully
@@ -276,12 +299,14 @@ When properly working, you should see:
 ```
 
 ### **Browser**
+
 - ✅ http://localhost:3000 loads CleanRylie homepage
 - ✅ No console errors in browser developer tools
 - ✅ UI components render correctly
 - ✅ Navigation works
 
 ### **API Test**
+
 ```bash
 curl http://localhost:3000/api/health
 # Should return JSON with database status
@@ -296,7 +321,7 @@ If these fixes don't work, please run this diagnostic and share the output:
 ```bash
 cd /Users/copp1723/Downloads/cleanrylie-main
 
-echo "=== NODE VERSION ===" 
+echo "=== NODE VERSION ==="
 node --version
 
 echo "=== NPM VERSION ==="

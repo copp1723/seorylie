@@ -1,12 +1,12 @@
-import { z } from 'zod';
-import { 
-  SeoRequestSchema, 
-  PageRequestSchema, 
-  BlogRequestSchema, 
-  GBPRequestSchema, 
+import { z } from "zod";
+import {
+  SeoRequestSchema,
+  PageRequestSchema,
+  BlogRequestSchema,
+  GBPRequestSchema,
   MaintenanceRequestSchema,
-  InstallProfileSchema
-} from './schemas';
+  InstallProfileSchema,
+} from "./schemas";
 
 /**
  * Base system prompt for the SEO Agent
@@ -43,11 +43,14 @@ If any required information is missing, ask follow-up questions to gather the ne
 Required fields: type, url, title, description
 Recommended fields: seoTitle, metaDescription, targetKeywords, template, targetAudience, callToAction`,
     userMessage: userInput,
-    functionDefinitions: [{
-      name: "extractPageRequest",
-      description: "Extract structured information about a custom page request",
-      parameters: PageRequestSchema.shape
-    }]
+    functionDefinitions: [
+      {
+        name: "extractPageRequest",
+        description:
+          "Extract structured information about a custom page request",
+        parameters: PageRequestSchema.shape,
+      },
+    ],
   };
 }
 
@@ -65,11 +68,13 @@ If any required information is missing, ask follow-up questions to gather the ne
 Required fields: type, title, description
 Recommended fields: category, wordCount, audience, focusKeyword, contentStructure, targetKeywords`,
     userMessage: userInput,
-    functionDefinitions: [{
-      name: "extractBlogRequest",
-      description: "Extract structured information about a blog post request",
-      parameters: BlogRequestSchema.shape
-    }]
+    functionDefinitions: [
+      {
+        name: "extractBlogRequest",
+        description: "Extract structured information about a blog post request",
+        parameters: BlogRequestSchema.shape,
+      },
+    ],
   };
 }
 
@@ -87,11 +92,14 @@ If any required information is missing, ask follow-up questions to gather the ne
 Required fields: type, updateType, content, title, description
 Recommended fields: businessName, locationId, responseToReview (if applicable)`,
     userMessage: userInput,
-    functionDefinitions: [{
-      name: "extractGBPRequest",
-      description: "Extract structured information about a Google Business Profile update request",
-      parameters: GBPRequestSchema.shape
-    }]
+    functionDefinitions: [
+      {
+        name: "extractGBPRequest",
+        description:
+          "Extract structured information about a Google Business Profile update request",
+        parameters: GBPRequestSchema.shape,
+      },
+    ],
   };
 }
 
@@ -109,72 +117,77 @@ If any required information is missing, ask follow-up questions to gather the ne
 Required fields: type, maintenanceType, urls, issue, title, description
 Recommended fields: currentState, desiredState, priority, deadline`,
     userMessage: userInput,
-    functionDefinitions: [{
-      name: "extractMaintenanceRequest",
-      description: "Extract structured information about a maintenance request",
-      parameters: MaintenanceRequestSchema.shape
-    }]
+    functionDefinitions: [
+      {
+        name: "extractMaintenanceRequest",
+        description:
+          "Extract structured information about a maintenance request",
+        parameters: MaintenanceRequestSchema.shape,
+      },
+    ],
   };
 }
 
 /**
  * Function to determine the type of SEO request from natural language
  */
-export function determineRequestType(userInput: string): 'page' | 'blog' | 'gbp' | 'maintenance' | 'unknown' {
+export function determineRequestType(
+  userInput: string,
+): "page" | "blog" | "gbp" | "maintenance" | "unknown" {
   const input = userInput.toLowerCase();
-  
+
   // Check for page-related keywords
   if (
-    input.includes('new page') || 
-    input.includes('create page') || 
-    input.includes('landing page') || 
-    input.includes('service page') || 
-    input.includes('about page') || 
-    input.includes('contact page')
+    input.includes("new page") ||
+    input.includes("create page") ||
+    input.includes("landing page") ||
+    input.includes("service page") ||
+    input.includes("about page") ||
+    input.includes("contact page")
   ) {
-    return 'page';
+    return "page";
   }
-  
+
   // Check for blog-related keywords
   if (
-    input.includes('blog') || 
-    input.includes('article') || 
-    input.includes('post') || 
-    input.includes('content piece')
+    input.includes("blog") ||
+    input.includes("article") ||
+    input.includes("post") ||
+    input.includes("content piece")
   ) {
-    return 'blog';
+    return "blog";
   }
-  
+
   // Check for GBP-related keywords
   if (
-    input.includes('google business') || 
-    input.includes('gbp') || 
-    input.includes('google my business') || 
-    input.includes('gmb') || 
-    input.includes('business listing') || 
-    input.includes('google maps') ||
-    input.includes('review')
+    input.includes("google business") ||
+    input.includes("gbp") ||
+    input.includes("google my business") ||
+    input.includes("gmb") ||
+    input.includes("business listing") ||
+    input.includes("google maps") ||
+    input.includes("review")
   ) {
-    return 'gbp';
+    return "gbp";
   }
-  
+
   // Check for maintenance-related keywords
   if (
-    input.includes('fix') || 
-    input.includes('update') || 
-    input.includes('change') || 
-    input.includes('broken') || 
-    input.includes('error') || 
-    input.includes('issue') || 
-    input.includes('problem') ||
-    input.includes('speed') ||
-    input.includes('meta') ||
-    input.includes('tags')
+    input.includes("fix") ||
+    input.includes("update") ||
+    input.includes("change") ||
+    input.includes("broken") ||
+    input.includes("error") ||
+    input.includes("issue") ||
+    input.includes("problem") ||
+    input.includes("speed") ||
+    input.includes("meta") ||
+    input.includes("tags")
   ) {
-    return 'maintenance';
+    return "maintenance";
   }
-  
-  return 'unknown';
+
+  return "unknown";
 }
 
 /**
@@ -182,15 +195,15 @@ export function determineRequestType(userInput: string): 'page' | 'blog' | 'gbp'
  */
 export function generateSeoRequestPrompt(userInput: string) {
   const requestType = determineRequestType(userInput);
-  
+
   switch (requestType) {
-    case 'page':
+    case "page":
       return generatePageRequestPrompt(userInput);
-    case 'blog':
+    case "blog":
       return generateBlogRequestPrompt(userInput);
-    case 'gbp':
+    case "gbp":
       return generateGBPRequestPrompt(userInput);
-    case 'maintenance':
+    case "maintenance":
       return generateMaintenanceRequestPrompt(userInput);
     default:
       // If we can't determine the type, use a general prompt
@@ -213,18 +226,20 @@ If the request type is unclear, ask clarifying questions to determine which type
 
 If any required information is missing, ask follow-up questions to gather the necessary details.`,
     userMessage: userInput,
-    functionDefinitions: [{
-      name: "extractSeoRequest",
-      description: "Extract structured information about an SEO request",
-      parameters: SeoRequestSchema
-    }]
+    functionDefinitions: [
+      {
+        name: "extractSeoRequest",
+        description: "Extract structured information about an SEO request",
+        parameters: SeoRequestSchema,
+      },
+    ],
   };
 }
 
 /**
  * Function to generate an install/onboarding form prompt
  */
-export function generateInstallFormPrompt(userInput: string = '') {
+export function generateInstallFormPrompt(userInput: string = "") {
   return {
     systemMessage: `${SEO_AGENT_BASE_PROMPT}
 
@@ -246,12 +261,16 @@ Be conversational and explain why each piece of information is important for the
 If they skip any important information, politely ask follow-up questions to complete the profile.
 
 Remember to maintain the white-label nature of the service - all SEO work is done by Rylie SEO (never mention CustomerScout).`,
-    userMessage: userInput || "I'd like to set up SEO services for my dealership.",
-    functionDefinitions: [{
-      name: "collectInstallProfile",
-      description: "Collect installation and onboarding information for SEO setup",
-      parameters: InstallProfileSchema.shape
-    }]
+    userMessage:
+      userInput || "I'd like to set up SEO services for my dealership.",
+    functionDefinitions: [
+      {
+        name: "collectInstallProfile",
+        description:
+          "Collect installation and onboarding information for SEO setup",
+        parameters: InstallProfileSchema.shape,
+      },
+    ],
   };
 }
 
@@ -276,8 +295,8 @@ When analyzing the report:
 Remember to maintain the white-label nature of the service - all SEO work is done by Rylie SEO (never mention CustomerScout).`,
     userMessage: "Please analyze my latest SEO performance report.",
     functionArguments: {
-      reportData: reportData
-    }
+      reportData: reportData,
+    },
   };
 }
 
@@ -301,8 +320,8 @@ Keep it concise, professional, and focused on business value.
 Remember to maintain the white-label nature of the service - all SEO work is done by Rylie SEO (never mention CustomerScout).`,
     userMessage: "Your SEO content has been published!",
     functionArguments: {
-      publishData: publishData
-    }
+      publishData: publishData,
+    },
   };
 }
 
@@ -320,7 +339,7 @@ export const SeoPrompts = {
   generate: generateSeoRequestPrompt,
   install: generateInstallFormPrompt,
   ga4Report: generateGA4ReportPrompt,
-  publishNotification: generatePublishNotificationPrompt
+  publishNotification: generatePublishNotificationPrompt,
 };
 
 export default SeoPrompts;

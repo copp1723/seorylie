@@ -1,4 +1,3 @@
-
 // Simple in-memory cache implementation with proper TypeScript types
 interface CacheItem<T> {
   value: T;
@@ -25,7 +24,7 @@ class MemoryCache {
 
   get<T>(key: string): T | null {
     const item = this.cache.get(key);
-    
+
     if (!item) {
       this.misses++;
       return null;
@@ -43,10 +42,10 @@ class MemoryCache {
 
   set<T>(key: string, value: T, ttl: number = 3600000): void {
     const expiry = ttl > 0 ? Date.now() + ttl : null;
-    
+
     this.cache.set(key, {
       value,
-      expiry
+      expiry,
     });
   }
 
@@ -63,12 +62,12 @@ class MemoryCache {
   getStats(): CacheStats {
     const total = this.hits + this.misses;
     const hitRate = total > 0 ? (this.hits / total) * 100 : 0;
-    
+
     return {
       size: this.cache.size,
       hits: this.hits,
       misses: this.misses,
-      hitRate: `${hitRate.toFixed(2)}%`
+      hitRate: `${hitRate.toFixed(2)}%`,
     };
   }
 }
@@ -82,7 +81,12 @@ export const getFromCache = <T>(key: string, namespace?: string): T | null => {
   return memoryCache.get<T>(fullKey);
 };
 
-export const setInCache = <T>(key: string, value: T, ttl?: number, namespace?: string): void => {
+export const setInCache = <T>(
+  key: string,
+  value: T,
+  ttl?: number,
+  namespace?: string,
+): void => {
   const fullKey = namespace ? `${namespace}:${key}` : key;
   memoryCache.set(fullKey, value, ttl || 3600000);
 };
@@ -99,14 +103,14 @@ export const clearAllCache = (): void => {
 export const clearNamespaceCache = (namespace: string): number => {
   let count = 0;
   const prefix = `${namespace}:`;
-  
-  for (const key of Array.from(memoryCache['cache'].keys())) {
+
+  for (const key of Array.from(memoryCache["cache"].keys())) {
     if (key.startsWith(prefix)) {
       memoryCache.delete(key);
       count++;
     }
   }
-  
+
   return count;
 };
 
@@ -116,7 +120,7 @@ export const getCacheStats = (): CacheStats => {
 
 export const shutdownCache = async (): Promise<void> => {
   memoryCache.clear();
-  console.log('Cache cleared successfully');
+  console.log("Cache cleared successfully");
   return Promise.resolve();
 };
 

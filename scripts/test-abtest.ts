@@ -2,10 +2,10 @@
  * Test script for the A/B testing infrastructure
  * This script simulates conversation flow using the A/B testing system
  */
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-import { randomUUID } from 'crypto';
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+import { randomUUID } from "crypto";
 
 // Function to generate a random customer message
 function getRandomCustomerMessage() {
@@ -19,50 +19,52 @@ function getRandomCustomerMessage() {
     "What's the warranty like on your vehicles?",
     "Do you have any luxury models with leather seats?",
     "I need a vehicle that can handle off-road driving",
-    "I'm looking for a family vehicle with good safety features"
+    "I'm looking for a family vehicle with good safety features",
   ];
-  
+
   return messages[Math.floor(Math.random() * messages.length)];
 }
 
 async function testABTesting() {
   try {
-    console.log('Testing A/B testing infrastructure...\n');
-    
+    console.log("Testing A/B testing infrastructure...\n");
+
     // Step 1: Get dealership info for testing
     const dealershipsResponse = await fetch(`${BASE_URL}/api/dealerships`);
     const dealerships = await dealershipsResponse.json();
-    
+
     if (!dealerships || dealerships.length === 0) {
-      throw new Error('No dealerships found. Please seed the database first.');
+      throw new Error("No dealerships found. Please seed the database first.");
     }
-    
+
     const dealershipId = dealerships[0].id;
     console.log(`Using dealership ID: ${dealershipId}\n`);
-    
+
     // Step 2: Get API key for authentication
-    const apiKeyResponse = await fetch(`${BASE_URL}/api/dealerships/${dealershipId}/apikeys`);
+    const apiKeyResponse = await fetch(
+      `${BASE_URL}/api/dealerships/${dealershipId}/apikeys`,
+    );
     const apiKeys = await apiKeyResponse.json();
-    
+
     if (!apiKeys || apiKeys.length === 0) {
-      throw new Error('No API keys found. Please generate an API key first.');
+      throw new Error("No API keys found. Please generate an API key first.");
     }
-    
+
     const apiKey = apiKeys[0].key;
-    console.log('Successfully retrieved API key\n');
-    
+    console.log("Successfully retrieved API key\n");
+
     // Step 3: Create a test prompt variant
-    console.log('Creating a test prompt variant...');
+    console.log("Creating a test prompt variant...");
     const variantResponse = await fetch(`${BASE_URL}/api/abtest/variants`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': apiKey
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey,
       },
       body: JSON.stringify({
         dealershipId,
         name: `Test Variant ${Date.now()}`,
-        description: 'A test variant for A/B testing',
+        description: "A test variant for A/B testing",
         promptTemplate: `You are Rylie, an AI assistant for {{dealershipName}}. 
           Always be helpful, friendly, and knowledgeable about automotive topics.
           
@@ -78,25 +80,25 @@ async function testABTesting() {
           - We offer financing options
           
           Always respond in a formal, professional manner.`,
-        isActive: true
-      })
+        isActive: true,
+      }),
     });
-    
+
     const variant = await variantResponse.json();
     console.log(`Created prompt variant ID: ${variant.id}\n`);
-    
+
     // Step 4: Create a second variant for comparison
-    console.log('Creating a second test prompt variant...');
+    console.log("Creating a second test prompt variant...");
     const variant2Response = await fetch(`${BASE_URL}/api/abtest/variants`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': apiKey
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey,
       },
       body: JSON.stringify({
         dealershipId,
         name: `Test Variant B ${Date.now()}`,
-        description: 'A second test variant for A/B testing',
+        description: "A second test variant for A/B testing",
         promptTemplate: `You are Rylie, an AI assistant for {{dealershipName}}. 
           Be warm, friendly, and conversational in your approach.
           
@@ -112,103 +114,111 @@ async function testABTesting() {
           - We have a no-pressure sales approach
           
           Always respond in a warm, friendly manner.`,
-        isActive: true
-      })
+        isActive: true,
+      }),
     });
-    
+
     const variant2 = await variant2Response.json();
     console.log(`Created second prompt variant ID: ${variant2.id}\n`);
-    
+
     // Step 5: Create an experiment with both variants
-    console.log('Creating an experiment with both variants...');
-    const experimentResponse = await fetch(`${BASE_URL}/api/abtest/experiments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': apiKey
+    console.log("Creating an experiment with both variants...");
+    const experimentResponse = await fetch(
+      `${BASE_URL}/api/abtest/experiments`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey,
+        },
+        body: JSON.stringify({
+          dealershipId,
+          name: `Test Experiment ${Date.now()}`,
+          description: "Testing two different conversation styles",
+          isActive: true,
+          startDate: new Date().toISOString(),
+          endDate: new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000,
+          ).toISOString(), // 30 days from now
+          variants: [
+            {
+              variantId: variant.id,
+              trafficAllocation: 50, // 50% of traffic
+            },
+            {
+              variantId: variant2.id,
+              trafficAllocation: 50, // 50% of traffic
+            },
+          ],
+        }),
       },
-      body: JSON.stringify({
-        dealershipId,
-        name: `Test Experiment ${Date.now()}`,
-        description: 'Testing two different conversation styles',
-        isActive: true,
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-        variants: [
-          {
-            variantId: variant.id,
-            trafficAllocation: 50 // 50% of traffic
-          },
-          {
-            variantId: variant2.id,
-            trafficAllocation: 50 // 50% of traffic
-          }
-        ]
-      })
-    });
-    
+    );
+
     const experiment = await experimentResponse.json();
     console.log(`Created experiment ID: ${experiment.id}\n`);
-    
+
     // Step 6: Simulate conversations using the experiment
-    console.log('Simulating conversations to test the A/B testing system...\n');
-    
+    console.log("Simulating conversations to test the A/B testing system...\n");
+
     // Create a conversation
     const conversationResponse = await fetch(`${BASE_URL}/api/inbound`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': apiKey
+        "Content-Type": "application/json",
+        "X-API-Key": apiKey,
       },
       body: JSON.stringify({
-        customerName: 'Test Customer',
-        customerPhone: '+1234567890',
+        customerName: "Test Customer",
+        customerPhone: "+1234567890",
         message: getRandomCustomerMessage(),
-        customerId: randomUUID()
-      })
+        customerId: randomUUID(),
+      }),
     });
-    
+
     const conversation = await conversationResponse.json();
     console.log(`Created conversation ID: ${conversation.id}`);
     console.log(`Received response: "${conversation.message.content}"\n`);
-    
+
     // Send some follow-up messages to generate more test data
     for (let i = 0; i < 5; i++) {
       console.log(`Sending follow-up message ${i + 1}...`);
       const replyResponse = await fetch(`${BASE_URL}/api/reply`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey
+          "Content-Type": "application/json",
+          "X-API-Key": apiKey,
         },
         body: JSON.stringify({
           conversationId: conversation.id,
-          message: getRandomCustomerMessage()
-        })
+          message: getRandomCustomerMessage(),
+        }),
       });
-      
+
       const reply = await replyResponse.json();
       console.log(`Received response: "${reply.message.content}"\n`);
-      
+
       // Add a short delay between messages
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    
+
     // Step 7: Get the experiment results
-    console.log('Fetching experiment results...');
-    const resultsResponse = await fetch(`${BASE_URL}/api/abtest/experiments/${experiment.id}/results`, {
-      headers: {
-        'X-API-Key': apiKey
-      }
-    });
-    
+    console.log("Fetching experiment results...");
+    const resultsResponse = await fetch(
+      `${BASE_URL}/api/abtest/experiments/${experiment.id}/results`,
+      {
+        headers: {
+          "X-API-Key": apiKey,
+        },
+      },
+    );
+
     const results = await resultsResponse.json();
-    console.log('\nExperiment Results:');
+    console.log("\nExperiment Results:");
     console.log(JSON.stringify(results, null, 2));
-    
-    console.log('\nA/B testing infrastructure test completed successfully!');
+
+    console.log("\nA/B testing infrastructure test completed successfully!");
   } catch (error) {
-    console.error('Error testing A/B testing infrastructure:', error);
+    console.error("Error testing A/B testing infrastructure:", error);
   }
 }
 

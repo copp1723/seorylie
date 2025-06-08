@@ -3,6 +3,7 @@
 This document provides a comprehensive technical reference for the CleanRylie AI platform architecture, designed for developers, system integrators, and technical stakeholders.
 
 ## Table of Contents
+
 1. [Architectural Overview](#architectural-overview)
 2. [System Components](#system-components)
 3. [Data Flow & Communication](#data-flow--communication)
@@ -34,6 +35,7 @@ The system implements a **multi-tier, multi-tenant architecture**:
 ### Core Technologies
 
 #### **Frontend Stack**
+
 - **React 18**: Modern React with concurrent features and hooks
 - **TypeScript**: Full type safety across the application
 - **Vite**: Fast build tool and development server
@@ -44,6 +46,7 @@ The system implements a **multi-tier, multi-tenant architecture**:
 - **Framer Motion**: Smooth animations and micro-interactions
 
 #### **Backend Stack**
+
 - **Node.js 20+**: Latest LTS with ES modules and performance optimizations
 - **Express.js**: Web application framework with extensive middleware ecosystem
 - **TypeScript**: Type-safe server-side development with strict configuration
@@ -53,6 +56,7 @@ The system implements a **multi-tier, multi-tenant architecture**:
 - **WebSocket (ws)**: Real-time bidirectional communication
 
 #### **AI & External Services**
+
 - **OpenAI GPT-4**: Advanced language model for conversation generation
 - **SendGrid**: Enterprise email delivery with template management
 - **Twilio**: SMS and voice communication services
@@ -63,6 +67,7 @@ The system implements a **multi-tier, multi-tenant architecture**:
 ### Frontend Architecture
 
 #### **Component Hierarchy**
+
 ```
 App (Root)
 ├── Router (Wouter)
@@ -76,6 +81,7 @@ App (Root)
 ```
 
 #### **Core UI Components**
+
 - **Design System**: Shadcn/UI components with custom theming
 - **Data Fetching**: TanStack Query with optimistic updates and background sync
 - **Forms**: React Hook Form with Zod validation
@@ -84,6 +90,7 @@ App (Root)
 - **Accessibility**: ARIA compliance and keyboard navigation
 
 #### **Primary Application Views**
+
 - **Dashboard**: Real-time metrics, recent activity, and quick actions
 - **Conversations**: Multi-channel conversation management with AI assistance
 - **Inventory**: Vehicle inventory with advanced search and filtering
@@ -93,6 +100,7 @@ App (Root)
 - **Settings**: User preferences and dealership configuration
 
 #### **State Management Strategy**
+
 - **Server State**: TanStack Query for API data with intelligent caching
 - **Client State**: React hooks (useState, useReducer) for local component state
 - **Global State**: React Context for theme, user session, and app-wide settings
@@ -102,6 +110,7 @@ App (Root)
 ### Backend Architecture
 
 #### **Layered Service Architecture**
+
 ```
 HTTP Request
 ├── Middleware Stack
@@ -122,6 +131,7 @@ HTTP Request
 ```
 
 #### **API Layer Design**
+
 - **RESTful Architecture**: Resource-oriented design with consistent patterns
 - **OpenAPI Documentation**: Comprehensive API documentation with Swagger
 - **Versioning Strategy**: URL-based versioning for backward compatibility
@@ -129,6 +139,7 @@ HTTP Request
 - **Error Handling**: Standardized error responses with detailed context
 
 #### **Middleware Stack**
+
 - **Security**: CORS, CSRF protection, security headers
 - **Authentication**: JWT token validation and session management
 - **Authorization**: Role-based access control with dealership isolation
@@ -138,6 +149,7 @@ HTTP Request
 - **Caching**: Response caching with intelligent invalidation
 
 #### **Service Layer Organization**
+
 - **Domain Services**: Business logic organized by domain (conversations, inventory, leads)
 - **Integration Services**: External service wrappers (OpenAI, SendGrid, Twilio)
 - **Utility Services**: Cross-cutting concerns (email, SMS, file processing)
@@ -146,6 +158,7 @@ HTTP Request
 ### AI & Machine Learning Components
 
 #### **OpenAI Integration Architecture**
+
 ```
 Customer Message
 ├── Context Assembly
@@ -171,6 +184,7 @@ Customer Message
 ```
 
 #### **A/B Testing & Experimentation**
+
 - **Experiment Management**: Create and manage prompt experiments
 - **Traffic Allocation**: Intelligent user segmentation and variant assignment
 - **Metrics Collection**: Comprehensive performance and engagement metrics
@@ -178,6 +192,7 @@ Customer Message
 - **Variant Management**: Dynamic prompt template switching
 
 #### **Conversation Intelligence**
+
 - **Intent Recognition**: Automated classification of customer intents
 - **Sentiment Analysis**: Real-time sentiment tracking and escalation triggers
 - **Context Management**: Intelligent conversation context preservation
@@ -187,6 +202,7 @@ Customer Message
 ### Real-Time Communication
 
 #### **WebSocket Architecture**
+
 ```
 Client Connection
 ├── Authentication & Authorization
@@ -212,6 +228,7 @@ Client Connection
 ### **Multi-Channel Conversation Flow**
 
 #### **Inbound Message Processing**
+
 1. **Message Reception**: Multi-channel message ingestion (SMS, email, web chat)
 2. **Authentication & Routing**: Channel validation and dealership routing
 3. **Context Assembly**: Conversation history, customer profile, and dealership context
@@ -221,6 +238,7 @@ Client Connection
 7. **Real-Time Updates**: WebSocket notifications to connected clients
 
 #### **Human Handover Flow**
+
 1. **Trigger Detection**: AI confidence threshold, keyword detection, or manual request
 2. **Context Preparation**: Comprehensive conversation summary and customer dossier
 3. **Agent Notification**: Real-time notification to available agents
@@ -228,6 +246,7 @@ Client Connection
 5. **Collaborative Mode**: AI assistance during human-led conversations
 
 #### **Automated Lead Processing (ADF)**
+
 1. **Email Monitoring**: IMAP-based email listening for ADF attachments
 2. **ADF Parsing**: XML parsing and validation against ADF schema
 3. **Lead Enrichment**: Customer profile creation and vehicle interest matching
@@ -241,6 +260,7 @@ Client Connection
 CleanRylie implements a **shared database, shared schema** multi-tenancy model with **dealership-based isolation** enforced at the application layer.
 
 #### **Core Design Principles**
+
 - **Tenant Isolation**: All data access filtered by `dealership_id`
 - **Performance Optimization**: Optimized indexes for multi-tenant queries
 - **Data Integrity**: Foreign key constraints with cascade rules
@@ -250,6 +270,7 @@ CleanRylie implements a **shared database, shared schema** multi-tenancy model w
 ### **Schema Overview**
 
 #### **Core Entities Hierarchy**
+
 ```
 Dealerships (Tenant Root)
 ├── Users (Staff & Admins)
@@ -265,6 +286,7 @@ Dealerships (Tenant Root)
 ### **Key Database Tables**
 
 #### **Dealerships (Multi-Tenant Root)**
+
 ```sql
 CREATE TABLE dealerships (
   id SERIAL PRIMARY KEY,
@@ -289,6 +311,7 @@ CREATE TABLE dealerships (
 ```
 
 #### **Users (Role-Based Access)**
+
 ```sql
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -313,6 +336,7 @@ CREATE INDEX user_email_idx ON users(email);
 ```
 
 #### **Vehicles (Inventory Management)**
+
 ```sql
 CREATE TABLE vehicles (
   id SERIAL PRIMARY KEY,
@@ -356,6 +380,7 @@ CREATE INDEX vehicle_status_idx ON vehicles(dealership_id, status);
 ```
 
 #### **Conversations (Multi-Channel Communication)**
+
 ```sql
 CREATE TABLE conversations (
   id SERIAL PRIMARY KEY,
@@ -386,6 +411,7 @@ CREATE INDEX conversation_customer_idx ON conversations(customer_id);
 ```
 
 #### **Messages (Conversation History)**
+
 ```sql
 CREATE TABLE messages (
   id SERIAL PRIMARY KEY,
@@ -410,6 +436,7 @@ CREATE INDEX message_created_idx ON messages(conversation_id, created_at);
 ```
 
 #### **Personas (AI Configuration)**
+
 ```sql
 CREATE TABLE personas (
   id SERIAL PRIMARY KEY,
@@ -551,6 +578,7 @@ CREATE INDEX audit_created_idx ON audit_logs(created_at);
 CleanRylie implements a comprehensive RESTful API following industry best practices and OpenAPI 3.0 specification.
 
 #### **Core Design Principles**
+
 - **Resource-Oriented**: Clear resource hierarchy with logical URL patterns
 - **HTTP Semantics**: Proper use of HTTP methods and status codes
 - **Stateless**: Each request contains all necessary information
@@ -559,6 +587,7 @@ CleanRylie implements a comprehensive RESTful API following industry best practi
 - **Uniform Interface**: Consistent patterns across all endpoints
 
 #### **URL Structure & Conventions**
+
 ```
 Base URL: https://api.cleanrylie.com/v1
 
@@ -576,18 +605,23 @@ Resource Patterns:
 ### **Authentication & Authorization**
 
 #### **Multi-Method Authentication**
+
 1. **JWT Token Authentication** (Primary)
+
    ```http
    Authorization: Bearer <jwt-token>
    ```
+
    - Stateless authentication for API clients
    - Short-lived access tokens with refresh token rotation
    - Role and permission claims embedded in token
 
 2. **API Key Authentication** (Integration)
+
    ```http
    X-API-Key: <api-key>
    ```
+
    - For third-party integrations and webhooks
    - Dealership-scoped with configurable permissions
    - Rate limiting and usage tracking
@@ -600,6 +634,7 @@ Resource Patterns:
    - Secure, HTTP-only cookies with SameSite protection
 
 #### **Role-Based Access Control (RBAC)**
+
 ```
 Roles Hierarchy:
 ├── super_admin          # System-wide access
@@ -612,6 +647,7 @@ Roles Hierarchy:
 ### **Request/Response Patterns**
 
 #### **Standardized Response Format**
+
 ```json
 {
   "success": true,
@@ -632,6 +668,7 @@ Roles Hierarchy:
 ```
 
 #### **Error Response Format**
+
 ```json
 {
   "success": false,
@@ -656,6 +693,7 @@ Roles Hierarchy:
 ### **Rate Limiting & Throttling**
 
 #### **Tiered Rate Limiting**
+
 ```
 Rate Limit Tiers:
 ├── Public Endpoints:     100 requests/hour per IP
@@ -666,6 +704,7 @@ Rate Limit Tiers:
 ```
 
 #### **Rate Limit Headers**
+
 ```http
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 999
@@ -680,6 +719,7 @@ X-RateLimit-Retry-After: 3600
 CleanRylie implements defense-in-depth security with multiple layers of protection.
 
 #### **Authentication Security**
+
 - **JWT Token Security**: RS256 algorithm with rotating keys
 - **Password Security**: bcrypt hashing with configurable rounds
 - **Session Security**: Secure, HTTP-only cookies with SameSite protection
@@ -687,6 +727,7 @@ CleanRylie implements defense-in-depth security with multiple layers of protecti
 - **Multi-Factor Authentication**: TOTP support for enhanced security
 
 #### **Authorization & Access Control**
+
 ```
 Permission Matrix:
                     │ Read │ Write │ Delete │ Admin │
@@ -698,6 +739,7 @@ Permission Matrix:
 ```
 
 #### **Data Protection & Privacy**
+
 - **Encryption at Rest**: AES-256 encryption for sensitive data
 - **Encryption in Transit**: TLS 1.3 for all communications
 - **PII Protection**: Automatic detection and masking of sensitive data
@@ -706,6 +748,7 @@ Permission Matrix:
 - **CCPA Compliance**: California privacy rights implementation
 
 #### **Application Security**
+
 - **Input Validation**: Comprehensive Zod schema validation
 - **SQL Injection Prevention**: Parameterized queries via Drizzle ORM
 - **XSS Prevention**: Content Security Policy and output encoding
@@ -714,6 +757,7 @@ Permission Matrix:
 - **Security Headers**: Comprehensive security header implementation
 
 #### **Infrastructure Security**
+
 - **Network Security**: VPC isolation and security groups
 - **Database Security**: Connection encryption and access controls
 - **Secrets Management**: Environment-based secret management
@@ -723,12 +767,14 @@ Permission Matrix:
 ### **Compliance & Governance**
 
 #### **Data Governance**
+
 - **Data Classification**: Automatic data sensitivity classification
 - **Retention Policies**: Automated data lifecycle management
 - **Access Monitoring**: Real-time access pattern analysis
 - **Compliance Reporting**: Automated compliance report generation
 
 #### **Security Monitoring**
+
 - **Real-time Monitoring**: Continuous security event monitoring
 - **Anomaly Detection**: ML-based anomaly detection for unusual patterns
 - **Incident Response**: Automated incident response workflows
@@ -739,6 +785,7 @@ Permission Matrix:
 ### **Performance Requirements & SLAs**
 
 #### **Response Time Requirements**
+
 - **API Endpoints**: < 1 second response time under 50 concurrent users
 - **WebSocket Connections**: < 500ms latency for real-time features
 - **Database Queries**: < 2 seconds for complex analytical queries
@@ -746,6 +793,7 @@ Permission Matrix:
 - **File Uploads**: < 30 seconds for inventory imports
 
 #### **Throughput Requirements**
+
 - **Concurrent Users**: Support for 100+ concurrent users per dealership
 - **API Requests**: 10,000+ requests per hour per dealership
 - **WebSocket Connections**: 500+ concurrent connections
@@ -755,6 +803,7 @@ Permission Matrix:
 ### **Performance Optimization Strategies**
 
 #### **Database Performance**
+
 ```sql
 -- Optimized indexes for multi-tenant queries
 CREATE INDEX CONCURRENTLY idx_conversations_dealership_status
@@ -772,6 +821,7 @@ CREATE INDEX CONCURRENTLY idx_messages_conversation_created
 ```
 
 #### **Caching Strategy**
+
 ```
 Caching Layers:
 ├── Browser Cache (Static Assets)
@@ -786,6 +836,7 @@ Caching Layers:
 ```
 
 #### **Real-Time Performance**
+
 - **WebSocket Connection Pooling**: Efficient connection management
 - **Message Queuing**: Redis-based message queuing for scalability
 - **Event Streaming**: Real-time event streaming for live updates
@@ -796,6 +847,7 @@ Caching Layers:
 ### **External Service Integrations**
 
 #### **AI & Machine Learning Services**
+
 ```
 OpenAI Integration:
 ├── Model: GPT-4 (latest)
@@ -815,6 +867,7 @@ OpenAI Integration:
 ```
 
 #### **Communication Services**
+
 ```
 SendGrid Email Service:
 ├── Transactional Emails
@@ -844,6 +897,7 @@ Twilio SMS Service:
 ```
 
 #### **Email Processing (ADF Leads)**
+
 ```
 IMAP Email Processing:
 ├── Gmail Integration
@@ -857,6 +911,7 @@ IMAP Email Processing:
 ### **Webhook & Event System**
 
 #### **Outbound Webhooks**
+
 ```
 Event Types:
 ├── conversation.created
@@ -878,6 +933,7 @@ Webhook Configuration:
 ```
 
 #### **Inbound Webhooks**
+
 ```
 Supported Integrations:
 ├── CRM Systems (Salesforce, HubSpot)
@@ -890,6 +946,7 @@ Supported Integrations:
 ### **API Integration Capabilities**
 
 #### **Third-Party Integration Framework**
+
 - **Plugin Architecture**: Modular integration system
 - **Custom Adapters**: Configurable data transformation
 - **Rate Limiting**: Per-integration rate limiting
@@ -904,6 +961,7 @@ Supported Integrations:
 CleanRylie is designed for flexible deployment across various cloud platforms with containerization and orchestration support.
 
 #### **Deployment Options**
+
 ```
 Deployment Strategies:
 ├── Container-Based (Docker)
@@ -924,6 +982,7 @@ Deployment Strategies:
 ### **Production Infrastructure**
 
 #### **Application Tier**
+
 ```
 Load Balancer (HTTPS Termination)
 ├── Frontend Servers (React SPA)
@@ -942,6 +1001,7 @@ Load Balancer (HTTPS Termination)
 ```
 
 #### **Data Tier**
+
 ```
 Primary Database (PostgreSQL)
 ├── Read Replicas (2-3 instances)
@@ -959,6 +1019,7 @@ Cache Layer (Redis)
 ```
 
 #### **External Services**
+
 ```
 Third-Party Integrations:
 ├── OpenAI API (AI Processing)
@@ -972,30 +1033,33 @@ Third-Party Integrations:
 ### **Environment Configuration**
 
 #### **Required Environment Variables**
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `DATABASE_URL` | PostgreSQL connection | `postgresql://user:pass@host:5432/db` |
-| `REDIS_URL` | Redis connection | `redis://user:pass@host:6379` |
-| `OPENAI_API_KEY` | OpenAI authentication | `sk-...` |
-| `SENDGRID_API_KEY` | SendGrid authentication | `SG.xxx` |
-| `SESSION_SECRET` | Session encryption | `<32-byte-secret>` |
-| `JWT_SECRET` | JWT token signing | `<32-byte-secret>` |
-| `CREDENTIALS_ENCRYPTION_KEY` | Data encryption | `<32-byte-secret>` |
+
+| Variable                     | Purpose                 | Example                               |
+| ---------------------------- | ----------------------- | ------------------------------------- |
+| `DATABASE_URL`               | PostgreSQL connection   | `postgresql://user:pass@host:5432/db` |
+| `REDIS_URL`                  | Redis connection        | `redis://user:pass@host:6379`         |
+| `OPENAI_API_KEY`             | OpenAI authentication   | `sk-...`                              |
+| `SENDGRID_API_KEY`           | SendGrid authentication | `SG.xxx`                              |
+| `SESSION_SECRET`             | Session encryption      | `<32-byte-secret>`                    |
+| `JWT_SECRET`                 | JWT token signing       | `<32-byte-secret>`                    |
+| `CREDENTIALS_ENCRYPTION_KEY` | Data encryption         | `<32-byte-secret>`                    |
 
 #### **Optional Configuration**
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `NODE_ENV` | Environment mode | `development` |
-| `PORT` | Server port | `5000` |
-| `LOG_LEVEL` | Logging level | `info` |
-| `TWILIO_ACCOUNT_SID` | SMS service | - |
-| `TWILIO_AUTH_TOKEN` | SMS authentication | - |
+
+| Variable             | Purpose            | Default       |
+| -------------------- | ------------------ | ------------- |
+| `NODE_ENV`           | Environment mode   | `development` |
+| `PORT`               | Server port        | `5000`        |
+| `LOG_LEVEL`          | Logging level      | `info`        |
+| `TWILIO_ACCOUNT_SID` | SMS service        | -             |
+| `TWILIO_AUTH_TOKEN`  | SMS authentication | -             |
 
 ## Scaling Considerations
 
 ### **Horizontal Scaling Strategy**
 
 #### **Application Layer Scaling**
+
 ```
 Scaling Approach:
 ├── Stateless Design
@@ -1017,6 +1081,7 @@ Scaling Approach:
 ```
 
 #### **Database Scaling**
+
 ```
 Database Scaling Strategy:
 ├── Read Replicas
@@ -1040,6 +1105,7 @@ Database Scaling Strategy:
 ### **Performance Monitoring & Optimization**
 
 #### **Key Performance Indicators (KPIs)**
+
 - **Response Time**: 95th percentile < 1 second
 - **Throughput**: 10,000+ requests/hour per dealership
 - **Error Rate**: < 0.1% for critical operations
@@ -1047,6 +1113,7 @@ Database Scaling Strategy:
 - **Database Performance**: Query time < 100ms for 95% of queries
 
 #### **Monitoring Stack**
+
 ```
 Monitoring & Observability:
 ├── Application Performance Monitoring
@@ -1072,18 +1139,21 @@ Monitoring & Observability:
 ### **Comprehensive Monitoring Strategy**
 
 #### **Application Monitoring**
+
 - **Request Tracing**: Distributed tracing for request flow analysis
 - **Error Tracking**: Real-time error detection and alerting
 - **Performance Metrics**: Response times, throughput, and resource utilization
 - **Business Metrics**: Conversation quality, AI performance, and user engagement
 
 #### **Infrastructure Monitoring**
+
 - **Server Health**: CPU, memory, disk, and network monitoring
 - **Database Performance**: Query performance, connection pooling, and replication lag
 - **Cache Performance**: Hit rates, memory usage, and eviction patterns
 - **External Service Monitoring**: API response times and error rates
 
 #### **Security Monitoring**
+
 - **Access Patterns**: Unusual access pattern detection
 - **Authentication Events**: Failed login attempts and suspicious activity
 - **Data Access**: Sensitive data access monitoring
@@ -1092,6 +1162,7 @@ Monitoring & Observability:
 ### **Logging & Audit Trail**
 
 #### **Structured Logging**
+
 ```json
 {
   "timestamp": "2024-01-15T10:30:00Z",
@@ -1111,6 +1182,7 @@ Monitoring & Observability:
 ```
 
 #### **Audit Logging**
+
 - **User Actions**: Complete audit trail of user actions
 - **Data Changes**: Before/after values for all data modifications
 - **System Events**: System-level events and configuration changes

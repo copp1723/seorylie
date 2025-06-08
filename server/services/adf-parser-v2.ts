@@ -3,10 +3,15 @@
  * Production-ready ADF parser with comprehensive validation and monitoring
  */
 
-import { XMLParser, XMLValidator } from 'fast-xml-parser';
-import logger from '../utils/logger';
-import { AdfParserV2Config, AdfParseResult, ValidationErrorCode, AdfValidationError } from '../types/adf-types';
-import type { AdfXmlStructure, InsertAdfLead } from '@shared/adf-schema';
+import { XMLParser, XMLValidator } from "fast-xml-parser";
+import logger from "../utils/logger";
+import {
+  AdfParserV2Config,
+  AdfParseResult,
+  ValidationErrorCode,
+  AdfValidationError,
+} from "../types/adf-types";
+import type { AdfXmlStructure, InsertAdfLead } from "@shared/adf-schema";
 
 export class ADFParserV2 {
   private config: Required<AdfParserV2Config>;
@@ -15,18 +20,21 @@ export class ADFParserV2 {
   constructor(config: AdfParserV2Config = {}) {
     this.config = {
       strictMode: config.strictMode ?? false,
-      xsdVersion: config.xsdVersion ?? '1.0',
-      schemaBasePath: config.schemaBasePath ?? 'server/schemas/adf',
+      xsdVersion: config.xsdVersion ?? "1.0",
+      schemaBasePath: config.schemaBasePath ?? "server/schemas/adf",
       extractPartialData: config.extractPartialData ?? true,
       requireMinimumFields: config.requireMinimumFields ?? true,
-      minimumRequiredFields: config.minimumRequiredFields ?? ['customer.contact.name', 'customer.contact.email']
+      minimumRequiredFields: config.minimumRequiredFields ?? [
+        "customer.contact.name",
+        "customer.contact.email",
+      ],
     };
 
     this.xmlParser = new XMLParser({
       ignoreAttributes: false,
-      attributeNamePrefix: '',
-      attributesGroupName: '$',
-      textNodeName: '_',
+      attributeNamePrefix: "",
+      attributesGroupName: "$",
+      textNodeName: "_",
       parseAttributeValue: true,
       parseTagValue: true,
       trimValues: true,
@@ -38,14 +46,17 @@ export class ADFParserV2 {
       ignoreNameSpace: false,
       removeNSPrefix: false,
       parseNodeValue: true,
-      cdataPropName: '__cdata',
+      cdataPropName: "__cdata",
     });
   }
 
   /**
    * Parse ADF XML with enhanced validation
    */
-  async parse(xmlContent: string, dealershipId?: number): Promise<AdfParseResult> {
+  async parse(
+    xmlContent: string,
+    dealershipId?: number,
+  ): Promise<AdfParseResult> {
     const startTime = Date.now();
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -55,8 +66,8 @@ export class ADFParserV2 {
       const xmlValidation = XMLValidator.validate(xmlContent);
       if (xmlValidation !== true) {
         throw new AdfValidationError(
-          `XML syntax error: ${xmlValidation.err?.msg || 'Invalid XML'}`,
-          ValidationErrorCode.XML_SYNTAX_ERROR
+          `XML syntax error: ${xmlValidation.err?.msg || "Invalid XML"}`,
+          ValidationErrorCode.XML_SYNTAX_ERROR,
         );
       }
 
@@ -72,22 +83,25 @@ export class ADFParserV2 {
         parsedData: parsedXml,
         errors,
         warnings,
-        parserUsed: 'v2',
-        parseTimeMs
+        parserUsed: "v2",
+        parseTimeMs,
       };
-
     } catch (error) {
       const parseTimeMs = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
 
-      logger.error('ADF Parser v2 failed', { error: errorMessage, dealershipId });
+      logger.error("ADF Parser v2 failed", {
+        error: errorMessage,
+        dealershipId,
+      });
 
       return {
         success: false,
         errors: [errorMessage],
         warnings,
-        parserUsed: 'v2',
-        parseTimeMs
+        parserUsed: "v2",
+        parseTimeMs,
       };
     }
   }

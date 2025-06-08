@@ -98,7 +98,9 @@ export function AIAnalyticsDashboard() {
     setLoading(true);
     try {
       // Mock data - in real app these would be API calls
-      await new Promise<void>((resolve: () => void) => setTimeout(resolve, 1000)); // Simulate API delay
+      await new Promise<void>((resolve: () => void) =>
+        setTimeout(resolve, 1000),
+      ); // Simulate API delay
 
       // Generate mock daily stats
       const days = parseInt(timeRange);
@@ -415,9 +417,7 @@ export function AIAnalyticsDashboard() {
                     </span>
                   </div>
                   <div className="w-full">
-                    <Progress
-                      value={metrics?.inventoryContextUsage || 0}
-                    />
+                    <Progress value={metrics?.inventoryContextUsage || 0} />
                   </div>
                 </div>
 
@@ -431,9 +431,7 @@ export function AIAnalyticsDashboard() {
                     </span>
                   </div>
                   <div className="w-full">
-                    <Progress
-                      value={metrics?.personalizedResponses || 0}
-                    />
+                    <Progress value={metrics?.personalizedResponses || 0} />
                   </div>
                 </div>
 

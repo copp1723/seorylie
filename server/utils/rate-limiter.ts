@@ -1,6 +1,6 @@
 /**
  * Rate Limiter Utility
- * 
+ *
  * Provides configurable rate limiting with injectable store and timer functions
  * for deterministic testing and production flexibility.
  */
@@ -13,8 +13,8 @@ export interface RateLimitStore {
 }
 
 export interface RateLimitOptions {
-  windowMs: number;  // Time window in milliseconds
-  max: number;       // Max requests per window
+  windowMs: number; // Time window in milliseconds
+  max: number; // Max requests per window
   keyGenerator?: (context: any) => string; // Key generation function
 }
 
@@ -34,12 +34,12 @@ export class MemoryRateLimitStore implements RateLimitStore {
   async get(key: string): Promise<number | null> {
     const entry = this.store.get(key);
     if (!entry) return null;
-    
+
     if (entry.expires < this.nowFn()) {
       this.store.delete(key);
       return null;
     }
-    
+
     return entry.value;
   }
 
@@ -70,7 +70,7 @@ export class MemoryRateLimitStore implements RateLimitStore {
  */
 export class RedisRateLimitStore implements RateLimitStore {
   private redis: any;
-  
+
   constructor(redis: any) {
     this.redis = redis;
   }
@@ -108,7 +108,7 @@ export class RateLimiter {
   constructor(
     store: RateLimitStore,
     options: RateLimitOptions,
-    nowFn: NowFunction = Date.now
+    nowFn: NowFunction = Date.now,
   ) {
     this.store = store;
     this.options = options;
@@ -120,22 +120,26 @@ export class RateLimiter {
    * @param context - Context for key generation (e.g., IP, user ID, etc.)
    * @returns Promise<{ allowed: boolean; count: number; resetTime: number }>
    */
-  async check(context: any = {}): Promise<{ allowed: boolean; count: number; resetTime: number }> {
-    const key = this.options.keyGenerator ? this.options.keyGenerator(context) : 'default';
+  async check(
+    context: any = {},
+  ): Promise<{ allowed: boolean; count: number; resetTime: number }> {
+    const key = this.options.keyGenerator
+      ? this.options.keyGenerator(context)
+      : "default";
     const windowKey = this.getWindowKey(key);
-    
+
     const count = await this.store.incr(windowKey);
     const resetTime = this.getResetTime();
-    
+
     // Set TTL for the key if it's the first request in this window
     if (count === 1) {
       await this.store.set(windowKey, count, this.options.windowMs);
     }
-    
+
     return {
       allowed: count <= this.options.max,
       count,
-      resetTime
+      resetTime,
     };
   }
 
@@ -146,11 +150,11 @@ export class RateLimiter {
    */
   async getDelay(context: any = {}): Promise<number> {
     const result = await this.check(context);
-    
+
     if (result.allowed) {
       return 0;
     }
-    
+
     // Calculate delay until next window
     const now = this.nowFn();
     const delay = result.resetTime - now;
@@ -164,18 +168,20 @@ export class RateLimiter {
   async wait(context: any = {}): Promise<void> {
     const delay = await this.getDelay(context);
     if (delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 
   private getWindowKey(key: string): string {
-    const windowStart = Math.floor(this.nowFn() / this.options.windowMs) * this.options.windowMs;
+    const windowStart =
+      Math.floor(this.nowFn() / this.options.windowMs) * this.options.windowMs;
     return `ratelimit:${key}:${windowStart}`;
   }
 
   private getResetTime(): number {
     const now = this.nowFn();
-    const windowStart = Math.floor(now / this.options.windowMs) * this.options.windowMs;
+    const windowStart =
+      Math.floor(now / this.options.windowMs) * this.options.windowMs;
     return windowStart + this.options.windowMs;
   }
 }
@@ -193,7 +199,7 @@ export class SimpleRateLimiter {
   constructor(
     store: RateLimitStore,
     requestsPerSecond: number,
-    nowFn: NowFunction = Date.now
+    nowFn: NowFunction = Date.now,
   ) {
     this.store = store;
     this.requestsPerSecond = requestsPerSecond;
@@ -207,15 +213,17 @@ export class SimpleRateLimiter {
    */
   async throttle(): Promise<void> {
     const now = this.nowFn();
-    
+
     // Remove requests older than 1 second
-    this.lastRequestTimes = this.lastRequestTimes.filter(time => now - time < 1000);
-    
+    this.lastRequestTimes = this.lastRequestTimes.filter(
+      (time) => now - time < 1000,
+    );
+
     // If we're at the limit, wait until we can make another request
     if (this.lastRequestTimes.length >= this.requestsPerSecond) {
       const oldestRequest = this.lastRequestTimes[0];
       const waitTime = 1000 - (now - oldestRequest);
-      
+
       if (waitTime > 0) {
         if (this.isTestMode) {
           // In test mode, don't actually wait, just simulate the passage of time
@@ -224,14 +232,16 @@ export class SimpleRateLimiter {
           this.lastRequestTimes.shift();
         } else {
           // In production mode, actually wait
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
           // After waiting, check again without recursion to avoid stack overflow
           const newNow = this.nowFn();
-          this.lastRequestTimes = this.lastRequestTimes.filter(time => newNow - time < 1000);
+          this.lastRequestTimes = this.lastRequestTimes.filter(
+            (time) => newNow - time < 1000,
+          );
         }
       }
     }
-    
+
     // Record this request
     this.lastRequestTimes.push(this.nowFn());
   }
@@ -241,7 +251,9 @@ export class SimpleRateLimiter {
    */
   wouldBeRateLimited(): boolean {
     const now = this.nowFn();
-    const recentRequests = this.lastRequestTimes.filter(time => now - time < 1000);
+    const recentRequests = this.lastRequestTimes.filter(
+      (time) => now - time < 1000,
+    );
     return recentRequests.length >= this.requestsPerSecond;
   }
 

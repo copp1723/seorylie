@@ -5,6 +5,7 @@ This document describes the standardized service layer architecture and error ha
 ## Overview
 
 The new service architecture provides:
+
 - **Standardized service patterns** with base classes and interfaces
 - **Centralized service registry** for dependency management
 - **Comprehensive error handling** with correlation IDs and structured logging
@@ -30,6 +31,7 @@ export abstract class BaseService extends EventEmitter {
 ```
 
 **Key Features:**
+
 - Automatic health monitoring with configurable intervals
 - Dependency health checking
 - Metrics collection with performance tracking
@@ -51,6 +53,7 @@ export class ServiceRegistry extends EventEmitter {
 ```
 
 **Key Features:**
+
 - Dependency resolution and initialization ordering
 - Circular dependency detection
 - Service discovery and retrieval
@@ -72,6 +75,7 @@ export class ConfigManager extends EventEmitter {
 ```
 
 **Key Features:**
+
 - Zod schema validation for all configuration
 - Type-safe access to configuration sections
 - Hot-reloading for development environments
@@ -99,6 +103,7 @@ export interface StandardErrorResponse {
 ```
 
 **Key Features:**
+
 - Correlation IDs for request tracing
 - Structured error responses
 - Context-aware logging
@@ -120,6 +125,7 @@ export function createRequestLoggingMiddleware(options: LoggingOptions) {
 ```
 
 **Key Features:**
+
 - Automatic correlation ID generation
 - Performance monitoring with slow request detection
 - Sensitive data redaction (passwords, tokens, etc.)
@@ -142,6 +148,7 @@ export class HealthCheckService extends BaseService {
 ```
 
 **Key Features:**
+
 - Built-in checks for common dependencies
 - Custom health check registration
 - Timeout and retry logic
@@ -155,13 +162,13 @@ export class HealthCheckService extends BaseService {
 1. **Extend BaseService:**
 
 ```typescript
-import { BaseService, ServiceConfig, ServiceHealth } from './base-service';
+import { BaseService, ServiceConfig, ServiceHealth } from "./base-service";
 
 export class MyService extends BaseService {
   constructor(config: ServiceConfig) {
     super({
       ...config,
-      dependencies: ['AuthService', 'DatabaseService']
+      dependencies: ["AuthService", "DatabaseService"],
     });
   }
 
@@ -173,7 +180,9 @@ export class MyService extends BaseService {
     // Service-specific cleanup
   }
 
-  protected async checkDependencyHealth(dependency: string): Promise<ServiceHealth> {
+  protected async checkDependencyHealth(
+    dependency: string,
+  ): Promise<ServiceHealth> {
     // Check specific dependency health
   }
 
@@ -181,7 +190,7 @@ export class MyService extends BaseService {
   async doSomething(): Promise<void> {
     return this.executeWithMetrics(async () => {
       // Service logic with automatic metrics and error handling
-    }, 'doSomething');
+    }, "doSomething");
   }
 }
 ```
@@ -189,11 +198,11 @@ export class MyService extends BaseService {
 2. **Register with Service Registry:**
 
 ```typescript
-import { serviceRegistry } from './service-registry';
-import { myService } from './my-service';
+import { serviceRegistry } from "./service-registry";
+import { myService } from "./my-service";
 
 // Register service with dependencies
-serviceRegistry.register(myService, ['AuthService', 'DatabaseService']);
+serviceRegistry.register(myService, ["AuthService", "DatabaseService"]);
 ```
 
 3. **Initialize Services:**
@@ -208,17 +217,13 @@ await serviceRegistry.initializeAll();
 1. **Use CustomError for known errors:**
 
 ```typescript
-import { CustomError } from '../utils/error-handler';
+import { CustomError } from "../utils/error-handler";
 
-throw new CustomError(
-  'User not found',
-  404,
-  {
-    code: 'USER_NOT_FOUND',
-    context: { userId },
-    userMessage: 'The requested user could not be found'
-  }
-);
+throw new CustomError("User not found", 404, {
+  code: "USER_NOT_FOUND",
+  context: { userId },
+  userMessage: "The requested user could not be found",
+});
 ```
 
 2. **Let unknown errors bubble up:**
@@ -240,10 +245,10 @@ throw new CustomError(
 1. **Access configuration:**
 
 ```typescript
-import { configManager } from '../config/config-manager';
+import { configManager } from "../config/config-manager";
 
 const config = configManager.get();
-const dbConfig = configManager.getSection('database');
+const dbConfig = configManager.getSection("database");
 ```
 
 2. **Environment variables:**
@@ -268,15 +273,15 @@ AGENT_SQUAD_ENABLED=false
 1. **Register custom health checks:**
 
 ```typescript
-import { healthCheckService } from './health-check-service';
+import { healthCheckService } from "./health-check-service";
 
-healthCheckService.registerCheck('my-service', async () => {
+healthCheckService.registerCheck("my-service", async () => {
   // Custom health check logic
   return {
-    name: 'my-service',
-    status: 'healthy',
+    name: "my-service",
+    status: "healthy",
     responseTime: 100,
-    message: 'Service is operational'
+    message: "Service is operational",
   };
 });
 ```
@@ -344,18 +349,21 @@ curl http://localhost:3000/api/health/detailed
 The platform includes comprehensive real-time conversation capabilities:
 
 ### WebSocket Server Integration
+
 - **Channel-based pub/sub**: `ws-server.ts` upgraded with dealership namespacing
 - **Auto-reconnection**: Client-side WebSocket with ping/pong and dynamic subscribe/unsubscribe
 - **Real-time events**: `new_message`, `conversation_updated`, `stats_updated`
 - **Performance**: Observed latency ≤ 250ms on local tests at 30 RPS
 
 ### Database Integration (Migration 0014)
+
 - **New tables**: `conversation_events`, `conversation_messages` with ADF linkage
 - **Views**: `dealership_conversation_summary`, `customer_conversation_history`, `adf_conversation_metrics`
 - **Triggers**: Auto-threading of inbound/outbound SMS, conversation status updates
 - **Indexes**: GIN `search_vector` for <30ms full-text search, performance indexes on FK columns
 
 ### Frontend Dashboard Components
+
 - **ConversationsPage**: Responsive dashboard with filters, pagination, charts
 - **ChatMessage**: Rich message bubbles with delivery status and AI confidence
 - **ConversationChart**: Re-charts based activity trends (day/week/month)

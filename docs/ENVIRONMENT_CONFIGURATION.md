@@ -7,6 +7,7 @@ This document provides comprehensive guidance on configuring environment variabl
 ## Quick Start
 
 1. **Copy the example file:**
+
    ```bash
    cp .env.example .env
    ```
@@ -25,26 +26,27 @@ This document provides comprehensive guidance on configuring environment variabl
 
 These variables must be set for the application to function:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@host:5432/db` |
-| `SESSION_SECRET` | Secret for session encryption | Generate with `openssl rand -base64 32` |
-| `OPENAI_API_KEY` | OpenAI API key for AI functionality | `sk-...` |
-| `SENDGRID_API_KEY` | SendGrid API key for email | `SG.xxx` |
+| Variable           | Description                         | Example                                 |
+| ------------------ | ----------------------------------- | --------------------------------------- |
+| `DATABASE_URL`     | PostgreSQL connection string        | `postgres://user:pass@host:5432/db`     |
+| `SESSION_SECRET`   | Secret for session encryption       | Generate with `openssl rand -base64 32` |
+| `OPENAI_API_KEY`   | OpenAI API key for AI functionality | `sk-...`                                |
+| `SENDGRID_API_KEY` | SendGrid API key for email          | `SG.xxx`                                |
 
 ### Security Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
+| Variable                     | Description                           | Default                                 |
+| ---------------------------- | ------------------------------------- | --------------------------------------- |
 | `CREDENTIALS_ENCRYPTION_KEY` | Key for encrypting stored credentials | Generate with `openssl rand -base64 32` |
-| `AUTH_BYPASS` | Bypass authentication (dev only) | `false` |
-| `ALLOW_AUTH_BYPASS` | Allow auth bypass flag | `false` |
+| `AUTH_BYPASS`                | Bypass authentication (dev only)      | `false`                                 |
+| `ALLOW_AUTH_BYPASS`          | Allow auth bypass flag                | `false`                                 |
 
 ### Email Configuration
 
 The platform supports multiple email providers:
 
 #### SendGrid (Recommended)
+
 ```env
 EMAIL_SERVICE=sendgrid
 SENDGRID_API_KEY=your-sendgrid-api-key
@@ -52,6 +54,7 @@ EMAIL_FROM=noreply@yourdomain.com
 ```
 
 #### Gmail
+
 ```env
 EMAIL_SERVICE=gmail
 GMAIL_USER=your-gmail@gmail.com
@@ -59,6 +62,7 @@ GMAIL_APP_PASSWORD=your-app-password
 ```
 
 #### SMTP
+
 ```env
 EMAIL_SERVICE=smtp
 SMTP_HOST=smtp.yourdomain.com
@@ -70,22 +74,22 @@ SMTP_SECURE=false
 
 ### Optional Services
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `TWILIO_ACCOUNT_SID` | Twilio account SID | For SMS features |
-| `TWILIO_AUTH_TOKEN` | Twilio auth token | For SMS features |
-| `TWILIO_PHONE_NUMBER` | Twilio phone number | For SMS features |
-| `REDIS_HOST` | Redis host | For caching (optional) |
-| `REDIS_PORT` | Redis port | For caching (optional) |
+| Variable              | Description         | Required               |
+| --------------------- | ------------------- | ---------------------- |
+| `TWILIO_ACCOUNT_SID`  | Twilio account SID  | For SMS features       |
+| `TWILIO_AUTH_TOKEN`   | Twilio auth token   | For SMS features       |
+| `TWILIO_PHONE_NUMBER` | Twilio phone number | For SMS features       |
+| `REDIS_HOST`          | Redis host          | For caching (optional) |
+| `REDIS_PORT`          | Redis port          | For caching (optional) |
 
 ### Application Settings
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment mode | `development` |
-| `PORT` | Server port | `5000` |
-| `LOG_LEVEL` | Logging level | `info` |
-| `REPLIT_DOMAINS` | Allowed domains for Replit | - |
+| Variable         | Description                | Default       |
+| ---------------- | -------------------------- | ------------- |
+| `NODE_ENV`       | Environment mode           | `development` |
+| `PORT`           | Server port                | `5000`        |
+| `LOG_LEVEL`      | Logging level              | `info`        |
+| `REPLIT_DOMAINS` | Allowed domains for Replit | -             |
 
 ## Environment Validation
 
@@ -116,6 +120,7 @@ npm run deploy:check
 ## Environment-Specific Configuration
 
 ### Development
+
 ```env
 NODE_ENV=development
 AUTH_BYPASS=true
@@ -124,6 +129,7 @@ SKIP_REDIS=true
 ```
 
 ### Production
+
 ```env
 NODE_ENV=production
 AUTH_BYPASS=false
@@ -132,6 +138,7 @@ LOG_LEVEL=info
 ```
 
 ### Testing
+
 ```env
 NODE_ENV=test
 AUTH_BYPASS=true
@@ -143,6 +150,7 @@ SKIP_REDIS=true
 ### 🔐 Secret Generation
 
 Generate secure secrets using:
+
 ```bash
 # For SESSION_SECRET and CREDENTIALS_ENCRYPTION_KEY
 openssl rand -base64 32
@@ -160,6 +168,7 @@ openssl rand -base64 32
 ### 🛡️ Production Security
 
 In production environments:
+
 - Set `AUTH_BYPASS=false`
 - Use strong, unique `SESSION_SECRET`
 - Set custom `CREDENTIALS_ENCRYPTION_KEY`
@@ -171,11 +180,13 @@ In production environments:
 ### Common Issues
 
 1. **Database Connection Failed**
+
    - Check `DATABASE_URL` format
    - Verify database server is running
    - Check network connectivity
 
 2. **Authentication Errors**
+
    - Verify `SESSION_SECRET` is set
    - Check `AUTH_BYPASS` setting
    - Ensure `CREDENTIALS_ENCRYPTION_KEY` is configured
@@ -188,11 +199,13 @@ In production environments:
 ### Validation Errors
 
 Run the validation script to identify issues:
+
 ```bash
 npm run env:validate
 ```
 
 The script will provide detailed feedback on:
+
 - Missing required variables
 - Invalid configuration values
 - Security warnings
@@ -203,11 +216,13 @@ The script will provide detailed feedback on:
 If upgrading from an older version:
 
 1. **Update environment variables:**
+
    - Add new required variables from `.env.example`
    - Update deprecated variable names
    - Add security-related variables
 
 2. **Run validation:**
+
    ```bash
    npm run env:validate
    ```
@@ -219,6 +234,7 @@ If upgrading from an older version:
 ## Support
 
 For configuration issues:
+
 1. Check this documentation
 2. Run `npm run env:validate` for detailed diagnostics
 3. Review the `.env.example` file for latest requirements

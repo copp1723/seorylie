@@ -3,14 +3,14 @@
  */
 
 export enum AgentType {
-  GENERAL = 'general-agent',
-  INVENTORY = 'inventory-agent',
-  FINANCE = 'finance-agent',
-  SERVICE = 'service-agent',
-  TRADE = 'trade-agent',
-  SALES = 'sales-agent',
-  CREDIT = 'credit-agent',
-  LEASE = 'lease-agent'
+  GENERAL = "general-agent",
+  INVENTORY = "inventory-agent",
+  FINANCE = "finance-agent",
+  SERVICE = "service-agent",
+  TRADE = "trade-agent",
+  SALES = "sales-agent",
+  CREDIT = "credit-agent",
+  LEASE = "lease-agent",
 }
 
 export interface AgentResponse {
@@ -30,14 +30,14 @@ export interface AgentResponse {
   audioOutput?: {
     url?: string;
     data?: string;
-    format?: 'mp3' | 'ogg' | 'pcm';
-    tool_used?: 'speak_polly';
+    format?: "mp3" | "ogg" | "pcm";
+    tool_used?: "speak_polly";
     text_spoken?: string;
   };
 }
 
 export interface ConversationMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp?: string;
   metadata?: Record<string, any>;
@@ -51,7 +51,7 @@ export interface StrandsConfig {
   awsRegion?: string;
   defaultModel?: string;
   enableVoice?: boolean;
-  voiceProvider?: 'polly' | 'elevenlabs';
+  voiceProvider?: "polly" | "elevenlabs";
   dealershipId?: string;
   sandboxId?: string;
 }

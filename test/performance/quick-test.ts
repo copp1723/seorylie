@@ -1,9 +1,9 @@
 #!/usr/bin/env tsx
 
-import { spawn } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { spawn } from "child_process";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,8 +27,8 @@ class QuickPerformanceTest {
   private results: QuickTestResult[] = [];
 
   async runQuickTests(): Promise<void> {
-    console.log('🚀 Running Quick Performance Tests');
-    console.log('==================================\n');
+    console.log("🚀 Running Quick Performance Tests");
+    console.log("==================================\n");
 
     // Test 1: Verify application is running
     await this.testApplicationHealth();
@@ -44,18 +44,20 @@ class QuickPerformanceTest {
   }
 
   private async testApplicationHealth(): Promise<void> {
-    console.log('🔍 Testing Application Health...');
+    console.log("🔍 Testing Application Health...");
 
     const result: QuickTestResult = {
-      testName: 'Application Health Check',
+      testName: "Application Health Check",
       success: false,
-      duration: 0
+      duration: 0,
     };
 
     const startTime = Date.now();
 
     try {
-      const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3000'}/api/metrics/health`);
+      const response = await fetch(
+        `${process.env.BASE_URL || "http://localhost:3000"}/api/metrics/health`,
+      );
       result.duration = Date.now() - startTime;
 
       if (response.ok) {
@@ -77,12 +79,12 @@ class QuickPerformanceTest {
   }
 
   private async testBasicAPILoad(): Promise<void> {
-    console.log('\n⚡ Running Basic API Load Test...');
+    console.log("\n⚡ Running Basic API Load Test...");
 
     const result: QuickTestResult = {
-      testName: 'Basic API Load Test',
+      testName: "Basic API Load Test",
       success: false,
-      duration: 0
+      duration: 0,
     };
 
     const startTime = Date.now();
@@ -90,7 +92,7 @@ class QuickPerformanceTest {
     try {
       // Run a simple k6 test with minimal load
       const k6Script = this.generateSimpleK6Script();
-      const scriptPath = path.join(__dirname, 'temp-quick-test.js');
+      const scriptPath = path.join(__dirname, "temp-quick-test.js");
 
       fs.writeFileSync(scriptPath, k6Script);
 
@@ -106,7 +108,6 @@ class QuickPerformanceTest {
       } else {
         console.log(`❌ Basic load test failed`);
       }
-
     } catch (error) {
       result.duration = Date.now() - startTime;
       result.error = error instanceof Error ? error.message : String(error);
@@ -117,19 +118,21 @@ class QuickPerformanceTest {
   }
 
   private async testDatabaseConnectivity(): Promise<void> {
-    console.log('\n🗄️ Testing Database Connectivity...');
+    console.log("\n🗄️ Testing Database Connectivity...");
 
     const result: QuickTestResult = {
-      testName: 'Database Connectivity',
+      testName: "Database Connectivity",
       success: false,
-      duration: 0
+      duration: 0,
     };
 
     const startTime = Date.now();
 
     try {
       // Test database through the API
-      const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3000'}/api/metrics/database/performance`);
+      const response = await fetch(
+        `${process.env.BASE_URL || "http://localhost:3000"}/api/metrics/database/performance`,
+      );
       result.duration = Date.now() - startTime;
 
       if (response.ok) {
@@ -186,61 +189,63 @@ export default function () {
 
   private executeCommand(command: string): Promise<boolean> {
     return new Promise((resolve) => {
-      const [cmd, ...args] = command.split(' ');
+      const [cmd, ...args] = command.split(" ");
       const process = spawn(cmd, args, {
-        stdio: 'pipe',
-        shell: true
+        stdio: "pipe",
+        shell: true,
       });
 
-      let output = '';
-      let error = '';
+      let output = "";
+      let error = "";
 
-      process.stdout?.on('data', (data) => {
+      process.stdout?.on("data", (data) => {
         output += data.toString();
       });
 
-      process.stderr?.on('data', (data) => {
+      process.stderr?.on("data", (data) => {
         error += data.toString();
       });
 
-      process.on('close', (code) => {
+      process.on("close", (code) => {
         if (code === 0) {
           resolve(true);
         } else {
-          console.log('Command output:', output);
-          console.log('Command error:', error);
+          console.log("Command output:", output);
+          console.log("Command error:", error);
           resolve(false);
         }
       });
 
-      process.on('error', () => {
+      process.on("error", () => {
         resolve(false);
       });
 
       // Timeout after 60 seconds
       setTimeout(() => {
-        process.kill('SIGTERM');
+        process.kill("SIGTERM");
         resolve(false);
       }, 60000);
     });
   }
 
   private generateSummary(): void {
-    console.log('\n📊 QUICK TEST SUMMARY');
-    console.log('====================');
+    console.log("\n📊 QUICK TEST SUMMARY");
+    console.log("====================");
 
     const totalTests = this.results.length;
-    const passedTests = this.results.filter(r => r.success).length;
+    const passedTests = this.results.filter((r) => r.success).length;
     const failedTests = totalTests - passedTests;
 
     console.log(`Total Tests: ${totalTests}`);
     console.log(`Passed: ${passedTests}`);
     console.log(`Failed: ${failedTests}`);
-    console.log(`Success Rate: ${((passedTests / totalTests) * 100).toFixed(1)}%`);
+    console.log(
+      `Success Rate: ${((passedTests / totalTests) * 100).toFixed(1)}%`,
+    );
 
-    console.log('\nTest Results:');
+    console.log("\nTest Results:");
     this.results.forEach((result, index) => {
-      const status = result.success ? '✅' : '❌';
+      const status = result.success ? "✅" : "❌";
       const duration = `${result.duration}ms`;
       console.log(`${index + 1}. ${status} ${result.testName} (${duration})`);
 
@@ -252,27 +257,33 @@ export default function () {
       }
     });
 
-    console.log('\n💡 NEXT STEPS:');
+    console.log("\n💡 NEXT STEPS:");
 
     if (passedTests === totalTests) {
-      console.log('✅ All quick tests passed! You can now run the full performance test suite:');
-      console.log('   npm run test:setup-data');
-      console.log('   npm run test:performance:full');
+      console.log(
+        "✅ All quick tests passed! You can now run the full performance test suite:",
+      );
+      console.log("   npm run test:setup-data");
+      console.log("   npm run test:performance:full");
     } else {
-      console.log('❌ Some tests failed. Please address the issues before running full tests:');
+      console.log(
+        "❌ Some tests failed. Please address the issues before running full tests:",
+      );
 
       if (!this.results[0].success) {
-        console.log('   1. Ensure the application is running: npm run dev');
+        console.log("   1. Ensure the application is running: npm run dev");
       }
       if (!this.results[1].success) {
-        console.log('   2. Verify k6 is installed: brew install k6');
+        console.log("   2. Verify k6 is installed: brew install k6");
       }
       if (!this.results[2].success) {
-        console.log('   3. Check database connection and ensure PostgreSQL is running');
+        console.log(
+          "   3. Check database connection and ensure PostgreSQL is running",
+        );
       }
     }
 
-    console.log('\n📚 For more information, see: test/performance/README.md');
+    console.log("\n📚 For more information, see: test/performance/README.md");
   }
 }
 

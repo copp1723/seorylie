@@ -16,11 +16,13 @@ All dependencies must be installed during the setup/init phase, not dynamically 
 CleanRylie follows a **stabilization git strategy** with automated quality gates:
 
 ### Branch Strategy
+
 - `main` - Production baseline (protected)
 - `stabilization` - Long-lived integration branch
 - `feature/stab-<ID>/<desc>` - Feature development branches
 
 ### Required Setup Steps
+
 1. **Clone and setup**: `git clone <repo> && cd cleanrylie && npm run setup`
 2. **Create feature branch**: `git checkout -b feature/stab-<ID>/<description> stabilization`
 3. **Development**: Make changes with comprehensive testing
@@ -75,7 +77,7 @@ The following commands now include automatic dependency verification:
 
 - `npm run dev` - Development server
 - `npm run test` - All test commands
-- `npm run lint` - Linting and type checking  
+- `npm run lint` - Linting and type checking
 - `npm run check` - Type checking
 - `npm run build` - Build process
 
@@ -84,10 +86,12 @@ If dependencies are missing, these commands will automatically run verification 
 ## Environment Requirements
 
 ### Node.js Version
+
 - **Required:** Node.js 18+
 - **Recommended:** Node.js 20+
 
 ### Package Manager
+
 - **Required:** npm 8+
 - **Alternative:** yarn 1.22+ (not tested)
 
@@ -96,6 +100,7 @@ If dependencies are missing, these commands will automatically run verification 
 The following dependencies are verified during setup:
 
 **Runtime Dependencies:**
+
 - `drizzle-orm` - Database ORM
 - `bull` - Queue management
 - `ioredis` - Redis client
@@ -106,6 +111,7 @@ The following dependencies are verified during setup:
 - `zod` - Schema validation
 
 **Development Dependencies:**
+
 - `vitest` - Testing framework
 - `jest` - Additional testing
 - `typescript` - Type checking
@@ -123,7 +129,7 @@ bash scripts/setup-dev.sh full
 # Quick verification only
 bash scripts/setup-dev.sh verify
 
-# Install dependencies only  
+# Install dependencies only
 bash scripts/setup-dev.sh install
 
 # Check environment only
@@ -218,6 +224,7 @@ If your environment restricts network access after initialization:
 3. **Include `node_modules` in your deployment if necessary**
 
 Example Dockerfile pattern:
+
 ```dockerfile
 # Install dependencies with network access
 COPY package*.json ./
@@ -243,21 +250,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       # Critical: Install dependencies first
       - uses: actions/setup-node@v3
         with:
-          node-version: '20'
-          cache: 'npm'
-      
+          node-version: "20"
+          cache: "npm"
+
       - run: npm ci
-      
+
       # Verify setup before running commands
       - run: npm run setup:verify
-      
+
       # Now safe to run all commands
       - run: npm run lint
-      - run: npm run check  
+      - run: npm run check
       - run: npm run test
       - run: npm run build
 ```

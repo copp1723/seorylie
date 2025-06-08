@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect } from "react";
 
 export function EmergencyCSSFix() {
   useEffect(() => {
     // Inject emergency CSS to make content visible
-    const style = document.createElement('style');
-    style.id = 'emergency-css-fix';
+    const style = document.createElement("style");
+    style.id = "emergency-css-fix";
     style.textContent = `
       /* Emergency CSS Fix - Force Visibility */
       
@@ -169,22 +169,22 @@ export function EmergencyCSSFix() {
         opacity: 1 !important;
       }
     `;
-    
+
     document.head.appendChild(style);
-    
-    console.log('🚨 Emergency CSS Fix Applied - Content should now be visible');
-    
+
+    console.log("🚨 Emergency CSS Fix Applied - Content should now be visible");
+
     // Remove after 30 seconds to allow normal styling to take over
     setTimeout(() => {
-      const existingStyle = document.getElementById('emergency-css-fix');
+      const existingStyle = document.getElementById("emergency-css-fix");
       if (existingStyle) {
-        console.log('🔧 Removing emergency CSS fix');
+        console.log("🔧 Removing emergency CSS fix");
         existingStyle.remove();
       }
     }, 30000);
-    
+
     return () => {
-      const existingStyle = document.getElementById('emergency-css-fix');
+      const existingStyle = document.getElementById("emergency-css-fix");
       if (existingStyle) {
         existingStyle.remove();
       }

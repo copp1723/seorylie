@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
-import logger from '../utils/logger';
+import { v4 as uuidv4 } from "uuid";
+import logger from "../utils/logger";
 
 export interface TraceContext {
   traceId: string;
@@ -18,7 +18,7 @@ export interface TraceSpan {
   startTime: number;
   endTime?: number;
   attributes?: Record<string, string | number | boolean>;
-  status: 'active' | 'completed' | 'error';
+  status: "active" | "completed" | "error";
 }
 
 class TraceCorrelationService {
@@ -30,18 +30,18 @@ class TraceCorrelationService {
     totalTraces: 0,
     activeTraces: 0,
     completedTraces: 0,
-    errorTraces: 0
+    errorTraces: 0,
   };
 
   constructor() {
-    this.enabled = process.env.ENABLE_TRACE_CORRELATION === 'true';
-    this.serviceName = process.env.TRACE_SERVICE_NAME || 'cleanrylie-app';
+    this.enabled = process.env.ENABLE_TRACE_CORRELATION === "true";
+    this.serviceName = process.env.TRACE_SERVICE_NAME || "cleanrylie-app";
     this.tempoUrl = process.env.GRAFANA_TEMPO_URL;
-    
+
     if (this.enabled) {
-      logger.info('Trace correlation service initialized', {
+      logger.info("Trace correlation service initialized", {
         serviceName: this.serviceName,
-        tempoConfigured: !!this.tempoUrl
+        tempoConfigured: !!this.tempoUrl,
       });
     }
   }
@@ -51,22 +51,24 @@ class TraceCorrelationService {
   }
 
   generateTraceId(): string {
-    return uuidv4().replace(/-/g, '');
+    return uuidv4().replace(/-/g, "");
   }
 
   generateSpanId(): string {
-    return uuidv4().replace(/-/g, '').substring(0, 16);
+    return uuidv4().replace(/-/g, "").substring(0, 16);
   }
 
-  createTraceContext(options: {
-    name?: string;
-    parentTraceId?: string;
-    parentSpanId?: string;
-    attributes?: Record<string, string | number | boolean>;
-    serviceName?: string;
-  } = {}): TraceContext {
+  createTraceContext(
+    options: {
+      name?: string;
+      parentTraceId?: string;
+      parentSpanId?: string;
+      attributes?: Record<string, string | number | boolean>;
+      serviceName?: string;
+    } = {},
+  ): TraceContext {
     if (!this.enabled) {
-      throw new Error('Trace correlation is not enabled');
+      throw new Error("Trace correlation is not enabled");
     }
 
     const traceId = options.parentTraceId || this.generateTraceId();
@@ -79,7 +81,7 @@ class TraceCorrelationService {
       parentSpanId: options.parentSpanId,
       serviceName,
       startTime: Date.now(),
-      attributes: options.attributes
+      attributes: options.attributes,
     };
 
     // Create and track the span
@@ -87,10 +89,10 @@ class TraceCorrelationService {
       spanId,
       traceId,
       parentSpanId: options.parentSpanId,
-      name: options.name || 'unknown',
+      name: options.name || "unknown",
       startTime: Date.now(),
       attributes: options.attributes,
-      status: 'active'
+      status: "active",
     };
 
     this.activeSpans.set(spanId, span);
@@ -107,7 +109,7 @@ class TraceCorrelationService {
     attributes?: Record<string, string | number | boolean>;
   }): TraceSpan {
     if (!this.enabled) {
-      throw new Error('Trace correlation is not enabled');
+      throw new Error("Trace correlation is not enabled");
     }
 
     const spanId = this.generateSpanId();
@@ -118,7 +120,7 @@ class TraceCorrelationService {
       name: options.name,
       startTime: Date.now(),
       attributes: options.attributes,
-      status: 'active'
+      status: "active",
     };
 
     this.activeSpans.set(spanId, span);
@@ -131,19 +133,19 @@ class TraceCorrelationService {
     const span = this.activeSpans.get(spanId);
     if (span) {
       span.endTime = Date.now();
-      span.status = error ? 'error' : 'completed';
-      
+      span.status = error ? "error" : "completed";
+
       if (error) {
         span.attributes = {
           ...span.attributes,
-          'error.message': error.message,
-          'error.name': error.name
+          "error.message": error.message,
+          "error.name": error.name,
         };
         this.traceStats.errorTraces++;
       } else {
         this.traceStats.completedTraces++;
       }
-      
+
       this.traceStats.activeTraces--;
       this.activeSpans.delete(spanId);
     }
@@ -153,20 +155,20 @@ class TraceCorrelationService {
     if (!this.tempoUrl || !this.enabled) {
       return null;
     }
-    
+
     return `${this.tempoUrl}/trace/${traceId}`;
   }
 
   getTraceInfo(traceId: string): any {
     if (!this.enabled) return null;
-    
+
     // In a real implementation, this would fetch from a trace storage system
     // For now, return basic info
     return {
       traceId,
       serviceName: this.serviceName,
       tempoUrl: this.getTempoUrl(traceId),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -175,7 +177,7 @@ class TraceCorrelationService {
       ...this.traceStats,
       enabled: this.enabled,
       serviceName: this.serviceName,
-      activeSpansCount: this.activeSpans.size
+      activeSpansCount: this.activeSpans.size,
     };
   }
 
@@ -188,33 +190,34 @@ class TraceCorrelationService {
 
       try {
         // Check for existing trace ID in headers
-        const existingTraceId = req.headers['x-trace-id'] || req.headers['traceparent'];
-        
+        const existingTraceId =
+          req.headers["x-trace-id"] || req.headers["traceparent"];
+
         // Create trace context
         const traceContext = this.createTraceContext({
           name: `${req.method} ${req.path}`,
           parentTraceId: existingTraceId,
           attributes: {
-            'http.method': req.method,
-            'http.url': req.url,
-            'http.user_agent': req.headers['user-agent'] || 'unknown'
-          }
+            "http.method": req.method,
+            "http.url": req.url,
+            "http.user_agent": req.headers["user-agent"] || "unknown",
+          },
         });
 
         // Attach to request
         req.traceContext = traceContext;
 
         // Add trace ID to response headers
-        res.setHeader('x-trace-id', traceContext.traceId);
+        res.setHeader("x-trace-id", traceContext.traceId);
 
         // Complete span when response finishes
-        res.on('finish', () => {
+        res.on("finish", () => {
           this.completeSpan(traceContext.spanId);
         });
 
         next();
       } catch (error) {
-        logger.error('Error in trace correlation middleware', error);
+        logger.error("Error in trace correlation middleware", error);
         next();
       }
     };

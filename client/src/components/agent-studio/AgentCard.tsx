@@ -1,13 +1,47 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Skeleton } from '../ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
-import { AlertCircle, Clock, Copy, Edit, MoreVertical, Play, Trash2, Zap, Database, Wrench, Settings, CheckCircle, XCircle, PauseCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Progress } from '../ui/progress';
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Skeleton } from "../ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import {
+  AlertCircle,
+  Clock,
+  Copy,
+  Edit,
+  MoreVertical,
+  Play,
+  Trash2,
+  Zap,
+  Database,
+  Wrench,
+  Settings,
+  CheckCircle,
+  XCircle,
+  PauseCircle,
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { Progress } from "../ui/progress";
 
 // Types for the AgentCard component
 export interface AgentCardProps {
@@ -15,7 +49,7 @@ export interface AgentCardProps {
     id: string | number;
     name: string;
     description: string;
-    status: 'active' | 'inactive' | 'running' | 'error';
+    status: "active" | "inactive" | "running" | "error";
     tools: string[];
     sandboxId?: number;
     sandboxName?: string;
@@ -40,7 +74,7 @@ export interface AgentCardProps {
 
 /**
  * AgentCard Component
- * 
+ *
  * Displays agent information in a card format with actions and status indicators.
  */
 export const AgentCard: React.FC<AgentCardProps> = ({
@@ -52,64 +86,64 @@ export const AgentCard: React.FC<AgentCardProps> = ({
   onViewDetails,
   isLoading = false,
   error = null,
-  className = ''
+  className = "",
 }) => {
   // Get status color and icon based on agent status
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-      case 'running':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'error':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case "active":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "inactive":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+      case "running":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "error":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
     }
   };
-  
+
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return <CheckCircle className="h-3 w-3 mr-1" />;
-      case 'inactive':
+      case "inactive":
         return <PauseCircle className="h-3 w-3 mr-1" />;
-      case 'running':
+      case "running":
         return <Zap className="h-3 w-3 mr-1" />;
-      case 'error':
+      case "error":
         return <XCircle className="h-3 w-3 mr-1" />;
       default:
         return null;
     }
   };
-  
+
   // Format date for display
   const formatDate = (date: Date): string => {
     return new Date(date).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
-  
+
   // Format time elapsed since last run
   const formatTimeElapsed = (date: Date): string => {
     const now = new Date();
     const elapsed = now.getTime() - new Date(date).getTime();
-    
+
     const seconds = Math.floor(elapsed / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
-    
+
     if (days > 0) return `${days}d ago`;
     if (hours > 0) return `${hours}h ago`;
     if (minutes > 0) return `${minutes}m ago`;
     return `${seconds}s ago`;
   };
-  
+
   // Render loading state
   if (isLoading) {
     return (
@@ -138,7 +172,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
       </Card>
     );
   }
-  
+
   // Render error state
   if (error) {
     return (
@@ -156,11 +190,11 @@ export const AgentCard: React.FC<AgentCardProps> = ({
       </Card>
     );
   }
-  
+
   return (
-    <Card 
+    <Card
       className={`overflow-hidden transition-all duration-200 hover:shadow-md ${
-        agent.status === 'running' ? 'border-blue-300 dark:border-blue-700' : ''
+        agent.status === "running" ? "border-blue-300 dark:border-blue-700" : ""
       } ${className}`}
     >
       <CardHeader className="pb-2">
@@ -168,8 +202,8 @@ export const AgentCard: React.FC<AgentCardProps> = ({
           <div>
             <CardTitle className="text-lg flex items-center">
               {agent.name}
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={`ml-2 text-xs ${getStatusColor(agent.status)}`}
               >
                 <span className="flex items-center">
@@ -179,10 +213,10 @@ export const AgentCard: React.FC<AgentCardProps> = ({
               </Badge>
             </CardTitle>
             <CardDescription className="line-clamp-1">
-              {agent.description || 'No description provided'}
+              {agent.description || "No description provided"}
             </CardDescription>
           </div>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -205,7 +239,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                 Duplicate
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => onDelete?.(agent.id)}
                 className="text-red-600 dark:text-red-400"
               >
@@ -216,7 +250,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
           </DropdownMenu>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         <div className="space-y-3">
           {/* Tools Section */}
@@ -227,7 +261,9 @@ export const AgentCard: React.FC<AgentCardProps> = ({
             </div>
             <div className="flex flex-wrap gap-1">
               {agent.tools.length === 0 ? (
-                <span className="text-xs text-muted-foreground">No tools enabled</span>
+                <span className="text-xs text-muted-foreground">
+                  No tools enabled
+                </span>
               ) : (
                 agent.tools.map((tool, index) => (
                   <Badge key={index} variant="secondary" className="text-xs">
@@ -237,7 +273,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
               )}
             </div>
           </div>
-          
+
           {/* Sandbox Information */}
           {agent.sandboxId && (
             <div>
@@ -249,22 +285,27 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                 <Badge variant="outline" className="text-xs">
                   {agent.sandboxName || `Sandbox #${agent.sandboxId}`}
                 </Badge>
-                
+
                 {agent.tokenUsage && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div className="ml-2 flex-1">
                           <div className="h-1">
-                            <Progress 
-                              value={(agent.tokenUsage.current / agent.tokenUsage.limit) * 100} 
+                            <Progress
+                              value={
+                                (agent.tokenUsage.current /
+                                  agent.tokenUsage.limit) *
+                                100
+                              }
                             />
                           </div>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="text-xs">
-                          Token Usage: {agent.tokenUsage.current} / {agent.tokenUsage.limit}
+                          Token Usage: {agent.tokenUsage.current} /{" "}
+                          {agent.tokenUsage.limit}
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -273,7 +314,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({
               </div>
             </div>
           )}
-          
+
           {/* Last Run & Creation Date */}
           <div className="flex justify-between text-xs text-muted-foreground">
             <div className="flex items-center">
@@ -284,31 +325,31 @@ export const AgentCard: React.FC<AgentCardProps> = ({
                 <span>Never run</span>
               )}
             </div>
-            <div>
-              Created: {formatDate(agent.createdAt)}
-            </div>
+            <div>Created: {formatDate(agent.createdAt)}</div>
           </div>
         </div>
       </CardContent>
-      
+
       <CardFooter className="pt-2">
         <div className="flex justify-between w-full">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => onEdit?.(agent.id)}
           >
             <Edit className="mr-2 h-4 w-4" />
             Edit
           </Button>
-          
-          <Button 
-            size="sm" 
+
+          <Button
+            size="sm"
             onClick={() => onRun?.(agent.id)}
-            disabled={agent.status === 'running'}
-            className={agent.status === 'running' ? 'opacity-50 cursor-not-allowed' : ''}
+            disabled={agent.status === "running"}
+            className={
+              agent.status === "running" ? "opacity-50 cursor-not-allowed" : ""
+            }
           >
-            {agent.status === 'running' ? (
+            {agent.status === "running" ? (
               <>
                 <Zap className="mr-2 h-4 w-4 animate-pulse" />
                 Running...

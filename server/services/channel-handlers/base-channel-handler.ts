@@ -1,5 +1,9 @@
-import logger from '../../utils/logger';
-import { CommunicationChannel, DeliveryStatus, ChannelMessage } from '../channel-routing-service';
+import logger from "../../utils/logger";
+import {
+  CommunicationChannel,
+  DeliveryStatus,
+  ChannelMessage,
+} from "../channel-routing-service";
 
 export interface ChannelDeliveryResult {
   success: boolean;
@@ -23,7 +27,10 @@ export abstract class BaseChannelHandler {
   protected channel: CommunicationChannel;
   protected configuration: ChannelConfiguration;
 
-  constructor(channel: CommunicationChannel, configuration: ChannelConfiguration) {
+  constructor(
+    channel: CommunicationChannel,
+    configuration: ChannelConfiguration,
+  ) {
     this.channel = channel;
     this.configuration = configuration;
   }
@@ -46,7 +53,9 @@ export abstract class BaseChannelHandler {
   /**
    * Get channel-specific delivery status from external ID
    */
-  abstract getDeliveryStatus(externalMessageId: string): Promise<DeliveryStatus>;
+  abstract getDeliveryStatus(
+    externalMessageId: string,
+  ): Promise<DeliveryStatus>;
 
   /**
    * Handle incoming messages/responses (webhooks)
@@ -74,7 +83,7 @@ export abstract class BaseChannelHandler {
   /**
    * Get current configuration (without sensitive data)
    */
-  getConfiguration(): Omit<ChannelConfiguration, 'credentials'> {
+  getConfiguration(): Omit<ChannelConfiguration, "credentials"> {
     const { credentials, ...safeConfig } = this.configuration;
     return safeConfig;
   }
@@ -82,22 +91,30 @@ export abstract class BaseChannelHandler {
   /**
    * Common logging helper
    */
-  protected log(level: 'info' | 'warn' | 'error', message: string, context?: any): void {
+  protected log(
+    level: "info" | "warn" | "error",
+    message: string,
+    context?: any,
+  ): void {
     const logContext = {
       channel: this.channel,
       dealership: this.configuration.dealershipId,
-      ...context
+      ...context,
     };
 
     switch (level) {
-      case 'info':
+      case "info":
         logger.info(`[${this.channel.toUpperCase()}] ${message}`, logContext);
         break;
-      case 'warn':
+      case "warn":
         logger.warn(`[${this.channel.toUpperCase()}] ${message}`, logContext);
         break;
-      case 'error':
-        logger.error(`[${this.channel.toUpperCase()}] ${message}`, undefined, logContext);
+      case "error":
+        logger.error(
+          `[${this.channel.toUpperCase()}] ${message}`,
+          undefined,
+          logContext,
+        );
         break;
     }
   }
@@ -107,33 +124,36 @@ export abstract class BaseChannelHandler {
    */
   protected handleError(error: unknown, context?: any): ChannelDeliveryResult {
     const err = error instanceof Error ? error : new Error(String(error));
-    
-    this.log('error', `Failed to send message: ${err.message}`, {
+
+    this.log("error", `Failed to send message: ${err.message}`, {
       ...context,
-      stack: err.stack
+      stack: err.stack,
     });
 
     return {
       success: false,
       error: err.message,
-      errorCode: 'CHANNEL_ERROR'
+      errorCode: "CHANNEL_ERROR",
     };
   }
 
   /**
    * Validate common message requirements
    */
-  protected validateCommonMessage(message: ChannelMessage): { valid: boolean; error?: string } {
+  protected validateCommonMessage(message: ChannelMessage): {
+    valid: boolean;
+    error?: string;
+  } {
     if (!message.content || message.content.trim().length === 0) {
-      return { valid: false, error: 'Message content is required' };
+      return { valid: false, error: "Message content is required" };
     }
 
     if (!message.customerId) {
-      return { valid: false, error: 'Customer ID is required' };
+      return { valid: false, error: "Customer ID is required" };
     }
 
     if (!message.dealershipId) {
-      return { valid: false, error: 'Dealership ID is required' };
+      return { valid: false, error: "Dealership ID is required" };
     }
 
     return { valid: true };
@@ -144,9 +164,9 @@ export abstract class BaseChannelHandler {
    */
   protected sanitizeContent(content: string, maxLength?: number): string {
     let sanitized = content.trim();
-    
+
     if (maxLength && sanitized.length > maxLength) {
-      sanitized = sanitized.substring(0, maxLength - 3) + '...';
+      sanitized = sanitized.substring(0, maxLength - 3) + "...";
     }
 
     return sanitized;
@@ -164,7 +184,7 @@ export abstract class BaseChannelHandler {
       urgencyLevel: message.urgencyLevel,
       leadSource: message.leadSource,
       timestamp: new Date().toISOString(),
-      ...message.metadata
+      ...message.metadata,
     };
   }
 }

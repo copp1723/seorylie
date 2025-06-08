@@ -48,7 +48,7 @@
     },
     {
       "asDropdown": false,
-      "icon": "external link", 
+      "icon": "external link",
       "includeVars": false,
       "keepTime": false,
       "tags": ["adf"],

@@ -23,11 +23,11 @@ main ─┬─► (production - protected)
 
 ### Branch Roles
 
-| Branch | Purpose | Protection Level | Update Process |
-|--------|---------|------------------|----------------|
-| `main` | Production baseline | **High** - Requires STAB-502 validation | Fast-forward from `stabilization` only |
-| `stabilization` | Integration branch | **Medium** - Requires CI + review | Feature branches merge here |
-| `feature/stab-*` | Development work | **Low** - Short-lived | Branch from `stabilization` |
+| Branch           | Purpose             | Protection Level                        | Update Process                         |
+| ---------------- | ------------------- | --------------------------------------- | -------------------------------------- |
+| `main`           | Production baseline | **High** - Requires STAB-502 validation | Fast-forward from `stabilization` only |
+| `stabilization`  | Integration branch  | **Medium** - Requires CI + review       | Feature branches merge here            |
+| `feature/stab-*` | Development work    | **Low** - Short-lived                   | Branch from `stabilization`            |
 
 ---
 
@@ -92,16 +92,19 @@ git push origin feature/stab-<ID>/<description>
 All changes must pass these automated checks:
 
 ### Pre-Development
+
 - ✅ `npm run setup` - Environment validation
 - ✅ Dependencies installed and verified
 - ✅ Database schema up to date
 
 ### Pre-Commit
+
 - ✅ `npm run check` - TypeScript compilation
 - ✅ `npm run lint` - Code quality checks
 - ✅ `npm run test` - Unit test suite
 
 ### Pre-Merge (CI)
+
 - ✅ TypeScript strict mode compilation
 - ✅ Unit tests (>90% coverage)
 - ✅ Integration tests
@@ -109,6 +112,7 @@ All changes must pass these automated checks:
 - ✅ Security audit
 
 ### Pre-Production (STAB-502)
+
 - ✅ Performance testing
 - ✅ End-to-end validation
 - ✅ Production readiness checklist
@@ -119,13 +123,15 @@ All changes must pass these automated checks:
 ## 📋 Naming Conventions
 
 ### Branch Names
-| Type | Pattern | Example |
-|------|---------|---------|
+
+| Type    | Pattern                    | Example                              |
+| ------- | -------------------------- | ------------------------------------ |
 | Feature | `feature/stab-<ID>/<desc>` | `feature/stab-101/bundle-size-guard` |
-| Bug Fix | `fix/stab-<ID>/<desc>` | `fix/stab-102/memory-leak` |
-| Chore | `chore/stab-<ID>/<desc>` | `chore/stab-103/update-deps` |
+| Bug Fix | `fix/stab-<ID>/<desc>`     | `fix/stab-102/memory-leak`           |
+| Chore   | `chore/stab-<ID>/<desc>`   | `chore/stab-103/update-deps`         |
 
 ### Commit Messages
+
 ```
 feat: [STAB-101] add bundle size monitoring guard
 fix: [STAB-102] resolve memory leak in chat service
@@ -135,6 +141,7 @@ docs: [STAB-105] update API documentation
 ```
 
 ### PR Titles
+
 ```
 feat: [STAB-101] Bundle size monitoring guard
 fix: [STAB-102] Memory leak in chat service
@@ -146,14 +153,18 @@ chore: [STAB-103] TypeScript v5.0 upgrade
 ## 🔄 Production Release Process
 
 ### 1. Stabilization Validation
+
 All features merged to `stabilization` undergo continuous validation:
+
 - Automated testing every 30 minutes
 - Performance monitoring
 - Security scanning
 - Integration verification
 
 ### 2. Production Readiness (STAB-502)
+
 Before merging to `main`, validate:
+
 - [ ] All STAB tickets completed
 - [ ] Performance targets met
 - [ ] Security audit passed
@@ -161,6 +172,7 @@ Before merging to `main`, validate:
 - [ ] Deployment scripts tested
 
 ### 3. Production Deployment
+
 ```bash
 # Only maintainers can merge to main
 git checkout main
@@ -176,6 +188,7 @@ git push origin main
 ## 🛠️ Developer Commands
 
 ### Daily Development
+
 ```bash
 npm run setup           # Full environment setup
 npm run dev            # Start development server
@@ -185,6 +198,7 @@ npm run build          # Build for production
 ```
 
 ### Quality Assurance
+
 ```bash
 npm run test:coverage  # Test coverage report
 npm run test:e2e       # End-to-end tests
@@ -193,6 +207,7 @@ npm run env:validate   # Environment validation
 ```
 
 ### Validation & Monitoring
+
 ```bash
 npm run validation:run    # Manual validation check
 npm run validation:daemon # Start continuous validation
@@ -204,18 +219,21 @@ npm run health           # System health check
 ## 📊 Monitoring & Metrics
 
 ### Continuous Validation
+
 - **Frequency**: Every 30 minutes
 - **Scope**: Health, schema, performance, code quality
 - **Output**: Validation reports in `validation/reports/`
 - **Alerts**: Automatic notifications on failures
 
 ### Performance Targets
+
 - API response times: <1 second under 50 concurrent users
 - Database queries: <50ms for cached KPIs
 - WebSocket latency: <100ms for real-time features
 - Build time: <5 minutes for full deployment
 
 ### Quality Metrics
+
 - Test coverage: >90% across all modules
 - TypeScript compilation: Zero errors
 - Security vulnerabilities: Zero high/critical
@@ -226,6 +244,7 @@ npm run health           # System health check
 ## 🚨 Emergency Procedures
 
 ### Hotfix Process
+
 ```bash
 # Branch from main for critical fixes
 git checkout main
@@ -242,6 +261,7 @@ git merge main
 ```
 
 ### Rollback Process
+
 ```bash
 # Automated rollback available
 npm run deploy:rollback

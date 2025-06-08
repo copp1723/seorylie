@@ -4,39 +4,42 @@
  * This file contains shared functionality for test suites.
  */
 
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 
 /**
  * Create a mock Express request object
  */
-export function createMockRequest(options: {
-  method?: string;
-  url?: string;
-  path?: string;
-  params?: Record<string, string>;
-  query?: Record<string, string>;
-  body?: any;
-  headers?: Record<string, string>;
-  user?: any;
-  apiKey?: any;
-} = {}): Partial<Request> {
+export function createMockRequest(
+  options: {
+    method?: string;
+    url?: string;
+    path?: string;
+    params?: Record<string, string>;
+    query?: Record<string, string>;
+    body?: any;
+    headers?: Record<string, string>;
+    user?: any;
+    apiKey?: any;
+  } = {},
+): Partial<Request> {
   return {
-    method: options.method || 'GET',
-    url: options.url || '/',
-    path: options.path || '/',
+    method: options.method || "GET",
+    url: options.url || "/",
+    path: options.path || "/",
     params: options.params || {},
     query: options.query || {},
     body: options.body || {},
     headers: options.headers || {},
     get: (header: string) => {
       const normalizedHeader = header.toLowerCase();
-      return Object.keys(options.headers || {})
-        .find(key => key.toLowerCase() === normalizedHeader)
+      return Object.keys(options.headers || {}).find(
+        (key) => key.toLowerCase() === normalizedHeader,
+      )
         ? options.headers?.[normalizedHeader]
         : undefined;
     },
     user: options.user,
-    apiKey: options.apiKey
+    apiKey: options.apiKey,
   };
 }
 
@@ -65,7 +68,7 @@ export function createMockResponse(): Partial<Response> & {
       return res;
     }),
     getHeader: jest.fn().mockImplementation((key) => res.headers[key]),
-    on: jest.fn()
+    on: jest.fn(),
   };
   return res;
 }
@@ -88,7 +91,7 @@ export function wait(ms: number): Promise<void> {
  * Generate a random API key for testing
  */
 export function generateTestApiKey(): string {
-  return 'test_api_key_' + Math.random().toString(36).substring(2, 15);
+  return "test_api_key_" + Math.random().toString(36).substring(2, 15);
 }
 
 /**
@@ -107,6 +110,6 @@ export function mockLogger(): jest.Mocked<any> {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
-    http: jest.fn()
+    http: jest.fn(),
   };
 }

@@ -5,14 +5,15 @@ Kick-off the conversation with a fast, friendly greeting that sets the tone, del
 
 ---
 
-## Prompt Template  
+## Prompt Template
 
 Hi {{lead_first_name | there}}, this is {{agent_alias}} with {{dealership_name}}.  
 Thanks for reaching out about a new vehicle! 🏁  
-To help find the perfect match, could you share:  
-1. Which model(s) or features you’re interested in?  
-2. Your ideal purchase timeline?  
-3. Preferred way to continue (text, call, or email)?  
+To help find the perfect match, could you share:
+
+1. Which model(s) or features you’re interested in?
+2. Your ideal purchase timeline?
+3. Preferred way to continue (text, call, or email)?
 
 I’ll use this info to pull current offers and availability right away.  
 Looking forward to helping you!  
@@ -20,5 +21,6 @@ Looking forward to helping you!
 
 ---
 
-### Tags  
+### Tags
+
 `turn:1` `stage:prospect` `goal:qualify`

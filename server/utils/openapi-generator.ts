@@ -1,5 +1,5 @@
-import swaggerJSDoc from 'swagger-jsdoc';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import swaggerJSDoc from "swagger-jsdoc";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   inboundLeadRequestSchema,
   leadCreationResponseSchema,
@@ -21,24 +21,24 @@ import {
   apiConversationSchema,
   apiMessageSchema,
   apiCustomerSchema,
-  vehicleInterestSchema
-} from '../../shared/index';
+  vehicleInterestSchema,
+} from "../../shared/index";
 
 // Convert Zod schemas to JSON Schema for OpenAPI
 const convertToJsonSchema = (zodSchema: any, title?: string) => {
   return zodToJsonSchema(zodSchema, {
     name: title,
-    $refStrategy: 'none'
+    $refStrategy: "none",
   });
 };
 
 // OpenAPI configuration
 const options = {
   definition: {
-    openapi: '3.0.0',
+    openapi: "3.0.0",
     info: {
-      title: 'Rylie AI Lead Management API',
-      version: '1.0.0',
+      title: "Rylie AI Lead Management API",
+      version: "1.0.0",
       description: `
 # Rylie AI Lead Management API
 
@@ -83,258 +83,307 @@ The API supports webhooks for real-time notifications:
 - Conversation events
       `,
       contact: {
-        name: 'Rylie AI Support',
-        email: 'support@rylie.ai'
+        name: "Rylie AI Support",
+        email: "support@rylie.ai",
       },
       license: {
-        name: 'MIT',
-        url: 'https://opensource.org/licenses/MIT'
-      }
+        name: "MIT",
+        url: "https://opensource.org/licenses/MIT",
+      },
     },
     servers: [
       {
-        url: process.env.API_BASE_URL || 'http://localhost:3000',
-        description: 'Development server'
+        url: process.env.API_BASE_URL || "http://localhost:3000",
+        description: "Development server",
       },
       {
-        url: 'https://api.rylie.ai',
-        description: 'Production server'
-      }
+        url: "https://api.rylie.ai",
+        description: "Production server",
+      },
     ],
     components: {
       securitySchemes: {
         ApiKeyAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'API_KEY',
-          description: 'API key authentication. Use your dealership API key as the bearer token.'
-        }
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "API_KEY",
+          description:
+            "API key authentication. Use your dealership API key as the bearer token.",
+        },
       },
       schemas: {
         // Request schemas
-        InboundLeadRequest: convertToJsonSchema(inboundLeadRequestSchema, 'InboundLeadRequest'),
-        ReplyMessageRequest: convertToJsonSchema(replyMessageRequestSchema, 'ReplyMessageRequest'),
-        HandoverRequest: convertToJsonSchema(handoverRequestSchema, 'HandoverRequest'),
-        HandoverUpdateRequest: convertToJsonSchema(handoverUpdateRequestSchema, 'HandoverUpdateRequest'),
-        
+        InboundLeadRequest: convertToJsonSchema(
+          inboundLeadRequestSchema,
+          "InboundLeadRequest",
+        ),
+        ReplyMessageRequest: convertToJsonSchema(
+          replyMessageRequestSchema,
+          "ReplyMessageRequest",
+        ),
+        HandoverRequest: convertToJsonSchema(
+          handoverRequestSchema,
+          "HandoverRequest",
+        ),
+        HandoverUpdateRequest: convertToJsonSchema(
+          handoverUpdateRequestSchema,
+          "HandoverUpdateRequest",
+        ),
+
         // Response schemas
-        LeadCreationResponse: convertToJsonSchema(leadCreationResponseSchema, 'LeadCreationResponse'),
-        MessageResponse: convertToJsonSchema(messageResponseSchema, 'MessageResponse'),
-        HandoverResponse: convertToJsonSchema(handoverResponseSchema, 'HandoverResponse'),
-        LeadListResponse: convertToJsonSchema(leadListResponseSchema, 'LeadListResponse'),
-        LeadDetailResponse: convertToJsonSchema(leadDetailResponseSchema, 'LeadDetailResponse'),
-        ConversationListResponse: convertToJsonSchema(conversationListResponseSchema, 'ConversationListResponse'),
-        ConversationDetailResponse: convertToJsonSchema(conversationDetailResponseSchema, 'ConversationDetailResponse'),
-        
+        LeadCreationResponse: convertToJsonSchema(
+          leadCreationResponseSchema,
+          "LeadCreationResponse",
+        ),
+        MessageResponse: convertToJsonSchema(
+          messageResponseSchema,
+          "MessageResponse",
+        ),
+        HandoverResponse: convertToJsonSchema(
+          handoverResponseSchema,
+          "HandoverResponse",
+        ),
+        LeadListResponse: convertToJsonSchema(
+          leadListResponseSchema,
+          "LeadListResponse",
+        ),
+        LeadDetailResponse: convertToJsonSchema(
+          leadDetailResponseSchema,
+          "LeadDetailResponse",
+        ),
+        ConversationListResponse: convertToJsonSchema(
+          conversationListResponseSchema,
+          "ConversationListResponse",
+        ),
+        ConversationDetailResponse: convertToJsonSchema(
+          conversationDetailResponseSchema,
+          "ConversationDetailResponse",
+        ),
+
         // Entity schemas
-        Lead: convertToJsonSchema(apiLeadSchema, 'Lead'),
-        Conversation: convertToJsonSchema(apiConversationSchema, 'Conversation'),
-        Message: convertToJsonSchema(apiMessageSchema, 'Message'),
-        Customer: convertToJsonSchema(apiCustomerSchema, 'Customer'),
-        VehicleInterest: convertToJsonSchema(vehicleInterestSchema, 'VehicleInterest'),
-        
+        Lead: convertToJsonSchema(apiLeadSchema, "Lead"),
+        Conversation: convertToJsonSchema(
+          apiConversationSchema,
+          "Conversation",
+        ),
+        Message: convertToJsonSchema(apiMessageSchema, "Message"),
+        Customer: convertToJsonSchema(apiCustomerSchema, "Customer"),
+        VehicleInterest: convertToJsonSchema(
+          vehicleInterestSchema,
+          "VehicleInterest",
+        ),
+
         // Error schemas
-        ErrorResponse: convertToJsonSchema(errorResponseSchema, 'ErrorResponse'),
-        ValidationErrorResponse: convertToJsonSchema(validationErrorResponseSchema, 'ValidationErrorResponse'),
-        
+        ErrorResponse: convertToJsonSchema(
+          errorResponseSchema,
+          "ErrorResponse",
+        ),
+        ValidationErrorResponse: convertToJsonSchema(
+          validationErrorResponseSchema,
+          "ValidationErrorResponse",
+        ),
+
         // Webhook schemas
-        TwilioWebhook: convertToJsonSchema(twilioWebhookSchema, 'TwilioWebhook'),
-        
+        TwilioWebhook: convertToJsonSchema(
+          twilioWebhookSchema,
+          "TwilioWebhook",
+        ),
+
         // Query parameter schemas
-        LeadsQuery: convertToJsonSchema(leadsQuerySchema, 'LeadsQuery'),
-        ConversationsQuery: convertToJsonSchema(conversationsQuerySchema, 'ConversationsQuery'),
-        
+        LeadsQuery: convertToJsonSchema(leadsQuerySchema, "LeadsQuery"),
+        ConversationsQuery: convertToJsonSchema(
+          conversationsQuerySchema,
+          "ConversationsQuery",
+        ),
+
         // Standard response wrapper
         ApiResponse: {
-          type: 'object',
+          type: "object",
           properties: {
             success: {
-              type: 'boolean',
-              description: 'Whether the request was successful'
+              type: "boolean",
+              description: "Whether the request was successful",
             },
             data: {
-              description: 'Response data (varies by endpoint)'
+              description: "Response data (varies by endpoint)",
             },
             message: {
-              type: 'string',
-              description: 'Human-readable message'
+              type: "string",
+              description: "Human-readable message",
             },
             errors: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Array of error messages'
+              type: "array",
+              items: { type: "string" },
+              description: "Array of error messages",
             },
             warnings: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Array of warning messages'
+              type: "array",
+              items: { type: "string" },
+              description: "Array of warning messages",
             },
             timestamp: {
-              type: 'string',
-              format: 'date-time',
-              description: 'Response timestamp'
-            }
+              type: "string",
+              format: "date-time",
+              description: "Response timestamp",
+            },
           },
-          required: ['success']
-        }
+          required: ["success"],
+        },
       },
       responses: {
         BadRequest: {
-          description: 'Invalid request parameters or body',
+          description: "Invalid request parameters or body",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ValidationErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ValidationErrorResponse" },
+            },
+          },
         },
         Unauthorized: {
-          description: 'Missing or invalid API key',
+          description: "Missing or invalid API key",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         Forbidden: {
-          description: 'Insufficient permissions',
+          description: "Insufficient permissions",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         NotFound: {
-          description: 'Resource not found',
+          description: "Resource not found",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         Conflict: {
-          description: 'Resource conflict (e.g., duplicate lead)',
+          description: "Resource conflict (e.g., duplicate lead)",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         TooManyRequests: {
-          description: 'Rate limit exceeded',
+          description: "Rate limit exceeded",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
         },
         InternalServerError: {
-          description: 'Internal server error',
+          description: "Internal server error",
           content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-            }
-          }
-        }
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ErrorResponse" },
+            },
+          },
+        },
       },
       parameters: {
         LeadId: {
-          name: 'leadId',
-          in: 'path',
+          name: "leadId",
+          in: "path",
           required: true,
           schema: {
-            type: 'string',
-            format: 'uuid'
+            type: "string",
+            format: "uuid",
           },
-          description: 'Unique identifier for the lead'
+          description: "Unique identifier for the lead",
         },
         ConversationId: {
-          name: 'conversationId',
-          in: 'path',
+          name: "conversationId",
+          in: "path",
           required: true,
           schema: {
-            type: 'string',
-            format: 'uuid'
+            type: "string",
+            format: "uuid",
           },
-          description: 'Unique identifier for the conversation'
+          description: "Unique identifier for the conversation",
         },
         HandoverId: {
-          name: 'handoverId',
-          in: 'path',
+          name: "handoverId",
+          in: "path",
           required: true,
           schema: {
-            type: 'string',
-            format: 'uuid'
+            type: "string",
+            format: "uuid",
           },
-          description: 'Unique identifier for the handover'
+          description: "Unique identifier for the handover",
         },
         Limit: {
-          name: 'limit',
-          in: 'query',
+          name: "limit",
+          in: "query",
           schema: {
-            type: 'integer',
+            type: "integer",
             minimum: 1,
             maximum: 100,
-            default: 50
+            default: 50,
           },
-          description: 'Number of items to return'
+          description: "Number of items to return",
         },
         Offset: {
-          name: 'offset',
-          in: 'query',
+          name: "offset",
+          in: "query",
           schema: {
-            type: 'integer',
+            type: "integer",
             minimum: 0,
-            default: 0
+            default: 0,
           },
-          description: 'Number of items to skip'
-        }
-      }
+          description: "Number of items to skip",
+        },
+      },
     },
     tags: [
       {
-        name: 'Leads',
-        description: 'Lead management and ingestion'
+        name: "Leads",
+        description: "Lead management and ingestion",
       },
       {
-        name: 'Conversations',
-        description: 'Conversation and messaging management'
+        name: "Conversations",
+        description: "Conversation and messaging management",
       },
       {
-        name: 'Handovers',
-        description: 'AI to human agent escalations'
+        name: "Handovers",
+        description: "AI to human agent escalations",
       },
       {
-        name: 'SMS',
-        description: 'SMS delivery and tracking'
+        name: "SMS",
+        description: "SMS delivery and tracking",
       },
       {
-        name: 'Webhooks',
-        description: 'Webhook endpoints for external integrations'
-      }
+        name: "Webhooks",
+        description: "Webhook endpoints for external integrations",
+      },
     ],
     security: [
       {
-        ApiKeyAuth: []
-      }
-    ]
+        ApiKeyAuth: [],
+      },
+    ],
   },
-  apis: [
-    './server/routes/*.ts',
-    './server/routes/**/*.ts'
-  ]
+  apis: ["./server/routes/*.ts", "./server/routes/**/*.ts"],
 };
 
 // Generate OpenAPI specification
 export const generateOpenApiSpec = () => {
   try {
     const spec = swaggerJSDoc(options);
-    
+
     // Add custom examples to schemas
     addExamples(spec);
-    
+
     return spec;
   } catch (error) {
-    console.error('Error generating OpenAPI spec:', error);
+    console.error("Error generating OpenAPI spec:", error);
     throw error;
   }
 };
@@ -356,39 +405,40 @@ function addExamples(spec: any) {
         phone: "+1-555-123-4567",
         city: "Springfield",
         state: "IL",
-        zipCode: "62701"
+        zipCode: "62701",
       },
       vehicleInterest: {
         year: 2024,
         make: "Honda",
         model: "Accord",
         condition: "new",
-        maxPrice: 35000
+        maxPrice: 35000,
       },
       lead: {
         requestType: "Purchase",
         description: "Looking for a reliable sedan with good fuel economy",
         source: "website_form",
         campaign: "spring_2024",
-        priority: "medium"
+        priority: "medium",
       },
       attribution: {
         source: "google",
         medium: "cpc",
         campaign: "honda_accord_2024",
         keyword: "honda accord 2024",
-        landingPage: "https://example.com/honda-accord"
-      }
+        landingPage: "https://example.com/honda-accord",
+      },
     };
   }
 
   if (spec.components.schemas.ReplyMessageRequest) {
     spec.components.schemas.ReplyMessageRequest.example = {
       conversationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-      content: "Thank you for your interest in the 2024 Honda Accord. I'd be happy to help you find the perfect vehicle.",
+      content:
+        "Thank you for your interest in the 2024 Honda Accord. I'd be happy to help you find the perfect vehicle.",
       contentType: "text",
       sender: "ai",
-      senderName: "Rylie AI Assistant"
+      senderName: "Rylie AI Assistant",
     };
   }
 
@@ -396,13 +446,14 @@ function addExamples(spec: any) {
     spec.components.schemas.HandoverRequest.example = {
       conversationId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
       reason: "pricing_negotiation",
-      description: "Customer is ready to negotiate pricing and financing options for the 2024 Honda Accord",
+      description:
+        "Customer is ready to negotiate pricing and financing options for the 2024 Honda Accord",
       urgency: "high",
       context: {
         vehicleOfInterest: "2024 Honda Accord Sport",
         customerBudget: 35000,
-        tradeInValue: 15000
-      }
+        tradeInValue: 15000,
+      },
     };
   }
 
@@ -416,9 +467,9 @@ function addExamples(spec: any) {
         conversationId: "h69ce30d-70ee-6594-c789-2g24d4e5f691",
         leadNumber: "LEAD-1-24-0001",
         isExistingCustomer: false,
-        warnings: []
+        warnings: [],
       },
-      message: "Lead created successfully"
+      message: "Lead created successfully",
     };
   }
 }
@@ -435,6 +486,6 @@ export const getOpenApiJson = () => {
  */
 export const getOpenApiYaml = () => {
   const spec = generateOpenApiSpec();
-  const yaml = require('js-yaml');
+  const yaml = require("js-yaml");
   return yaml.dump(spec);
 };

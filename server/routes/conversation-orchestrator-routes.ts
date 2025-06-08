@@ -1,16 +1,16 @@
 /**
  * API Routes for Conversation Orchestrator Management
- * 
+ *
  * Provides REST endpoints for managing and monitoring the advanced conversation
  * orchestrator, including conversation status, metrics, and admin operations.
  */
 
-import { Router } from 'express';
-import { z } from 'zod';
-import { conversationOrchestrator } from '../services/conversation-orchestrator';
-import logger from '../utils/logger';
-import db from '../db';
-import { sql } from 'drizzle-orm';
+import { Router } from "express";
+import { z } from "zod";
+import { conversationOrchestrator } from "../services/conversation-orchestrator";
+import logger from "../utils/logger";
+import db from "../db";
+import { sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -27,46 +27,47 @@ const createConversationSchema = z.object({
     customerInfo: z.object({
       name: z.string().optional(),
       phone: z.string().optional(),
-      email: z.string().email().optional()
+      email: z.string().email().optional(),
     }),
     timing: z.string().optional(),
-    sessionData: z.record(z.any()).optional()
+    sessionData: z.record(z.any()).optional(),
   }),
   maxTurns: z.number().int().min(1).max(10).optional(),
   aiModel: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
-  priority: z.number().int().min(0).max(100).optional()
+  priority: z.number().int().min(0).max(100).optional(),
 });
 
 const updateConversationSchema = z.object({
-  state: z.enum(['active', 'paused', 'completed', 'escalated', 'failed']).optional(),
+  state: z
+    .enum(["active", "paused", "completed", "escalated", "failed"])
+    .optional(),
   maxTurns: z.number().int().min(1).max(10).optional(),
-  priority: z.number().int().min(0).max(100).optional()
+  priority: z.number().int().min(0).max(100).optional(),
 });
 
 /**
  * GET /api/conversations/orchestrator/health
  * Get orchestrator health status
  */
-router.get('/health', async (req, res) => {
+router.get("/health", async (req, res) => {
   try {
     const health = await conversationOrchestrator.getHealthStatus();
-    
+
     res.json({
       success: true,
       data: health,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
-    logger.error('Failed to get orchestrator health', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error("Failed to get orchestrator health", {
+      error: error instanceof Error ? error.message : String(error),
     });
 
     res.status(500).json({
       success: false,
-      error: 'Failed to get health status',
-      timestamp: new Date().toISOString()
+      error: "Failed to get health status",
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -75,30 +76,34 @@ router.get('/health', async (req, res) => {
  * GET /api/conversations/orchestrator/metrics
  * Get orchestrator performance metrics
  */
-router.get('/metrics', async (req, res) => {
+router.get("/metrics", async (req, res) => {
   try {
-    const dealershipId = req.query.dealership_id ? parseInt(req.query.dealership_id as string) : undefined;
+    const dealershipId = req.query.dealership_id
+      ? parseInt(req.query.dealership_id as string)
+      : undefined;
     const hours = req.query.hours ? parseInt(req.query.hours as string) : 24;
 
     // Get performance summary from metrics collector
     const metricsCollector = (conversationOrchestrator as any).metricsCollector;
-    const summary = await metricsCollector.getPerformanceSummary(dealershipId, hours);
+    const summary = await metricsCollector.getPerformanceSummary(
+      dealershipId,
+      hours,
+    );
 
     res.json({
       success: true,
       data: summary,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
-    logger.error('Failed to get orchestrator metrics', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error("Failed to get orchestrator metrics", {
+      error: error instanceof Error ? error.message : String(error),
     });
 
     res.status(500).json({
       success: false,
-      error: 'Failed to get metrics',
-      timestamp: new Date().toISOString()
+      error: "Failed to get metrics",
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -107,22 +112,21 @@ router.get('/metrics', async (req, res) => {
  * GET /api/conversations/orchestrator/metrics/prometheus
  * Get Prometheus-format metrics
  */
-router.get('/metrics/prometheus', async (req, res) => {
+router.get("/metrics/prometheus", async (req, res) => {
   try {
     const metricsCollector = (conversationOrchestrator as any).metricsCollector;
     const metrics = await metricsCollector.getPrometheusMetrics();
 
-    res.set('Content-Type', 'text/plain');
+    res.set("Content-Type", "text/plain");
     res.send(metrics);
-
   } catch (error) {
-    logger.error('Failed to get Prometheus metrics', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error("Failed to get Prometheus metrics", {
+      error: error instanceof Error ? error.message : String(error),
     });
 
     res.status(500).json({
       success: false,
-      error: 'Failed to get Prometheus metrics'
+      error: "Failed to get Prometheus metrics",
     });
   }
 });
@@ -131,7 +135,7 @@ router.get('/metrics/prometheus', async (req, res) => {
  * GET /api/conversations/:id/status
  * Get detailed conversation status
  */
-router.get('/:id/status', async (req, res) => {
+router.get("/:id/status", async (req, res) => {
   try {
     const conversationId = conversationIdSchema.parse(req.params.id);
 
@@ -149,7 +153,7 @@ router.get('/:id/status', async (req, res) => {
     if (!result.rows.length) {
       return res.status(404).json({
         success: false,
-        error: 'Conversation not found'
+        error: "Conversation not found",
       });
     }
 
@@ -190,27 +194,26 @@ router.get('/:id/status', async (req, res) => {
           content: msg.content,
           turnNumber: msg.turn_number,
           metadata: msg.metadata,
-          createdAt: msg.created_at
-        }))
-      }
+          createdAt: msg.created_at,
+        })),
+      },
     });
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid conversation ID format'
+        error: "Invalid conversation ID format",
       });
     }
 
-    logger.error('Failed to get conversation status', {
+    logger.error("Failed to get conversation status", {
       conversationId: req.params.id,
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
 
     res.status(500).json({
       success: false,
-      error: 'Failed to get conversation status'
+      error: "Failed to get conversation status",
     });
   }
 });
@@ -219,19 +222,21 @@ router.get('/:id/status', async (req, res) => {
  * GET /api/conversations
  * List conversations with filtering and pagination
  */
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const dealershipId = req.query.dealership_id ? parseInt(req.query.dealership_id as string) : undefined;
+    const dealershipId = req.query.dealership_id
+      ? parseInt(req.query.dealership_id as string)
+      : undefined;
     const state = req.query.state as string;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const offset = parseInt(req.query.offset as string) || 0;
 
     let whereClause = sql`WHERE 1=1`;
-    
+
     if (dealershipId) {
       whereClause = sql`${whereClause} AND dealership_id = ${dealershipId}`;
     }
-    
+
     if (state) {
       whereClause = sql`${whereClause} AND state = ${state}`;
     }
@@ -284,27 +289,26 @@ router.get('/', async (req, res) => {
           lastActivity: row.last_activity,
           completedAt: row.completed_at,
           escalatedAt: row.escalated_at,
-          createdAt: row.created_at
+          createdAt: row.created_at,
         })),
         pagination: {
           total,
           limit,
           offset,
           hasNext: offset + limit < total,
-          hasPrev: offset > 0
-        }
-      }
+          hasPrev: offset > 0,
+        },
+      },
     });
-
   } catch (error) {
-    logger.error('Failed to list conversations', {
+    logger.error("Failed to list conversations", {
       error: error instanceof Error ? error.message : String(error),
-      query: req.query
+      query: req.query,
     });
 
     res.status(500).json({
       success: false,
-      error: 'Failed to list conversations'
+      error: "Failed to list conversations",
     });
   }
 });
@@ -313,7 +317,7 @@ router.get('/', async (req, res) => {
  * POST /api/conversations
  * Create a new conversation (for testing/admin)
  */
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const data = createConversationSchema.parse(req.body);
 
@@ -326,10 +330,10 @@ router.post('/', async (req, res) => {
       maxTurns: data.maxTurns || 2,
       metadata: data.metadata,
       history: [],
-      state: 'active' as const,
-      aiModel: data.aiModel || 'gpt-3.5-turbo',
+      state: "active" as const,
+      aiModel: data.aiModel || "gpt-3.5-turbo",
       temperature: data.temperature || 0.7,
-      priority: data.priority || 0
+      priority: data.priority || 0,
     };
 
     // Store in database
@@ -347,21 +351,26 @@ router.post('/', async (req, res) => {
 
     // Emit to Redis stream for processing
     if (req.body.autoStart !== false) {
-      const redis = await import('../lib/redis').then(m => m.getRedisClient());
+      const redis = await import("../lib/redis").then((m) =>
+        m.getRedisClient(),
+      );
       if (redis) {
         await redis.xadd(
-          'adf.lead.created',
-          '*',
-          'data', JSON.stringify({
+          "adf.lead.created",
+          "*",
+          "data",
+          JSON.stringify({
             id: data.leadId,
             dealership_id: data.dealershipId,
             source: data.metadata.source,
             customer: data.metadata.customerInfo,
             vehicle: { model: data.metadata.vehicleInterest },
-            metadata: data.metadata.sessionData
+            metadata: data.metadata.sessionData,
           }),
-          'timestamp', Date.now(),
-          'source', 'api'
+          "timestamp",
+          Date.now(),
+          "source",
+          "api",
         );
       }
     }
@@ -373,27 +382,26 @@ router.post('/', async (req, res) => {
         leadId: context.leadId,
         dealershipId: context.dealershipId,
         state: context.state,
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     });
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid request data',
-        details: error.errors
+        error: "Invalid request data",
+        details: error.errors,
       });
     }
 
-    logger.error('Failed to create conversation', {
+    logger.error("Failed to create conversation", {
       error: error instanceof Error ? error.message : String(error),
-      body: req.body
+      body: req.body,
     });
 
     res.status(500).json({
       success: false,
-      error: 'Failed to create conversation'
+      error: "Failed to create conversation",
     });
   }
 });
@@ -402,7 +410,7 @@ router.post('/', async (req, res) => {
  * PATCH /api/conversations/:id
  * Update conversation settings
  */
-router.patch('/:id', async (req, res) => {
+router.patch("/:id", async (req, res) => {
   try {
     const conversationId = conversationIdSchema.parse(req.params.id);
     const updates = updateConversationSchema.parse(req.body);
@@ -411,60 +419,61 @@ router.patch('/:id', async (req, res) => {
     const values = [];
 
     if (updates.state) {
-      setClauses.push('state = ?');
+      setClauses.push("state = ?");
       values.push(updates.state);
     }
     if (updates.maxTurns) {
-      setClauses.push('max_turns = ?');
+      setClauses.push("max_turns = ?");
       values.push(updates.maxTurns);
     }
     if (updates.priority !== undefined) {
-      setClauses.push('priority = ?');
+      setClauses.push("priority = ?");
       values.push(updates.priority);
     }
 
     if (setClauses.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'No valid updates provided'
+        error: "No valid updates provided",
       });
     }
 
-    setClauses.push('updated_at = NOW()');
+    setClauses.push("updated_at = NOW()");
 
-    await db.execute(sql.raw(`
+    await db.execute(
+      sql.raw(`
       UPDATE conversations_v2 
-      SET ${setClauses.join(', ')}
+      SET ${setClauses.join(", ")}
       WHERE id = '${conversationId}'
-    `));
+    `),
+    );
 
     res.json({
       success: true,
       data: {
         conversationId,
         updated: updates,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid request data',
-        details: error.errors
+        error: "Invalid request data",
+        details: error.errors,
       });
     }
 
-    logger.error('Failed to update conversation', {
+    logger.error("Failed to update conversation", {
       conversationId: req.params.id,
       error: error instanceof Error ? error.message : String(error),
-      body: req.body
+      body: req.body,
     });
 
     res.status(500).json({
       success: false,
-      error: 'Failed to update conversation'
+      error: "Failed to update conversation",
     });
   }
 });
@@ -473,7 +482,7 @@ router.patch('/:id', async (req, res) => {
  * POST /api/conversations/:id/messages
  * Add a message to conversation (for testing/simulation)
  */
-router.post('/:id/messages', async (req, res) => {
+router.post("/:id/messages", async (req, res) => {
   try {
     const conversationId = conversationIdSchema.parse(req.params.id);
     const { role, content, turnNumber } = req.body;
@@ -481,14 +490,14 @@ router.post('/:id/messages', async (req, res) => {
     if (!role || !content) {
       return res.status(400).json({
         success: false,
-        error: 'Role and content are required'
+        error: "Role and content are required",
       });
     }
 
-    if (!['user', 'assistant', 'system'].includes(role)) {
+    if (!["user", "assistant", "system"].includes(role)) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid role. Must be user, assistant, or system'
+        error: "Invalid role. Must be user, assistant, or system",
       });
     }
 
@@ -518,27 +527,26 @@ router.post('/:id/messages', async (req, res) => {
         role,
         content,
         turnNumber: turnNumber || 1,
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     });
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid conversation ID format'
+        error: "Invalid conversation ID format",
       });
     }
 
-    logger.error('Failed to add message to conversation', {
+    logger.error("Failed to add message to conversation", {
       conversationId: req.params.id,
       error: error instanceof Error ? error.message : String(error),
-      body: req.body
+      body: req.body,
     });
 
     res.status(500).json({
       success: false,
-      error: 'Failed to add message'
+      error: "Failed to add message",
     });
   }
 });
@@ -547,7 +555,7 @@ router.post('/:id/messages', async (req, res) => {
  * GET /api/conversations/orchestrator/queue
  * Get queue status and job information
  */
-router.get('/orchestrator/queue', async (req, res) => {
+router.get("/orchestrator/queue", async (req, res) => {
   try {
     // Get queue jobs from database
     const result = await db.execute(sql`
@@ -564,7 +572,7 @@ router.get('/orchestrator/queue', async (req, res) => {
     const queueStats = result.rows.reduce((acc: any, row: any) => {
       acc[row.status] = {
         count: parseInt(row.count),
-        avgAgeSeconds: parseFloat(row.avg_age_seconds) || 0
+        avgAgeSeconds: parseFloat(row.avg_age_seconds) || 0,
       };
       return acc;
     }, {});
@@ -593,19 +601,18 @@ router.get('/orchestrator/queue', async (req, res) => {
           errorMessage: job.error_message,
           createdAt: job.created_at,
           startedAt: job.started_at,
-          completedAt: job.completed_at
-        }))
-      }
+          completedAt: job.completed_at,
+        })),
+      },
     });
-
   } catch (error) {
-    logger.error('Failed to get queue status', {
-      error: error instanceof Error ? error.message : String(error)
+    logger.error("Failed to get queue status", {
+      error: error instanceof Error ? error.message : String(error),
     });
 
     res.status(500).json({
       success: false,
-      error: 'Failed to get queue status'
+      error: "Failed to get queue status",
     });
   }
 });

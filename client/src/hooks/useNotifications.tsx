@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { CheckCircle, AlertCircle, XCircle, Info, Clock } from "lucide-react";
 
-export type NotificationType = "success" | "error" | "warning" | "info" | "loading";
+export type NotificationType =
+  | "success"
+  | "error"
+  | "warning"
+  | "info"
+  | "loading";
 
 export interface Notification {
   id: string;
@@ -24,14 +29,36 @@ interface NotificationContextType {
   clearAllNotifications: () => void;
 
   // Convenience methods
-  success: (title: string, description?: string, options?: Partial<Notification>) => string;
-  error: (title: string, description?: string, options?: Partial<Notification>) => string;
-  warning: (title: string, description?: string, options?: Partial<Notification>) => string;
-  info: (title: string, description?: string, options?: Partial<Notification>) => string;
-  loading: (title: string, description?: string, options?: Partial<Notification>) => string;
+  success: (
+    title: string,
+    description?: string,
+    options?: Partial<Notification>,
+  ) => string;
+  error: (
+    title: string,
+    description?: string,
+    options?: Partial<Notification>,
+  ) => string;
+  warning: (
+    title: string,
+    description?: string,
+    options?: Partial<Notification>,
+  ) => string;
+  info: (
+    title: string,
+    description?: string,
+    options?: Partial<Notification>,
+  ) => string;
+  loading: (
+    title: string,
+    description?: string,
+    options?: Partial<Notification>,
+  ) => string;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+  undefined,
+);
 
 const NOTIFICATION_ICONS = {
   success: CheckCircle,
@@ -45,28 +72,28 @@ const NOTIFICATION_STYLES = {
   success: {
     containerClass: "border-green-200 bg-green-50 text-green-800",
     iconClass: "text-green-600",
-    actionClass: "bg-green-100 hover:bg-green-200 text-green-800"
+    actionClass: "bg-green-100 hover:bg-green-200 text-green-800",
   },
   error: {
     containerClass: "border-red-200 bg-red-50 text-red-800",
     iconClass: "text-red-600",
-    actionClass: "bg-red-100 hover:bg-red-200 text-red-800"
+    actionClass: "bg-red-100 hover:bg-red-200 text-red-800",
   },
   warning: {
     containerClass: "border-yellow-200 bg-yellow-50 text-yellow-800",
     iconClass: "text-yellow-600",
-    actionClass: "bg-yellow-100 hover:bg-yellow-200 text-yellow-800"
+    actionClass: "bg-yellow-100 hover:bg-yellow-200 text-yellow-800",
   },
   info: {
     containerClass: "border-blue-200 bg-blue-50 text-blue-800",
     iconClass: "text-blue-600",
-    actionClass: "bg-blue-100 hover:bg-blue-200 text-blue-800"
+    actionClass: "bg-blue-100 hover:bg-blue-200 text-blue-800",
   },
   loading: {
     containerClass: "border-gray-200 bg-gray-50 text-gray-800",
     iconClass: "text-gray-600 animate-spin",
-    actionClass: "bg-gray-100 hover:bg-gray-200 text-gray-800"
-  }
+    actionClass: "bg-gray-100 hover:bg-gray-200 text-gray-800",
+  },
 } as const;
 
 const DEFAULT_DURATIONS = {
@@ -77,45 +104,53 @@ const DEFAULT_DURATIONS = {
   loading: 0, // Persistent until dismissed
 } as const;
 
-export function NotificationProvider({ children }: { children: React.ReactNode }) {
+export function NotificationProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const generateId = useCallback(() => {
     return `notification-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }, []);
 
-  const addNotification = useCallback((notification: Omit<Notification, "id">) => {
-    const id = generateId();
-    const duration = notification.duration !== undefined
-      ? notification.duration
-      : DEFAULT_DURATIONS[notification.type];
+  const addNotification = useCallback(
+    (notification: Omit<Notification, "id">) => {
+      const id = generateId();
+      const duration =
+        notification.duration !== undefined
+          ? notification.duration
+          : DEFAULT_DURATIONS[notification.type];
 
-    const newNotification: Notification = {
-      ...notification,
-      id,
-      duration,
-      dismissible: notification.dismissible !== false, // Default to true
-    };
+      const newNotification: Notification = {
+        ...notification,
+        id,
+        duration,
+        dismissible: notification.dismissible !== false, // Default to true
+      };
 
-    setNotifications(prev => [newNotification, ...prev]);
+      setNotifications((prev) => [newNotification, ...prev]);
 
-    // Auto-dismiss if duration > 0
-    if (duration > 0) {
-      setTimeout((): void => {
-        removeNotification(id);
-      }, duration);
-    }
+      // Auto-dismiss if duration > 0
+      if (duration > 0) {
+        setTimeout((): void => {
+          removeNotification(id);
+        }, duration);
+      }
 
-    return id;
-  }, [generateId]);
+      return id;
+    },
+    [generateId],
+  );
 
   const removeNotification = useCallback((id: string) => {
-    setNotifications(prev => {
-      const notification = prev.find(n => n.id === id);
+    setNotifications((prev) => {
+      const notification = prev.find((n) => n.id === id);
       if (notification?.onDismiss) {
         notification.onDismiss();
       }
-      return prev.filter(n => n.id !== id);
+      return prev.filter((n) => n.id !== id);
     });
   }, []);
 
@@ -124,25 +159,55 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   // Convenience methods
-  const success = useCallback((title: string, description?: string, options?: Partial<Notification>) => {
-    return addNotification({ type: "success", title, description, ...options });
-  }, [addNotification]);
+  const success = useCallback(
+    (title: string, description?: string, options?: Partial<Notification>) => {
+      return addNotification({
+        type: "success",
+        title,
+        description,
+        ...options,
+      });
+    },
+    [addNotification],
+  );
 
-  const error = useCallback((title: string, description?: string, options?: Partial<Notification>) => {
-    return addNotification({ type: "error", title, description, ...options });
-  }, [addNotification]);
+  const error = useCallback(
+    (title: string, description?: string, options?: Partial<Notification>) => {
+      return addNotification({ type: "error", title, description, ...options });
+    },
+    [addNotification],
+  );
 
-  const warning = useCallback((title: string, description?: string, options?: Partial<Notification>) => {
-    return addNotification({ type: "warning", title, description, ...options });
-  }, [addNotification]);
+  const warning = useCallback(
+    (title: string, description?: string, options?: Partial<Notification>) => {
+      return addNotification({
+        type: "warning",
+        title,
+        description,
+        ...options,
+      });
+    },
+    [addNotification],
+  );
 
-  const info = useCallback((title: string, description?: string, options?: Partial<Notification>) => {
-    return addNotification({ type: "info", title, description, ...options });
-  }, [addNotification]);
+  const info = useCallback(
+    (title: string, description?: string, options?: Partial<Notification>) => {
+      return addNotification({ type: "info", title, description, ...options });
+    },
+    [addNotification],
+  );
 
-  const loading = useCallback((title: string, description?: string, options?: Partial<Notification>) => {
-    return addNotification({ type: "loading", title, description, ...options });
-  }, [addNotification]);
+  const loading = useCallback(
+    (title: string, description?: string, options?: Partial<Notification>) => {
+      return addNotification({
+        type: "loading",
+        title,
+        description,
+        ...options,
+      });
+    },
+    [addNotification],
+  );
 
   const value = {
     notifications,
@@ -166,7 +231,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 export function useNotifications() {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error("useNotifications must be used within a NotificationProvider");
+    throw new Error(
+      "useNotifications must be used within a NotificationProvider",
+    );
   }
   return context;
 }
@@ -193,7 +260,7 @@ export function NotificationContainer() {
 // Individual Notification Component
 function NotificationItem({
   notification,
-  onDismiss
+  onDismiss,
 }: {
   notification: Notification;
   onDismiss: () => void;
@@ -221,7 +288,9 @@ function NotificationItem({
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-semibold">{notification.title}</h4>
           {notification.description && (
-            <p className="text-sm mt-1 opacity-90">{notification.description}</p>
+            <p className="text-sm mt-1 opacity-90">
+              {notification.description}
+            </p>
           )}
 
           {/* Action Button */}
@@ -275,9 +344,12 @@ const progressBarStyles = `
 `;
 
 // Inject styles if not already present
-if (typeof document !== 'undefined' && !document.getElementById('notification-styles')) {
-  const style = document.createElement('style');
-  style.id = 'notification-styles';
+if (
+  typeof document !== "undefined" &&
+  !document.getElementById("notification-styles")
+) {
+  const style = document.createElement("style");
+  style.id = "notification-styles";
   style.textContent = progressBarStyles;
   document.head.appendChild(style);
 }

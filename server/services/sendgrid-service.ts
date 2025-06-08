@@ -3,8 +3,8 @@
  * Handles SendGrid API integration for email sending and webhook processing
  */
 
-import sgMail from '@sendgrid/mail';
-import logger from '../utils/logger';
+import sgMail from "@sendgrid/mail";
+import logger from "../utils/logger";
 
 export interface SendGridEmailOptions {
   to: string | string[];
@@ -37,15 +37,15 @@ export class SendGridService {
 
   private initialize() {
     const apiKey = process.env.SENDGRID_API_KEY;
-    
-    if (!apiKey || apiKey === 'optional-for-now') {
-      logger.warn('SendGrid API key not configured');
+
+    if (!apiKey || apiKey === "optional-for-now") {
+      logger.warn("SendGrid API key not configured");
       return;
     }
 
     sgMail.setApiKey(apiKey);
     this.initialized = true;
-    logger.info('SendGrid service initialized');
+    logger.info("SendGrid service initialized");
   }
 
   /**
@@ -55,7 +55,7 @@ export class SendGridService {
     if (!this.initialized) {
       return {
         success: false,
-        error: 'SendGrid not initialized - API key missing'
+        error: "SendGrid not initialized - API key missing",
       };
     }
 
@@ -68,32 +68,31 @@ export class SendGridService {
         html: options.html,
         attachments: options.attachments,
         customArgs: options.customArgs,
-        categories: options.categories
+        categories: options.categories,
       };
 
       const [response] = await sgMail.send(msg);
-      
-      logger.info('Email sent via SendGrid', {
+
+      logger.info("Email sent via SendGrid", {
         to: options.to,
         subject: options.subject,
-        messageId: response.headers['x-message-id']
+        messageId: response.headers["x-message-id"],
       });
 
       return {
         success: true,
-        messageId: response.headers['x-message-id']
+        messageId: response.headers["x-message-id"],
       };
-
     } catch (error) {
-      logger.error('SendGrid email send error', {
+      logger.error("SendGrid email send error", {
         error: error.message,
         to: options.to,
-        subject: options.subject
+        subject: options.subject,
       });
 
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -110,16 +109,17 @@ export class SendGridService {
 
     const emailOptions: SendGridEmailOptions = {
       to: dealershipEmail,
-      from: process.env.EMAIL_FROM || 'noreply@yourdomain.com',
-      subject: subject || `New Lead: ${leadData.customer?.name || 'Unknown Customer'}`,
+      from: process.env.EMAIL_FROM || "noreply@yourdomain.com",
+      subject:
+        subject || `New Lead: ${leadData.customer?.name || "Unknown Customer"}`,
       html: this.generateAdfEmailTemplate(leadData),
       text: this.generateAdfEmailText(leadData),
       customArgs: {
-        type: 'adf_notification',
-        leadId: leadData.id || 'unknown',
-        dealership: leadData.dealership || 'unknown'
+        type: "adf_notification",
+        leadId: leadData.id || "unknown",
+        dealership: leadData.dealership || "unknown",
       },
-      categories: ['adf', 'lead_notification']
+      categories: ["adf", "lead_notification"],
     };
 
     return this.sendEmail(emailOptions);
@@ -137,29 +137,33 @@ export class SendGridService {
         
         <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Customer Information</h3>
-          <p><strong>Name:</strong> ${leadData.customer?.name || 'Not provided'}</p>
-          <p><strong>Email:</strong> ${leadData.customer?.email || 'Not provided'}</p>
-          <p><strong>Phone:</strong> ${leadData.customer?.phone || 'Not provided'}</p>
+          <p><strong>Name:</strong> ${leadData.customer?.name || "Not provided"}</p>
+          <p><strong>Email:</strong> ${leadData.customer?.email || "Not provided"}</p>
+          <p><strong>Phone:</strong> ${leadData.customer?.phone || "Not provided"}</p>
         </div>
 
-        ${leadData.vehicle ? `
+        ${
+          leadData.vehicle
+            ? `
         <div style="background: #e8f5e8; padding: 20px; border-radius: 5px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Vehicle Interest</h3>
-          <p><strong>Year:</strong> ${leadData.vehicle.year || 'Any'}</p>
-          <p><strong>Make:</strong> ${leadData.vehicle.make || 'Any'}</p>
-          <p><strong>Model:</strong> ${leadData.vehicle.model || 'Any'}</p>
+          <p><strong>Year:</strong> ${leadData.vehicle.year || "Any"}</p>
+          <p><strong>Make:</strong> ${leadData.vehicle.make || "Any"}</p>
+          <p><strong>Model:</strong> ${leadData.vehicle.model || "Any"}</p>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
 
         <div style="background: #fff3cd; padding: 20px; border-radius: 5px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Message</h3>
-          <p>${leadData.message || 'No message provided'}</p>
+          <p>${leadData.message || "No message provided"}</p>
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
           <p style="color: #666; font-size: 12px;">
             Lead received: ${new Date().toLocaleString()}<br>
-            Source: ${leadData.source || 'ADF Email'}
+            Source: ${leadData.source || "ADF Email"}
           </p>
         </div>
       </div>
@@ -174,22 +178,26 @@ export class SendGridService {
 New Lead Received
 
 Customer Information:
-- Name: ${leadData.customer?.name || 'Not provided'}
-- Email: ${leadData.customer?.email || 'Not provided'}
-- Phone: ${leadData.customer?.phone || 'Not provided'}
+- Name: ${leadData.customer?.name || "Not provided"}
+- Email: ${leadData.customer?.email || "Not provided"}
+- Phone: ${leadData.customer?.phone || "Not provided"}
 
-${leadData.vehicle ? `
+${
+  leadData.vehicle
+    ? `
 Vehicle Interest:
-- Year: ${leadData.vehicle.year || 'Any'}
-- Make: ${leadData.vehicle.make || 'Any'}
-- Model: ${leadData.vehicle.model || 'Any'}
-` : ''}
+- Year: ${leadData.vehicle.year || "Any"}
+- Make: ${leadData.vehicle.make || "Any"}
+- Model: ${leadData.vehicle.model || "Any"}
+`
+    : ""
+}
 
 Message:
-${leadData.message || 'No message provided'}
+${leadData.message || "No message provided"}
 
 Lead received: ${new Date().toLocaleString()}
-Source: ${leadData.source || 'ADF Email'}
+Source: ${leadData.source || "ADF Email"}
     `.trim();
   }
 
@@ -206,8 +214,10 @@ Source: ${leadData.source || 'ADF Email'}
   getStatus() {
     return {
       initialized: this.initialized,
-      apiKeyConfigured: !!process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY !== 'optional-for-now',
-      webhookEnabled: process.env.SENDGRID_WEBHOOK_ENABLED === 'true'
+      apiKeyConfigured:
+        !!process.env.SENDGRID_API_KEY &&
+        process.env.SENDGRID_API_KEY !== "optional-for-now",
+      webhookEnabled: process.env.SENDGRID_WEBHOOK_ENABLED === "true",
     };
   }
 }

@@ -1,9 +1,8 @@
-
-import nodemailer from 'nodemailer';
-import logger from '../utils/logger';
+import nodemailer from "nodemailer";
+import logger from "../utils/logger";
 import db from "../db";
-import { sql } from 'drizzle-orm';
-import { twilioSMSService, SMSMessage } from './twilio-sms-service';
+import { sql } from "drizzle-orm";
+import { twilioSMSService, SMSMessage } from "./twilio-sms-service";
 
 // SMS Provider interfaces (you can implement multiple providers)
 interface SMSProvider {
@@ -18,14 +17,17 @@ class TwilioSMSProvider implements SMSProvider {
         dealershipId: 1, // This should be passed from context
         toPhone: to,
         message: message,
-        fromPhone: from
+        fromPhone: from,
       };
 
       const result = await twilioSMSService.sendSMS(smsMessage);
       return result.success;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to send SMS via Twilio service', { error: err.message, to: twilioSMSService.maskPhoneNumber(to) });
+      logger.error("Failed to send SMS via Twilio service", {
+        error: err.message,
+        to: twilioSMSService.maskPhoneNumber(to),
+      });
       return false;
     }
   }
@@ -38,7 +40,7 @@ export interface MessageTemplate {
   subject?: string; // For email
   content: string;
   variables: string[]; // Variables that can be replaced in template
-  channel: 'email' | 'sms' | 'both';
+  channel: "email" | "sms" | "both";
   dealershipId: number;
 }
 
@@ -53,7 +55,7 @@ export interface FollowUpRule {
 export interface FollowUpStep {
   stepNumber: number;
   delayHours: number;
-  channel: 'email' | 'sms' | 'both';
+  channel: "email" | "sms" | "both";
   templateId: string;
   conditions?: {
     noResponse?: boolean;
@@ -63,7 +65,7 @@ export interface FollowUpStep {
 
 export interface SendMessageRequest {
   to: string;
-  channel: 'email' | 'sms';
+  channel: "email" | "sms";
   templateId?: string;
   customMessage?: string;
   subject?: string; // For email
@@ -80,7 +82,7 @@ export interface ScheduledMessage {
   conversationId: number;
   dealershipId: number;
   leadId?: number;
-  channel: 'email' | 'sms';
+  channel: "email" | "sms";
   to: string;
   content: string;
   subject?: string;
@@ -104,48 +106,56 @@ export class MessagingService {
   private initializeEmailTransporter(): void {
     // Configure email transporter (using SendGrid as example)
     this.emailTransporter = nodemailer.createTransporter({
-      service: 'SendGrid',
+      service: "SendGrid",
       auth: {
-        user: 'apikey',
-        pass: process.env.SENDGRID_API_KEY || ''
-      }
+        user: "apikey",
+        pass: process.env.SENDGRID_API_KEY || "",
+      },
     });
   }
 
   // Send immediate message
   async sendMessage(request: SendMessageRequest): Promise<boolean> {
     try {
-      let content = request.customMessage || '';
-      let subject = request.subject || '';
+      let content = request.customMessage || "";
+      let subject = request.subject || "";
 
       // If using template, load and process it
       if (request.templateId) {
-        const template = await this.getTemplate(request.templateId, request.dealershipId);
+        const template = await this.getTemplate(
+          request.templateId,
+          request.dealershipId,
+        );
         if (!template) {
           throw new Error(`Template not found: ${request.templateId}`);
         }
 
-        content = this.processTemplate(template.content, request.variables || {});
-        subject = request.subject || this.processTemplate(template.subject || '', request.variables || {});
+        content = this.processTemplate(
+          template.content,
+          request.variables || {},
+        );
+        subject =
+          request.subject ||
+          this.processTemplate(template.subject || "", request.variables || {});
       }
 
       let success = false;
 
-      if (request.channel === 'email') {
+      if (request.channel === "email") {
         success = await this.sendEmail({
           to: request.to,
           subject,
           content,
           fromName: request.fromName,
           fromEmail: request.fromEmail,
-          dealershipId: request.dealershipId
+          dealershipId: request.dealershipId,
         });
-      } else if (request.channel === 'sms') {
+      } else if (request.channel === "sms") {
         success = await this.sendSMS({
           to: request.to,
           content,
           fromPhone: request.fromPhone,
-          dealershipId: request.dealershipId
+          dealershipId: request.dealershipId,
         });
       }
 
@@ -158,15 +168,15 @@ export class MessagingService {
         content,
         subject,
         success,
-        sentAt: new Date()
+        sentAt: new Date(),
       });
 
       return success;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to send message', { 
-        error: err.message, 
-        request: { ...request, customMessage: '[REDACTED]' }
+      logger.error("Failed to send message", {
+        error: err.message,
+        request: { ...request, customMessage: "[REDACTED]" },
       });
       return false;
     }
@@ -174,24 +184,32 @@ export class MessagingService {
 
   // Schedule message for later delivery
   async scheduleMessage(
-    request: SendMessageRequest, 
+    request: SendMessageRequest,
     scheduledFor: Date,
-    maxRetries: number = 3
+    maxRetries: number = 3,
   ): Promise<string> {
     try {
       const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      let content = request.customMessage || '';
-      let subject = request.subject || '';
+      let content = request.customMessage || "";
+      let subject = request.subject || "";
 
       if (request.templateId) {
-        const template = await this.getTemplate(request.templateId, request.dealershipId);
+        const template = await this.getTemplate(
+          request.templateId,
+          request.dealershipId,
+        );
         if (!template) {
           throw new Error(`Template not found: ${request.templateId}`);
         }
 
-        content = this.processTemplate(template.content, request.variables || {});
-        subject = request.subject || this.processTemplate(template.subject || '', request.variables || {});
+        content = this.processTemplate(
+          template.content,
+          request.variables || {},
+        );
+        subject =
+          request.subject ||
+          this.processTemplate(template.subject || "", request.variables || {});
       }
 
       const scheduledMessage: ScheduledMessage = {
@@ -205,22 +223,22 @@ export class MessagingService {
         scheduledFor,
         sent: false,
         retryCount: 0,
-        maxRetries
+        maxRetries,
       };
 
       await this.saveScheduledMessage(scheduledMessage);
 
-      logger.info('Message scheduled', {
+      logger.info("Message scheduled", {
         messageId,
         scheduledFor,
         channel: request.channel,
-        to: request.to
+        to: request.to,
       });
 
       return messageId;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to schedule message', { error: err.message });
+      logger.error("Failed to schedule message", { error: err.message });
       throw err;
     }
   }
@@ -235,39 +253,41 @@ export class MessagingService {
         try {
           let success = false;
 
-          if (message.channel === 'email') {
+          if (message.channel === "email") {
             success = await this.sendEmail({
               to: message.to,
-              subject: message.subject || '',
+              subject: message.subject || "",
               content: message.content,
-              dealershipId: message.dealershipId
+              dealershipId: message.dealershipId,
             });
-          } else if (message.channel === 'sms') {
+          } else if (message.channel === "sms") {
             success = await this.sendSMS({
               to: message.to,
               content: message.content,
-              dealershipId: message.dealershipId
+              dealershipId: message.dealershipId,
             });
           }
 
           if (success) {
             await this.markMessageAsSent(message.id);
-            logger.info('Scheduled message sent', { messageId: message.id });
+            logger.info("Scheduled message sent", { messageId: message.id });
           } else {
             await this.handleMessageFailure(message);
           }
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
-          logger.error('Error sending scheduled message', {
+          logger.error("Error sending scheduled message", {
             error: err.message,
-            messageId: message.id
+            messageId: message.id,
           });
           await this.handleMessageFailure(message);
         }
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Error processing scheduled messages', { error: err.message });
+      logger.error("Error processing scheduled messages", {
+        error: err.message,
+      });
     }
   }
 
@@ -278,96 +298,113 @@ export class MessagingService {
     dealershipId: number,
     leadSource: string,
     customerEmail?: string,
-    customerPhone?: string
+    customerPhone?: string,
   ): Promise<void> {
     try {
       const rule = await this.getFollowUpRule(dealershipId, leadSource);
       if (!rule || !rule.active) {
-        logger.info('No active follow-up rule found', { dealershipId, leadSource });
+        logger.info("No active follow-up rule found", {
+          dealershipId,
+          leadSource,
+        });
         return;
       }
 
       const now = new Date();
 
       for (const step of rule.sequence) {
-        const scheduledFor = new Date(now.getTime() + (step.delayHours * 60 * 60 * 1000));
+        const scheduledFor = new Date(
+          now.getTime() + step.delayHours * 60 * 60 * 1000,
+        );
 
-        if (step.channel === 'email' && customerEmail) {
-          await this.scheduleMessage({
-            to: customerEmail,
-            channel: 'email',
-            templateId: step.templateId,
-            conversationId,
-            dealershipId,
-            variables: {
-              leadId: leadId.toString(),
-              leadSource,
-              stepNumber: step.stepNumber.toString()
-            }
-          }, scheduledFor);
-        }
-
-        if (step.channel === 'sms' && customerPhone) {
-          await this.scheduleMessage({
-            to: customerPhone,
-            channel: 'sms',
-            templateId: step.templateId,
-            conversationId,
-            dealershipId,
-            variables: {
-              leadId: leadId.toString(),
-              leadSource,
-              stepNumber: step.stepNumber.toString()
-            }
-          }, scheduledFor);
-        }
-
-        if (step.channel === 'both') {
-          if (customerEmail) {
-            await this.scheduleMessage({
+        if (step.channel === "email" && customerEmail) {
+          await this.scheduleMessage(
+            {
               to: customerEmail,
-              channel: 'email',
+              channel: "email",
               templateId: step.templateId,
               conversationId,
               dealershipId,
               variables: {
                 leadId: leadId.toString(),
                 leadSource,
-                stepNumber: step.stepNumber.toString()
-              }
-            }, scheduledFor);
+                stepNumber: step.stepNumber.toString(),
+              },
+            },
+            scheduledFor,
+          );
+        }
+
+        if (step.channel === "sms" && customerPhone) {
+          await this.scheduleMessage(
+            {
+              to: customerPhone,
+              channel: "sms",
+              templateId: step.templateId,
+              conversationId,
+              dealershipId,
+              variables: {
+                leadId: leadId.toString(),
+                leadSource,
+                stepNumber: step.stepNumber.toString(),
+              },
+            },
+            scheduledFor,
+          );
+        }
+
+        if (step.channel === "both") {
+          if (customerEmail) {
+            await this.scheduleMessage(
+              {
+                to: customerEmail,
+                channel: "email",
+                templateId: step.templateId,
+                conversationId,
+                dealershipId,
+                variables: {
+                  leadId: leadId.toString(),
+                  leadSource,
+                  stepNumber: step.stepNumber.toString(),
+                },
+              },
+              scheduledFor,
+            );
           }
 
           if (customerPhone) {
-            await this.scheduleMessage({
-              to: customerPhone,
-              channel: 'sms',
-              templateId: step.templateId,
-              conversationId,
-              dealershipId,
-              variables: {
-                leadId: leadId.toString(),
-                leadSource,
-                stepNumber: step.stepNumber.toString()
-              }
-            }, scheduledFor);
+            await this.scheduleMessage(
+              {
+                to: customerPhone,
+                channel: "sms",
+                templateId: step.templateId,
+                conversationId,
+                dealershipId,
+                variables: {
+                  leadId: leadId.toString(),
+                  leadSource,
+                  stepNumber: step.stepNumber.toString(),
+                },
+              },
+              scheduledFor,
+            );
           }
         }
       }
 
-      logger.info('Follow-up sequence setup completed', {
+      logger.info("Follow-up sequence setup completed", {
         leadId,
         dealershipId,
         leadSource,
-        steps: rule.sequence.length
+        steps: rule.sequence.length,
       });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to setup follow-up sequence', { 
-        error: err.message, 
-        leadId, 
-        dealershipId, 
-        leadSource 
+      logger.error("Failed to setup follow-up sequence", {
+        error: err.message,
+        leadId,
+        dealershipId,
+        leadSource,
       });
     }
   }
@@ -383,21 +420,27 @@ export class MessagingService {
   }): Promise<boolean> {
     try {
       const dealership = await this.getDealershipSettings(params.dealershipId);
-      
+
       const mailOptions = {
         from: `${params.fromName || dealership.name} <${params.fromEmail || dealership.contactEmail}>`,
         to: params.to,
         subject: params.subject,
         html: params.content,
-        text: params.content.replace(/<[^>]*>/g, '') // Strip HTML for text version
+        text: params.content.replace(/<[^>]*>/g, ""), // Strip HTML for text version
       };
 
       await this.emailTransporter.sendMail(mailOptions);
-      logger.info('Email sent successfully', { to: params.to, subject: params.subject });
+      logger.info("Email sent successfully", {
+        to: params.to,
+        subject: params.subject,
+      });
       return true;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to send email', { error: err.message, to: params.to });
+      logger.error("Failed to send email", {
+        error: err.message,
+        to: params.to,
+      });
       return false;
     }
   }
@@ -413,14 +456,17 @@ export class MessagingService {
         dealershipId: params.dealershipId,
         toPhone: params.to,
         message: params.content,
-        fromPhone: params.fromPhone
+        fromPhone: params.fromPhone,
       };
 
       const result = await twilioSMSService.sendSMS(smsMessage);
       return result.success;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to send SMS', { error: err.message, to: twilioSMSService.maskPhoneNumber(params.to) });
+      logger.error("Failed to send SMS", {
+        error: err.message,
+        to: twilioSMSService.maskPhoneNumber(params.to),
+      });
       return false;
     }
   }

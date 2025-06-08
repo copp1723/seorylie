@@ -1,29 +1,29 @@
 /**
  * Supabase Configuration and Client Setup
- * 
+ *
  * This module configures the Supabase client for server-side operations
  * and provides compatibility layer with existing application architecture.
- * 
+ *
  * @file server/config/supabase.ts
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '../../types/supabase';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "../../types/supabase";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl) {
-  throw new Error('SUPABASE_URL is required but not provided');
+  throw new Error("SUPABASE_URL is required but not provided");
 }
 
 if (!supabaseServiceKey) {
-  throw new Error('SUPABASE_SERVICE_KEY is required but not provided');
+  throw new Error("SUPABASE_SERVICE_KEY is required but not provided");
 }
 
 if (!supabaseAnonKey) {
-  throw new Error('SUPABASE_ANON_KEY is required but not provided');
+  throw new Error("SUPABASE_ANON_KEY is required but not provided");
 }
 
 /**
@@ -36,9 +36,9 @@ export const supabaseAdmin: SupabaseClient<Database> = createClient(
   {
     auth: {
       autoRefreshToken: false,
-      persistSession: false
-    }
-  }
+      persistSession: false,
+    },
+  },
 );
 
 /**
@@ -52,9 +52,9 @@ export const supabaseClient: SupabaseClient<Database> = createClient(
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true
-    }
-  }
+      detectSessionInUrl: true,
+    },
+  },
 );
 
 /**
@@ -69,17 +69,19 @@ export const supabaseConfig = {
 /**
  * Utility function to create authenticated client for specific user
  */
-export function createAuthenticatedClient(accessToken: string): SupabaseClient<Database> {
+export function createAuthenticatedClient(
+  accessToken: string,
+): SupabaseClient<Database> {
   return createClient(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+        Authorization: `Bearer ${accessToken}`,
+      },
     },
     auth: {
       autoRefreshToken: false,
-      persistSession: false
-    }
+      persistSession: false,
+    },
   });
 }
 
@@ -87,7 +89,7 @@ export function createAuthenticatedClient(accessToken: string): SupabaseClient<D
  * Health check function to verify Supabase connectivity
  */
 export async function checkSupabaseHealth(): Promise<{
-  status: 'healthy' | 'unhealthy';
+  status: "healthy" | "unhealthy";
   checks: {
     connection: boolean;
     auth: boolean;
@@ -100,17 +102,17 @@ export async function checkSupabaseHealth(): Promise<{
     connection: false,
     auth: false,
     rls: false,
-    realtime: false
+    realtime: false,
   };
   const errors: string[] = [];
 
   try {
     // Test basic connection
     const { data, error } = await supabaseAdmin
-      .from('dealerships')
-      .select('id')
+      .from("dealerships")
+      .select("id")
       .limit(1);
-    
+
     if (error) {
       errors.push(`Connection test failed: ${error.message}`);
     } else {
@@ -119,7 +121,8 @@ export async function checkSupabaseHealth(): Promise<{
 
     // Test auth functionality
     try {
-      const { data: authData, error: authError } = await supabaseClient.auth.getSession();
+      const { data: authData, error: authError } =
+        await supabaseClient.auth.getSession();
       checks.auth = !authError;
       if (authError) {
         errors.push(`Auth test failed: ${authError.message}`);
@@ -131,10 +134,10 @@ export async function checkSupabaseHealth(): Promise<{
     // Test RLS policies (try to access protected data without proper context)
     try {
       const { data: rlsData, error: rlsError } = await supabaseClient
-        .from('conversations')
-        .select('id')
+        .from("conversations")
+        .select("id")
         .limit(1);
-      
+
       // RLS should either work or fail gracefully
       checks.rls = true;
     } catch (rlsErr) {
@@ -143,23 +146,24 @@ export async function checkSupabaseHealth(): Promise<{
 
     // Test realtime connection
     try {
-      const channel = supabaseClient.channel('health-check');
+      const channel = supabaseClient.channel("health-check");
       checks.realtime = true;
       await channel.unsubscribe();
     } catch (realtimeErr) {
       errors.push(`Realtime test error: ${realtimeErr}`);
     }
-
   } catch (err) {
     errors.push(`General health check error: ${err}`);
   }
 
-  const status = Object.values(checks).every(check => check) ? 'healthy' : 'unhealthy';
-  
+  const status = Object.values(checks).every((check) => check)
+    ? "healthy"
+    : "unhealthy";
+
   return {
     status,
     checks,
-    ...(errors.length > 0 && { errors })
+    ...(errors.length > 0 && { errors }),
   };
 }
 

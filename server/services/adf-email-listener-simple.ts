@@ -1,12 +1,12 @@
 /**
  * Simplified ADF Email Listener Service
- * 
+ *
  * A lightweight implementation that provides the core email listening functionality
  * without complex database dependencies, suitable for the current implementation phase.
  */
 
-import { EventEmitter } from 'events';
-import logger from '../utils/logger';
+import { EventEmitter } from "events";
+import logger from "../utils/logger";
 
 export interface AdfEmailData {
   id: string;
@@ -41,7 +41,7 @@ export class AdfEmailListener extends EventEmitter {
 
   constructor() {
     super();
-    logger.info('ADF Email Listener initialized (simplified mode)');
+    logger.info("ADF Email Listener initialized (simplified mode)");
   }
 
   /**
@@ -49,7 +49,7 @@ export class AdfEmailListener extends EventEmitter {
    */
   async start(config?: AdfEmailConfig): Promise<void> {
     if (this.isListening) {
-      logger.warn('ADF Email Listener is already running');
+      logger.warn("ADF Email Listener is already running");
       return;
     }
 
@@ -58,25 +58,28 @@ export class AdfEmailListener extends EventEmitter {
       this.config = config || this.getDefaultConfig();
 
       if (!this.config) {
-        logger.warn('No email configuration provided, email listening disabled');
+        logger.warn(
+          "No email configuration provided, email listening disabled",
+        );
         return;
       }
 
       this.isListening = true;
-      logger.info('ADF Email Listener started successfully', {
+      logger.info("ADF Email Listener started successfully", {
         host: this.config.host,
         user: this.config.user,
-        pollingInterval: this.config.pollingInterval
+        pollingInterval: this.config.pollingInterval,
       });
 
       // Start polling (simplified - would connect to actual email server in full implementation)
       this.startPolling();
-      
-      this.emit('started');
-      
+
+      this.emit("started");
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to start ADF Email Listener', { error: err.message });
+      logger.error("Failed to start ADF Email Listener", {
+        error: err.message,
+      });
       throw err;
     }
   }
@@ -91,18 +94,17 @@ export class AdfEmailListener extends EventEmitter {
 
     try {
       this.isListening = false;
-      
+
       if (this.pollingTimer) {
         clearTimeout(this.pollingTimer);
         this.pollingTimer = null;
       }
 
-      logger.info('ADF Email Listener stopped');
-      this.emit('stopped');
-      
+      logger.info("ADF Email Listener stopped");
+      this.emit("stopped");
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logger.error('Error stopping ADF Email Listener', { error: err.message });
+      logger.error("Error stopping ADF Email Listener", { error: err.message });
       throw err;
     }
   }
@@ -116,23 +118,25 @@ export class AdfEmailListener extends EventEmitter {
     const password = process.env.ADF_EMAIL_PASSWORD;
 
     if (!host || !user || !password) {
-      logger.info('ADF email environment variables not configured', {
+      logger.info("ADF email environment variables not configured", {
         hasHost: !!host,
         hasUser: !!user,
-        hasPassword: !!password
+        hasPassword: !!password,
       });
       return null;
     }
 
     return {
       host,
-      port: parseInt(process.env.ADF_EMAIL_PORT || '993'),
+      port: parseInt(process.env.ADF_EMAIL_PORT || "993"),
       user,
       password,
-      tls: process.env.ADF_EMAIL_TLS !== 'false',
-      markSeen: process.env.ADF_EMAIL_MARK_SEEN !== 'false',
-      searchCriteria: ['UNSEEN'],
-      pollingInterval: parseInt(process.env.ADF_EMAIL_POLLING_INTERVAL || '300000') // 5 minutes
+      tls: process.env.ADF_EMAIL_TLS !== "false",
+      markSeen: process.env.ADF_EMAIL_MARK_SEEN !== "false",
+      searchCriteria: ["UNSEEN"],
+      pollingInterval: parseInt(
+        process.env.ADF_EMAIL_POLLING_INTERVAL || "300000",
+      ), // 5 minutes
     };
   }
 
@@ -152,11 +156,11 @@ export class AdfEmailListener extends EventEmitter {
             this.startPolling();
           }
         })
-        .catch(error => {
-          logger.error('Error during email polling', { 
-            error: error instanceof Error ? error.message : String(error) 
+        .catch((error) => {
+          logger.error("Error during email polling", {
+            error: error instanceof Error ? error.message : String(error),
           });
-          
+
           // Continue polling even if there was an error
           if (this.isListening) {
             this.startPolling();
@@ -179,34 +183,37 @@ export class AdfEmailListener extends EventEmitter {
     // 3. Parse emails and check for XML attachments
     // 4. Emit 'email' events for ADF emails found
 
-    logger.debug('Checking for new ADF emails', {
+    logger.debug("Checking for new ADF emails", {
       host: this.config.host,
-      user: this.config.user
+      user: this.config.user,
     });
 
     // Simulate finding emails occasionally for testing
-    if (Math.random() < 0.1) { // 10% chance
+    if (Math.random() < 0.1) {
+      // 10% chance
       const simulatedEmail: AdfEmailData = {
         id: `simulated_${Date.now()}`,
-        subject: 'Test ADF Lead',
-        from: 'test@example.com',
+        subject: "Test ADF Lead",
+        from: "test@example.com",
         to: this.config.user,
         date: new Date(),
-        attachments: [{
-          filename: 'test-lead.xml',
-          content: Buffer.from('<adf><prospect></prospect></adf>'),
-          contentType: 'application/xml',
-          size: 35
-        }],
-        rawContent: 'This is a simulated ADF email for testing purposes.'
+        attachments: [
+          {
+            filename: "test-lead.xml",
+            content: Buffer.from("<adf><prospect></prospect></adf>"),
+            contentType: "application/xml",
+            size: 35,
+          },
+        ],
+        rawContent: "This is a simulated ADF email for testing purposes.",
       };
 
-      logger.info('Simulated ADF email found', {
+      logger.info("Simulated ADF email found", {
         subject: simulatedEmail.subject,
-        from: simulatedEmail.from
+        from: simulatedEmail.from,
       });
 
-      this.emit('email', simulatedEmail);
+      this.emit("email", simulatedEmail);
     }
   }
 
@@ -217,8 +224,8 @@ export class AdfEmailListener extends EventEmitter {
     return {
       isListening: this.isListening,
       hasConfig: !!this.config,
-      configHost: this.config?.host || 'not configured',
-      mode: 'simplified'
+      configHost: this.config?.host || "not configured",
+      mode: "simplified",
     };
   }
 

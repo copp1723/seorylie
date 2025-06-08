@@ -32,7 +32,14 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, variant = "default", ...props }) {
+      {toasts.map(function ({
+        id,
+        title,
+        description,
+        action,
+        variant = "default",
+        ...props
+      }) {
         const Icon = TOAST_ICONS[variant];
         const iconClass = ICON_CLASSES[variant];
 
@@ -43,7 +50,7 @@ export function Toaster() {
               <div className="flex-shrink-0 mt-0.5">
                 <Icon className={`h-5 w-5 ${iconClass}`} />
               </div>
-              
+
               {/* Content */}
               <div className="flex-1 grid gap-1">
                 {title && <ToastTitle>{title}</ToastTitle>}
@@ -51,7 +58,7 @@ export function Toaster() {
                   <ToastDescription>{description}</ToastDescription>
                 )}
               </div>
-              
+
               {/* Action */}
               {action && <div className="flex-shrink-0">{action}</div>}
             </div>

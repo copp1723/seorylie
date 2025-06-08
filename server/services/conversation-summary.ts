@@ -4,8 +4,8 @@
  * This module provides functionality to generate conversation summaries
  * and extract key data points using OpenAI's API
  */
-import OpenAI from 'openai';
-import logger from '../utils/logger';
+import OpenAI from "openai";
+import logger from "../utils/logger";
 
 // Initialize OpenAI client lazily to prevent startup failures
 let openaiClient: OpenAI | null = null;
@@ -15,15 +15,20 @@ function getOpenAI(): OpenAI | null {
     try {
       if (process.env.OPENAI_API_KEY) {
         openaiClient = new OpenAI({
-          apiKey: process.env.OPENAI_API_KEY
+          apiKey: process.env.OPENAI_API_KEY,
         });
-        logger.info('OpenAI client initialized for conversation summaries');
+        logger.info("OpenAI client initialized for conversation summaries");
       } else {
-        logger.warn('OpenAI API key not provided, conversation summaries will not be available');
+        logger.warn(
+          "OpenAI API key not provided, conversation summaries will not be available",
+        );
         return null;
       }
     } catch (error) {
-      logger.error('Failed to initialize OpenAI client for conversation summaries', error);
+      logger.error(
+        "Failed to initialize OpenAI client for conversation summaries",
+        error,
+      );
       return null;
     }
   }
@@ -31,7 +36,7 @@ function getOpenAI(): OpenAI | null {
 }
 
 // The newest OpenAI model is "gpt-4o" which was released May 13, 2024. Do not change this unless explicitly requested by the user
-const MODEL = 'gpt-4o';
+const MODEL = "gpt-4o";
 
 /**
  * Generate a summary of a conversation
@@ -39,27 +44,31 @@ const MODEL = 'gpt-4o';
  * @returns Summary of the conversation
  */
 export const generateConversationSummary = async (
-  messages: Array<{role: 'customer' | 'assistant', content: string}>
+  messages: Array<{ role: "customer" | "assistant"; content: string }>,
 ): Promise<string> => {
   try {
     const client = getOpenAI();
     if (!client) {
-      logger.warn('OpenAI client not initialized, returning placeholder summary');
-      return 'Conversation summary not available - OpenAI API key not configured.';
+      logger.warn(
+        "OpenAI client not initialized, returning placeholder summary",
+      );
+      return "Conversation summary not available - OpenAI API key not configured.";
     }
 
     // Filter out very short messages that don't add context
-    const significantMessages = messages.filter(msg => msg.content.length > 10);
+    const significantMessages = messages.filter(
+      (msg) => msg.content.length > 10,
+    );
 
     // If there are very few messages, return a simple summary
     if (significantMessages.length < 2) {
-      return 'Brief conversation, not enough content to summarize.';
+      return "Brief conversation, not enough content to summarize.";
     }
 
     // Format messages for the API
     const formattedMessages = [
       {
-        role: 'system',
+        role: "system",
         content: `You are an expert automotive sales conversation analyzer.
         Summarize the following conversation between a customer and an automotive dealership AI assistant named Rylie.
         Focus on key points like:
@@ -69,12 +78,12 @@ export const generateConversationSummary = async (
         - Any action items or next steps mentioned
         - Obstacles or objections raised
 
-        Keep the summary concise (max 150 words) but comprehensive, focusing on the most important information for a sales representative.`
+        Keep the summary concise (max 150 words) but comprehensive, focusing on the most important information for a sales representative.`,
       },
-      ...significantMessages.map(msg => ({
-        role: msg.role === 'customer' ? 'user' : 'assistant',
-        content: msg.content
-      }))
+      ...significantMessages.map((msg) => ({
+        role: msg.role === "customer" ? "user" : "assistant",
+        content: msg.content,
+      })),
     ];
 
     // Generate summary using OpenAI
@@ -88,13 +97,13 @@ export const generateConversationSummary = async (
     const summary = response.choices[0].message.content?.trim();
 
     if (!summary) {
-      throw new Error('Empty summary returned from OpenAI');
+      throw new Error("Empty summary returned from OpenAI");
     }
 
     return summary;
   } catch (error) {
-    logger.error('Failed to generate conversation summary', error);
-    return 'Error generating conversation summary. Please try again later.';
+    logger.error("Failed to generate conversation summary", error);
+    return "Error generating conversation summary. Please try again later.";
   }
 };
 
@@ -104,19 +113,19 @@ export const generateConversationSummary = async (
  * @returns Array of customer insights with confidence scores
  */
 export const extractCustomerInsights = async (
-  messages: Array<{role: 'customer' | 'assistant', content: string}>
-): Promise<Array<{key: string, value: string, confidence: number}>> => {
+  messages: Array<{ role: "customer" | "assistant"; content: string }>,
+): Promise<Array<{ key: string; value: string; confidence: number }>> => {
   try {
     const client = getOpenAI();
     if (!client) {
-      logger.warn('OpenAI client not initialized, returning empty insights');
+      logger.warn("OpenAI client not initialized, returning empty insights");
       return [];
     }
 
     // Format messages for the API
     const formattedMessages = [
       {
-        role: 'system',
+        role: "system",
         content: `You are an expert at analyzing automotive sales conversations.
         Extract key customer insights from the conversation between a customer and an automotive dealership AI assistant named Rylie.
         For each insight, provide:
@@ -130,12 +139,12 @@ export const extractCustomerInsights = async (
           {"key": "Preferred Brand", "value": "Toyota", "confidence": 0.7}
         ]
 
-        Only include insights that are reasonably confident (0.5 or higher).`
+        Only include insights that are reasonably confident (0.5 or higher).`,
       },
-      ...messages.map(msg => ({
-        role: msg.role === 'customer' ? 'user' : 'assistant',
-        content: msg.content
-      }))
+      ...messages.map((msg) => ({
+        role: msg.role === "customer" ? "user" : "assistant",
+        content: msg.content,
+      })),
     ];
 
     // Generate insights using OpenAI
@@ -150,7 +159,7 @@ export const extractCustomerInsights = async (
     const insightsText = response.choices[0].message.content?.trim();
 
     if (!insightsText) {
-      throw new Error('Empty insights returned from OpenAI');
+      throw new Error("Empty insights returned from OpenAI");
     }
 
     try {
@@ -160,15 +169,19 @@ export const extractCustomerInsights = async (
       } else if (insights && Array.isArray(insights.insights)) {
         return insights.insights;
       } else {
-        logger.warn('Unexpected insights format returned', { insights: insightsText });
+        logger.warn("Unexpected insights format returned", {
+          insights: insightsText,
+        });
         return [];
       }
     } catch (parseError) {
-      logger.error('Failed to parse insights JSON', parseError, { insights: insightsText });
+      logger.error("Failed to parse insights JSON", parseError, {
+        insights: insightsText,
+      });
       return [];
     }
   } catch (error) {
-    logger.error('Failed to extract customer insights', error);
+    logger.error("Failed to extract customer insights", error);
     return [];
   }
 };
@@ -180,30 +193,36 @@ export const extractCustomerInsights = async (
  * @returns Array of vehicle interests with confidence scores
  */
 export const detectVehicleInterests = async (
-  messages: Array<{role: 'customer' | 'assistant', content: string}>,
-  availableInventory: any[] = []
-): Promise<Array<{
-  vin?: string,
-  year?: number,
-  make?: string,
-  model?: string,
-  trim?: string,
-  confidence: number
-}>> => {
+  messages: Array<{ role: "customer" | "assistant"; content: string }>,
+  availableInventory: any[] = [],
+): Promise<
+  Array<{
+    vin?: string;
+    year?: number;
+    make?: string;
+    model?: string;
+    trim?: string;
+    confidence: number;
+  }>
+> => {
   try {
     const client = getOpenAI();
     if (!client) {
-      logger.warn('OpenAI client not initialized, returning empty vehicle interests');
+      logger.warn(
+        "OpenAI client not initialized, returning empty vehicle interests",
+      );
       return [];
     }
 
     // Create a simplified inventory list to include in the prompt if available
-    let inventoryContext = '';
+    let inventoryContext = "";
     if (availableInventory && availableInventory.length > 0) {
-      const simplifiedInventory = availableInventory.map(vehicle => {
-        const { vin, year, make, model, trim } = vehicle;
-        return { vin, year, make, model, trim };
-      }).slice(0, 20); // Limit to 20 vehicles to avoid token limits
+      const simplifiedInventory = availableInventory
+        .map((vehicle) => {
+          const { vin, year, make, model, trim } = vehicle;
+          return { vin, year, make, model, trim };
+        })
+        .slice(0, 20); // Limit to 20 vehicles to avoid token limits
 
       inventoryContext = `Available inventory: ${JSON.stringify(simplifiedInventory)}`;
     }
@@ -211,7 +230,7 @@ export const detectVehicleInterests = async (
     // Format messages for the API
     const formattedMessages = [
       {
-        role: 'system',
+        role: "system",
         content: `You are an expert at detecting vehicle interests in automotive sales conversations.
         Analyze the conversation between a customer and an automotive dealership AI assistant named Rylie.
         Identify specific vehicles the customer is interested in, even if only partially described.
@@ -233,12 +252,12 @@ export const detectVehicleInterests = async (
         ]
 
         Only include vehicle interests that are reasonably confident (0.5 or higher).
-        Include partial information if that's all that was mentioned.`
+        Include partial information if that's all that was mentioned.`,
       },
-      ...messages.map(msg => ({
-        role: msg.role === 'customer' ? 'user' : 'assistant',
-        content: msg.content
-      }))
+      ...messages.map((msg) => ({
+        role: msg.role === "customer" ? "user" : "assistant",
+        content: msg.content,
+      })),
     ];
 
     // Detect vehicle interests using OpenAI
@@ -253,7 +272,7 @@ export const detectVehicleInterests = async (
     const interestsText = response.choices[0].message.content?.trim();
 
     if (!interestsText) {
-      throw new Error('Empty vehicle interests returned from OpenAI');
+      throw new Error("Empty vehicle interests returned from OpenAI");
     }
 
     try {
@@ -263,15 +282,19 @@ export const detectVehicleInterests = async (
       } else if (interests && Array.isArray(interests.vehicles)) {
         return interests.vehicles;
       } else {
-        logger.warn('Unexpected vehicle interests format returned', { interests: interestsText });
+        logger.warn("Unexpected vehicle interests format returned", {
+          interests: interestsText,
+        });
         return [];
       }
     } catch (parseError) {
-      logger.error('Failed to parse vehicle interests JSON', parseError, { interests: interestsText });
+      logger.error("Failed to parse vehicle interests JSON", parseError, {
+        interests: interestsText,
+      });
       return [];
     }
   } catch (error) {
-    logger.error('Failed to detect vehicle interests', error);
+    logger.error("Failed to detect vehicle interests", error);
     return [];
   }
 };
@@ -285,24 +308,38 @@ export const detectVehicleInterests = async (
 export const sendConversationSummary = async (
   to: string,
   conversation: {
-    id: number,
-    dealershipId: number,
-    customerName: string,
-    messages: Array<{role: 'customer' | 'assistant', content: string, timestamp: Date}>,
-    summary?: string,
-    insights?: Array<{key: string, value: string, confidence: number}>,
-    vehicleInterests?: Array<{vin?: string, year?: number, make?: string, model?: string, trim?: string, confidence: number}>
-  }
+    id: number;
+    dealershipId: number;
+    customerName: string;
+    messages: Array<{
+      role: "customer" | "assistant";
+      content: string;
+      timestamp: Date;
+    }>;
+    summary?: string;
+    insights?: Array<{ key: string; value: string; confidence: number }>;
+    vehicleInterests?: Array<{
+      vin?: string;
+      year?: number;
+      make?: string;
+      model?: string;
+      trim?: string;
+      confidence: number;
+    }>;
+  },
 ): Promise<boolean> => {
   try {
     // Import here to avoid circular dependencies
-    const { default: emailService } = await import('./email');
+    const { default: emailService } = await import("./email");
 
     // Generate summary if not provided
     let summary = conversation.summary;
     if (!summary) {
       summary = await generateConversationSummary(
-        conversation.messages.map(m => ({ role: m.role, content: m.content }))
+        conversation.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
       );
     }
 
@@ -310,33 +347,46 @@ export const sendConversationSummary = async (
     let insights = conversation.insights;
     if (!insights) {
       insights = await extractCustomerInsights(
-        conversation.messages.map(m => ({ role: m.role, content: m.content }))
+        conversation.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
       );
     }
 
     // Format insights text
-    const insightsText = insights && insights.length > 0
-      ? insights.map(insight =>
-          `${insight.key}: ${insight.value} (Confidence: ${Math.round(insight.confidence * 100)}%)`
-        ).join('\n')
-      : 'No specific customer insights detected';
+    const insightsText =
+      insights && insights.length > 0
+        ? insights
+            .map(
+              (insight) =>
+                `${insight.key}: ${insight.value} (Confidence: ${Math.round(insight.confidence * 100)}%)`,
+            )
+            .join("\n")
+        : "No specific customer insights detected";
 
     // Format vehicle interests text
-    const vehicleInterestsText = conversation.vehicleInterests && conversation.vehicleInterests.length > 0
-      ? conversation.vehicleInterests.map(vehicle => {
-          const parts = [];
-          if (vehicle.year) parts.push(`${vehicle.year}`);
-          if (vehicle.make) parts.push(`${vehicle.make}`);
-          if (vehicle.model) parts.push(`${vehicle.model}`);
-          if (vehicle.trim) parts.push(`${vehicle.trim}`);
-          return `${parts.join(' ')} (Confidence: ${Math.round(vehicle.confidence * 100)}%)`;
-        }).join('\n')
-      : 'No specific vehicle interests detected';
+    const vehicleInterestsText =
+      conversation.vehicleInterests && conversation.vehicleInterests.length > 0
+        ? conversation.vehicleInterests
+            .map((vehicle) => {
+              const parts = [];
+              if (vehicle.year) parts.push(`${vehicle.year}`);
+              if (vehicle.make) parts.push(`${vehicle.make}`);
+              if (vehicle.model) parts.push(`${vehicle.model}`);
+              if (vehicle.trim) parts.push(`${vehicle.trim}`);
+              return `${parts.join(" ")} (Confidence: ${Math.round(vehicle.confidence * 100)}%)`;
+            })
+            .join("\n")
+        : "No specific vehicle interests detected";
 
     // Format conversation text
     const conversationText = conversation.messages
-      .map(msg => `[${msg.timestamp.toLocaleString()}] ${msg.role === 'customer' ? 'Customer' : 'Rylie'}: ${msg.content}`)
-      .join('\n\n');
+      .map(
+        (msg) =>
+          `[${msg.timestamp.toLocaleString()}] ${msg.role === "customer" ? "Customer" : "Rylie"}: ${msg.content}`,
+      )
+      .join("\n\n");
 
     // Email subject
     const subject = `Conversation Summary: ${conversation.customerName} (ID: ${conversation.id})`;
@@ -380,11 +430,15 @@ This is an automated summary generated by Rylie AI.`;
         <div style="background-color: #f4f6fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
           <h3 style="margin-top: 0;">Customer Insights</h3>
           <ul>
-            ${insights && insights.length > 0
-              ? insights.map(insight =>
-                  `<li><strong>${insight.key}:</strong> ${insight.value} <span style="color: #666;">(Confidence: ${Math.round(insight.confidence * 100)}%)</span></li>`
-                ).join('')
-              : '<li>No specific customer insights detected</li>'
+            ${
+              insights && insights.length > 0
+                ? insights
+                    .map(
+                      (insight) =>
+                        `<li><strong>${insight.key}:</strong> ${insight.value} <span style="color: #666;">(Confidence: ${Math.round(insight.confidence * 100)}%)</span></li>`,
+                    )
+                    .join("")
+                : "<li>No specific customer insights detected</li>"
             }
           </ul>
         </div>
@@ -392,31 +446,37 @@ This is an automated summary generated by Rylie AI.`;
         <div style="background-color: #f4f6fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
           <h3 style="margin-top: 0;">Vehicle Interests</h3>
           <ul>
-            ${conversation.vehicleInterests && conversation.vehicleInterests.length > 0
-              ? conversation.vehicleInterests.map(vehicle => {
-                  const parts = [];
-                  if (vehicle.year) parts.push(`${vehicle.year}`);
-                  if (vehicle.make) parts.push(`${vehicle.make}`);
-                  if (vehicle.model) parts.push(`${vehicle.model}`);
-                  if (vehicle.trim) parts.push(`${vehicle.trim}`);
-                  return `<li>${parts.join(' ')} <span style="color: #666;">(Confidence: ${Math.round(vehicle.confidence * 100)}%)</span></li>`;
-                }).join('')
-              : '<li>No specific vehicle interests detected</li>'
+            ${
+              conversation.vehicleInterests &&
+              conversation.vehicleInterests.length > 0
+                ? conversation.vehicleInterests
+                    .map((vehicle) => {
+                      const parts = [];
+                      if (vehicle.year) parts.push(`${vehicle.year}`);
+                      if (vehicle.make) parts.push(`${vehicle.make}`);
+                      if (vehicle.model) parts.push(`${vehicle.model}`);
+                      if (vehicle.trim) parts.push(`${vehicle.trim}`);
+                      return `<li>${parts.join(" ")} <span style="color: #666;">(Confidence: ${Math.round(vehicle.confidence * 100)}%)</span></li>`;
+                    })
+                    .join("")
+                : "<li>No specific vehicle interests detected</li>"
             }
           </ul>
         </div>
 
         <div style="background-color: #f4f6fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
           <h3 style="margin-top: 0;">Full Conversation</h3>
-          ${conversation.messages.map(msg => {
-            const timestamp = new Date(msg.timestamp).toLocaleString();
-            return `
-              <div style="margin-bottom: 15px; ${msg.role === 'customer' ? '' : 'background-color: #e6f0ff; padding: 10px; border-radius: 5px;'}">
-                <p style="margin-bottom: 5px; font-size: 0.8em; color: #666;">${timestamp} - ${msg.role === 'customer' ? 'Customer' : 'Rylie'}</p>
+          ${conversation.messages
+            .map((msg) => {
+              const timestamp = new Date(msg.timestamp).toLocaleString();
+              return `
+              <div style="margin-bottom: 15px; ${msg.role === "customer" ? "" : "background-color: #e6f0ff; padding: 10px; border-radius: 5px;"}">
+                <p style="margin-bottom: 5px; font-size: 0.8em; color: #666;">${timestamp} - ${msg.role === "customer" ? "Customer" : "Rylie"}</p>
                 <p style="margin-top: 0;">${msg.content}</p>
               </div>
             `;
-          }).join('')}
+            })
+            .join("")}
         </div>
 
         <p style="color: #666; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">This is an automated summary generated by Rylie AI.</p>
@@ -426,7 +486,7 @@ This is an automated summary generated by Rylie AI.`;
     // Send the email
     return await emailService.sendEmail(to, subject, text, html);
   } catch (error) {
-    logger.error('Failed to send conversation summary email', error);
+    logger.error("Failed to send conversation summary email", error);
     return false;
   }
 };
@@ -435,5 +495,5 @@ export default {
   generateConversationSummary,
   extractCustomerInsights,
   detectVehicleInterests,
-  sendConversationSummary
+  sendConversationSummary,
 };

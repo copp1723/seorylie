@@ -5,7 +5,7 @@ Capitalize on moments where the customer explicitly states readiness to purchase
 
 ---
 
-## Prompt Template  
+## Prompt Template
 
 Great news, {{lead_first_name}}! I can reserve the **{{selected_model}}** and have it ready for you **today**.
 
@@ -23,5 +23,6 @@ Looking forward to handing you the keys!
 
 ---
 
-### Tags  
+### Tags
+
 `fast_track` `stage:appointment_offer` `goal:secure_appointment_now`
