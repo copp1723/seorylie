@@ -19,6 +19,10 @@ module.exports = {
     "**/dist/**",
     ".husky/**",
     ".github/**",
+    "test/load/**",
+    "test/**/*.js",
+    "scripts/**/*.js",
+    "tools/**/*.js",
   ],
   parserOptions: {
     ecmaVersion: "latest",
