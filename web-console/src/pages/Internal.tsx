@@ -13,116 +13,175 @@ import {
   Eye,
   UserCheck,
   FileText,
-  BarChart3
+  Search,
+  Filter,
+  MoreHorizontal,
+  Plus
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { useBranding } from "../contexts/BrandingContext";
+import { Input } from "../components/ui/input";
+import { Select } from "../components/ui/select";
 import { useAuth } from "../contexts/AuthContext";
+import { useBranding } from "../contexts/BrandingContext";
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  status: 'active' | 'inactive' | 'trial';
+  plan: 'basic' | 'pro' | 'enterprise';
+  joinDate: string;
+  lastActive: string;
+  requestsCount: number;
+  monthlySpend: number;
+}
+
+interface SystemMetric {
+  name: string;
+  value: string;
+  status: 'healthy' | 'warning' | 'critical';
+  change: number;
+  icon: React.ComponentType<any>;
+}
 
 export default function Internal() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const { branding } = useBranding();
   const { user } = useAuth();
+  const { branding } = useBranding();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  // Mock data for admin dashboard
-  const systemStats = {
-    totalClients: 847,
-    activeProjects: 234,
-    completedThisMonth: 156,
-    systemUptime: '99.9%',
-    apiCalls: 1247293,
-    aiProxyStatus: 'operational'
-  };
-
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'new_client',
-      message: 'New client onboarded: Tech Solutions Inc.',
-      timestamp: '2025-06-09T10:30:00Z',
-      severity: 'info'
-    },
-    {
-      id: 2,
-      type: 'ai_proxy',
-      message: 'AI Proxy processed 1,247 anonymization requests',
-      timestamp: '2025-06-09T09:15:00Z',
-      severity: 'success'
-    },
-    {
-      id: 3,
-      type: 'system',
-      message: 'Database backup completed successfully',
-      timestamp: '2025-06-09T08:00:00Z',
-      severity: 'success'
-    },
-    {
-      id: 4,
-      type: 'alert',
-      message: 'High API usage detected for client_892',
-      timestamp: '2025-06-09T07:45:00Z',
-      severity: 'warning'
-    }
-  ];
-
-  const clientMetrics = [
-    { tenantId: 'tenant_001', name: 'Tech Solutions Inc.', requests: 24, lastActive: '2 hours ago', status: 'active' },
-    { tenantId: 'tenant_002', name: 'Digital Marketing Pro', requests: 18, lastActive: '5 hours ago', status: 'active' },
-    { tenantId: 'tenant_003', name: 'Local Business Hub', requests: 31, lastActive: '1 day ago', status: 'active' },
-    { tenantId: 'tenant_004', name: 'E-commerce Solutions', requests: 12, lastActive: '3 days ago', status: 'inactive' }
-  ];
-
-  const tabs = [
-    { id: 'overview', label: 'System Overview', icon: Activity },
-    { id: 'clients', label: 'Client Management', icon: Users },
-    { id: 'ai-proxy', label: 'AI Proxy Monitoring', icon: Shield },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'system', label: 'System Health', icon: Server }
-  ];
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'success':
-        return 'text-green-700 bg-green-50';
-      case 'warning':
-        return 'text-yellow-700 bg-yellow-50';
-      case 'error':
-        return 'text-red-700 bg-red-50';
-      default:
-        return 'text-blue-700 bg-blue-50';
-    }
-  };
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'success':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'error':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      default:
-        return <Clock className="h-4 w-4 text-blue-500" />;
-    }
-  };
-
-  // Only show this page for admin users
+  // Role-based access control
   if (user?.role !== 'admin') {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Shield className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">Access Restricted</h3>
-            <p className="text-muted-foreground text-center">
-              This area is restricted to administrators only.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Access Restricted</h3>
+          <p className="text-muted-foreground">
+            You don't have permission to access this area.
+          </p>
+        </div>
       </div>
     );
   }
+
+  // Mock system metrics
+  const systemMetrics: SystemMetric[] = [
+    {
+      name: 'System Health',
+      value: '98.9%',
+      status: 'healthy',
+      change: 0.2,
+      icon: Activity
+    },
+    {
+      name: 'Active Users',
+      value: '1,247',
+      status: 'healthy',
+      change: 8.5,
+      icon: Users
+    },
+    {
+      name: 'API Response Time',
+      value: '145ms',
+      status: 'warning',
+      change: 12.3,
+      icon: Clock
+    },
+    {
+      name: 'Database Load',
+      value: '67%',
+      status: 'healthy',
+      change: -3.2,
+      icon: Database
+    },
+    {
+      name: 'AI Proxy Status',
+      value: 'Operational',
+      status: 'healthy',
+      change: 0,
+      icon: Server
+    },
+    {
+      name: 'Error Rate',
+      value: '0.12%',
+      status: 'healthy',
+      change: -0.05,
+      icon: AlertTriangle
+    }
+  ];
+
+  // Mock client data
+  const [clients] = useState<Client[]>([
+    {
+      id: 'client_001',
+      name: 'TechStart Solutions',
+      email: 'admin@techstart.com',
+      status: 'active',
+      plan: 'pro',
+      joinDate: '2024-11-15',
+      lastActive: '2025-06-09T08:30:00Z',
+      requestsCount: 24,
+      monthlySpend: 1299
+    },
+    {
+      id: 'client_002', 
+      name: 'Local Retail Co',
+      email: 'owner@localretail.com',
+      status: 'active',
+      plan: 'basic',
+      joinDate: '2025-01-22',
+      lastActive: '2025-06-08T15:45:00Z',
+      requestsCount: 8,
+      monthlySpend: 499
+    },
+    {
+      id: 'client_003',
+      name: 'Enterprise Corp',
+      email: 'marketing@enterprise.com',
+      status: 'trial',
+      plan: 'enterprise',
+      joinDate: '2025-06-01',
+      lastActive: '2025-06-09T10:00:00Z',
+      requestsCount: 12,
+      monthlySpend: 0
+    }
+  ]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'healthy':
+        return 'text-green-700 bg-green-50 ring-green-600/20';
+      case 'warning':
+        return 'text-yellow-700 bg-yellow-50 ring-yellow-600/20';
+      case 'critical':
+        return 'text-red-700 bg-red-50 ring-red-600/20';
+      case 'active':
+        return 'text-green-700 bg-green-50 ring-green-600/20';
+      case 'inactive':
+        return 'text-gray-700 bg-gray-50 ring-gray-600/20';
+      case 'trial':
+        return 'text-blue-700 bg-blue-50 ring-blue-600/20';
+      default:
+        return 'text-gray-700 bg-gray-50 ring-gray-600/20';
+    }
+  };
+
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         client.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'clients', label: 'Clients', icon: Users },
+    { id: 'system', label: 'System', icon: Server },
+    { id: 'analytics', label: 'Analytics', icon: TrendingUp }
+  ];
 
   return (
     <div className="space-y-6">
@@ -131,339 +190,347 @@ export default function Internal() {
         <div>
           <h2 className="text-3xl font-bold text-foreground">Internal Dashboard</h2>
           <p className="text-muted-foreground">
-            {branding.companyName} Administrative Interface
+            System administration and client management
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-1 text-sm">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-muted-foreground">All Systems Operational</span>
+          <div className="flex items-center space-x-1 text-sm text-muted-foreground">
+            <UserCheck className="h-4 w-4" />
+            <span>Admin Access</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar Navigation */}
-        <div className="lg:col-span-1">
+      {/* Tab Navigation */}
+      <div className="border-b border-border">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* System Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {systemMetrics.map((metric, index) => {
+              const Icon = metric.icon;
+              return (
+                <Card key={index}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{metric.name}</CardTitle>
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{metric.value}</div>
+                    <div className="flex items-center text-xs mt-1">
+                      <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColor(metric.status)}`}>
+                        {metric.status}
+                      </span>
+                      {metric.change !== 0 && (
+                        <span className={`ml-2 ${metric.change > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {metric.change > 0 ? '+' : ''}{metric.change}%
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>
+                  Common administrative tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <Users className="mr-2 h-4 w-4" />
+                  Manage Client Accounts
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Settings className="mr-2 h-4 w-4" />
+                  System Configuration
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate Reports
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Security Audit
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>
+                  Latest system events and client actions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">New client registration</p>
+                      <p className="text-xs text-muted-foreground">Enterprise Corp - 2 hours ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">System maintenance completed</p>
+                      <p className="text-xs text-muted-foreground">Database optimization - 4 hours ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">High API usage detected</p>
+                      <p className="text-xs text-muted-foreground">TechStart Solutions - 6 hours ago</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Clients Tab */}
+      {activeTab === 'clients' && (
+        <div className="space-y-6">
+          {/* Client Management Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-foreground">Client Management</h3>
+              <p className="text-muted-foreground">Monitor and manage client accounts</p>
+            </div>
+            <Button className="flex items-center space-x-2">
+              <Plus className="h-4 w-4" />
+              <span>Add Client</span>
+            </Button>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search clients..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="trial">Trial</option>
+                <option value="inactive">Inactive</option>
+              </Select>
+            </div>
+          </div>
+
+          {/* Clients Table */}
           <Card>
             <CardContent className="p-0">
-              <nav className="space-y-1">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors ${
-                        activeTab === tab.id
-                          ? 'bg-primary text-primary-foreground'
-                          : 'hover:bg-accent hover:text-accent-foreground'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="text-sm font-medium">{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Client</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Plan</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Requests</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Monthly Spend</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">Last Active</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredClients.map((client) => (
+                      <tr key={client.id} className="hover:bg-muted/50">
+                        <td className="p-4">
+                          <div>
+                            <p className="font-medium text-foreground">{client.name}</p>
+                            <p className="text-sm text-muted-foreground">{client.email}</p>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColor(client.status)}`}>
+                            {client.status}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm font-medium capitalize">{client.plan}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm">{client.requestsCount}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm font-medium">${client.monthlySpend}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(client.lastActive).toLocaleDateString()}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         </div>
+      )}
 
-        {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* System Overview */}
-          {activeTab === 'overview' && (
-            <>
-              {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{systemStats.totalClients}</div>
-                    <p className="text-xs text-muted-foreground">+12% from last month</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{systemStats.activeProjects}</div>
-                    <p className="text-xs text-muted-foreground">Processing requests</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">System Uptime</CardTitle>
-                    <Server className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{systemStats.systemUptime}</div>
-                    <p className="text-xs text-muted-foreground">Last 30 days</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Recent Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent System Activity</CardTitle>
-                  <CardDescription>Latest events and alerts</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start space-x-3">
-                        {getSeverityIcon(activity.severity)}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-foreground">{activity.message}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(activity.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${getSeverityColor(activity.severity)}`}>
-                          {activity.severity}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
-
-          {/* Client Management */}
-          {activeTab === 'clients' && (
+      {/* System Tab */}
+      {activeTab === 'system' && (
+        <div className="space-y-6">
+          <h3 className="text-xl font-semibold text-foreground">System Status</h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Client Overview</CardTitle>
-                <CardDescription>Manage and monitor client accounts</CardDescription>
+                <CardTitle>Server Status</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {clientMetrics.map((client) => (
-                    <div key={client.tenantId} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-foreground">{client.name}</h4>
-                        <p className="text-sm text-muted-foreground">ID: {client.tenantId}</p>
-                        <div className="flex items-center space-x-4 mt-2 text-sm">
-                          <span>{client.requests} requests</span>
-                          <span className="text-muted-foreground">Last active: {client.lastActive}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                          client.status === 'active' 
-                            ? 'text-green-700 bg-green-50 ring-green-600/20' 
-                            : 'text-gray-700 bg-gray-50 ring-gray-600/20'
-                        }`}>
-                          {client.status}
-                        </span>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-3 w-3 mr-1" />
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">Web Server</span>
+                  </div>
+                  <span className="text-sm text-green-600">Operational</span>
+                </div>
+                <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">Database</span>
+                  </div>
+                  <span className="text-sm text-green-600">Operational</span>
+                </div>
+                <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span className="text-sm">AI Service</span>
+                  </div>
+                  <span className="text-sm text-yellow-600">High Load</span>
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* AI Proxy Monitoring */}
-          {activeTab === 'ai-proxy' && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Proxy Status</CardTitle>
-                  <CardDescription>Monitor anonymization and request routing</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-medium text-foreground mb-4">Current Status</h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Proxy Status</span>
-                          <span className="text-sm text-green-600 font-medium">Operational</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Anonymization</span>
-                          <span className="text-sm text-green-600 font-medium">Active</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Audit Logging</span>
-                          <span className="text-sm text-green-600 font-medium">Enabled</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Total Requests Today</span>
-                          <span className="text-sm font-medium">1,247</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-foreground mb-4">Security Metrics</h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">PII Exposures</span>
-                          <span className="text-sm text-green-600 font-medium">0</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Failed Anonymizations</span>
-                          <span className="text-sm text-green-600 font-medium">0</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Audit Log Entries</span>
-                          <span className="text-sm font-medium">12,847</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Data Retention</span>
-                          <span className="text-sm font-medium">90 days</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Proxy Configuration</CardTitle>
-                  <CardDescription>Manage AI proxy settings and rules</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <Button variant="outline" className="w-full justify-start">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Configure Anonymization Rules
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Audit Logs
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <UserCheck className="h-4 w-4 mr-2" />
-                      Manage Access Controls
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
-
-          {/* Analytics */}
-          {activeTab === 'analytics' && (
             <Card>
               <CardHeader>
-                <CardTitle>System Analytics</CardTitle>
-                <CardDescription>Performance metrics and insights</CardDescription>
+                <CardTitle>Performance Metrics</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-foreground">Usage Statistics</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">API Requests (24h)</span>
-                        <span className="text-sm font-medium">12,847</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Peak Concurrent Users</span>
-                        <span className="text-sm font-medium">234</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Average Response Time</span>
-                        <span className="text-sm font-medium">284ms</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Error Rate</span>
-                        <span className="text-sm text-green-600 font-medium">0.03%</span>
-                      </div>
-                    </div>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>CPU Usage</span>
+                    <span>45%</span>
                   </div>
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-foreground">Growth Metrics</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">New Clients (30d)</span>
-                        <span className="text-sm font-medium text-green-600">+47</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Churn Rate</span>
-                        <span className="text-sm font-medium">2.1%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Avg. Projects per Client</span>
-                        <span className="text-sm font-medium">3.2</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Revenue Growth</span>
-                        <span className="text-sm font-medium text-green-600">+18.5%</span>
-                      </div>
-                    </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div className="bg-primary h-2 rounded-full" style={{ width: '45%' }}></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Memory Usage</span>
+                    <span>67%</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '67%' }}></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Disk Usage</span>
+                    <span>23%</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '23%' }}></div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          )}
-
-          {/* System Health */}
-          {activeTab === 'system' && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Health</CardTitle>
-                  <CardDescription>Monitor infrastructure and services</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-foreground">Services</h4>
-                      {[
-                        { name: 'API Gateway', status: 'healthy' },
-                        { name: 'Database', status: 'healthy' },
-                        { name: 'AI Proxy', status: 'healthy' },
-                        { name: 'Redis Cache', status: 'healthy' },
-                        { name: 'Email Service', status: 'healthy' }
-                      ].map((service) => (
-                        <div key={service.name} className="flex items-center justify-between">
-                          <span className="text-sm">{service.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-sm text-green-600">Healthy</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-foreground">Resources</h4>
-                      {[
-                        { name: 'CPU Usage', value: '23%', status: 'normal' },
-                        { name: 'Memory Usage', value: '67%', status: 'normal' },
-                        { name: 'Disk Usage', value: '45%', status: 'normal' },
-                        { name: 'Network I/O', value: 'Normal', status: 'normal' }
-                      ].map((resource) => (
-                        <div key={resource.name} className="flex items-center justify-between">
-                          <span className="text-sm">{resource.name}</span>
-                          <span className="text-sm font-medium">{resource.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Analytics Tab */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6">
+          <h3 className="text-xl font-semibold text-foreground">System Analytics</h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Usage Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center bg-muted/50 rounded-lg">
+                  <div className="text-center">
+                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground">Analytics charts would appear here</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue Metrics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center bg-muted/50 rounded-lg">
+                  <div className="text-center">
+                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground">Revenue analytics would appear here</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
