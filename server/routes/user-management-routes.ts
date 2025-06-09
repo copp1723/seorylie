@@ -9,6 +9,7 @@ import {
   cancelInvitation,
   getAuditLogs,
 } from "../services/user-management";
+import { hasDealershipAccess } from "../utils/helpers/permissions";
 
 const router = express.Router();
 
@@ -18,11 +19,7 @@ router.post("/dealerships/:dealershipId/invitations", async (req, res) => {
     const dealershipId = parseInt(req.params.dealershipId);
 
     // Check permissions
-    if (
-      !req.user ||
-      (req.user.dealership_id !== dealershipId &&
-        req.user.role !== "super_admin")
-    ) {
+    if (!hasDealershipAccess(req.user, dealershipId)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -113,11 +110,7 @@ router.get("/dealerships/:dealershipId/invitations", async (req, res) => {
     const dealershipId = parseInt(req.params.dealershipId);
 
     // Check permissions
-    if (
-      !req.user ||
-      (req.user.dealership_id !== dealershipId &&
-        req.user.role !== "super_admin")
-    ) {
+    if (!hasDealershipAccess(req.user, dealershipId)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -139,11 +132,7 @@ router.delete(
       const invitationId = parseInt(req.params.invitationId);
 
       // Check permissions
-      if (
-        !req.user ||
-        (req.user.dealership_id !== dealershipId &&
-          req.user.role !== "super_admin")
-      ) {
+      if (!hasDealershipAccess(req.user, dealershipId)) {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
@@ -173,11 +162,7 @@ router.get("/dealerships/:dealershipId/audit-logs", async (req, res) => {
     const dealershipId = parseInt(req.params.dealershipId);
 
     // Check permissions
-    if (
-      !req.user ||
-      (req.user.dealership_id !== dealershipId &&
-        req.user.role !== "super_admin")
-    ) {
+    if (!hasDealershipAccess(req.user, dealershipId)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 

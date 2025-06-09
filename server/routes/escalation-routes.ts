@@ -8,6 +8,7 @@ import {
   updateEscalationTrigger,
   deleteEscalationTrigger,
 } from "../services/escalation-triggers";
+import { hasDealershipAccess } from "../utils/helpers/permissions";
 import { logAuditEvent } from "../services/user-management";
 
 const router = express.Router();
@@ -20,11 +21,7 @@ router.get(
       const dealershipId = parseInt(req.params.dealershipId);
 
       // Check permissions
-      if (
-        !req.user ||
-        (req.user.dealership_id !== dealershipId &&
-          req.user.role !== "super_admin")
-      ) {
+      if (!hasDealershipAccess(req.user, dealershipId)) {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
@@ -45,11 +42,7 @@ router.post(
       const dealershipId = parseInt(req.params.dealershipId);
 
       // Check permissions
-      if (
-        !req.user ||
-        (req.user.dealership_id !== dealershipId &&
-          req.user.role !== "super_admin")
-      ) {
+      if (!hasDealershipAccess(req.user, dealershipId)) {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
@@ -94,11 +87,7 @@ router.put(
       const triggerId = parseInt(req.params.triggerId);
 
       // Check permissions
-      if (
-        !req.user ||
-        (req.user.dealership_id !== dealershipId &&
-          req.user.role !== "super_admin")
-      ) {
+      if (!hasDealershipAccess(req.user, dealershipId)) {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
@@ -138,11 +127,7 @@ router.delete(
       const triggerId = parseInt(req.params.triggerId);
 
       // Check permissions
-      if (
-        !req.user ||
-        (req.user.dealership_id !== dealershipId &&
-          req.user.role !== "super_admin")
-      ) {
+      if (!hasDealershipAccess(req.user, dealershipId)) {
         return res.status(403).json({ error: "Unauthorized" });
       }
 
