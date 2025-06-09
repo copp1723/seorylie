@@ -4,31 +4,24 @@
  */
 
 import { PDFDocument, PDFImage, PDFPage, rgb, StandardFonts } from "pdf-lib";
-import { S3 } from "aws-sdk";
 import sharp from "sharp";
-import fs from "fs";
 import path from "path";
-import { promisify } from "util";
 import { ExifTool } from "exiftool-vendored";
-import { v4 as uuidv4 } from "uuid";
-import pino from "pino";
-
-// Promisify fs functions
-const readFile = promisify(fs.readFile);
-const writeFile = promisify(fs.writeFile);
-const mkdir = promisify(fs.mkdir);
-const unlink = promisify(fs.unlink);
+import {
+  createLogger,
+  createS3Client,
+  WHITE_LABEL_CONFIG,
+  VENDOR_CONFIG,
+  BaseTransformOptions,
+  BaseTransformResult,
+  getInputBuffer,
+  generateTransformId,
+  ensureDirectory,
+  fsUtils,
+} from "@rylie-seo/seo-schema";
 
 // Initialize logger
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-    },
-  },
-});
+const logger = createLogger();
 
 // Initialize ExifTool for metadata manipulation
 const exifTool = new ExifTool();
@@ -36,19 +29,21 @@ const exifTool = new ExifTool();
 /**
  * Configuration options for PDF transformation
  */
-export interface PDFTransformOptions {
-  // Input options
+export interface PDFTransformOptions extends BaseTransformOptions {
+  // Input options (renamed for PDF specificity)
   inputPdfBuffer?: Buffer;
   inputPdfPath?: string;
   inputPdfS3Key?: string;
 
-  // Output options
+  // Output options (renamed for PDF specificity)
   outputPdfPath?: string;
   outputPdfS3Key?: string;
   outputPdfS3Bucket?: string;
 
-  // Branding options
-  whiteLabelName: string;
+  // Branding options (override base interface)
+  whiteLabelName?: string;
+  whiteLabelDomain?: string;
+  whiteLabelEmail?: string;
   whiteLabelLogoPath?: string;
   whiteLabelLogoS3Key?: string;
   whiteLabelLogoS3Bucket?: string;
@@ -57,10 +52,10 @@ export interface PDFTransformOptions {
   whiteLabelColorPrimary?: string;
   whiteLabelColorSecondary?: string;
 
-  // Vendor detection options
-  vendorNames: string[];
-  vendorDomains: string[];
-  vendorLogoPatterns: string[];
+  // Vendor detection options (optional - defaults from VENDOR_CONFIG)
+  vendorNames?: string[];
+  vendorDomains?: string[];
+  vendorLogoPatterns?: string[];
 
   // Processing options
   addCoverPage?: boolean;
@@ -70,7 +65,6 @@ export interface PDFTransformOptions {
   replaceColors?: boolean;
   addFooter?: boolean;
   addHeader?: boolean;
-  tempDir?: string;
 }
 
 /**
@@ -93,7 +87,7 @@ export interface PDFTransformResult {
  * PDF Transformer class for white-labeling vendor reports
  */
 export class PDFTransformer {
-  private s3: S3;
+  private s3: ReturnType<typeof createS3Client>;
   private options: PDFTransformOptions;
   private tempDir: string;
   private transformId: string;
@@ -103,17 +97,12 @@ export class PDFTransformer {
    * @param options Configuration options for PDF transformation
    */
   constructor(options: PDFTransformOptions) {
-    // Set default options first, then override with provided options
+    // Set default options using shared configurations
     const defaultOptions = {
-      whiteLabelName: "Rylie SEO",
-      vendorNames: [
-        "CustomerScout",
-        "Customer Scout",
-        "CS SEO",
-        "CS Analytics",
-      ],
-      vendorDomains: ["customerscout.com", "cs-seo.com", "cs-analytics.com"],
-      vendorLogoPatterns: ["cs_logo", "customerscout_logo", "cs-logo"],
+      whiteLabelName: WHITE_LABEL_CONFIG.name,
+      vendorNames: VENDOR_CONFIG.names,
+      vendorDomains: VENDOR_CONFIG.domains,
+      vendorLogoPatterns: VENDOR_CONFIG.logoPatterns,
       addCoverPage: true,
       sanitizeMetadata: true,
       replaceText: true,
@@ -121,7 +110,7 @@ export class PDFTransformer {
       replaceColors: true,
       addFooter: true,
       addHeader: true,
-      tempDir: path.join(process.cwd(), "tmp"),
+      tempDir: WHITE_LABEL_CONFIG.defaultTempDir,
     };
 
     this.options = {
@@ -129,18 +118,14 @@ export class PDFTransformer {
       ...options,
     };
 
-    // Initialize S3 client
-    this.s3 = new S3({
-      region: process.env.AWS_REGION || "us-east-1",
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    });
+    // Initialize S3 client using shared utility
+    this.s3 = createS3Client();
 
     // Generate unique ID for this transformation
-    this.transformId = uuidv4();
+    this.transformId = generateTransformId();
 
     // Set temp directory
-    this.tempDir = this.options.tempDir || path.join(process.cwd(), "tmp");
+    this.tempDir = this.options.tempDir || WHITE_LABEL_CONFIG.defaultTempDir;
   }
 
   /**
@@ -158,10 +143,18 @@ export class PDFTransformer {
 
     try {
       // Ensure temp directory exists
-      await this.ensureTempDir();
+      await ensureDirectory(this.tempDir);
 
-      // Get input PDF buffer
-      const inputPdfBuffer = await this.getInputPdfBuffer();
+      // Get input PDF buffer using shared utility
+      const inputPdfBuffer = await getInputBuffer(
+        {
+          inputBuffer: this.options.inputPdfBuffer,
+          inputPath: this.options.inputPdfPath,
+          inputS3Key: this.options.inputPdfS3Key,
+        },
+        this.s3,
+        "PDF"
+      );
 
       // Load PDF document
       const pdfDoc = await PDFDocument.load(inputPdfBuffer);
@@ -281,7 +274,7 @@ export class PDFTransformer {
           containsVendorRef = true;
           newValue = newValue.replace(
             new RegExp(vendorDomain, "gi"),
-            "rylie-seo.com",
+            WHITE_LABEL_CONFIG.domain,
           );
           result.detectedVendorReferences.push(
             `Metadata contains vendor domain: ${vendorDomain}`,
