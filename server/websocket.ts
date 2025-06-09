@@ -12,6 +12,8 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { Server as HttpServer } from "http";
 import { v4 as uuidv4 } from "uuid";
+import { BlogRequestSchema } from "../shared/schemas/blog-request-schema";
+import { enqueueSeoTask } from "./services/seo-task-queue";
 import logger from "./utils/logger";
 import { recordError } from "./observability/metrics";
 // Temporary mock for tracing when dependencies are not available
@@ -82,6 +84,7 @@ interface WebSocketMessage {
   timestamp: string;
   traceId: string;
   metadata?: Record<string, any>;
+  payload?: any;
 }
 
 /**
@@ -90,6 +93,7 @@ interface WebSocketMessage {
 class ObservableWebSocketServer {
   private wss: WebSocketServer | null = null;
   private connections = new Map<string, WebSocketConnection>();
+  private pendingTasks = new Map<string, string>();
   private healthCheckInterval: NodeJS.Timeout | null = null;
   private cleanupInterval: NodeJS.Timeout | null = null;
   private isShuttingDown = false;
@@ -370,18 +374,38 @@ class ObservableWebSocketServer {
         break;
 
       case "seo_task_request":
-        logger.info("Received SEO task request", {
-          connectionId,
-          traceId: connection.traceId,
-          metadata: message.metadata,
-        });
-        // For MVP just acknowledge and echo back completion immediately
-        this.sendMessage(connection.ws, {
-          type: "task_complete",
-          message: `Your SEO task has been queued: ${message.metadata?.topic}`,
-          timestamp: new Date().toISOString(),
-          traceId: connection.traceId,
-        });
+        try {
+          const payload = (message as any).payload;
+          const validated = BlogRequestSchema.parse(payload);
+          const requestId = uuidv4();
+          const sandboxId = (validated as any).sandbox_id || "default-sandbox";
+          const enriched = {
+            ...validated,
+            id: requestId,
+            sandbox_id: sandboxId,
+          };
+          await enqueueSeoTask({
+            request: enriched,
+            dealershipName: "default",
+            timestamp: new Date().toISOString(),
+          });
+          this.registerPendingTask(requestId, connectionId);
+          this.sendMessage(connection.ws, {
+            type: "seo_task_request",
+            message: "task_queued",
+            timestamp: new Date().toISOString(),
+            traceId: connection.traceId,
+            metadata: { requestId },
+          });
+        } catch (err) {
+          logger.error("Failed to process SEO task request", err);
+          this.sendMessage(connection.ws, {
+            type: "error",
+            message: "Invalid SEO task request",
+            timestamp: new Date().toISOString(),
+            traceId: connection.traceId,
+          });
+        }
         break;
 
       default:
@@ -656,6 +680,28 @@ class ObservableWebSocketServer {
    */
   getConnectionCount(): number {
     return this.connections.size;
+  }
+
+  registerPendingTask(requestId: string, connectionId: string): void {
+    this.pendingTasks.set(requestId, connectionId);
+  }
+
+  getPendingConnection(requestId: string): string | undefined {
+    return this.pendingTasks.get(requestId);
+  }
+
+  notifyTaskComplete(connectionId: string, requestId: string): void {
+    const connection = this.connections.get(connectionId);
+    if (connection) {
+      this.sendMessage(connection.ws, {
+        type: "task_complete",
+        message: `Task ${requestId} completed`,
+        timestamp: new Date().toISOString(),
+        traceId: connection.traceId,
+        metadata: { requestId },
+      });
+    }
+    this.pendingTasks.delete(requestId);
   }
 
   /**

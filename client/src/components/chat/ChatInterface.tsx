@@ -88,10 +88,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       conversationId,
       userId,
       dealershipId,
-      metadata: {
+      payload: {
         topic: values.topic,
         keywords: values.keywords,
         description: values.description,
+        type: "blog_post",
+        priority: "medium",
       },
     });
 
