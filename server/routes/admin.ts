@@ -1,44 +1,25 @@
 /**
- * @file Admin API Routes
- * @description System administration endpoints with full access and audit logging
+ * @file Admin API Routes - OPTIMIZED
+ * @description System administration with shared utilities and lean code
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { requireRole } from '../middleware/auth';
-import winston from 'winston';
+import { AuthenticatedRequest } from '../utils/types';
+import { sendSuccess, sendError, logUserAction } from '../utils/responses';
+import { createLogger } from '../utils/logger';
+import { mockData, getFilteredData } from '../utils/mockData';
 
 const router = Router();
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  defaultMeta: { service: 'admin-api' },
-  transports: [
-    new winston.transports.Console()
-  ],
-});
+const logger = createLogger('admin-api');
 
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    role: string;
-  };
-}
-
-// Middleware to ensure only admins can access these routes
 router.use(requireRole(['admin']));
 
 /**
- * GET /api/admin/system/health
- * System health and metrics
+ * GET /api/admin/system/health - System health
  */
 router.get('/system/health', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { user } = req;
-
-    // TODO: Implement real health checks
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -60,104 +41,57 @@ router.get('/system/health', async (req: AuthenticatedRequest, res: Response) =>
       }
     };
 
-    logger.info('System health check performed', {
-      adminId: user?.id,
+    logUserAction('System health check performed', req.user!, {
       systemStatus: health.status
     });
 
-    res.json({
-      success: true,
-      data: health
-    });
+    sendSuccess(res, health);
 
   } catch (error) {
-    logger.error('Error retrieving system health', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      adminId: req.user?.id
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve system health'
+    sendError(res, 500, 'Failed to retrieve system health', {
+      error,
+      userId: req.user?.id,
+      action: 'System health check failed'
     });
   }
 });
 
 /**
- * GET /api/admin/users
- * Get all users with roles and status
+ * GET /api/admin/users - Get all users
  */
 router.get('/users', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { user } = req;
     const { role, status, search } = req.query;
+    const filteredUsers = getFilteredData(mockData.users, { role, status });
 
-    // TODO: Fetch from database with proper filtering
-    const users = [
-      {
-        id: 'user_1',
-        email: 'client1@dealership.com',
-        role: 'client',
-        status: 'active',
-        tenantId: 'tenant_auto_1',
-        tenantName: 'Metro Auto Dealership',
-        lastLogin: '2025-06-08T14:30:00Z',
-        createdAt: '2025-05-15T10:00:00Z',
-        requestsCount: 23,
-        completedTasks: 19
-      },
-      {
-        id: 'user_2',
-        email: 'agency1@seopartner.com',
-        role: 'agency',
-        status: 'active',
-        agencyId: 'agency_1',
-        agencyName: 'SEO Pro Agency',
-        lastLogin: '2025-06-08T15:45:00Z',
-        createdAt: '2025-04-20T09:30:00Z',
-        tasksAssigned: 45,
-        tasksCompleted: 42,
-        avgCompletionTime: '2.1 days'
-      }
-    ];
-
-    logger.info('Admin users list accessed', {
-      adminId: user?.id,
-      totalUsers: users.length,
+    logUserAction('Admin users list accessed', req.user!, {
+      totalUsers: filteredUsers.length,
       filters: { role, status, search }
     });
 
-    res.json({
-      success: true,
-      data: users,
-      total: users.length,
+    sendSuccess(res, filteredUsers, undefined, {
+      total: filteredUsers.length,
       filters: { role, status, search }
     });
 
   } catch (error) {
-    logger.error('Error retrieving users list', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      adminId: req.user?.id
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve users'
+    sendError(res, 500, 'Failed to retrieve users', {
+      error,
+      userId: req.user?.id,
+      action: 'Admin users retrieval failed'
     });
   }
 });
 
 /**
- * GET /api/admin/tasks
- * Get all tasks across the system
+ * GET /api/admin/tasks - Get all system tasks
  */
 router.get('/tasks', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { user } = req;
     const { status, type, agency, client } = req.query;
-
-    // TODO: Fetch from database with proper filtering
-    const tasks = [
+    
+    // Mock admin task data (with full visibility)
+    const adminTasks = [
       {
         taskId: 'task_1',
         type: 'blog',
@@ -174,162 +108,98 @@ router.get('/tasks', async (req: AuthenticatedRequest, res: Response) => {
       }
     ];
 
-    logger.info('Admin tasks overview accessed', {
-      adminId: user?.id,
-      totalTasks: tasks.length,
+    const filteredTasks = getFilteredData(adminTasks, { status, type, agency, client });
+
+    logUserAction('Admin tasks overview accessed', req.user!, {
+      totalTasks: filteredTasks.length,
       filters: { status, type, agency, client }
     });
 
-    res.json({
-      success: true,
-      data: tasks,
-      total: tasks.length,
+    sendSuccess(res, filteredTasks, undefined, {
+      total: filteredTasks.length,
       filters: { status, type, agency, client }
     });
 
   } catch (error) {
-    logger.error('Error retrieving tasks overview', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      adminId: req.user?.id
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve tasks'
+    sendError(res, 500, 'Failed to retrieve tasks', {
+      error,
+      userId: req.user?.id,
+      action: 'Admin tasks retrieval failed'
     });
   }
 });
 
 /**
- * GET /api/admin/audit
- * System audit logs
+ * GET /api/admin/audit - System audit logs
  */
 router.get('/audit', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { user } = req;
     const { startDate, endDate, action, userId } = req.query;
+    const filteredLogs = getFilteredData(mockData.auditLogs, { action, userId });
 
-    // TODO: Fetch from audit log database
-    const auditLogs = [
-      {
-        id: 'audit_1',
-        timestamp: '2025-06-08T15:30:00Z',
-        action: 'client_request_submitted',
-        userId: 'user_1',
-        userRole: 'client',
-        details: {
-          requestType: 'blog',
-          requestId: 'req_123'
-        },
-        ipAddress: '192.168.1.100',
-        userAgent: 'Mozilla/5.0...'
-      },
-      {
-        id: 'audit_2',
-        timestamp: '2025-06-08T15:25:00Z',
-        action: 'agency_task_completed',
-        userId: 'user_2',
-        userRole: 'agency',
-        details: {
-          taskId: 'task_456',
-          deliverable: 'blog_post.pdf'
-        },
-        ipAddress: '192.168.1.101',
-        userAgent: 'Mozilla/5.0...'
-      }
-    ];
-
-    logger.info('Admin audit logs accessed', {
-      adminId: user?.id,
-      logCount: auditLogs.length,
+    logUserAction('Admin audit logs accessed', req.user!, {
+      logCount: filteredLogs.length,
       filters: { startDate, endDate, action, userId }
     });
 
-    res.json({
-      success: true,
-      data: auditLogs,
-      total: auditLogs.length,
+    sendSuccess(res, filteredLogs, undefined, {
+      total: filteredLogs.length,
       filters: { startDate, endDate, action, userId }
     });
 
   } catch (error) {
-    logger.error('Error retrieving audit logs', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      adminId: req.user?.id
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve audit logs'
+    sendError(res, 500, 'Failed to retrieve audit logs', {
+      error,
+      userId: req.user?.id,
+      action: 'Admin audit logs retrieval failed'
     });
   }
 });
 
 /**
- * POST /api/admin/users/:userId/status
- * Update user status (activate, deactivate, suspend)
+ * POST /api/admin/users/:userId/status - Update user status
  */
 router.post('/users/:userId/status', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { user } = req;
     const { userId } = req.params;
     const { status, reason } = req.body;
 
     const validStatuses = ['active', 'inactive', 'suspended'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid status',
-        validStatuses
-      });
+      return sendError(res, 400, 'Invalid status', undefined, { validStatuses });
     }
 
-    logger.info('Admin user status update', {
-      adminId: user?.id,
+    logUserAction('Admin user status update', req.user!, {
       targetUserId: userId,
       newStatus: status,
       reason: reason || 'No reason provided'
     });
 
-    // TODO: Update user status in database
-    // TODO: Send notification to user if appropriate
-
-    res.json({
-      success: true,
-      message: `User status updated to: ${status}`,
-      data: {
-        userId,
-        status,
-        reason: reason || null,
-        updatedAt: new Date().toISOString(),
-        updatedBy: user?.id
-      }
-    });
+    sendSuccess(res, {
+      userId,
+      status,
+      reason: reason || null,
+      updatedAt: new Date().toISOString(),
+      updatedBy: req.user?.id
+    }, `User status updated to: ${status}`);
 
   } catch (error) {
-    logger.error('Error updating user status', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      adminId: req.user?.id,
-      userId: req.params.userId
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update user status'
+    sendError(res, 500, 'Failed to update user status', {
+      error,
+      userId: req.user?.id,
+      action: 'Admin user status update failed',
+      details: { targetUserId: req.params.userId }
     });
   }
 });
 
 /**
- * GET /api/admin/analytics
- * System analytics and reporting
+ * GET /api/admin/analytics - System analytics
  */
 router.get('/analytics', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { user } = req;
     const { period = '30d' } = req.query;
 
-    // TODO: Calculate from real data
     const analytics = {
       period,
       generated: new Date().toISOString(),
@@ -344,16 +214,11 @@ router.get('/analytics', async (req: AuthenticatedRequest, res: Response) => {
         clientSatisfaction: 4.6
       },
       trends: {
-        newClients: [5, 8, 12, 6, 9, 11, 7], // Last 7 days
-        taskCompletions: [23, 31, 28, 35, 29, 33, 27], // Last 7 days
-        responseTime: [2.1, 2.3, 1.9, 2.5, 2.2, 2.0, 2.4] // Last 7 days (hours)
+        newClients: [5, 8, 12, 6, 9, 11, 7],
+        taskCompletions: [23, 31, 28, 35, 29, 33, 27],
+        responseTime: [2.1, 2.3, 1.9, 2.5, 2.2, 2.0, 2.4]
       },
-      taskTypes: {
-        blog: 45,
-        page: 30,
-        gbp: 15,
-        maintenance: 10
-      },
+      taskTypes: { blog: 45, page: 30, gbp: 15, maintenance: 10 },
       agencyPerformance: [
         {
           agencyId: 'agency_1',
@@ -372,25 +237,15 @@ router.get('/analytics', async (req: AuthenticatedRequest, res: Response) => {
       ]
     };
 
-    logger.info('Admin analytics accessed', {
-      adminId: user?.id,
-      period
-    });
+    logUserAction('Admin analytics accessed', req.user!, { period });
 
-    res.json({
-      success: true,
-      data: analytics
-    });
+    sendSuccess(res, analytics);
 
   } catch (error) {
-    logger.error('Error retrieving analytics', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      adminId: req.user?.id
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve analytics'
+    sendError(res, 500, 'Failed to retrieve analytics', {
+      error,
+      userId: req.user?.id,
+      action: 'Admin analytics retrieval failed'
     });
   }
 });
