@@ -11,6 +11,33 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const blogFormSchema = z.object({
+  topic: z.string().min(1, "Topic is required"),
+  keywords: z.string().min(1, "Keywords are required"),
+  description: z.string().min(10, "Description is required"),
+});
+
+type BlogFormValues = z.infer<typeof blogFormSchema>;
 
 interface Message {
   id: string;
@@ -47,8 +74,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   );
   const [isConnected, setIsConnected] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [showBlogRequest, setShowBlogRequest] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const blogForm = useForm<BlogFormValues>({
+    resolver: zodResolver(blogFormSchema),
+    defaultValues: { topic: "", keywords: "", description: "" },
+  });
+
+  const handleBlogRequestSubmit = (values: BlogFormValues) => {
+    sendMessage({
+      type: "seo_task_request",
+      conversationId,
+      userId,
+      dealershipId,
+      payload: {
+        topic: values.topic,
+        keywords: values.keywords,
+        description: values.description,
+        type: "blog_post",
+        priority: "medium",
+      },
+    });
+
+    setShowBlogRequest(false);
+    blogForm.reset();
+  };
 
   // Connect to WebSocket when component mounts
   useEffect(() => {
@@ -96,6 +147,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         }
       } else if (data.type === "typing_indicator") {
         setIsTyping(data.isTyping);
+      } else if (data.type === "task_complete") {
+        const newMessage: Message = {
+          id: `complete-${Date.now()}`,
+          sender: "system",
+          content: data.message,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, newMessage]);
       } else if (data.type === "history") {
         // Handle conversation history
         if (Array.isArray(data.messages)) {
@@ -203,9 +262,74 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </div>
         </div>
-        <Badge variant={mode === "rylie_ai" ? "secondary" : "default"}>
-          {mode === "rylie_ai" ? "AI Mode" : "Direct Agent"}
-        </Badge>
+        <div className="flex items-center space-x-2">
+          <Badge variant={mode === "rylie_ai" ? "secondary" : "default"}>
+            {mode === "rylie_ai" ? "AI Mode" : "Direct Agent"}
+          </Badge>
+          <Dialog open={showBlogRequest} onOpenChange={setShowBlogRequest}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                New SEO Request
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Request a Blog Post</DialogTitle>
+              </DialogHeader>
+              <Form {...blogForm}>
+                <form
+                  onSubmit={blogForm.handleSubmit(handleBlogRequestSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={blogForm.control}
+                    name="topic"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Topic</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Blog topic" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={blogForm.control}
+                    name="keywords"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Keywords</FormLabel>
+                        <FormControl>
+                          <Input placeholder="comma, separated" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={blogForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            className="min-h-[120px]"
+                            placeholder="Describe the request"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit">Submit</Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <ScrollArea className="flex-1 p-4">

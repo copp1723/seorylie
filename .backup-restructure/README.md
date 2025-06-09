@@ -1,6 +1,6 @@
-# seorylie - Automotive Dealership AI Platform
+# CleanRylie - Automotive Dealership AI Platform
 
-> This repository contains seorylie, a production-ready, multi-service AI platform for automotive dealerships. It's the result of a comprehensive integration and cleanup effort, consolidating features into a robust, scalable, and maintainable system.
+> This repository contains CleanRylie, a production-ready, multi-service AI platform for automotive dealerships. It's the result of a comprehensive integration and cleanup effort, consolidating features into a robust, scalable, and maintainable system.
 
 ## 🚀 How We Work Now
 
@@ -25,7 +25,7 @@ All commands now include automatic dependency verification and quality checks:
 
 ### Git Strategy & Workflow
 
-seorylie uses a **stabilization git strategy** for controlled feature development:
+CleanRylie uses a **stabilization git strategy** for controlled feature development:
 
 ```
 main ─┬─► (production)
@@ -180,8 +180,8 @@ docker compose -f docker-compose.platform.yml up -d --build
 | ------------------- | --------------------------------- | ----- | ------------------------------------ |
 | PostgreSQL          | `postgres:15-alpine`              | 5432  | Primary relational DB                |
 | Redis               | `redis:alpine`                    | 6379  | Caching / messaging / session store  |
-| seorylie-api      | `./Dockerfile` (target `server`)  | 3000  | Express backend (`/api/*` routes)    |
-| seorylie-frontend | `./Dockerfile` (target `client`)  | 5173  | React/Vite frontend                  |
+| cleanrylie-api      | `./Dockerfile` (target `server`)  | 3000  | Express backend (`/api/*` routes)    |
+| cleanrylie-frontend | `./Dockerfile` (target `client`)  | 5173  | React/Vite frontend                  |
 | watchdog-api        | `final_watchdog/backend`          | 8000  | FastAPI analytics & insights         |
 | MindsDB (optional)  | `mindsdb/mindsdb:latest`          | 47334 | AutoML / SQL-over-AI gateway         |
 | mock-imap           | `./Dockerfile` (target `testing`) | 1143  | Mock IMAP server for email testing   |
@@ -192,7 +192,7 @@ docker compose -f docker-compose.platform.yml up -d --build
 You can access the running stack at:
 
 - Frontend → http://localhost:5173
-- seorylie API → http://localhost:3000
+- cleanrylie API → http://localhost:3000
 - Watchdog API → http://localhost:8000
 - MindsDB UI → http://localhost:47334 (if enabled)
 
@@ -208,7 +208,7 @@ The script polls:
 
 - `POSTGRES` readiness via `pg_isready`
 - `redis-cli ping`
-- `http://localhost:3000/api/health` (seorylie API)
+- `http://localhost:3000/api/health` (CleanRylie API)
 - `http://localhost:8000/api/health` (Watchdog API, if applicable)
 - `http://localhost:47334/api/health` (MindsDB, if applicable)
 
@@ -221,7 +221,7 @@ The script polls:
 
 This type of script would typically simulate an agent question, analytics call, and insight response to confirm cross-service communication.
 
-> **Troubleshooting**: Run `docker compose -f docker-compose.platform.yml logs -f <service_name>` to inspect logs for any failing container (e.g., `seorylie-api`).
+> **Troubleshooting**: Run `docker compose -f docker-compose.platform.yml logs -f <service_name>` to inspect logs for any failing container (e.g., `cleanrylie-api`).
 
 ## 🧪 Testing Framework (ADF-013)
 
@@ -320,7 +320,7 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) provides:
 ## 📁 Project Structure
 
 ```
-seorylie/
+cleanrylie/
 ├── client/           # React frontend (Vite)
 ├── server/           # Express.js backend (TypeScript)
 │   └── utils/helpers/  # Authorization and other shared utilities

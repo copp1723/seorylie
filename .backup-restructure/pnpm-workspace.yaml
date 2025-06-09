@@ -1,0 +1,17 @@
+packages:
+  # Apps - Main services
+  - 'apps/*'
+  
+  # Shared packages
+  - 'packages/*'
+  
+  # Frontend
+  - 'web-console'
+  
+  # Infrastructure and tooling
+  - 'infra'
+  - 'scripts'
+  
+  # Exclude node_modules
+  - '!**/node_modules'
+  - '!**/dist'
