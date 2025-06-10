@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Browser Test</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .status {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: orange; }
+    </style>
+</head>
+<body>
+    <div class="status">
+        <h1>Debug Test Page</h1>
+        <div id="status">Testing localhost:3000...</div>
+        <div id="console-errors"></div>
+        <div id="network-status"></div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const errorsEl = document.getElementById('console-errors');
+        const networkEl = document.getElementById('network-status');
+
+        // Test fetching from localhost:3000
+        async function testServer() {
+            try {
+                statusEl.innerHTML = '<p class="loading">Testing server connection...</p>';
+                
+                // Test main page
+                const mainResponse = await fetch('http://localhost:3000/', {
+                    mode: 'cors',
+                    credentials: 'include'
+                });
+                
+                if (!mainResponse.ok) {
+                    throw new Error(`Main page returned ${mainResponse.status}`);
+                }
+                
+                const html = await mainResponse.text();
+                const hasRoot = html.includes('id="root"');
+                const hasVite = html.includes('/@vite/client');
+                const hasMain = html.includes('/src/main.tsx');
+                
+                statusEl.innerHTML += `
+                    <p class="success">✅ Server is responding</p>
+                    <p>Has root element: ${hasRoot ? '✅' : '❌'}</p>
+                    <p>Has Vite client: ${hasVite ? '✅' : '❌'}</p>
+                    <p>Has main.tsx: ${hasMain ? '✅' : '❌'}</p>
+                `;
+                
+                // Test API
+                const apiResponse = await fetch('http://localhost:3000/api/status');
+                const apiData = await apiResponse.json();
+                
+                statusEl.innerHTML += `
+                    <p class="success">✅ API is working: ${apiData.status}</p>
+                `;
+                
+                // Test Vite client
+                const viteResponse = await fetch('http://localhost:3000/@vite/client');
+                statusEl.innerHTML += `
+                    <p class="${viteResponse.ok ? 'success' : 'error'}">
+                        Vite client: ${viteResponse.ok ? '✅ OK' : '❌ Failed'}
+                    </p>
+                `;
+                
+                // Test main.tsx
+                const mainTsxResponse = await fetch('http://localhost:3000/src/main.tsx');
+                statusEl.innerHTML += `
+                    <p class="${mainTsxResponse.ok ? 'success' : 'error'}">
+                        main.tsx: ${mainTsxResponse.ok ? '✅ OK' : '❌ Failed'}
+                    </p>
+                `;
+                
+                // Show network requests
+                networkEl.innerHTML = `
+                    <h3>Network Status:</h3>
+                    <p>If the page is blank, check the browser DevTools:</p>
+                    <ol>
+                        <li>Press F12 to open DevTools</li>
+                        <li>Go to Console tab - look for red errors</li>
+                        <li>Go to Network tab - look for failed requests (red)</li>
+                        <li>Check if any resources are blocked</li>
+                    </ol>
+                `;
+                
+            } catch (error) {
+                statusEl.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                errorsEl.innerHTML = `<pre>${error.stack}</pre>`;
+            }
+        }
+        
+        // Listen for console errors
+        window.addEventListener('error', (event) => {
+            errorsEl.innerHTML += `
+                <div class="error">
+                    <strong>JavaScript Error:</strong> ${event.message}<br>
+                    File: ${event.filename}<br>
+                    Line: ${event.lineno}, Column: ${event.colno}
+                </div>
+            `;
+        });
+        
+        testServer();
+    </script>
+</body>
+</html>
