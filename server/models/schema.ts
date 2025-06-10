@@ -274,3 +274,102 @@ export const reportsRelations = relations(reports, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// GA4 Properties table - maps tenants to their GA4 properties
+export const ga4Properties = pgTable('ga4_properties', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  propertyId: text('property_id').notNull(), // GA4 Property ID (e.g., "123456789")
+  propertyName: text('property_name').notNull(),
+  websiteUrl: text('website_url'),
+  isActive: boolean('is_active').default(true),
+  accessGrantedAt: timestamp('access_granted_at'),
+  lastSyncAt: timestamp('last_sync_at'),
+  syncStatus: text('sync_status').default('pending'), // 'pending', 'active', 'error', 'revoked'
+  metadata: jsonb('metadata'), // Store additional property info
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  tenantIdx: index('ga4_properties_tenant_idx').on(table.tenantId),
+  propertyIdx: index('ga4_properties_property_idx').on(table.propertyId),
+  statusIdx: index('ga4_properties_status_idx').on(table.syncStatus),
+}));
+
+// GA4 Service Account Credentials - centralized credential storage
+export const ga4ServiceAccount = pgTable('ga4_service_account', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  environment: text('environment').notNull().default('production'), // 'development', 'staging', 'production'
+  serviceAccountEmail: text('service_account_email').notNull(),
+  projectId: text('project_id').notNull(),
+  privateKeyEncrypted: text('private_key_encrypted').notNull(), // Encrypted private key
+  keyId: text('key_id').notNull(),
+  quotaLimits: jsonb('quota_limits'), // Daily/hourly API quotas
+  status: text('status').default('active'), // 'active', 'revoked', 'expired'
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  expiresAt: timestamp('expires_at'),
+});
+
+// GA4 Report Cache - store generated reports to reduce API calls
+export const ga4ReportCache = pgTable('ga4_report_cache', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
+  propertyId: text('property_id').notNull(),
+  reportType: text('report_type').notNull(),
+  dateRange: jsonb('date_range').notNull(),
+  reportData: jsonb('report_data').notNull(),
+  generatedAt: timestamp('generated_at').defaultNow(),
+  expiresAt: timestamp('expires_at').notNull(),
+  cacheKey: text('cache_key').notNull().unique(),
+}, (table) => ({
+  tenantIdx: index('ga4_cache_tenant_idx').on(table.tenantId),
+  cacheKeyIdx: index('ga4_cache_key_idx').on(table.cacheKey),
+  expiresIdx: index('ga4_cache_expires_idx').on(table.expiresAt),
+}));
+
+// GA4 API Usage Tracking - monitor quota usage
+export const ga4ApiUsage = pgTable('ga4_api_usage', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenants.id),
+  propertyId: text('property_id'),
+  endpoint: text('endpoint').notNull(), // 'runReport', 'runRealtimeReport', etc.
+  requestCount: integer('request_count').default(1),
+  quotaConsumed: integer('quota_consumed').default(1),
+  responseTime: integer('response_time'), // milliseconds
+  success: boolean('success').default(true),
+  errorMessage: text('error_message'),
+  requestDate: timestamp('request_date').defaultNow(),
+  hour: text('hour').notNull(), // YYYY-MM-DD-HH for hourly tracking
+  day: text('day').notNull(), // YYYY-MM-DD for daily tracking
+}, (table) => ({
+  tenantDayIdx: index('ga4_usage_tenant_day_idx').on(table.tenantId, table.day),
+  hourIdx: index('ga4_usage_hour_idx').on(table.hour),
+  dayIdx: index('ga4_usage_day_idx').on(table.day),
+}));
+
+// Relations for GA4 tables
+export const ga4PropertiesRelations = relations(ga4Properties, ({ one, many }) => ({
+  tenant: one(tenants, {
+    fields: [ga4Properties.tenantId],
+    references: [tenants.id],
+  }),
+  reportCache: many(ga4ReportCache),
+}));
+
+export const ga4ReportCacheRelations = relations(ga4ReportCache, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [ga4ReportCache.tenantId],
+    references: [tenants.id],
+  }),
+  property: one(ga4Properties, {
+    fields: [ga4ReportCache.propertyId],
+    references: [ga4Properties.propertyId],
+  }),
+}));
+
+export const ga4ApiUsageRelations = relations(ga4ApiUsage, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [ga4ApiUsage.tenantId],
+    references: [tenants.id],
+  }),
+}));
