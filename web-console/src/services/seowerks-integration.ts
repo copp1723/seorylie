@@ -158,11 +158,11 @@ export function validateSEOWerksData(data: Partial<SEOWerksSubmissionData>): {
   if (!data.targetVehicleModels || data.targetVehicleModels.filter(Boolean).length < 3) {
     missingFields.push('targetVehicleModels (minimum 3)');
   }
-  
+
   if (!data.targetCities || data.targetCities.filter(Boolean).length < 3) {
     missingFields.push('targetCities (minimum 3)');
   }
-  
+
   if (!data.targetDealers || data.targetDealers.filter(Boolean).length < 3) {
     missingFields.push('targetDealers (minimum 3)');
   }
@@ -170,5 +170,88 @@ export function validateSEOWerksData(data: Partial<SEOWerksSubmissionData>): {
   return {
     isValid: missingFields.length === 0,
     missingFields,
+  };
+}
+
+/**
+ * Mock client data for chat responses
+ * In production, this would come from your database/API
+ */
+export interface ClientData {
+  dealerName: string;
+  package: 'PLATINUM' | 'GOLD' | 'SILVER';
+  mainBrand: string;
+  targetVehicleModels: string[];
+  targetCities: string[];
+  targetDealers: string[];
+  recentTasks: Array<{
+    id: string;
+    title: string;
+    status: 'completed' | 'in-progress' | 'scheduled';
+    completedDate?: string;
+    scheduledDate?: string;
+  }>;
+  analytics: {
+    organicTraffic: {
+      thisMonth: number;
+      lastMonth: number;
+      yearOverYear: number;
+    };
+    rankings: {
+      averagePosition: number;
+      topKeywords: string[];
+      improvingKeywords: string[];
+    };
+  };
+}
+
+/**
+ * Get mock client data - replace with actual API call
+ */
+export function getMockClientData(): ClientData {
+  return {
+    dealerName: "Downtown Ford",
+    package: "PLATINUM",
+    mainBrand: "Ford",
+    targetVehicleModels: ["F-150", "Mustang", "Explorer"],
+    targetCities: ["Austin", "Round Rock", "Cedar Park"],
+    targetDealers: ["Competitor Ford A", "Competitor Ford B", "Competitor Ford C"],
+    recentTasks: [
+      {
+        id: "1",
+        title: "F-150 Landing Page Optimization",
+        status: "completed",
+        completedDate: "2025-01-08"
+      },
+      {
+        id: "2",
+        title: "Local SEO Citations Update",
+        status: "completed",
+        completedDate: "2025-01-06"
+      },
+      {
+        id: "3",
+        title: "Mustang Inventory Page Creation",
+        status: "in-progress"
+      },
+      {
+        id: "4",
+        title: "Monthly Blog Content",
+        status: "scheduled",
+        scheduledDate: "2025-01-15"
+      }
+    ],
+    analytics: {
+      organicTraffic: {
+        thisMonth: 12500,
+        lastMonth: 11200,
+        yearOverYear: 18.5
+      },
+      rankings: {
+        averagePosition: 8.2,
+        topKeywords: ["ford dealer austin", "f150 austin", "new ford explorer"],
+        improvingKeywords: ["ford mustang texas", "ford service austin"]
+      }
+    }
   };
 }

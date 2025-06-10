@@ -9,9 +9,9 @@ import {
   Users,
   CheckCircle,
   ArrowRight,
-  Car,
-  Package,
-  AlertCircle
+  // Car,
+  // Package,
+  // AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -64,28 +64,28 @@ interface OnboardingData {
   additionalInfo: string;
 }
 
-const packages = ['PLATINUM', 'GOLD', 'SILVER'];
+// const packages = ['PLATINUM', 'GOLD', 'SILVER'];
 
-const automotiveBrands = [
-  'Acura', 'Audi', 'BMW', 'Buick', 'Buick Cadillac GMC', 'Buick GMC',
-  'Cadillac', 'CDJR', 'Chevrolet', 'Chevrolet Buick', 'Chevrolet Buick GMC',
-  'Chevrolet GMC', 'Chrysler', 'Dodge', 'Ford', 'Genesis', 'GMC',
-  'Harley-Davidson', 'Honda', 'Honda Powersports', 'Hyundai', 'INFINITI',
-  'Jeep', 'Kia', 'Lexus', 'Lincoln', 'Mazda', 'Mercedes-Benz', 'Mitsubishi',
-  'Nissan', 'Polaris', 'RAM', 'Subaru', 'Toyota', 'Volkswagen', 'Volvo', 'Other'
-];
+// const automotiveBrands = [
+//   'Acura', 'Audi', 'BMW', 'Buick', 'Buick Cadillac GMC', 'Buick GMC',
+//   'Cadillac', 'CDJR', 'Chevrolet', 'Chevrolet Buick', 'Chevrolet Buick GMC',
+//   'Chevrolet GMC', 'Chrysler', 'Dodge', 'Ford', 'Genesis', 'GMC',
+//   'Harley-Davidson', 'Honda', 'Honda Powersports', 'Hyundai', 'INFINITI',
+//   'Jeep', 'Kia', 'Lexus', 'Lincoln', 'Mazda', 'Mercedes-Benz', 'Mitsubishi',
+//   'Nissan', 'Polaris', 'RAM', 'Subaru', 'Toyota', 'Volkswagen', 'Volvo', 'Other'
+// ];
 
-const usStates = [
-  'Alaska', 'Alabama', 'Arkansas', 'Arizona', 'California', 'Colorado',
-  'Connecticut', 'District of Columbia', 'Delaware', 'Florida', 'Georgia',
-  'Hawaii', 'Iowa', 'Idaho', 'Illinois', 'Indiana', 'Kansas', 'Kentucky',
-  'Louisiana', 'Massachusetts', 'Maryland', 'Maine', 'Michigan', 'Minnesota',
-  'Missouri', 'Mississippi', 'Montana', 'North Carolina', 'North Dakota',
-  'Nebraska', 'New Hampshire', 'New Jersey', 'New Mexico', 'Nevada',
-  'New York', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
-  'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Virginia',
-  'Vermont', 'Washington', 'Wisconsin', 'West Virginia', 'Wyoming'
-];
+// const usStates = [
+//   'Alaska', 'Alabama', 'Arkansas', 'Arizona', 'California', 'Colorado',
+//   'Connecticut', 'District of Columbia', 'Delaware', 'Florida', 'Georgia',
+//   'Hawaii', 'Iowa', 'Idaho', 'Illinois', 'Indiana', 'Kansas', 'Kentucky',
+//   'Louisiana', 'Massachusetts', 'Maryland', 'Maine', 'Michigan', 'Minnesota',
+//   'Missouri', 'Mississippi', 'Montana', 'North Carolina', 'North Dakota',
+//   'Nebraska', 'New Hampshire', 'New Jersey', 'New Mexico', 'Nevada',
+//   'New York', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
+//   'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Virginia',
+//   'Vermont', 'Washington', 'Wisconsin', 'West Virginia', 'Wyoming'
+// ];
 
 const industries = [
   'Automotive Dealership',
@@ -127,8 +127,8 @@ const seoGoals = [
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  // const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [submitError, setSubmitError] = useState<string | null>(null);
   const { branding } = useBranding();
 
   const [formData, setFormData] = useState<OnboardingData>({

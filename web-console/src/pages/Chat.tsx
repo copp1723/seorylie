@@ -1,18 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Bot, User, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { useBranding } from "../contexts/BrandingContext";
 import { useAuth } from "../contexts/AuthContext";
+import { generateChatResponse, submitSEORequest, type ChatMessage } from "../services/chat-service";
 
-interface Message {
-  id: string;
-  content: string;
-  sender: 'user' | 'assistant';
-  timestamp: Date;
-  isLoading?: boolean;
-}
+// Use the enhanced ChatMessage interface from chat-service
+type Message = ChatMessage;
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([
@@ -25,9 +21,10 @@ export default function Chat() {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [submittingRequest, setSubmittingRequest] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { branding } = useBranding();
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Available for future use
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,45 +44,67 @@ export default function Chat() {
       timestamp: new Date()
     };
 
+    const currentInput = inputValue;
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate API call to your backend
     try {
-      // Mock response - replace with actual API call
-      setTimeout(() => {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: generateMockResponse(inputValue),
-          sender: 'assistant',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-        setIsTyping(false);
-      }, 1500);
+      // Use the enhanced chat service
+      const response = await generateChatResponse(currentInput);
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: response.content,
+        sender: 'assistant',
+        timestamp: new Date(),
+        hasRequestButton: response.hasRequestButton,
+        requestData: response.requestData
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm sorry, I encountered an error processing your request. Please try again.",
+        sender: 'assistant',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
     }
   };
 
-  const generateMockResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-    
-    if (input.includes('keyword') || input.includes('seo')) {
-      return "I can help you with keyword research and SEO optimization! Here are some suggestions:\n\n1. **Keyword Research**: I can analyze your target keywords and suggest improvements\n2. **On-page SEO**: Let's optimize your title tags, meta descriptions, and content\n3. **Technical SEO**: I can help identify technical issues affecting your rankings\n\nWhat specific area would you like to focus on?";
+  const handleSubmitRequest = async (requestData: { type: string; query: string; context?: any }) => {
+    setSubmittingRequest(requestData.type);
+
+    try {
+      const result = await submitSEORequest(requestData);
+
+      const responseMessage: Message = {
+        id: Date.now().toString(),
+        content: result.success
+          ? `✅ ${result.message}${result.requestId ? ` (Request ID: ${result.requestId})` : ''}`
+          : `❌ ${result.message}`,
+        sender: 'assistant',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, responseMessage]);
+    } catch (error) {
+      console.error('Error submitting request:', error);
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        content: "❌ There was an error submitting your request. Please try again or contact support.",
+        sender: 'assistant',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setSubmittingRequest(null);
     }
-    
-    if (input.includes('content') || input.includes('blog')) {
-      return "Content is crucial for SEO success! I can help you:\n\n• **Blog Strategy**: Develop a content calendar targeting your keywords\n• **Content Optimization**: Improve existing content for better rankings\n• **Topic Research**: Find trending topics in your industry\n• **Content Audits**: Analyze your current content performance\n\nWould you like me to create a content request for you?";
-    }
-    
-    if (input.includes('page') || input.includes('landing')) {
-      return "Creating optimized pages is essential for SEO! I can assist with:\n\n• **Landing Page Creation**: Build pages that convert and rank\n• **Page Structure**: Optimize your information architecture\n• **Internal Linking**: Improve your site's link structure\n• **User Experience**: Enhance page speed and usability\n\nShall I help you create a new page request?";
-    }
-    
-    return `I understand you're asking about "${userInput}". As your SEO assistant, I can help with various tasks including:\n\n• **Content Creation**: Blog posts, landing pages, and copy\n• **Technical SEO**: Site audits, speed optimization, and fixes\n• **Keyword Research**: Finding the right terms to target\n• **Analytics**: Understanding your SEO performance\n\nWhat specific SEO challenge can I help you solve today?`;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -96,10 +115,12 @@ export default function Chat() {
   };
 
   const suggestedQuestions = [
-    "How can I improve my website's SEO?",
-    "Create a blog post about local SEO",
-    "Audit my website's technical SEO",
-    "Help me with keyword research"
+    "What tasks have been completed this week?",
+    "What are my weekly analytics?",
+    "How does my F-150 compare to competitors?",
+    "What's included in my SEO package?",
+    "How can I improve my SEO rankings?",
+    "What's my organic traffic compared to last year?"
   ];
 
   return (
@@ -151,6 +172,31 @@ export default function Chat() {
                   }`}>
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
+
+                  {/* Request Button for Assistant Messages */}
+                  {message.sender === 'assistant' && message.hasRequestButton && message.requestData && (
+                    <div className="mt-3">
+                      <Button
+                        onClick={() => handleSubmitRequest(message.requestData!)}
+                        disabled={submittingRequest === message.requestData.type}
+                        className="text-xs px-3 py-1 h-auto"
+                        variant="outline"
+                      >
+                        {submittingRequest === message.requestData.type ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Submitting...
+                          </>
+                        ) : (
+                          <>
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Submit Request to SEO Team
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+
                   <p className="text-xs text-muted-foreground mt-1">
                     {message.timestamp.toLocaleTimeString()}
                   </p>
@@ -187,7 +233,13 @@ export default function Chat() {
                 {suggestedQuestions.map((question, index) => (
                   <button
                     key={index}
-                    onClick={() => setInputValue(question)}
+                    onClick={() => {
+                      setInputValue(question);
+                      // Auto-send the question after a brief delay
+                      setTimeout(() => {
+                        handleSendMessage();
+                      }, 100);
+                    }}
                     className="text-left text-sm p-2 rounded-md border border-border hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     {question}
