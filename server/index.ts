@@ -72,6 +72,40 @@ app.use(morgan('combined', {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Root endpoint - Welcome page
+app.get('/', (req, res) => {
+  res.status(200).json({
+    service: 'Rylie SEO Hub',
+    version: '1.0.0',
+    description: 'White-label SEO middleware with AI proxy for complete client/agency separation',
+    status: 'operational',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      api: {
+        client: '/api/client/*',
+        agency: '/api/agency/*', 
+        admin: '/api/admin/*',
+        reports: '/api/reports/*'
+      }
+    },
+    features: [
+      'AI Proxy Middleware - Complete anonymization',
+      'Role-based Access Control (RBAC)',
+      'White-label branding for all client interactions',
+      'Comprehensive audit logging',
+      'Zero client PII exposure to agencies',
+      'Automated reporting system'
+    ],
+    security: {
+      aiProxy: 'active',
+      rbac: 'enforced',
+      auditLogging: 'enabled',
+      anonymization: 'automatic'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
