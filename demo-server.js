@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
-app.use(express.static('dist'));
+app.use(express.static('dist/public'));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -43,7 +43,7 @@ app.get('/api/status', (req, res) => {
 
 // Serve the React app
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'public', 'index.html'));
 });
 
 // Start server
