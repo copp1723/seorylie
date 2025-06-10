@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { 
-  Building2, 
-  Globe, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Target, 
-  Users, 
+import {
+  Building2,
+  Globe,
+  Mail,
+  Phone,
+  MapPin,
+  Target,
+  Users,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Car,
+  Package,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -16,13 +19,40 @@ import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Select } from "../components/ui/select";
 import { useBranding } from "../contexts/BrandingContext";
+import { submitToSEOWerks, transformToSEOWerksFormat, validateSEOWerksData } from "../services/seowerks-integration";
 
 interface OnboardingData {
-  businessName: string;
-  websiteUrl: string;
-  email: string;
-  phone: string;
+  // Basic Business Info
+  businessName: string; // Maps to "Dealer Name"
+  websiteUrl: string; // Maps to "Dealer Website URL"
+  email: string; // Maps to "Dealer Contact Email"
+  phone: string; // Maps to "Dealer Contact Phone"
   address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+
+  // Contact Information
+  contactName: string; // Maps to "Dealer Contact Name"
+  contactTitle: string; // Maps to "Dealer Contact Title"
+  billingEmail: string; // Maps to "Billing Contact Email"
+
+  // SEOWerks Specific
+  package: string; // PLATINUM, GOLD, SILVER
+  mainBrand: string; // Automotive brand
+  otherBrand?: string; // If "Other" is selected
+
+  // SEO Targets
+  targetVehicleModels: string[]; // At least 3
+  targetCities: string[]; // At least 3
+  targetDealers: string[]; // At least 3
+
+  // Access Requirements
+  siteAccessNotes: string;
+  googleBusinessProfileAccess: boolean;
+  googleAnalyticsAccess: boolean;
+
+  // Legacy fields (keep for backward compatibility)
   industry: string;
   businessType: string;
   targetAudience: string;
@@ -34,7 +64,31 @@ interface OnboardingData {
   additionalInfo: string;
 }
 
+const packages = ['PLATINUM', 'GOLD', 'SILVER'];
+
+const automotiveBrands = [
+  'Acura', 'Audi', 'BMW', 'Buick', 'Buick Cadillac GMC', 'Buick GMC',
+  'Cadillac', 'CDJR', 'Chevrolet', 'Chevrolet Buick', 'Chevrolet Buick GMC',
+  'Chevrolet GMC', 'Chrysler', 'Dodge', 'Ford', 'Genesis', 'GMC',
+  'Harley-Davidson', 'Honda', 'Honda Powersports', 'Hyundai', 'INFINITI',
+  'Jeep', 'Kia', 'Lexus', 'Lincoln', 'Mazda', 'Mercedes-Benz', 'Mitsubishi',
+  'Nissan', 'Polaris', 'RAM', 'Subaru', 'Toyota', 'Volkswagen', 'Volvo', 'Other'
+];
+
+const usStates = [
+  'Alaska', 'Alabama', 'Arkansas', 'Arizona', 'California', 'Colorado',
+  'Connecticut', 'District of Columbia', 'Delaware', 'Florida', 'Georgia',
+  'Hawaii', 'Iowa', 'Idaho', 'Illinois', 'Indiana', 'Kansas', 'Kentucky',
+  'Louisiana', 'Massachusetts', 'Maryland', 'Maine', 'Michigan', 'Minnesota',
+  'Missouri', 'Mississippi', 'Montana', 'North Carolina', 'North Dakota',
+  'Nebraska', 'New Hampshire', 'New Jersey', 'New Mexico', 'Nevada',
+  'New York', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
+  'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Virginia',
+  'Vermont', 'Washington', 'Wisconsin', 'West Virginia', 'Wyoming'
+];
+
 const industries = [
+  'Automotive Dealership',
   'Technology',
   'Healthcare',
   'Finance',
@@ -48,6 +102,7 @@ const industries = [
 ];
 
 const businessTypes = [
+  'Automotive Dealership',
   'B2B (Business to Business)',
   'B2C (Business to Consumer)',
   'B2B2C (Business to Business to Consumer)',
@@ -72,16 +127,44 @@ const seoGoals = [
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { branding } = useBranding();
 
   const [formData, setFormData] = useState<OnboardingData>({
+    // Basic Business Info
     businessName: '',
     websiteUrl: '',
     email: '',
     phone: '',
     address: '',
-    industry: '',
-    businessType: '',
+    city: '',
+    state: '',
+    zipCode: '',
+
+    // Contact Information
+    contactName: '',
+    contactTitle: '',
+    billingEmail: '',
+
+    // SEOWerks Specific
+    package: '',
+    mainBrand: '',
+    otherBrand: '',
+
+    // SEO Targets
+    targetVehicleModels: ['', '', ''],
+    targetCities: ['', '', ''],
+    targetDealers: ['', '', ''],
+
+    // Access Requirements
+    siteAccessNotes: 'Need site access (full access, metadata, seo) and blog access: please provide us a login or create a new one under access@seowerks.ai',
+    googleBusinessProfileAccess: false,
+    googleAnalyticsAccess: false,
+
+    // Legacy fields
+    industry: 'Automotive Dealership',
+    businessType: 'Automotive Dealership',
     targetAudience: '',
     primaryGoals: [],
     currentChallenges: '',
@@ -131,20 +214,70 @@ export default function Onboarding() {
   };
 
   const handleSubmit = async () => {
-    console.log('Submitting onboarding data:', formData);
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Transform data for SEOWerks
+      const seowerksData = transformToSEOWerksFormat(formData);
+
+      // Validate data
+      const validation = validateSEOWerksData(seowerksData);
+      if (!validation.isValid) {
+        throw new Error(`Missing required fields: ${validation.missingFields.join(', ')}`);
+      }
+
+      // Submit to internal API first
+      const internalResponse = await fetch('/api/client/onboarding', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!internalResponse.ok) {
+        throw new Error('Failed to save onboarding data internally');
+      }
+
+      // Submit to SEOWerks platform
+      const seowerksResult = await submitToSEOWerks(seowerksData);
+
+      if (!seowerksResult.success) {
+        console.warn('SEOWerks submission failed:', seowerksResult.error);
+        // Continue anyway - internal data is saved
+      }
+
+      console.log('Onboarding completed successfully:', {
+        internal: true,
+        seowerks: seowerksResult.success,
+        data: formData
+      });
+
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Onboarding submission error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Submission failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.businessName && formData.websiteUrl && formData.email;
+        return formData.businessName && formData.websiteUrl && formData.email &&
+               formData.phone && formData.contactName && formData.contactTitle;
       case 2:
-        return formData.industry && formData.businessType && formData.targetAudience;
+        return formData.address && formData.city && formData.state && formData.zipCode &&
+               formData.billingEmail;
       case 3:
-        return formData.primaryGoals.length > 0;
+        return formData.package && formData.mainBrand;
       case 4:
-        return true;
+        const validModels = formData.targetVehicleModels.filter(Boolean).length >= 3;
+        const validCities = formData.targetCities.filter(Boolean).length >= 3;
+        const validDealers = formData.targetDealers.filter(Boolean).length >= 3;
+        return validModels && validCities && validDealers;
       default:
         return false;
     }
@@ -225,16 +358,16 @@ export default function Onboarding() {
       <Card>
         <CardHeader>
           <CardTitle>
-            {currentStep === 1 && 'Basic Information'}
-            {currentStep === 2 && 'Business Details'}
-            {currentStep === 3 && 'SEO Goals'}
-            {currentStep === 4 && 'Additional Information'}
+            {currentStep === 1 && 'Dealership & Contact Information'}
+            {currentStep === 2 && 'Location & Billing Details'}
+            {currentStep === 3 && 'Package & Brand Selection'}
+            {currentStep === 4 && 'SEO Targets & Priorities'}
           </CardTitle>
           <CardDescription>
-            {currentStep === 1 && 'Tell us about your business and website'}
-            {currentStep === 2 && 'Help us understand your industry and audience'}
-            {currentStep === 3 && 'What are your main SEO objectives?'}
-            {currentStep === 4 && 'Optional details to enhance your strategy'}
+            {currentStep === 1 && 'Basic dealership information and primary contact details'}
+            {currentStep === 2 && 'Physical location and billing contact information'}
+            {currentStep === 3 && 'Choose your SEO package and primary automotive brand'}
+            {currentStep === 4 && 'Define your target vehicle models, cities, and competitor dealers'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
