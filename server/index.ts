@@ -20,6 +20,8 @@ import { clientRoutes } from './routes/client';
 import { agencyRoutes } from './routes/agency';
 import { adminRoutes } from './routes/admin';
 import { reportRoutes } from './routes/reports';
+import ga4OnboardingRoutes from './routes/ga4/onboarding';
+import seoWorksTaskRoutes from './routes/seoworks/tasks';
 
 // Load environment variables
 config();
@@ -86,7 +88,9 @@ app.get('/', (req, res) => {
         client: '/api/client/*',
         agency: '/api/agency/*', 
         admin: '/api/admin/*',
-        reports: '/api/reports/*'
+        reports: '/api/reports/*',
+        ga4: '/api/ga4/*',
+        seoworks: '/api/seoworks/*'
       }
     },
     features: [
@@ -127,6 +131,8 @@ app.use('/api/client', clientRoutes);
 app.use('/api/agency', agencyRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/ga4', ga4OnboardingRoutes);
+app.use('/api/seoworks', seoWorksTaskRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
