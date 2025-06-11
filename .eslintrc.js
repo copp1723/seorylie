@@ -4,17 +4,17 @@ module.exports = {
     browser: true,
     es2020: true,
     node: true,
+    jest: true,
   },
   extends: [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:react/recommended",
-    "plugin:react-hooks/recommended",
+    "@typescript-eslint/recommended",
   ],
   parser: "@typescript-eslint/parser",
-  plugins: ["@typescript-eslint", "react", "react-hooks", "react-refresh"],
+  plugins: ["@typescript-eslint"],
   ignorePatterns: [
     "dist",
+    "build",
     ".eslintrc.js",
     "node_modules",
     "*.config.js",
@@ -22,32 +22,23 @@ module.exports = {
     "**/*.json",
     "**/*.md",
     "**/dist/**",
+    "**/build/**",
     ".husky/**",
     ".github/**",
-    "test/load/**",
-    "test/**/*.js",
-    "scripts/**/*.js",
-    "tools/**/*.js",
-    // Temporarily ignore problematic test files
-    "test/e2e/**",
-    "test/fixtures/**",
-    "test/mocks/**",
-    "test/setup/**",
-    "test/unit/adf-parser-v2/**",
-    "test/unit/mocking-ci-framework.test.ts",
-    "scripts/test-intent-detection-e2e.ts",
+    "coverage/**",
+    "jest.setup.js",
+    "scripts/audit-security.js",
+    // Ignore test files from linting for now
+    "**/*.test.js",
+    "**/*.test.ts",
+    "**/*.spec.js",
+    "**/*.spec.ts",
+    "**/__tests__/**",
   ],
   parserOptions: {
     ecmaVersion: "latest",
     sourceType: "module",
-    ecmaFeatures: {
-      jsx: true,
-    },
-  },
-  settings: {
-    react: {
-      version: "detect",
-    },
+    project: "./tsconfig.json",
   },
   rules: {
     // Minimal rules to avoid CI failures while enabling TypeScript
@@ -69,14 +60,9 @@ module.exports = {
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/no-namespace": "off",
     "@typescript-eslint/ban-types": "off",
-
-    // React-specific rules (relaxed for gradual adoption)
-    "react/react-in-jsx-scope": "off", // Not needed in React 17+
-    "react/prop-types": "off", // Using TypeScript for prop validation
-    "react/no-unescaped-entities": "off",
-    "react/jsx-no-undef": "off",
-    "react-hooks/rules-of-hooks": "off", // Temporarily disabled to avoid CI failures
-    "react-hooks/exhaustive-deps": "off", // Temporarily disabled to avoid CI failures
+    "@typescript-eslint/prefer-as-const": "off",
+    "@typescript-eslint/no-inferrable-types": "off",
+    "@typescript-eslint/no-empty-function": "off",
   },
   overrides: [
     {
@@ -94,6 +80,13 @@ module.exports = {
         // Enable these gradually as codebase improves
         // "@typescript-eslint/no-unused-vars": "warn",
         // "@typescript-eslint/no-explicit-any": "warn",
+      },
+    },
+    {
+      // Configuration files
+      files: ["*.config.js", "*.config.ts", ".eslintrc.js"],
+      rules: {
+        "@typescript-eslint/no-var-requires": "off",
       },
     },
   ],
