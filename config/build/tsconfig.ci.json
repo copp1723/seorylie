@@ -22,20 +22,34 @@
     "jsx": "preserve",
     "baseUrl": "../..",
     "paths": {
-      "@/*": ["./client/src/*"],
+      "@/*": ["./server/*"],
+      "@config/*": ["./server/config/*"],
+      "@utils/*": ["./server/utils/*"],
+      "@routes/*": ["./server/routes/*"],
+      "@middleware/*": ["./server/middleware/*"],
+      "@models/*": ["./server/models/*"],
       "@shared": ["./shared"],
-      "@shared/*": ["./shared/*"]
+      "@shared/*": ["./shared/*"],
+      "@console/*": ["./web-console/*"]
     },
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowJs": true
   },
   "include": [
-    "../../client/src/**/*",
+    "../../client/**/*",
     "../../server/**/*",
-    "../../shared/**/*"
+    "../../shared/**/*",
+    "../../web-console/**/*",
+    "../../packages/**/*",
+    "../../apps/**/*",
+    "../../scripts/**/*"
   ],
   "exclude": [
     "../../node_modules",
-    "../../test/**/*"
+    "../../test/**/*",
+    "../../dist",
+    "../../build",
+    "../../coverage"
   ]
 }
