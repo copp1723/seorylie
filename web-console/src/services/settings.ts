@@ -1,117 +1,160 @@
-import api, { handleApiResponse } from '../lib/api';
-import { ApiResponse, BrandingSettings, UserProfile, NotificationSettings } from '../types/api';
-import { ProfileInput, NotificationSettingsInput, BrandingSettingsInput, PasswordChangeInput } from '../schemas/validation';
+import api from '../lib/api';
+import type { 
+  UserProfile, 
+  BrandingSettings, 
+  NotificationSettings,
+  UpdateProfileRequest,
+  UpdateBrandingRequest,
+  UpdateNotificationRequest
+} from '../types/api';
 
-// Minimal settings service to make the app compile
 export const settingsAPI = {
+  // Profile management
+  getProfile: async (): Promise<UserProfile> => {
+    const response = await api.get('/settings/profile');
+    return response.data;
+  },
+
+  updateProfile: async (updates: UpdateProfileRequest): Promise<UserProfile> => {
+    const response = await api.patch('/settings/profile', updates);
+    return response.data;
+  },
+
   profile: {
     get: async (): Promise<UserProfile> => {
-      const response = await api.get<ApiResponse<UserProfile>>('/settings/profile');
-      return handleApiResponse(response);
+      const response = await api.get('/settings/profile');
+      return response.data;
     },
-    update: async (data: ProfileInput): Promise<UserProfile> => {
-      const response = await api.put<ApiResponse<UserProfile>>('/settings/profile', data);
-      return handleApiResponse(response);
+    update: async (data: any): Promise<UserProfile> => {
+      const response = await api.patch('/settings/profile', data);
+      return response.data;
     },
-    uploadAvatar: async (file: File): Promise<string> => {
+    uploadAvatar: async (file: File): Promise<any> => {
       const formData = new FormData();
       formData.append('avatar', file);
-      const response = await api.post<ApiResponse<{ url: string }>>('/settings/profile/avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await api.post('/settings/profile/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      return handleApiResponse(response).url;
-    },
+      return response.data;
+    }
   },
-  notifications: {
-    get: async (): Promise<NotificationSettings> => {
-      const response = await api.get<ApiResponse<NotificationSettings>>('/settings/notifications');
-      return handleApiResponse(response);
-    },
-    update: async (data: NotificationSettingsInput): Promise<NotificationSettings> => {
-      const response = await api.put<ApiResponse<NotificationSettings>>('/settings/notifications', data);
-      return handleApiResponse(response);
-    },
+
+  // Branding settings
+  getBranding: async (): Promise<BrandingSettings> => {
+    const response = await api.get('/settings/branding');
+    return response.data;
   },
+
+  updateBranding: async (updates: UpdateBrandingRequest): Promise<BrandingSettings> => {
+    const response = await api.patch('/settings/branding', updates);
+    return response.data;
+  },
+
   branding: {
     get: async (): Promise<BrandingSettings> => {
-      const response = await api.get<ApiResponse<BrandingSettings>>('/settings/branding');
-      return handleApiResponse(response);
+      const response = await api.get('/settings/branding');
+      return response.data;
     },
-    update: async (data: BrandingSettingsInput): Promise<BrandingSettings> => {
-      const response = await api.put<ApiResponse<BrandingSettings>>('/settings/branding', data);
-      return handleApiResponse(response);
+    update: async (data: any): Promise<BrandingSettings> => {
+      const response = await api.patch('/settings/branding', data);
+      return response.data;
     },
-    uploadLogo: async (file: File): Promise<string> => {
+    uploadLogo: async (file: File): Promise<any> => {
       const formData = new FormData();
       formData.append('logo', file);
-      const response = await api.post<ApiResponse<{ url: string }>>('/settings/branding/logo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await api.post('/settings/branding/logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      return handleApiResponse(response).url;
-    },
+      return response.data;
+    }
   },
-  security: {
-    changePassword: async (data: PasswordChangeInput): Promise<void> => {
-      const response = await api.put<ApiResponse<void>>('/settings/security/password', data);
-      return handleApiResponse(response);
+
+  // Notification settings
+  getNotifications: async (): Promise<NotificationSettings> => {
+    const response = await api.get('/settings/notifications');
+    return response.data;
+  },
+
+  updateNotifications: async (updates: UpdateNotificationRequest): Promise<NotificationSettings> => {
+    const response = await api.patch('/settings/notifications', updates);
+    return response.data;
+  },
+
+  notifications: {
+    get: async (): Promise<NotificationSettings> => {
+      const response = await api.get('/settings/notifications');
+      return response.data;
     },
-    enable2FA: async (): Promise<{ secret: string; qrCode: string }> => {
-      const response = await api.post<ApiResponse<{ secret: string; qrCode: string }>>('/settings/security/2fa/enable');
-      return handleApiResponse(response);
+    update: async (data: any): Promise<NotificationSettings> => {
+      const response = await api.patch('/settings/notifications', data);
+      return response.data;
+    }
+  },
+
+  // Security
+  security: {
+    changePassword: async (data: any): Promise<void> => {
+      await api.post('/settings/security/password', data);
+    },
+    enable2FA: async (): Promise<any> => {
+      const response = await api.post('/settings/security/2fa/enable');
+      return response.data;
     },
     verify2FA: async (token: string): Promise<void> => {
-      const response = await api.post<ApiResponse<void>>('/settings/security/2fa/verify', { token });
-      return handleApiResponse(response);
+      await api.post('/settings/security/2fa/verify', { token });
     },
     disable2FA: async (token: string): Promise<void> => {
-      const response = await api.post<ApiResponse<void>>('/settings/security/2fa/disable', { token });
-      return handleApiResponse(response);
+      await api.post('/settings/security/2fa/disable', { token });
     },
-    getSessions: async (): Promise<any[]> => {
-      const response = await api.get<ApiResponse<any[]>>('/settings/security/sessions');
-      return handleApiResponse(response);
+    getSessions: async (): Promise<any> => {
+      const response = await api.get('/settings/security/sessions');
+      return response.data;
     },
     revokeSession: async (sessionId: string): Promise<void> => {
-      const response = await api.delete<ApiResponse<void>>(`/settings/security/sessions/${sessionId}`);
-      return handleApiResponse(response);
-    },
+      await api.delete(`/settings/security/sessions/${sessionId}`);
+    }
   },
+
+  // Website integrations
   website: {
     getIntegrations: async (): Promise<any> => {
-      const response = await api.get<ApiResponse<any>>('/settings/website/integrations');
-      return handleApiResponse(response);
+      const response = await api.get('/settings/website/integrations');
+      return response.data;
     },
     connectGoogleAnalytics: async (propertyId: string, credentials: any): Promise<void> => {
-      const response = await api.post<ApiResponse<void>>('/settings/website/google-analytics', { propertyId, credentials });
-      return handleApiResponse(response);
+      await api.post('/settings/website/google-analytics', { propertyId, credentials });
     },
     disconnectGoogleAnalytics: async (): Promise<void> => {
-      const response = await api.delete<ApiResponse<void>>('/settings/website/google-analytics');
-      return handleApiResponse(response);
+      await api.delete('/settings/website/google-analytics');
     },
     connectSearchConsole: async (siteUrl: string, credentials: any): Promise<void> => {
-      const response = await api.post<ApiResponse<void>>('/settings/website/search-console', { siteUrl, credentials });
-      return handleApiResponse(response);
+      await api.post('/settings/website/search-console', { siteUrl, credentials });
     },
-    verifyWebsite: async (url: string, method: 'dns' | 'file' | 'meta'): Promise<any> => {
-      const response = await api.post<ApiResponse<any>>('/settings/website/verify', { url, method });
-      return handleApiResponse(response);
-    },
+    verifyWebsite: async (url: string, method: string): Promise<any> => {
+      const response = await api.post('/settings/website/verify', { url, method });
+      return response.data;
+    }
   },
+
+  // API Keys
   apiKeys: {
-    list: async (): Promise<any[]> => {
-      const response = await api.get<ApiResponse<any[]>>('/settings/api-keys');
-      return handleApiResponse(response);
+    list: async (): Promise<any> => {
+      const response = await api.get('/settings/api-keys');
+      return response.data;
     },
     create: async (name: string, permissions: string[]): Promise<any> => {
-      const response = await api.post<ApiResponse<any>>('/settings/api-keys', { name, permissions });
-      return handleApiResponse(response);
+      const response = await api.post('/settings/api-keys', { name, permissions });
+      return response.data;
     },
     revoke: async (keyId: string): Promise<void> => {
-      const response = await api.delete<ApiResponse<void>>(`/settings/api-keys/${keyId}`);
-      return handleApiResponse(response);
-    },
+      await api.delete(`/settings/api-keys/${keyId}`);
+    }
   },
-};
 
-export default settingsAPI;
+  // Account deletion
+  deleteAccount: async (password: string): Promise<void> => {
+    await api.delete('/settings/account', {
+      data: { password }
+    });
+  }
+};
