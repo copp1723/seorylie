@@ -199,3 +199,210 @@ export interface FileUploadResponse {
   size: number;
   mimeType: string;
 }
+
+// Auth Types
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterCredentials {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+// Settings Request Types
+export interface UpdateProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  company?: string;
+  website?: string;
+  address?: string;
+  bio?: string;
+}
+
+export interface UpdateBrandingRequest {
+  companyName?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  theme?: 'light' | 'dark';
+  logo?: string;
+}
+
+export interface UpdateNotificationRequest {
+  emailReports?: boolean;
+  emailUpdates?: boolean;
+  smsAlerts?: boolean;
+  weeklyDigest?: boolean;
+  projectUpdates?: boolean;
+}
+
+// Order Types
+export interface OrderStatus {
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+}
+
+export interface CreateOrderRequest {
+  service: string;
+  description: string;
+  price: number;
+}
+
+export interface PaymentMethod {
+  id: string;
+  type: 'card' | 'bank' | 'paypal';
+  last4?: string;
+  brand?: string;
+  isDefault: boolean;
+}
+
+export interface PaymentResponse {
+  success: boolean;
+  transactionId: string;
+  amount: number;
+  currency: string;
+}
+
+export interface Invoice {
+  id: string;
+  orderId: string;
+  amount: number;
+  status: 'draft' | 'sent' | 'paid' | 'overdue';
+  dueDate: string;
+  items: InvoiceItem[];
+}
+
+export interface InvoiceItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface OrderAnalytics {
+  totalOrders: number;
+  completedOrders: number;
+  revenue: number;
+  averageOrderValue: number;
+  completionRate: number;
+}
+
+// Admin Types
+export interface AdminClient extends Client {
+  apiKey?: string;
+  permissions: string[];
+}
+
+export interface AdminStats {
+  totalClients: number;
+  activeClients: number;
+  totalRevenue: number;
+  monthlyRevenue: number;
+  totalRequests: number;
+  completedRequests: number;
+}
+
+export interface ImpersonationResponse {
+  token: string;
+  user: User;
+}
+
+export interface SystemHealthResponse {
+  health: SystemHealth;
+  metrics: SystemMetric[];
+  uptime: number;
+  version: string;
+}
+
+export interface SystemMetrics {
+  metrics: SystemMetric[];
+  timestamp: string;
+}
+
+export interface SystemLogs {
+  logs: LogEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface LogEntry {
+  id: string;
+  level: 'info' | 'warn' | 'error';
+  message: string;
+  timestamp: string;
+  metadata?: any;
+}
+
+export interface AdminAnalyticsOverview {
+  dailyActiveUsers: number;
+  weeklyActiveUsers: number;
+  monthlyActiveUsers: number;
+  userGrowth: number;
+  requestGrowth: number;
+  revenueGrowth: number;
+}
+
+export interface UserMetrics {
+  totalUsers: number;
+  newUsers: number;
+  activeUsers: number;
+  churnRate: number;
+  retentionRate: number;
+}
+
+export interface RevenueMetrics {
+  totalRevenue: number;
+  recurringRevenue: number;
+  averageRevenuePerUser: number;
+  lifetimeValue: number;
+  churnRevenue: number;
+}
+
+export interface UsageMetrics {
+  apiCalls: number;
+  storageUsed: number;
+  bandwidthUsed: number;
+  aiCreditsUsed: number;
+}
+
+export interface FeatureFlag {
+  id: string;
+  name: string;
+  enabled: boolean;
+  rolloutPercentage: number;
+  targetedUsers?: string[];
+}
+
+export interface BillingOverview {
+  currentPlan: string;
+  billingCycle: 'monthly' | 'annual';
+  nextBillingDate: string;
+  amount: number;
+  paymentMethod?: PaymentMethod;
+}
+
+export interface Subscription {
+  id: string;
+  clientId: string;
+  plan: string;
+  status: 'active' | 'cancelled' | 'expired';
+  startDate: string;
+  endDate?: string;
+  amount: number;
+}
+
+export interface SubscriptionQuery {
+  status?: 'active' | 'cancelled' | 'expired';
+  plan?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+// Settings Input Types
+export interface BrandingSettingsInput extends BrandingSettings {}
+export interface NotificationSettingsInput extends NotificationSettings {}
+export interface ProfileSettingsInput extends UserProfile {}
