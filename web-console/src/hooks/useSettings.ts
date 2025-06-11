@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingsAPI } from '../services/settings';
 import { queryKeys } from '../lib/queryClient';
 import { ProfileInput, NotificationSettingsInput, BrandingSettingsInput, PasswordChangeInput } from '../schemas/validation';
-import { useBranding } from '../contexts/BrandingContext';
 
 // Profile hooks
 export const useProfile = () => {
@@ -110,21 +109,8 @@ export const useBrandingSettings = () => {
   });
 };
 
-export const useUpdateBranding = () => {
-  const queryClient = useQueryClient();
-  const { updateBranding } = useBranding();
-
-  return useMutation({
-    mutationFn: (data: BrandingSettingsInput) => settingsAPI.branding.update(data),
-    onSuccess: (updatedBranding) => {
-      // Update cache
-      queryClient.setQueryData(queryKeys.settings.branding, updatedBranding);
-      
-      // Update branding context
-      updateBranding(updatedBranding);
-    },
-  });
-};
+// Note: useUpdateBranding removed to avoid circular dependency with BrandingContext
+// Use the updateBranding function from useBranding() hook directly instead
 
 export const useUploadLogo = () => {
   const queryClient = useQueryClient();

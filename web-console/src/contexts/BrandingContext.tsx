@@ -1,11 +1,15 @@
 import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { BrandingSettings } from '../types/api';
 import { useBrandingSettings } from '../hooks/useSettings';
+import { settingsAPI } from '../services/settings';
+import { queryKeys } from '../lib/queryClient';
 
 interface BrandingContextType {
   branding: BrandingSettings;
-  updateBranding: (newBranding: Partial<BrandingSettings>) => void;
+  updateBranding: (newBranding: Partial<BrandingSettings>) => Promise<void>;
   isLoading: boolean;
+  isUpdating: boolean;
 }
 
 const defaultBranding: BrandingSettings = {
@@ -30,17 +34,37 @@ interface BrandingProviderProps {
 }
 
 export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) => {
-  const [localBranding, setLocalBranding] = React.useState<BrandingSettings>(defaultBranding);
-  
+  const queryClient = useQueryClient();
+
   // Try to fetch branding settings from API
   const { data: remoteBranding, isLoading } = useBrandingSettings();
 
-  // Use remote branding if available, otherwise use local/default
-  const branding = remoteBranding || localBranding;
+  // Create update mutation directly here to avoid circular dependency
+  const updateBrandingMutation = useMutation({
+    mutationFn: (data: BrandingSettings) => settingsAPI.branding.update(data),
+    onSuccess: (updatedBranding) => {
+      // Update cache with server response
+      queryClient.setQueryData(queryKeys.settings.branding, updatedBranding);
+    },
+  });
 
-  const updateBranding = (newBranding: Partial<BrandingSettings>) => {
-    const updated = { ...branding, ...newBranding };
-    setLocalBranding(updated);
+  // Use remote branding if available, otherwise use default
+  const branding: BrandingSettings = remoteBranding || defaultBranding;
+
+  const updateBranding = async (newBranding: Partial<BrandingSettings>) => {
+    const updated = { ...branding, ...newBranding } as BrandingSettings;
+
+    // Optimistically update cache immediately for instant UI feedback
+    queryClient.setQueryData(queryKeys.settings.branding, updated);
+
+    // Persist changes to the server
+    try {
+      await updateBrandingMutation.mutateAsync(updated);
+    } catch (error) {
+      // Revert optimistic update if the server update fails
+      queryClient.setQueryData(queryKeys.settings.branding, remoteBranding);
+      throw error;
+    }
   };
 
   // Apply CSS custom properties for theming
@@ -60,7 +84,8 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
   const value = {
     branding,
     updateBranding,
-    isLoading
+    isLoading,
+    isUpdating: updateBrandingMutation.isPending
   };
 
   return (
