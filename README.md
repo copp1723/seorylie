@@ -1,403 +1,479 @@
-# seorylie - Automotive Dealership AI Platform
+# Rylie SEO Hub 🚀
 
-> This repository contains seorylie, a production-ready, multi-service AI platform for automotive dealerships. It's the result of a comprehensive integration and cleanup effort, consolidating features into a robust, scalable, and maintainable system.
+**White-Label SEO Middleware with Complete Client/Agency Separation**
 
-## 🚀 How We Work Now
-
-**Run `npm run setup` before all local or CI work. All quality gates are auto-checked before running. See [SETUP.md](SETUP.md) for troubleshooting.**
-
-### Quick Start for Developers
-
-1. **Setup**: `npm run setup` (handles all dependencies and validation)
-2. **Development**: `npm run dev` (starts frontend and backend)
-3. **Testing**: `npm run test` (auto-validates dependencies first)
-4. **Building**: `npm run build` (auto-validates dependencies first)
-
-### Quality Gates
-
-All commands now include automatic dependency verification and quality checks:
-
-- ✅ Dependencies installed and validated
-- ✅ TypeScript compilation passes
-- ✅ Linting rules enforced
-- ✅ Tests pass before builds
-- ✅ Environment properly configured
-
-### Git Strategy & Workflow
-
-seorylie uses a **stabilization git strategy** for controlled feature development:
-
-```
-main ─┬─► (production)
-      │
-      └─ stabilization ─► (long-lived integration branch)
-          ├─ feature/stab-101/bundle-size-guard
-          ├─ feature/stab-102/performance-tracker
-          └─ feature/stab-<ID>/<description>
-```
-
-**Branch Workflow:**
-
-- Work on feature branches: `feature/stab-<ID>/<desc>` branched from `stabilization`
-- Fast-forward merge to `stabilization` after CI passes
-- Final merge `stabilization → main` only when STAB-502 production readiness passes
-- Commit format: `feat: [STAB-101] description`
-
-**Development Process:**
-
-1. Create feature branch from `stabilization`
-2. Implement changes with comprehensive testing
-3. Run `npm run setup` and quality gates
-4. Submit PR to `stabilization` branch
-5. Merge after CI validation and review
-
-### CI/CD Integration
-
-- **Staging**: Push to `integration/production-readiness-phase1` → auto-deploys to staging
-- **Production**: Merge to `main` after staging validation passes
-- **Feature Work**: Create `feature/` branches off integration branch
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](package.json)
+[![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)](package.json)
+[![TypeScript](https://img.shields.io/badge/typescript-5.1+-blue.svg)](package.json)
+[![License](https://img.shields.io/badge/license-private-red.svg)](package.json)
 
 ---
 
-## Branching & Release Model
-
-| Branch                                      | Purpose                                                             |
-| ------------------------------------------- | ------------------------------------------------------------------- |
-| **main**                                    | Production baseline (fast-forwarded from golden release candidates) |
-| **integration/production-readiness-phase1** | Active development, staging, and release candidate branch           |
-
-Developers create short-lived `feat/`, `fix/`, or `chore/` branches off `integration/production-readiness-phase1` and open PRs back to it.
-Full details: [docs/BRANCHING_STRATEGY.md](docs/BRANCHING_STRATEGY.md).
-
----
-
-## Key Features
-
-- **AI-Powered Conversations**: OpenAI GPT-4 integration with customizable personas
-- **Multi-Tenant Architecture**: Secure dealership isolation with role-based access control
-- **Real-Time Communication**: Redis-scaled WebSocket chat with live updates
-- **Advanced Analytics**: KPI query caching (<50 ms) and performance dashboards
-- **Automated Lead Processing**: ADF email parsing and intelligent lead routing
-- **Enterprise Security**: JWT, CSRF, rate limiting, AES-256 encryption, audit logging
-- **Comprehensive API**: Well-documented endpoints for all core functionalities
-- **Developer-Friendly**: Dockerized environment, extensive testing, and clear documentation
-
----
-
-## 🚀 Quick Start
-
-### ⚠️ Prerequisites
-
-**Before running any lint, check, or test commands, ensure dependencies are installed:**
+## 🎯 **Quick Start**
 
 ```bash
+# 1. Clone and install dependencies
+git clone <repository-url>
+cd seorylie
 npm install
-```
 
-To verify vitest is installed, run:
-
-```bash
-npx vitest --version
-```
-
-If any errors about missing modules occur, repeat `npm install`.
-
-### Development Setup
-
-```bash
-# 1. Comprehensive environment setup (recommended)
-npm run setup
-
-# 2. Set up environment variables
+# 2. Setup environment
 cp .env.example .env
-# IMPORTANT: Edit .env with your actual API keys and configuration values
+# Edit .env with your configuration
 
-# 3. Set up database
-# Ensure PostgreSQL is running and accessible
-# Option 1: Use Drizzle migrations (recommended for most setups)
-npm run db:generate # If you made schema changes in shared/schema.ts
-npm run db:push     # Applies pending migrations
-
-# Option 2: Use the complete SQL schema (for a fresh start if migrations fail)
-# psql your_database_url < supabase-schema.sql # Adjust command as per your DB
-
-# 4. Setup ADF-W10 Conversation Orchestrator
-npm run setup:orchestrator setup --test-mode
-
-# 5. Start development server (frontend and backend)
+# 3. Start development server
 npm run dev
+
+# 4. Test the API
+curl http://localhost:3000/health
 ```
 
-The application should now be running on `http://localhost:5173` (frontend) and `http://localhost:3000` (backend API).
+**Ready to go!** 🎉 Your server is running at `http://localhost:3000`
 
-### Development Commands
+---
 
-After setup, you can safely run:
+## 📋 **Table of Contents**
+
+- [Overview](#-overview)
+- [Architecture](#-architecture)
+- [Environment Setup](#-environment-setup)
+- [Development Commands](#-development-commands)
+- [API Documentation](#-api-documentation)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [Troubleshooting](#-troubleshooting)
+
+---
+
+## 🔍 **Overview**
+
+Rylie SEO Hub is a sophisticated white-label SEO middleware that provides **complete separation** between clients and agencies through advanced AI proxy technology. It ensures zero PII exposure while maintaining full functionality for both parties.
+
+### ✨ **Key Features**
+
+- **🤖 AI Proxy Middleware** - Complete anonymization of client/agency interactions
+- **🔐 Role-Based Access Control (RBAC)** - Granular permission management
+- **🎨 White-Label Branding** - Customizable interface for each tenant
+- **📊 Comprehensive Analytics** - Google Analytics 4 integration with automated reporting
+- **📝 Audit Logging** - Complete activity tracking with trace IDs
+- **🔄 Real-time Updates** - WebSocket support for live data synchronization
+- **🚀 Modern Tech Stack** - TypeScript, Express, React, PostgreSQL, Redis
+
+### 🎪 **Use Cases**
+
+- **SEO Agencies** managing multiple client accounts
+- **White-label SEO providers** offering branded solutions
+- **Enterprise companies** requiring strict data separation
+- **Multi-tenant SaaS platforms** needing role-based access
+
+---
+
+## 🏗️ **Architecture**
+
+### **System Overview**
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Web Console   │◄──►│   Server API    │◄──►│   External APIs │
+│  (React + Vite) │    │ (Express + TS)  │    │ (GA4, OpenAI)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Static Files  │    │   PostgreSQL    │    │      Redis      │
+│   (S3/Local)    │    │   (Database)    │    │    (Cache)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### **Core Components**
+
+#### 🎛️ **Server (Node/Express Backend)**
+- **Location**: `/server`
+- **Purpose**: Main API server handling authentication, data processing, and external integrations
+- **Features**: JWT auth, rate limiting, request tracing, error handling
+- **Entry Point**: `server/index.ts`
+
+#### 🖥️ **Web Console (React Frontend)**
+- **Location**: `/web-console`
+- **Purpose**: Admin interface and client/agency dashboards
+- **Tech Stack**: React 18, TypeScript, Vite, TailwindCSS
+- **Features**: Real-time updates, responsive design, white-label theming
+
+#### 📦 **Packages (Shared Libraries)**
+- **GA4 Reporter** (`/packages/ga4-reporter`): Google Analytics 4 data retrieval and reporting
+- **SEO Schema** (`/packages/seo-schema`): Shared data models and validation schemas
+- **Common Utils** (`/packages/common`): Shared utilities and helpers
+
+#### 📱 **Apps (Specialized Applications)**
+- **Location**: `/apps/*`
+- **Purpose**: Specialized applications for different use cases
+- **Examples**: Mobile apps, specific integrations, microservices
+
+### **Data Flow**
+
+1. **Request** → AI Proxy Middleware (anonymization)
+2. **Authentication** → JWT validation + RBAC
+3. **Processing** → Business logic + external API calls
+4. **Response** → Structured JSON with trace IDs
+5. **Logging** → Centralized logging with context
+
+### **Multi-Tenant Architecture**
+
+- **Tenant Isolation**: Complete data separation by tenant ID
+- **White-Label Branding**: Customizable UI themes per tenant
+- **Role-Based Access**: Client, Agency, Admin role hierarchy
+- **Data Anonymization**: Zero PII exposure between roles
+
+---
+
+## ⚙️ **Environment Setup**
+
+### **Prerequisites**
+
+- **Node.js** >= 18.0.0
+- **PostgreSQL** >= 14
+- **Redis** >= 6.0
+- **Git** for version control
+
+### **Environment Configuration**
+
+1. **Copy Environment Template**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Required Configuration** (minimum for development)
+   ```env
+   # Database
+   DB_NAME=rylie_seo_dev
+   DB_USER=postgres
+   DB_PASSWORD=your_secure_password
+   
+   # Security
+   JWT_SECRET=your_very_secure_jwt_secret_at_least_64_characters_long
+   
+   # External Services (optional for development)
+   OPENAI_API_KEY=sk-your-openai-key
+   GA4_SERVICE_ACCOUNT_EMAIL=your-ga4-service-account@project.iam.gserviceaccount.com
+   ```
+
+3. **Production Configuration**
+   - Set `NODE_ENV=production`
+   - Use strong, unique secrets
+   - Configure all external service credentials
+   - Set up proper CORS origins
+
+### **Database Setup**
 
 ```bash
-npm run lint       # TypeScript checking (with auto pre-check)
-npm run check      # Type checking (with auto pre-check)
-npm run test       # Run tests (with auto pre-check)
-npm run build      # Build project (with auto pre-check)
+# Create database
+createdb rylie_seo_dev
+
+# Run migrations
+npm run migrate
+
+# (Optional) Seed development data
+npm run seed
 ```
 
-**Note:** These commands now include automatic dependency verification. If dependencies are missing, you'll get clear error messages with instructions.
+### **Validation**
 
-### Environment Restrictions
-
-**If your environment restricts network access after container startup:**
-All dependencies must be installed during the setup/init phase. Use:
-
-- `npm ci` for reproducible installs
-- `npm run setup` to verify all dependencies
-- Include `node_modules` in deployment if necessary
-
-See [SETUP.md](SETUP.md) for comprehensive setup documentation.
+The system will validate your configuration on startup and provide helpful error messages for missing or invalid settings.
 
 ---
 
-## 🐳 Docker Compose Setup
+## 🛠️ **Development Commands**
 
-Spin up **the entire multi-service AI platform** with a single command.
+### **Core Commands**
 
-### Prerequisites
+| Command | Purpose | Usage |
+|---------|---------|-------|
+| `npm run dev` | Start development server with hot reload | Development |
+| `npm run build` | Build for production | Deployment |
+| `npm start` | Start production server | Production |
+| `npm test` | Run all tests | CI/CD |
+| `npm run lint` | Check code quality | Development |
+| `npm run format` | Format code with Prettier | Development |
 
-- Docker Desktop (or Docker Engine v24+) installed
-- A valid `.env` file in the repository root containing **at least** `OPENAI_API_KEY`, `SESSION_SECRET`, and `DATABASE_URL`. Other service-specific keys might be needed based on enabled features.
-
-### Start the platform
+### **Database Commands**
 
 ```bash
-# From the repository root
-docker compose -f docker-compose.platform.yml up -d --build
+# Database migrations
+npm run migrate          # Apply pending migrations
+npm run migrate:reset    # Reset database (⚠️ destructive)
+npm run generate         # Generate new migration
+npm run studio          # Open Drizzle Studio (database GUI)
 ```
 
-> The first build can take a few minutes while images are built/pulled. Subsequent starts will be faster.
-
-#### What gets started
-
-| Service             | Image / Context                   | Port  | Notes                                |
-| ------------------- | --------------------------------- | ----- | ------------------------------------ |
-| PostgreSQL          | `postgres:15-alpine`              | 5432  | Primary relational DB                |
-| Redis               | `redis:alpine`                    | 6379  | Caching / messaging / session store  |
-| seorylie-api      | `./Dockerfile` (target `server`)  | 3000  | Express backend (`/api/*` routes)    |
-| seorylie-frontend | `./Dockerfile` (target `client`)  | 5173  | React/Vite frontend                  |
-| watchdog-api        | `final_watchdog/backend`          | 8000  | FastAPI analytics & insights         |
-| MindsDB (optional)  | `mindsdb/mindsdb:latest`          | 47334 | AutoML / SQL-over-AI gateway         |
-| mock-imap           | `./Dockerfile` (target `testing`) | 1143  | Mock IMAP server for email testing   |
-| mock-openai         | `./Dockerfile` (target `testing`) | 3001  | Mock OpenAI API for AI testing       |
-| mock-twilio         | `./Dockerfile` (target `testing`) | 3002  | Mock Twilio API for SMS testing      |
-| test-runner         | `./Dockerfile` (target `testing`) | -     | CI test runner for automated testing |
-
-You can access the running stack at:
-
-- Frontend → http://localhost:5173
-- seorylie API → http://localhost:3000
-- Watchdog API → http://localhost:8000
-- MindsDB UI → http://localhost:47334 (if enabled)
-
-### Health checks
-
-After the containers are up, verify every service is healthy:
+### **Development Utilities**
 
 ```bash
-./scripts/wait-for-health.sh
+# Code Quality
+npm run lint:fix        # Auto-fix linting issues
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Generate coverage report
+
+# Security & Maintenance
+npm audit              # Check for vulnerabilities
+npm run audit:security # Run comprehensive security audit
+npm run cleanup        # Remove unused dependencies
 ```
 
-The script polls:
-
-- `POSTGRES` readiness via `pg_isready`
-- `redis-cli ping`
-- `http://localhost:3000/api/health` (seorylie API)
-- `http://localhost:8000/api/health` (Watchdog API, if applicable)
-- `http://localhost:47334/api/health` (MindsDB, if applicable)
-
-### One-shot integration test (Example)
+### **Multi-Service Development**
 
 ```bash
-# Example: npx tsx scripts/test-integration.ts
-# (This script may need to be adapted to current platform capabilities)
+# Start all services concurrently
+npm run dev:all
+
+# Start specific services
+npm run dev:server     # Backend only
+npm run dev:console    # Frontend only
+npm run dev:ga4        # GA4 service only
 ```
 
-This type of script would typically simulate an agent question, analytics call, and insight response to confirm cross-service communication.
+---
 
-> **Troubleshooting**: Run `docker compose -f docker-compose.platform.yml logs -f <service_name>` to inspect logs for any failing container (e.g., `seorylie-api`).
+## 📚 **API Documentation**
 
-## 🧪 Testing Framework (ADF-013)
+### **Base URL**
+- **Development**: `http://localhost:3000/api`
+- **Production**: `https://your-domain.com/api`
 
-The platform includes a comprehensive testing framework with mock services for reliable, deterministic testing without external dependencies.
+### **Authentication**
 
-### Overview
-
-The ADF-013 testing framework provides:
-
-- **Mock Services**: Fully functional mocks for IMAP, OpenAI, and Twilio
-- **Deterministic Testing**: Predictable test results without external API costs or rate limits
-- **CI Integration**: GitHub Actions workflow with parallel test execution
-- **Test Fixtures**: Validated test data for consistent test scenarios
-- **Coverage Reporting**: Comprehensive test coverage metrics
-
-### Running Tests with Mock Services
-
-Enable mocks by setting the environment variable:
+All API endpoints require authentication via JWT tokens:
 
 ```bash
-# In your .env file or command line
-USE_MOCKS=true
+# Get auth token
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "password"}'
+
+# Use token in requests
+curl -X GET http://localhost:3000/api/client/dashboard \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-Run tests with mocks:
+### **Core Endpoints**
+
+#### **Health & Status**
+- `GET /health` - System health check
+- `GET /` - API information and endpoints
+
+#### **Client API** (`/api/client/*`)
+- `GET /dashboard` - Client dashboard data
+- `GET /reports` - Client-specific reports
+- `POST /requests` - Submit SEO requests
+
+#### **Agency API** (`/api/agency/*`)
+- `GET /clients` - Managed client list (anonymized)
+- `GET /tasks` - Agency task queue
+- `POST /reports` - Generate reports for clients
+
+#### **Admin API** (`/api/admin/*`)
+- `GET /tenants` - Tenant management
+- `GET /users` - User management
+- `GET /analytics` - System analytics
+
+### **Response Format**
+
+All API responses follow a consistent structure:
+
+```json
+{
+  "data": { ... },
+  "meta": {
+    "traceId": "uuid-v4",
+    "timestamp": "2025-06-10T20:00:00.000Z",
+    "environment": "development"
+  }
+}
+```
+
+### **Error Handling**
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "traceId": "uuid-v4",
+    "context": { ... }
+  }
+}
+```
+
+---
+
+## 🚀 **Deployment**
+
+### **Production Checklist**
+
+- [ ] Environment variables configured
+- [ ] Database migrations applied
+- [ ] SSL certificates installed
+- [ ] External service credentials verified
+- [ ] Monitoring and logging configured
+- [ ] Backup strategy implemented
+
+### **Docker Deployment**
 
 ```bash
-# Run all tests with mocks
-npm run test:mocks
+# Build and start services
+docker-compose up -d
 
-# Run integration tests with mock services
-npm run test:integration-mocks
+# Check logs
+docker-compose logs -f
 
-# Run ADF pipeline tests with mocks
-npm run test:adf-mocks
+# Scale services
+docker-compose up -d --scale server=3
 ```
 
-### Available Testing Commands
-
-| Command                          | Description                                     |
-| -------------------------------- | ----------------------------------------------- |
-| `npm run test:mocks`             | Run all mock service tests                      |
-| `npm run test:integration-mocks` | Run integration tests with mock services        |
-| `npm run test:adf-mocks`         | Test ADF pipeline with mock services            |
-| `npm run test:fixtures`          | Validate test fixtures for completeness         |
-| `npm run test:ci`                | Run all tests with coverage reporting (CI mode) |
-| `npm run test:ci-framework`      | Test the CI framework itself                    |
-
-### Testing with Docker Compose
-
-The `docker-compose.platform.yml` includes a complete testing environment:
+### **Environment-Specific Builds**
 
 ```bash
-# Start the platform with mock services
-docker compose -f docker-compose.platform.yml up -d
+# Production build
+NODE_ENV=production npm run build
 
-# Run tests in the test-runner container
-docker compose -f docker-compose.platform.yml run test-runner
+# Staging build
+NODE_ENV=staging npm run build:staging
 
-# Run specific test suite
-docker compose -f docker-compose.platform.yml run test-runner npm run test:adf-mocks
-```
-
-### CI Integration
-
-The GitHub Actions workflow (`.github/workflows/ci.yml`) provides:
-
-- **Parallel Testing**: Multiple test jobs run concurrently
-- **Dependency Caching**: Faster CI runs with npm cache
-- **Artifact Storage**: Test results and coverage reports preserved
-- **Environment Isolation**: Clean test environment for each run
-- **Codecov Integration**: Automated coverage reporting
-
-### Mock Services
-
-#### Mock IMAP Server (Port 1143)
-
-- Simulates email server for ADF lead processing tests
-- Provides deterministic email delivery for testing
-- Configurable mailboxes and email templates
-
-#### Mock OpenAI (Port 3001)
-
-- Simulates OpenAI API responses without API costs
-- Configurable response templates and latency
-- Supports streaming and non-streaming responses
-
-#### Mock Twilio (Port 3002)
-
-- Simulates SMS sending and delivery status updates
-- Configurable delivery delays and status callbacks
-- Records all sent messages for verification
-
----
-
-## 📁 Project Structure
-
-```
-seorylie/
-├── client/           # React frontend (Vite)
-├── server/           # Express.js backend (TypeScript)
-│   └── utils/helpers/  # Authorization and other shared utilities
-├── shared/           # Shared TypeScript schemas, types, and Drizzle ORM schema
-├── migrations/       # Database migration files (Drizzle Kit)
-├── test/             # Test suite (Vitest, Jest for specific cases)
-├── docs/             # Essential documentation
-├── scripts/          # Utility and automation scripts
-├── .env.example      # Example environment variables
-├── Dockerfile        # Multi-stage Dockerfile for client and server
-├── docker-compose.platform.yml # Docker Compose for full platform
-└── package.json      # Project dependencies and scripts
+# Development build
+npm run build:dev
 ```
 
 ---
 
-## Testing & Quality (v1.0-rc1 Baseline)
+## 🤝 **Contributing**
 
-- **Integration Quality Gate** (GitHub Actions): Type-check → Lint → Unit Tests → Integration Tests → E2E Tests → Build
-- **Coverage Target**: Aiming for >80% line coverage, tracked via Vitest/Jest coverage reports.
-- **Load Testing**: Performed using k6, targeting key API endpoints and WebSocket connections. Example: 100 RPS for 3 min, <1% error rate.
-- **Security Scans**: Regular audits using Snyk, npm-audit, and Docker image scanning.
-- **Docker Health**: All containers include health-checks; memory and CPU usage monitored.
-- **Accessibility**: Aiming for WCAG AA compliance for UI components.
+We welcome contributions! Please follow our development workflow:
 
----
+### **Branch Strategy**
 
-## Deployment (Production Ready)
+- `main` - Production-ready code
+- `develop` - Integration branch for features
+- `feature/*` - Feature development
+- `fix/*` - Bug fixes
+- `hotfix/*` - Emergency production fixes
 
-1.  Ensure the `integration/production-readiness-phase1` branch is stable and all tests pass.
-2.  Create a release tag (e.g., `git tag v1.0.0-rcX`).
-3.  Build production Docker images (can be done via CI/CD).
-4.  Push images to a container registry (e.g., Docker Hub, ECR, GCR).
-5.  Deploy to a production-like environment (e.g., Kubernetes, Docker Swarm, managed PaaS) using a blue-green or canary strategy.
-6.  Monitor application health via `/api/health`, Prometheus metrics, and centralized logging.
-7.  After a soak period with no regressions, merge the release candidate into `main` and create a final release tag (e.g., `v1.0.0`).
+### **Development Workflow**
 
----
+1. **Create Feature Branch**
+   ```bash
+   git checkout -b feature/TICKET-123-short-description
+   ```
 
-## Environment Variables
+2. **Make Changes**
+   - Follow TypeScript conventions
+   - Add tests for new features
+   - Update documentation
 
-Key environment variables are listed in `.env.example`. Ensure all required variables are set in your `.env` file or deployment environment. Critical variables include:
+3. **Quality Checks**
+   ```bash
+   npm run lint:fix
+   npm run format
+   npm test
+   ```
 
-- `DATABASE_URL`: Connection string for PostgreSQL.
-- `REDIS_URL`: Connection string for Redis.
-- `OPENAI_API_KEY`: For AI model access.
-- `SESSION_SECRET`: For Express session management.
-- `JWT_SECRET`: For JWT authentication.
-- `NODE_ENV`: Set to `production` for deployed environments.
+4. **Submit Pull Request**
+   - Target the `develop` branch
+   - Include ticket reference
+   - Add clear description
 
-Refer to `docs/ENVIRONMENT_CONFIGURATION.md` for a detailed guide.
+### **Code Standards**
 
----
+- **TypeScript**: Strict mode enabled
+- **Linting**: ESLint + Prettier
+- **Testing**: Jest for unit tests
+- **Documentation**: JSDoc for functions
+- **Commits**: Conventional commit format
 
-## Database
+### **Pre-commit Hooks**
 
-- **ORM**: Drizzle ORM for type-safe SQL queries and schema management.
-- **Migrations**: Handled by Drizzle Kit. See `migrations/` directory.
-  - To generate migrations: `npm run db:generate`
-  - To apply migrations: `npm run db:push`
-- **Schema**: Defined in `shared/schema.ts`.
-
----
-
-## Security Considerations
-
-- **Authentication**: JWT-based for API access, session-based for frontend interactions.
-- **Authorization**: Role-based access control (RBAC) implemented at the API and service layers.
-- **Input Validation**: Using Zod for request body and parameter validation.
-- **Rate Limiting**: Applied to sensitive endpoints to prevent abuse.
-- **CSRF Protection**: Implemented for relevant frontend forms and state-changing requests.
-- **Secrets Management**: Use environment variables; never commit secrets to the repository. Consider a secrets manager for production.
+Husky automatically runs:
+- Linting and formatting
+- Type checking
+- Test suite (on relevant files)
 
 ---
 
-## Contributing
+## 🔧 **Troubleshooting**
 
-Please refer to `CONTRIBUTING.md` (if available) or follow standard Gitflow practices. Ensure code is linted, tested, and documented before submitting pull requests.
+### **Common Issues**
 
-# CI Status: Fixed TypeScript and test command issues Fri May 30 13:57:29 CDT 2025
+#### **Server Won't Start**
+```bash
+# Check Node version
+node --version  # Should be >= 18.0.0
+
+# Check environment configuration
+npm run validate:env
+
+# Check port availability
+lsof -i :3000
+```
+
+#### **Database Connection Failed**
+```bash
+# Verify PostgreSQL is running
+pg_isready
+
+# Check connection string
+npm run test:db
+
+# Reset database if needed
+npm run migrate:reset
+```
+
+#### **Build Failures**
+```bash
+# Clear caches
+npm run clean
+rm -rf node_modules
+npm install
+
+# Check TypeScript errors
+npm run type-check
+```
+
+### **Debug Mode**
+
+Enable detailed logging for debugging:
+
+```bash
+# Start with debug logging
+LOG_LEVEL=debug npm run dev
+
+# View specific service logs
+DEBUG=seorylie:* npm run dev
+```
+
+### **Getting Help**
+
+- **Documentation**: Check `/docs` folder for detailed guides
+- **Issues**: Create GitHub issue with reproduction steps
+- **Security**: Email security issues privately
+- **Community**: Join our Discord/Slack for discussions
+
+---
+
+## 📄 **License**
+
+This project is proprietary software. All rights reserved.
+
+---
+
+## 🏆 **Acknowledgments**
+
+Built with ❤️ using modern technologies:
+- [TypeScript](https://www.typescriptlang.org/) for type safety
+- [Express.js](https://expressjs.com/) for robust API development
+- [React](https://reactjs.org/) for dynamic user interfaces
+- [PostgreSQL](https://www.postgresql.org/) for reliable data storage
+- [Redis](https://redis.io/) for high-performance caching
+
+---
+
+**Ready to build amazing SEO solutions?** 🚀
+
+For support and questions, please check our [troubleshooting guide](#-troubleshooting) or create an issue.
