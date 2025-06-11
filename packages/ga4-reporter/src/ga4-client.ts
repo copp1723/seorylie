@@ -202,6 +202,13 @@ export class GA4Client {
   }
 
   /**
+   * Get the property ID for this client
+   */
+  public getPropertyId(): string {
+    return this.options.propertyId;
+  }
+
+  /**
    * Initialize Google Analytics clients
    */
   private initializeClients(): void {

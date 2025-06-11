@@ -20,6 +20,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Select } from "../components/ui/select";
 import { useBranding } from "../contexts/BrandingContext";
 import { submitToSEOWerks, transformToSEOWerksFormat, validateSEOWerksData } from "../services/seowerks-integration";
+import { safeLog, safeLogError } from "../lib/utils";
 
 interface OnboardingData {
   // Basic Business Info
@@ -127,8 +128,8 @@ const seoGoals = [
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  // const [isSubmitting, setIsSubmitting] = useState(false);
-  // const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { branding } = useBranding();
 
   const [formData, setFormData] = useState<OnboardingData>({
@@ -248,15 +249,17 @@ export default function Onboarding() {
         // Continue anyway - internal data is saved
       }
 
-      console.log('Onboarding completed successfully:', {
+      safeLog('Onboarding completed successfully', {
         internal: true,
         seowerks: seowerksResult.success,
-        data: formData
+        businessName: formData.businessName,
+        websiteUrl: formData.websiteUrl,
+        package: formData.package
       });
 
       setIsSubmitted(true);
     } catch (error) {
-      console.error('Onboarding submission error:', error);
+      safeLogError('Onboarding submission error', error);
       setSubmitError(error instanceof Error ? error.message : 'Submission failed');
     } finally {
       setIsSubmitting(false);

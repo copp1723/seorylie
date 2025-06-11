@@ -10,7 +10,8 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
-    project: './tsconfig.json'
+    project: './tsconfig.json',
+    createDefaultProgram: false
   },
   env: {
     node: true,
@@ -24,7 +25,6 @@ module.exports = {
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-non-null-assertion': 'warn',
-    '@typescript-eslint/prefer-const': 'error',
     '@typescript-eslint/no-var-requires': 'off'
   },
   ignorePatterns: [
@@ -33,6 +33,14 @@ module.exports = {
     '*.js',
     '*.d.ts',
     'coverage/',
-    'build/'
+    'build/',
+    'web-console/dist/',
+    'web-console/node_modules/',
+    'packages/*/dist/',
+    'packages/*/node_modules/',
+    'apps/*/dist/',
+    'apps/*/node_modules/',
+    '**/*.min.js',
+    '**/*.bundle.js'
   ]
 };

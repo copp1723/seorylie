@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# Generated files
+*.d.ts
+*.min.js
+*.bundle.js
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment files
+.env
+.env.*
+
+# Specific large directories that don't need linting
+web-console/dist/
+web-console/node_modules/
+packages/*/dist/
+packages/*/node_modules/
+apps/*/dist/
+apps/*/node_modules/
+
+# Generated documentation
+docs/api/
+docs/build/
+
+# Test fixtures and large data files
+tests/fixtures/
+tests/data/
+**/*.fixture.ts
+**/*.mock.ts
+
+# Vendor/third-party code
+vendor/
+third-party/

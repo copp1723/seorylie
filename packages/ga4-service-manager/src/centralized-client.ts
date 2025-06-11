@@ -76,12 +76,12 @@ export class CentralizedGA4Client extends GA4Client {
     
     try {
       // Check if we can make API calls (quota check)
-      if (!this.serviceAccountManager.canMakeApiCall(this.options.propertyId)) {
+      if (!this.serviceAccountManager.canMakeApiCall(this.getPropertyId())) {
         throw new Error('API quota exceeded. Please try again later.');
       }
 
       // Validate property access
-      const accessResult = await this.serviceAccountManager.testPropertyAccess(this.options.propertyId);
+      const accessResult = await this.serviceAccountManager.testPropertyAccess(this.getPropertyId());
       if (!accessResult.hasAccess) {
         throw new Error(`No access to GA4 property: ${accessResult.error}`);
       }
@@ -90,7 +90,7 @@ export class CentralizedGA4Client extends GA4Client {
       let cacheKey: string | undefined;
       if (this.cacheEnabled && options.dateRange) {
         cacheKey = generateCacheKey(
-          this.options.propertyId,
+          this.getPropertyId(),
           reportType,
           options.dateRange,
           { tenantId: this.tenantId }
@@ -129,7 +129,7 @@ export class CentralizedGA4Client extends GA4Client {
 
       logger.info({
         tenantId: this.tenantId,
-        propertyId: this.options.propertyId,
+        propertyId: this.getPropertyId(),
         reportType,
         responseTime: Date.now() - startTime,
         cached: false,
@@ -139,7 +139,7 @@ export class CentralizedGA4Client extends GA4Client {
     } catch (error) {
       logger.error({
         tenantId: this.tenantId,
-        propertyId: this.options.propertyId,
+        propertyId: this.getPropertyId(),
         reportType,
         error,
         responseTime: Date.now() - startTime,
@@ -306,7 +306,7 @@ export class CentralizedGA4Client extends GA4Client {
     metadata?: any;
   }> {
     try {
-      const result = await this.serviceAccountManager.testPropertyAccess(this.options.propertyId);
+      const result = await this.serviceAccountManager.testPropertyAccess(this.getPropertyId());
       
       return {
         success: result.hasAccess,
@@ -325,7 +325,7 @@ export class CentralizedGA4Client extends GA4Client {
    * Get current quota usage for this property
    */
   getQuotaUsage() {
-    return this.serviceAccountManager.getQuotaUsage(this.options.propertyId);
+    return this.serviceAccountManager.getQuotaUsage(this.getPropertyId());
   }
 
   /**
@@ -339,7 +339,7 @@ export class CentralizedGA4Client extends GA4Client {
   } {
     return {
       tenantId: this.tenantId,
-      propertyId: this.options.propertyId,
+      propertyId: this.getPropertyId(),
       branding: this.tenantBranding,
       cacheEnabled: this.cacheEnabled,
     };

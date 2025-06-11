@@ -6,6 +6,7 @@
 import { PDFDocument, PDFImage, PDFPage, rgb, StandardFonts } from "pdf-lib";
 import sharp from "sharp";
 import path from "path";
+import { readFile, writeFile, mkdir } from "fs/promises";
 import { ExifTool } from "exiftool-vendored";
 import {
   createLogger,
@@ -254,12 +255,12 @@ export class PDFTransformer {
       let containsVendorRef = false;
 
       // Check for vendor names
-      this.options.vendorNames.forEach((vendorName) => {
+      this.options.vendorNames?.forEach((vendorName) => {
         if (value.includes(vendorName)) {
           containsVendorRef = true;
           newValue = newValue.replace(
             new RegExp(vendorName, "gi"),
-            this.options.whiteLabelName,
+            this.options.whiteLabelName || "Rylie SEO",
           );
           result.detectedVendorReferences.push(
             `Metadata contains vendor name: ${vendorName}`,
@@ -269,7 +270,7 @@ export class PDFTransformer {
       });
 
       // Check for vendor domains
-      this.options.vendorDomains.forEach((vendorDomain) => {
+      this.options.vendorDomains?.forEach((vendorDomain) => {
         if (value.includes(vendorDomain)) {
           containsVendorRef = true;
           newValue = newValue.replace(
@@ -287,14 +288,14 @@ export class PDFTransformer {
     };
 
     // Set sanitized metadata
-    pdfDoc.setAuthor(checkAndReplace(author) || this.options.whiteLabelName);
-    pdfDoc.setCreator(checkAndReplace(creator) || this.options.whiteLabelName);
+    pdfDoc.setAuthor(checkAndReplace(author) || this.options.whiteLabelName || "Rylie SEO");
+    pdfDoc.setCreator(checkAndReplace(creator) || this.options.whiteLabelName || "Rylie SEO");
     pdfDoc.setProducer(
-      checkAndReplace(producer) || this.options.whiteLabelName,
+      checkAndReplace(producer) || this.options.whiteLabelName || "Rylie SEO",
     );
     pdfDoc.setSubject(checkAndReplace(subject) || "SEO Report");
     pdfDoc.setTitle(
-      checkAndReplace(title) || `${this.options.whiteLabelName} Report`,
+      checkAndReplace(title) || `${this.options.whiteLabelName || "Rylie SEO"} Report`,
     );
     pdfDoc.setKeywords(
       (checkAndReplace(keywords) || "SEO,Report,Analytics").split(","),
@@ -325,10 +326,10 @@ export class PDFTransformer {
     );
 
     // Increment replaced text count as a placeholder
-    result.replacedTextCount = this.options.vendorNames.length;
+    result.replacedTextCount = this.options.vendorNames?.length || 0;
 
     // Add detected references
-    this.options.vendorNames.forEach((vendorName) => {
+    this.options.vendorNames?.forEach((vendorName) => {
       result.detectedVendorReferences.push(
         `Assumed text contains vendor name: ${vendorName}`,
       );
@@ -425,7 +426,7 @@ export class PDFTransformer {
 
     // Get header text
     const headerText =
-      this.options.whiteLabelHeaderText || this.options.whiteLabelName;
+      this.options.whiteLabelHeaderText || this.options.whiteLabelName || "Rylie SEO";
 
     // Get all pages
     const pages = pdfDoc.getPages();
@@ -640,7 +641,7 @@ export class PDFTransformer {
           Body: transformedPdfBuffer,
           ContentType: "application/pdf",
           Metadata: {
-            "x-amz-meta-white-label": this.options.whiteLabelName,
+            "x-amz-meta-white-label": this.options.whiteLabelName || "Rylie SEO",
             "x-amz-meta-transform-id": this.transformId,
           },
         })

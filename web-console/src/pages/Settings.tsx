@@ -17,6 +17,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Select } from "../components/ui/select";
 import { useBranding } from "../contexts/BrandingContext";
 import { useAuth } from "../contexts/AuthContext";
+import { safeLog } from "../lib/utils";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile');
@@ -66,12 +67,12 @@ export default function Settings() {
   ];
 
   const handleSaveProfile = async () => {
-    console.log('Saving profile:', profileData);
+    safeLog('Saving profile', profileData);
     // In a real app, make API call to save profile
   };
 
   const handleSaveNotifications = async () => {
-    console.log('Saving notifications:', notifications);
+    safeLog('Saving notifications', notifications);
     // In a real app, make API call to save notification preferences
   };
 
@@ -80,7 +81,11 @@ export default function Settings() {
       alert('Passwords do not match');
       return;
     }
-    console.log('Updating security settings');
+    safeLog('Updating security settings', {
+      hasCurrentPassword: !!security.currentPassword,
+      hasNewPassword: !!security.newPassword,
+      twoFactorEnabled: security.twoFactorEnabled
+    });
     // In a real app, make API call to update password/security
   };
 
@@ -91,7 +96,7 @@ export default function Settings() {
       secondaryColor: brandingSettings.secondaryColor,
       theme: brandingSettings.theme as 'light' | 'dark'
     });
-    console.log('Saving branding:', brandingSettings);
+    safeLog('Saving branding', brandingSettings);
   };
 
   return (
@@ -405,7 +410,7 @@ export default function Settings() {
                     </label>
                     <Select
                       value={brandingSettings.theme}
-                      onChange={(e) => setBrandingSettings(prev => ({ ...prev, theme: e.target.value }))}
+                      onChange={(e) => setBrandingSettings(prev => ({ ...prev, theme: e.target.value as 'light' | 'dark' }))}
                     >
                       <option value="light">Light</option>
                       <option value="dark">Dark</option>

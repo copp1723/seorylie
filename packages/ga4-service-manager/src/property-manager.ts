@@ -533,8 +533,8 @@ export class GA4PropertyManager {
       
       return {
         hasRecentData: newestDataDate >= recentCutoff,
-        oldestDate,
-        newestDate,
+        oldestDate: oldestDate || undefined,
+        newestDate: newestDate || undefined,
         totalSessions: totalSessions ? parseInt(totalSessions) : 0,
       };
     } catch (error) {

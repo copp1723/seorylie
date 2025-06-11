@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { useBranding } from "../contexts/BrandingContext";
 import { useAuth } from "../contexts/AuthContext";
 import { generateChatResponse, submitSEORequest, type ChatMessage } from "../services/chat-service";
+import { safeLogError } from "../lib/utils";
 
 // Use the enhanced ChatMessage interface from chat-service
 type Message = ChatMessage;
@@ -64,7 +65,7 @@ export default function Chat() {
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error sending message:', error);
+      safeLogError('Error sending message', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: "I'm sorry, I encountered an error processing your request. Please try again.",
@@ -94,7 +95,7 @@ export default function Chat() {
 
       setMessages(prev => [...prev, responseMessage]);
     } catch (error) {
-      console.error('Error submitting request:', error);
+      safeLogError('Error submitting request', error);
       const errorMessage: Message = {
         id: Date.now().toString(),
         content: "❌ There was an error submitting your request. Please try again or contact support.",
