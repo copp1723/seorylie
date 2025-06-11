@@ -1,15 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface User {
-  id: string;
-  role: 'client' | 'agency' | 'admin';
-  email: string;
-  tenantId?: string;
-  agencyId?: string;
-}
+import { User } from '../types/api';
+import { authAPI } from '../services/auth';
+import { queryClient } from '../lib/queryClient';
 
 interface AuthContextType {
   user: User | null;
+  setUser: (user: User | null) => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
@@ -18,10 +14,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
+export const useAuthContext = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuthContext must be used within an AuthProvider');
   }
   return context;
 };
@@ -40,16 +36,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = localStorage.getItem('authToken');
       if (token) {
         try {
-          // In a real app, validate token with server
-          // For now, mock a client user
-          setUser({
-            id: 'client_123',
-            role: 'client',
-            email: 'demo@client.com',
-            tenantId: 'tenant_123'
-          });
+          // Validate token with server and get user data
+          const userData = await authAPI.getProfile();
+          setUser(userData);
         } catch (error) {
+          console.error('Token validation failed:', error);
+          // Clear invalid token
           localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
         }
       }
       setIsLoading(false);
@@ -61,30 +55,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock login - in real app, call your auth API
-      const mockUser: User = {
-        id: 'client_123',
-        role: 'client',
-        email,
-        tenantId: 'tenant_123'
-      };
+      const response = await authAPI.login({ email, password });
       
-      setUser(mockUser);
-      localStorage.setItem('authToken', 'mock-jwt-token');
-    } catch (error) {
-      throw new Error('Invalid credentials');
+      // Store tokens
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('refreshToken', response.refreshToken);
+      
+      // Set user state
+      setUser(response.user);
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      throw new Error(error.response?.data?.message || 'Invalid credentials');
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = () => {
+    // Call logout API (fire and forget)
+    authAPI.logout().catch(console.error);
+    
+    // Clear local state
     setUser(null);
     localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    
+    // Clear all cached data
+    queryClient.clear();
   };
 
   const value = {
     user,
+    setUser,
     login,
     logout,
     isLoading,
