@@ -1,12 +1,14 @@
 services:
   # Backend API Service
   - type: web
-    name: rylie-seo-api
-    runtime: node
-    repo: https://github.com/copp1723/seorylie
+    name: cleanrylie-web
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
     branch: main
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    buildCommand: ""
+    startCommand: ""
     envVars:
       - key: NODE_ENV
         value: production
