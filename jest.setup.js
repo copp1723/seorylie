@@ -3,9 +3,6 @@
  * @description Global test setup and configuration for SEORYLIE test suite
  */
 
-// Extend Jest matchers
-import 'jest-extended';
-
 // Set up test environment variables
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-for-testing-only';
@@ -64,6 +61,24 @@ jest.mock('winston', () => ({
     File: jest.fn()
   }
 }));
+
+// Add custom matchers manually (since jest-extended might not be available)
+expect.extend({
+  toBeFunction(received) {
+    const pass = typeof received === 'function';
+    if (pass) {
+      return {
+        message: () => `expected ${received} not to be a function`,
+        pass: true,
+      };
+    } else {
+      return {
+        message: () => `expected ${received} to be a function`,
+        pass: false,
+      };
+    }
+  },
+});
 
 // Global test utilities
 global.testUtils = {
