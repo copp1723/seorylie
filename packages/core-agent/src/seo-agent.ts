@@ -13,7 +13,7 @@ export class SEOAgent {
     private config: SEOAgentConfig = {},
   ) {}
 
-  async processSeoRequest(request: any): Promise<any> {
+  async processSeoRequest(_request: any): Promise<any> {
     // Implementation
     return { success: true, message: "Request processed" };
   }

@@ -71,8 +71,8 @@ export interface QuotaUsage {
  * Handles authentication, property access validation, and quota management
  */
 export class GA4ServiceAccountManager {
-  private jwtClient: JWT;
-  private analyticsDataClient: BetaAnalyticsDataClient;
+  private jwtClient!: JWT;
+  private analyticsDataClient!: BetaAnalyticsDataClient;
   private analyticsAdmin: any;
   private encryptionKey: string;
   private quotaTracker: Map<string, QuotaUsage> = new Map();
@@ -108,7 +108,7 @@ export class GA4ServiceAccountManager {
       });
 
       this.analyticsDataClient = new BetaAnalyticsDataClient({
-        auth: this.jwtClient,
+        auth: this.jwtClient as any,
       });
 
       this.analyticsAdmin = google.analyticsadmin({
@@ -243,12 +243,6 @@ export class GA4ServiceAccountManager {
     return results;
   }
 
-  /**
-   * Get the service account email for client onboarding instructions
-   */
-  getServiceAccountEmail(): string {
-    return this.config.serviceAccountEmail;
-  }
 
   /**
    * Get onboarding instructions for clients
@@ -396,6 +390,13 @@ export class GA4ServiceAccountManager {
     if (!usage) return true;
 
     return usage.remainingDaily > 0 && usage.remainingHourly > 0;
+  }
+
+  /**
+   * Get service account email
+   */
+  getServiceAccountEmail(): string {
+    return this.config.serviceAccountEmail;
   }
 
   /**

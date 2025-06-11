@@ -533,7 +533,7 @@ export class PDFTransformer {
     }
 
     if (this.options.inputPdfPath) {
-      return await readFile(this.options.inputPdfPath);
+      return await fsUtils.readFile(this.options.inputPdfPath);
     }
 
     if (this.options.inputPdfS3Key) {
@@ -564,7 +564,7 @@ export class PDFTransformer {
    */
   private async getWhiteLabelLogo(): Promise<Buffer> {
     if (this.options.whiteLabelLogoPath) {
-      return await readFile(this.options.whiteLabelLogoPath);
+      return await fsUtils.readFile(this.options.whiteLabelLogoPath);
     }
 
     if (
@@ -622,7 +622,7 @@ export class PDFTransformer {
 
     // Save to file if outputPdfPath is provided
     if (this.options.outputPdfPath) {
-      await writeFile(this.options.outputPdfPath, transformedPdfBuffer);
+      await fsUtils.writeFile(this.options.outputPdfPath, transformedPdfBuffer);
       result.transformedPdfPath = this.options.outputPdfPath;
     }
 
@@ -662,7 +662,7 @@ export class PDFTransformer {
    */
   private async ensureTempDir(): Promise<void> {
     try {
-      await mkdir(this.tempDir, { recursive: true });
+      await fsUtils.mkdir(this.tempDir, { recursive: true });
     } catch (error) {
       // Ignore if directory already exists
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
