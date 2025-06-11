@@ -35,7 +35,10 @@
   },
   "include": [
     "packages/**/*.ts",
-    "apps/**/*.ts"
+    "apps/**/*.ts",
+    "server/**/*.ts",
+    "web-console/**/*.ts",
+    "web-console/**/*.tsx"
   ],
   "exclude": [
     "node_modules",

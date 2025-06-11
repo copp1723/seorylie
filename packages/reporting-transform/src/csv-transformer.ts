@@ -6,56 +6,51 @@
 import { S3 } from "aws-sdk";
 import fs from "fs";
 import path from "path";
-import { promisify } from "util";
-import { v4 as uuidv4 } from "uuid";
-import pino from "pino";
 import csvParser from "csv-parser";
 import { createObjectCsvWriter } from "csv-writer";
 import { Readable, Transform } from "stream";
 import { pipeline } from "stream/promises";
-
-// Promisify fs functions
-const readFile = promisify(fs.readFile);
-const writeFile = promisify(fs.writeFile);
-const mkdir = promisify(fs.mkdir);
-const unlink = promisify(fs.unlink);
+import {
+  createLogger,
+  createS3Client,
+  WHITE_LABEL_CONFIG,
+  VENDOR_CONFIG,
+  BaseTransformOptions,
+  BaseTransformResult,
+  getInputBuffer,
+  generateTransformId,
+  ensureDirectory,
+  fsUtils,
+} from "@rylie-seo/seo-schema";
 
 // Initialize logger
-const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-    },
-  },
-});
+const logger = createLogger();
 
 /**
  * Configuration options for CSV transformation
  */
-export interface CSVTransformOptions {
-  // Input options
+export interface CSVTransformOptions extends BaseTransformOptions {
+  // Input options (renamed for CSV specificity)
   inputCsvBuffer?: Buffer;
   inputCsvPath?: string;
   inputCsvS3Key?: string;
 
-  // Output options
+  // Output options (renamed for CSV specificity)
   outputCsvPath?: string;
   outputCsvS3Key?: string;
   outputCsvS3Bucket?: string;
 
-  // Branding options
-  whiteLabelName: string;
-  whiteLabelDomain: string;
-  whiteLabelEmail: string;
+  // Branding options (override base interface)
+  whiteLabelName?: string;
+  whiteLabelDomain?: string;
+  whiteLabelEmail?: string;
   whiteLabelPhone?: string;
   whiteLabelAddress?: string;
 
-  // Vendor detection options
-  vendorNames: string[];
-  vendorDomains: string[];
-  vendorEmails: string[];
+  // Vendor detection options (optional - defaults from VENDOR_CONFIG)
+  vendorNames?: string[];
+  vendorDomains?: string[];
+  vendorEmails?: string[];
   vendorPhones?: string[];
 
   // Column mapping
@@ -77,20 +72,40 @@ export interface CSVTransformOptions {
 }
 
 /**
+ * Internal options interface with all required properties
+ */
+interface InternalCSVTransformOptions extends CSVTransformOptions {
+  whiteLabelName: string;
+  whiteLabelDomain: string;
+  whiteLabelEmail: string;
+  vendorNames: string[];
+  vendorDomains: string[];
+  vendorEmails: string[];
+  tempDir: string;
+  delimiter: string;
+  quoteChar: string;
+  escapeChar: string;
+  encoding: BufferEncoding;
+  sanitizeHeaders: boolean;
+  sanitizeData: boolean;
+  addWhiteLabelColumns: boolean;
+  addWhiteLabelFooter: boolean;
+  addWhiteLabelHeader: boolean;
+}
+
+/**
  * Result of CSV transformation
  */
-export interface CSVTransformResult {
-  success: boolean;
+export interface CSVTransformResult extends BaseTransformResult {
+  // CSV-specific result fields
   transformedCsvBuffer?: Buffer;
   transformedCsvPath?: string;
   transformedCsvS3Url?: string;
   transformedCsvS3Key?: string;
-  detectedVendorReferences: string[];
   replacedValueCount: number;
   replacedHeaderCount: number;
   rowCount: number;
   columnCount: number;
-  error?: Error;
 }
 
 /**
@@ -98,7 +113,7 @@ export interface CSVTransformResult {
  */
 export class CSVTransformer {
   private s3: S3;
-  private options: CSVTransformOptions;
+  private options: InternalCSVTransformOptions;
   private tempDir: string;
   private transformId: string;
 
@@ -109,27 +124,18 @@ export class CSVTransformer {
   constructor(options: CSVTransformOptions) {
     // Set default options first, then override with provided options
     const defaultOptions = {
-      whiteLabelName: "Rylie SEO",
-      whiteLabelDomain: "rylie-seo.com",
-      whiteLabelEmail: "support@rylie-seo.com",
-      vendorNames: [
-        "CustomerScout",
-        "Customer Scout",
-        "CS SEO",
-        "CS Analytics",
-      ],
-      vendorDomains: ["customerscout.com", "cs-seo.com", "cs-analytics.com"],
-      vendorEmails: [
-        "support@customerscout.com",
-        "reports@cs-seo.com",
-        "analytics@cs-analytics.com",
-      ],
+      whiteLabelName: WHITE_LABEL_CONFIG.name,
+      whiteLabelDomain: WHITE_LABEL_CONFIG.domain,
+      whiteLabelEmail: WHITE_LABEL_CONFIG.email,
+      vendorNames: VENDOR_CONFIG.names,
+      vendorDomains: VENDOR_CONFIG.domains,
+      vendorEmails: VENDOR_CONFIG.emails,
       sanitizeHeaders: true,
       sanitizeData: true,
       addWhiteLabelColumns: true,
       addWhiteLabelFooter: false,
       addWhiteLabelHeader: false,
-      tempDir: path.join(process.cwd(), "tmp"),
+      tempDir: WHITE_LABEL_CONFIG.defaultTempDir,
       delimiter: ",",
       quoteChar: '"',
       escapeChar: '"',
@@ -139,20 +145,23 @@ export class CSVTransformer {
     this.options = {
       ...defaultOptions,
       ...options,
-    };
+      // Ensure required properties are set
+      whiteLabelName: options.whiteLabelName || defaultOptions.whiteLabelName,
+      whiteLabelDomain: options.whiteLabelDomain || defaultOptions.whiteLabelDomain,
+      whiteLabelEmail: options.whiteLabelEmail || defaultOptions.whiteLabelEmail,
+      vendorNames: options.vendorNames || defaultOptions.vendorNames,
+      vendorDomains: options.vendorDomains || defaultOptions.vendorDomains,
+      vendorEmails: options.vendorEmails || defaultOptions.vendorEmails,
+    } as InternalCSVTransformOptions;
 
-    // Initialize S3 client
-    this.s3 = new S3({
-      region: process.env.AWS_REGION || "us-east-1",
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    });
+    // Initialize S3 client using shared utility
+    this.s3 = createS3Client();
 
     // Generate unique ID for this transformation
-    this.transformId = uuidv4();
+    this.transformId = generateTransformId();
 
     // Set temp directory
-    this.tempDir = this.options.tempDir || path.join(process.cwd(), "tmp");
+    this.tempDir = this.options.tempDir || WHITE_LABEL_CONFIG.defaultTempDir;
   }
 
   /**
@@ -228,7 +237,7 @@ export class CSVTransformer {
     );
 
     // Write input buffer to temporary file
-    await writeFile(tempInputPath, inputCsvBuffer);
+    await fsUtils.writeFile(tempInputPath, inputCsvBuffer);
 
     // Parse CSV to get headers and data
     const rows: Record<string, string>[] = [];
@@ -300,7 +309,7 @@ export class CSVTransformer {
     await csvWriter.writeRecords(rows);
 
     // Read the transformed CSV file
-    const transformedCsvBuffer = await readFile(tempOutputPath);
+    const transformedCsvBuffer = await fsUtils.readFile(tempOutputPath);
 
     // Return the transformed CSV buffer and stats
     return {
@@ -462,33 +471,14 @@ export class CSVTransformer {
    * @returns Buffer containing the input CSV
    */
   private async getInputCsvBuffer(): Promise<Buffer> {
-    if (this.options.inputCsvBuffer) {
-      return this.options.inputCsvBuffer;
-    }
-
-    if (this.options.inputCsvPath) {
-      return await readFile(this.options.inputCsvPath);
-    }
-
-    if (this.options.inputCsvS3Key) {
-      const s3Response = await this.s3
-        .getObject({
-          Bucket: process.env.S3_BUCKET_NAME || "rylie-seo-reports",
-          Key: this.options.inputCsvS3Key,
-        })
-        .promise();
-
-      if (!s3Response.Body) {
-        throw new Error(
-          `Failed to get CSV from S3: ${this.options.inputCsvS3Key}`,
-        );
-      }
-
-      return s3Response.Body as Buffer;
-    }
-
-    throw new Error(
-      "No input CSV provided. Please provide inputCsvBuffer, inputCsvPath, or inputCsvS3Key.",
+    return getInputBuffer(
+      {
+        inputBuffer: this.options.inputCsvBuffer,
+        inputPath: this.options.inputCsvPath,
+        inputS3Key: this.options.inputCsvS3Key,
+      },
+      this.s3,
+      "CSV"
     );
   }
 
@@ -506,7 +496,7 @@ export class CSVTransformer {
 
     // Save to file if outputCsvPath is provided
     if (this.options.outputCsvPath) {
-      await writeFile(this.options.outputCsvPath, transformedCsvBuffer);
+      await fsUtils.writeFile(this.options.outputCsvPath, transformedCsvBuffer);
       result.transformedCsvPath = this.options.outputCsvPath;
     }
 
@@ -515,7 +505,7 @@ export class CSVTransformer {
       const s3Bucket =
         this.options.outputCsvS3Bucket ||
         process.env.S3_BUCKET_NAME ||
-        "rylie-seo-reports";
+        WHITE_LABEL_CONFIG.defaultS3Bucket;
 
       await this.s3
         .putObject({
@@ -545,14 +535,7 @@ export class CSVTransformer {
    * Ensure temporary directory exists
    */
   private async ensureTempDir(): Promise<void> {
-    try {
-      await mkdir(this.tempDir, { recursive: true });
-    } catch (error) {
-      // Ignore if directory already exists
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
-        throw error;
-      }
-    }
+    await ensureDirectory(this.tempDir);
   }
 
   /**
@@ -570,8 +553,8 @@ export class CSVTransformer {
     );
 
     try {
-      await unlink(tempInputPath);
-      await unlink(tempOutputPath);
+      await fsUtils.unlink(tempInputPath);
+      await fsUtils.unlink(tempOutputPath);
     } catch (error) {
       // Log but don't fail if cleanup fails
       logger.warn(

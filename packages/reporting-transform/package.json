@@ -12,14 +12,12 @@
     "lint:fix": "eslint src --ext .ts --fix"
   },
   "dependencies": {
-    "aws-sdk": "^2.1413.0",
+    "@rylie-seo/seo-schema": "file:../seo-schema",
     "csv-parser": "^3.2.0",
     "csv-writer": "^1.6.0",
     "exiftool-vendored": "^30.2.0",
     "pdf-lib": "^1.17.1",
-    "pino": "^8.14.1",
-    "sharp": "^0.32.6",
-    "uuid": "^9.0.0"
+    "sharp": "^0.32.6"
   },
   "devDependencies": {
     "@types/node": "^20.4.5",

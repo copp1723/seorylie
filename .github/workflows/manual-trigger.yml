@@ -1,0 +1,49 @@
+name: Manual CI Trigger
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Run tests'
+        required: false
+        default: true
+        type: boolean
+      run_lint:
+        description: 'Run linting'
+        required: false
+        default: true
+        type: boolean
+      run_security:
+        description: 'Run security scan'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  manual-ci:
+    name: Manual CI Run
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run Lint
+      if: ${{ inputs.run_lint }}
+      run: NODE_OPTIONS="--max-old-space-size=4096" npm run lint
+
+    - name: Run Tests
+      if: ${{ inputs.run_tests }}
+      run: NODE_OPTIONS="--max-old-space-size=4096" npm test -- --passWithNoTests
+
+    - name: Run Security Scan
+      if: ${{ inputs.run_security }}
+      run: npm audit --audit-level=high || true

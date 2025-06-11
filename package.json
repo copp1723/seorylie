@@ -9,7 +9,10 @@
     "web-console"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:packages && npm run build:server",
+    "build:server": "tsc",
+    "build:packages": "npm run build --workspaces --if-present",
+    "build:web": "cd web-console && npm run build",
     "start": "node dist/server/index.js",
     "dev": "ts-node-dev --respawn --transpile-only server/index.ts",
     "test": "jest",
@@ -21,7 +24,8 @@
     "migrate": "drizzle-kit migrate",
     "generate": "drizzle-kit generate:pg",
     "studio": "drizzle-kit studio",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "postinstall": "npm run build:packages || true"
   },
   "dependencies": {
     "@fastify/jwt": "^7.0.0",
@@ -38,7 +42,6 @@
     "@opentelemetry/sdk-trace-node": "^1.15.0",
     "@opentelemetry/semantic-conventions": "^1.15.0",
     "@sendgrid/mail": "^7.7.0",
-    "aws-sdk": "^2.1413.0",
     "bcrypt": "^5.1.0",
     "bullmq": "^4.6.3",
     "compression": "^1.7.4",
@@ -56,14 +59,10 @@
     "node-cron": "^3.0.2",
     "nodemailer": "^6.9.4",
     "openai": "^4.0.0",
-    "pdf-lib": "^1.17.1",
     "pg": "^8.11.1",
-    "pino": "^8.14.1",
     "pino-pretty": "^10.0.1",
     "redis": "^4.6.7",
-    "sharp": "^0.32.6",
     "twilio": "^4.14.0",
-    "uuid": "^9.0.0",
     "winston": "^3.10.0",
     "ws": "^8.13.0",
     "zod": "^3.21.4"
@@ -87,13 +86,10 @@
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "chartjs-node-canvas": "^5.0.0",
-    "csv-parser": "^3.2.0",
-    "csv-writer": "^1.6.0",
     "drizzle-kit": "^0.19.13",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^8.10.0",
     "eslint-plugin-prettier": "^5.4.1",
-    "exiftool-vendored": "^30.2.0",
     "google-auth-library": "^10.0.0-rc.3",
     "googleapis": "^150.0.1",
     "husky": "^8.0.3",

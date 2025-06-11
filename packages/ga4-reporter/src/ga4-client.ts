@@ -4,16 +4,13 @@
  */
 
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
-import { GoogleAuth, JWT } from "google-auth-library";
-import { analytics_v3, google } from "googleapis";
+import { JWT } from "google-auth-library";
+import { google } from "googleapis";
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
-import { format, subDays, subWeeks, subMonths, parseISO } from "date-fns";
+import { format, subDays } from "date-fns";
 import pino from "pino";
 import { v4 as uuidv4 } from "uuid";
-import fs from "fs/promises";
 import path from "path";
-import { z } from "zod";
-import axios from "axios";
 import { GA4Report } from "@rylie-seo/seo-schema";
 
 // Initialize logger
@@ -1293,15 +1290,15 @@ export class GA4Client {
     const { startDate, endDate } = result.dateRange;
 
     // Run search console report if available
-    let searchConsoleReport = null;
+    // let searchConsoleReport = null;
     try {
       // This is a placeholder for Search Console API integration
       // In a real implementation, you would connect to the Search Console API
       // and fetch keyword data
-      searchConsoleReport = {
-        rows: [],
-        totals: {},
-      };
+      // searchConsoleReport = {
+      //   rows: [],
+      //   totals: {},
+      // };
     } catch (error) {
       logger.warn({ error }, "Failed to fetch Search Console data");
     }

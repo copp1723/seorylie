@@ -69,28 +69,20 @@ npm install
 
 # Copy environment file
 cp .env.example .env.development
-```
 
-### 2. **Configure Environment**
-Edit `.env.development` with your API endpoints:
-```env
+Configure Environment
 VITE_API_BASE_URL=http://localhost:8000/api
 VITE_WEBSOCKET_URL=ws://localhost:8000/ws
 VITE_APP_NAME=Seorylie
 VITE_APP_VERSION=1.0.0
-```
 
-### 3. **Start Development Server**
-```bash
+Start Development Server
 npm run dev
-```
 
-### 4. **Open Application**
-Visit `http://localhost:5173` in your browser.
+Open Application
+Visit http://localhost:5173 in your browser.
 
-## 📝 Available Scripts
-
-```bash
+Available Scripts
 # Development
 npm run dev          # Start development server with hot reload
 
@@ -101,11 +93,8 @@ npm run preview      # Preview production build
 # Code Quality
 npm run lint         # Run ESLint
 npm run type-check   # Run TypeScript compiler check
-```
 
-## 🏗 Project Structure
-
-```
+Project Structure
 src/
 ├── components/          # Reusable UI components
 │   ├── ui/             # Base shadcn/ui components
@@ -159,121 +148,92 @@ src/
 ├── App.tsx            # Main application component
 ├── main.tsx           # Application entry point
 └── index.css          # Global styles
-```
 
-## 🔌 API Integration
-
-### **Required Backend Endpoints**
-
+API Integration
+Required Backend Endpoints
 The frontend expects these API endpoints to be available:
 
-#### **Authentication**
-```
+Authentication
 POST /auth/login           # User login
 POST /auth/logout          # User logout
 GET  /auth/profile         # Get user profile
 POST /auth/refresh         # Refresh access token
 POST /auth/forgot-password # Password reset request
 POST /auth/reset-password  # Password reset
-```
 
-#### **Requests**
-```
+Requests
 GET    /requests           # List requests with filters
 POST   /requests           # Create new request
 GET    /requests/:id       # Get single request
 PUT    /requests/:id       # Update request
 DELETE /requests/:id       # Delete request
 GET    /requests/stats     # Get request statistics
-```
 
-#### **Reports & Analytics**
-```
+Reports & Analytics
 GET /reports/metrics       # Dashboard metrics
 GET /reports/keywords      # Keyword rankings
 GET /reports/traffic       # Traffic data
 GET /reports/top-pages     # Top performing pages
 GET /reports/conversions   # Conversion data
-```
 
-#### **Chat**
-```
+Chat
 POST /chat/messages        # Send message to AI
 GET  /chat/messages        # Get chat history
 GET  /chat/threads         # Get chat threads
 WS   /ws/chat/:threadId    # WebSocket for real-time chat
-```
 
-#### **Orders**
-```
+Orders
 GET  /orders               # List orders
 POST /orders               # Create order
 GET  /orders/:id           # Get order details
 POST /orders/:id/payment   # Process payment
-```
 
-#### **Settings**
-```
+Settings
 GET /settings/profile      # Get user profile
 PUT /settings/profile      # Update profile
 GET /settings/branding     # Get branding settings
 PUT /settings/branding     # Update branding
-```
 
-#### **Admin** (Role-restricted)
-```
+Admin (Role-restricted)
 GET /admin/clients         # List clients
 GET /admin/system/health   # System health
 GET /admin/analytics       # Admin analytics
-```
 
-### **API Response Format**
-
+API Response Format
 All API responses should follow this format:
-```typescript
 {
   "success": boolean,
   "data": any,
   "message"?: string
 }
-```
 
-### **Authentication Flow**
-
-1. User submits login credentials
-2. Backend validates and returns JWT tokens
-3. Frontend stores tokens in localStorage
-4. All subsequent requests include Bearer token
-5. Refresh token used for token renewal
-
-## 🎨 Customization
-
-### **Branding**
+Authentication Flow
+User submits login credentials
+Backend validates and returns JWT tokens
+Frontend stores tokens in localStorage
+All subsequent requests include Bearer token
+Refresh token used for token renewal
+🎨 Customization
+Branding
 The application supports full white-label customization:
 
-- **Company Name**: Dynamic throughout the UI
-- **Colors**: Primary, secondary, and accent colors
-- **Theme**: Light/dark mode support
-- **Logo**: Upload custom logo (API integration required)
+Company Name: Dynamic throughout the UI
+Colors: Primary, secondary, and accent colors
+Theme: Light/dark mode support
+Logo: Upload custom logo (API integration required)
+Adding New Pages
+Create page component in src/pages/
+Add route to src/App.tsx
+Update navigation in src/layouts/MainLayout.tsx
+Add any required API services and hooks
+Adding New API Endpoints
+Add types to src/types/api.ts
+Create service functions in src/services/
+Create custom hooks in src/hooks/
+Add validation schemas in src/schemas/
 
-### **Adding New Pages**
-
-1. Create page component in `src/pages/`
-2. Add route to `src/App.tsx`
-3. Update navigation in `src/layouts/MainLayout.tsx`
-4. Add any required API services and hooks
-
-### **Adding New API Endpoints**
-
-1. Add types to `src/types/api.ts`
-2. Create service functions in `src/services/`
-3. Create custom hooks in `src/hooks/`
-4. Add validation schemas in `src/schemas/`
-
-## 🚀 Deployment
-
-### **Production Build**
-```bash
+🚀 Deployment
+Production Build
 # Install dependencies
 npm install
 
@@ -281,25 +241,21 @@ npm install
 npm run build
 
 # Files will be in dist/ directory
-```
 
-### **Environment Configuration**
-Create `.env.production` for production settings:
-```env
+Environment Configuration
+Create .env.production for production settings:
 VITE_API_BASE_URL=https://api.yourdomain.com/api
 VITE_WEBSOCKET_URL=wss://api.yourdomain.com/ws
 VITE_APP_NAME=Your Company Name
 VITE_APP_VERSION=1.0.0
-```
 
-### **Hosting Options**
-- **Vercel**: Zero-config deployment
-- **Netlify**: Static site hosting
-- **AWS S3 + CloudFront**: Scalable hosting
-- **Docker**: Containerized deployment
+Hosting Options
+Render: Zero-config deployment
+Netlify: Static site hosting
+AWS S3 + CloudFront: Scalable hosting
+Docker: Containerized deployment
+Docker Deployment
 
-### **Docker Deployment**
-```dockerfile
 FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
@@ -308,73 +264,58 @@ COPY . .
 RUN npm run build
 EXPOSE 3000
 CMD ["npm", "run", "preview"]
-```
 
-## 🔧 Development
+Development
+Code Style
+TypeScript for type safety
+ESLint for code quality
+Prettier for formatting
+Consistent naming conventions
+State Management
+React Query for server state
+React Context for global client state
+Local state with useState/useReducer
+Error Handling
+Global error boundary
+API error interceptors
+User-friendly error messages
+Retry logic for failed requests
+Performance
+Code splitting with React.lazy
+Image optimization
+Bundle size optimization
+Caching with React Query
+🐛 Troubleshooting
+Common Issues
+API Connection Failed
 
-### **Code Style**
-- TypeScript for type safety
-- ESLint for code quality
-- Prettier for formatting
-- Consistent naming conventions
+Check VITE_API_BASE_URL in environment file
+Ensure backend server is running
+Verify CORS configuration
+Authentication Issues
 
-### **State Management**
-- React Query for server state
-- React Context for global client state
-- Local state with useState/useReducer
+Clear localStorage and try again
+Check token expiration
+Verify API endpoint responses
+Build Failures
 
-### **Error Handling**
-- Global error boundary
-- API error interceptors
-- User-friendly error messages
-- Retry logic for failed requests
+Clear node_modules and reinstall
+Check TypeScript errors
+Verify all dependencies are installed
+WebSocket Not Connecting
 
-### **Performance**
-- Code splitting with React.lazy
-- Image optimization
-- Bundle size optimization
-- Caching with React Query
+Check VITE_WEBSOCKET_URL configuration
+Verify WebSocket endpoint on backend
+Check browser console for errors
+📖 API Documentation
+For complete API documentation, visit your backend API docs or see the service files in src/services/ for expected request/response formats.
 
-## 🐛 Troubleshooting
-
-### **Common Issues**
-
-**API Connection Failed**
-- Check `VITE_API_BASE_URL` in environment file
-- Ensure backend server is running
-- Verify CORS configuration
-
-**Authentication Issues**
-- Clear localStorage and try again
-- Check token expiration
-- Verify API endpoint responses
-
-**Build Failures**
-- Clear node_modules and reinstall
-- Check TypeScript errors
-- Verify all dependencies are installed
-
-**WebSocket Not Connecting**
-- Check `VITE_WEBSOCKET_URL` configuration
-- Verify WebSocket endpoint on backend
-- Check browser console for errors
-
-## 📖 API Documentation
-
-For complete API documentation, visit your backend API docs or see the service files in `src/services/` for expected request/response formats.
-
-## 🤝 Contributing
-
-1. Follow existing code patterns
-2. Add TypeScript types for all new features
-3. Include error handling
-4. Test thoroughly before submitting
-5. Update documentation as needed
-
-## 📄 License
-
+🤝 Contributing
+Follow existing code patterns
+Add TypeScript types for all new features
+Include error handling
+Test thoroughly before submitting
+Update documentation as needed
+📄 License
 Private - OneKeel Engineering
 
----
-
-**Need Help?** Check the troubleshooting section or create an issue for support.
