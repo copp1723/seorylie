@@ -25,7 +25,7 @@
     "setup:check": "bash scripts/setup-dev.sh check",
     "setup:test": "./scripts/verify-setup.sh",
     "setup:orchestrator": "tsx scripts/setup-conversation-orchestrator.ts",
-    "build:web": "vite build --config config/build/vite.config.ts",
+    "build:web": "cd web-console && npm run build",
     "build:server": "node config/build/esbuild.config.js",
     "start:full": "NODE_ENV=production node dist/index.js",
     "start:adf-worker": "NODE_ENV=production node dist/adf-worker.js",
