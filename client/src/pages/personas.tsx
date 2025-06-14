@@ -1,5 +1,4 @@
 import { useState } from "react";
-// import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,7 +32,6 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-// import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Separator } from "@/components/ui/separator";
 import { PlusIcon, Trash2Icon, EditIcon, LockIcon } from "lucide-react";
 import {
@@ -152,18 +150,6 @@ export default function Personas() {
   const [personasLoading, setPersonasLoading] = useState(false);
   const [isError, setIsError] = useState(false);
 
-  // TODO: Re-enable React Query
-  // const {
-  //   data: personas = [],
-  //   isLoading: personasLoading,
-  //   isError,
-  // } = useQuery<PersonaFormValues[]>({
-  //   queryKey: ["/api/personas"],
-  //   queryFn: async () => {
-  //     return apiRequest<PersonaFormValues[]>("/api/personas");
-  //   },
-  //   enabled: isAuthenticated,
-  // });
 
   // Form for creating/editing personas
   const form = useForm<PersonaFormValues>({
@@ -195,30 +181,6 @@ export default function Personas() {
     isPending: false,
   };
 
-  // TODO: Re-enable React Query
-  // const createPersonaMutation = useMutation({
-  //   mutationFn: (data: PersonaFormValues) =>
-  //     apiRequest("/api/personas", {
-  //       method: "POST",
-  //       body: data,
-  //     }),
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: ["/api/personas"] });
-  //     toast({
-  //       title: "Success",
-  //       description: "Persona created successfully",
-  //     });
-  //     setIsDialogOpen(false);
-  //     form.reset();
-  //   },
-  //   onError: (error: Error) => {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to create persona: " + error.message,
-  //       variant: "destructive",
-  //     });
-  //   },
-  // });
 
   // Update persona mutation - TEMPORARILY DISABLED
   const updatePersonaMutation = {
@@ -232,32 +194,6 @@ export default function Personas() {
     isPending: false,
   };
 
-  // TODO: Re-enable React Query
-  // const updatePersonaMutation = useMutation({
-  //   mutationFn: (data: PersonaFormValues) => {
-  //     if (!data.id) throw new Error("Cannot update without ID");
-  //     return apiRequest(`/api/personas/${data.id}`, {
-  //       method: "PATCH",
-  //       body: data,
-  //     });
-  //   },
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: ["/api/personas"] });
-  //     toast({
-  //       title: "Success",
-  //       description: "Persona updated successfully",
-  //     });
-  //     setIsDialogOpen(false);
-  //     form.reset();
-  //   },
-  //   onError: (error: Error) => {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to update persona: " + error.message,
-  //       variant: "destructive",
-  //     });
-  //   },
-  // });
 
   // Delete persona mutation - TEMPORARILY DISABLED
   const deletePersonaMutation = {
@@ -271,27 +207,6 @@ export default function Personas() {
     isPending: false,
   };
 
-  // TODO: Re-enable React Query
-  // const deletePersonaMutation = useMutation({
-  //   mutationFn: (id: number) =>
-  //     apiRequest(`/api/personas/${id}`, {
-  //       method: "DELETE",
-  //     }),
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: ["/api/personas"] });
-  //     toast({
-  //       title: "Success",
-  //       description: "Persona deleted successfully",
-  //     });
-  //   },
-  //   onError: (error: Error) => {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to delete persona: " + error.message,
-  //       variant: "destructive",
-  //     });
-  //   },
-  // });
 
   // Handle form submission
   const onSubmit = (data: PersonaFormValues) => {

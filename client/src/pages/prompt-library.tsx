@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
-// import { useQuery, useMutation } from "@tanstack/react-query";
-// import { promptLibraryApi, queryClient } from "@/lib/queryClient";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,24 +18,11 @@ export default function PromptLibraryPage() {
   const [systemPromptsData, setSystemPromptsData] = useState<any>(undefined);
   const [systemPromptsLoading, setSystemPromptsLoading] = useState(false);
 
-  // TODO: Re-enable React Query
-  // const { data: systemPromptsData, isLoading: systemPromptsLoading } = useQuery(
-  //   {
-  //     queryKey: ["/api/prompt-library/system-prompts"],
-  //     queryFn: () => promptLibraryApi.getSystemPrompts(),
-  //   },
-  // );
 
   // Query for test history - TEMPORARILY DISABLED
   const [testHistoryData, setTestHistoryData] = useState<any>(undefined);
   const [testHistoryLoading, setTestHistoryLoading] = useState(false);
 
-  // TODO: Re-enable React Query
-  // const { data: testHistoryData, isLoading: testHistoryLoading } = useQuery({
-  //   queryKey: ["/api/prompt-library/history"],
-  //   queryFn: () => promptLibraryApi.getTestHistory(),
-  //   enabled: activeTab === "history",
-  // });
 
   // Mutation for testing prompts - TEMPORARILY DISABLED
   const testPromptMutation = {
@@ -60,18 +45,6 @@ export default function PromptLibraryPage() {
   const [testPromptMutationState, setTestPromptMutation] =
     useState(testPromptMutation);
 
-  // TODO: Re-enable React Query
-  // const testPromptMutation = useMutation({
-  //   mutationFn: (data: {
-  //     prompt: string;
-  //     variables?: Record<string, string>;
-  //   }) => promptLibraryApi.testPrompt(data),
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({
-  //       queryKey: ["/api/prompt-library/history"],
-  //     });
-  //   },
-  // });
 
   // Handle prompt selection from library
   const handleSelectPrompt = (template: string, promptVariables: string[]) => {

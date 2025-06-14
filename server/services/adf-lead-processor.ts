@@ -310,7 +310,7 @@ export class AdfLeadProcessor {
   }
 
   /**
-   * Check for duplicate leads using deduplication hash
+   * Check for duplicate leads using deduplication hash with advisory lock
    */
   private async checkForDuplicates(leadData: Partial<InsertAdfLead>): Promise<{
     isDuplicate: boolean;
@@ -320,26 +320,69 @@ export class AdfLeadProcessor {
       return { isDuplicate: false };
     }
 
-    const existingLead = await this.db.query.adfLeads.findFirst({
-      where: eq(adfLeads.deduplicationHash, leadData.deduplicationHash),
-      columns: { id: true, customerFullName: true, createdAt: true },
-    });
+    try {
+      // Use advisory lock to prevent race conditions
+      const lockKey = `adf_lead_${leadData.deduplicationHash}`.substring(0, 63);
+      const lockHash = Math.abs(lockKey.split('').reduce((a, b) => a + b.charCodeAt(0), 0));
+      
+      // Try to acquire advisory lock
+      const lockResult = await this.db.execute(
+        sql`SELECT pg_try_advisory_lock(${lockHash}) as locked`
+      );
+      
+      const hasLock = lockResult.rows?.[0]?.locked;
+      
+      try {
+        // Check for existing lead
+        const existingLead = await this.db.query.adfLeads.findFirst({
+          where: eq(adfLeads.deduplicationHash, leadData.deduplicationHash),
+          columns: { id: true, customerFullName: true, createdAt: true },
+        });
 
-    if (existingLead) {
-      logger.info("Duplicate lead detected", {
-        existingLeadId: existingLead.id,
-        customerName: existingLead.customerFullName,
-        originalDate: existingLead.createdAt,
+        if (existingLead) {
+          logger.info("Duplicate lead detected", {
+            existingLeadId: existingLead.id,
+            customerName: existingLead.customerFullName,
+            originalDate: existingLead.createdAt,
+            deduplicationHash: leadData.deduplicationHash,
+          });
+
+          return {
+            isDuplicate: true,
+            existingLeadId: existingLead.id,
+          };
+        }
+
+        return { isDuplicate: false };
+      } finally {
+        // Release advisory lock if we acquired it
+        if (hasLock) {
+          await this.db.execute(
+            sql`SELECT pg_advisory_unlock(${lockHash})`
+          );
+        }
+      }
+    } catch (error) {
+      logger.error("Error checking for duplicates with advisory lock", {
+        error: error instanceof Error ? error.message : String(error),
         deduplicationHash: leadData.deduplicationHash,
       });
+      
+      // Fallback to simple check without lock
+      const existingLead = await this.db.query.adfLeads.findFirst({
+        where: eq(adfLeads.deduplicationHash, leadData.deduplicationHash),
+        columns: { id: true, customerFullName: true, createdAt: true },
+      });
 
-      return {
-        isDuplicate: true,
-        existingLeadId: existingLead.id,
-      };
+      if (existingLead) {
+        return {
+          isDuplicate: true,
+          existingLeadId: existingLead.id,
+        };
+      }
+
+      return { isDuplicate: false };
     }
-
-    return { isDuplicate: false };
   }
 
   /**
@@ -452,7 +495,7 @@ export class AdfLeadProcessor {
   }
 
   /**
-   * Store lead in database
+   * Store lead in database with conflict handling
    */
   private async storeLead(leadData: Partial<InsertAdfLead>): Promise<number> {
     // Ensure required fields have defaults
@@ -467,11 +510,58 @@ export class AdfLeadProcessor {
       ...leadData,
     } as InsertAdfLead;
 
-    const [lead] = await this.db
-      .insert(adfLeads)
-      .values(completeLeadData)
-      .returning({ id: adfLeads.id });
-    return lead.id;
+    try {
+      // Use INSERT ... ON CONFLICT to handle race conditions
+      const result = await this.db.execute(sql`
+        INSERT INTO adf_leads (
+          adf_version, request_date, customer_full_name, 
+          deduplication_hash, raw_adf_xml, lead_status, 
+          processing_status, customer_first_name, customer_last_name,
+          customer_email, customer_phone, customer_address,
+          customer_city, customer_state, customer_postal_code,
+          vehicle_year, vehicle_make, vehicle_model,
+          vehicle_vin, vehicle_stock_number, vendor_name,
+          vendor_email, provider_name, provider_service,
+          provider_url, provider_email, dealer_id,
+          customer_comments, price, lead_type, lead_source,
+          created_at, updated_at
+        ) VALUES (
+          ${completeLeadData.adfVersion}, ${completeLeadData.requestDate}, 
+          ${completeLeadData.customerFullName}, ${completeLeadData.deduplicationHash}, 
+          ${completeLeadData.rawAdfXml}, ${completeLeadData.leadStatus}, 
+          ${completeLeadData.processingStatus}, ${completeLeadData.customerFirstName || null}, 
+          ${completeLeadData.customerLastName || null}, ${completeLeadData.customerEmail || null}, 
+          ${completeLeadData.customerPhone || null}, ${completeLeadData.customerAddress || null},
+          ${completeLeadData.customerCity || null}, ${completeLeadData.customerState || null}, 
+          ${completeLeadData.customerPostalCode || null}, ${completeLeadData.vehicleYear || null}, 
+          ${completeLeadData.vehicleMake || null}, ${completeLeadData.vehicleModel || null},
+          ${completeLeadData.vehicleVin || null}, ${completeLeadData.vehicleStockNumber || null}, 
+          ${completeLeadData.vendorName || null}, ${completeLeadData.vendorEmail || null}, 
+          ${completeLeadData.providerName || null}, ${completeLeadData.providerService || null},
+          ${completeLeadData.providerUrl || null}, ${completeLeadData.providerEmail || null}, 
+          ${completeLeadData.dealerId || null}, ${completeLeadData.customerComments || null}, 
+          ${completeLeadData.price || null}, ${completeLeadData.leadType || null}, 
+          ${completeLeadData.leadSource || null}, NOW(), NOW()
+        )
+        ON CONFLICT (deduplication_hash) DO UPDATE SET
+          updated_at = NOW(),
+          processing_attempts = adf_leads.processing_attempts + 1
+        RETURNING id
+      `);
+      
+      return result.rows[0].id;
+    } catch (error) {
+      // Fallback to drizzle insert if raw SQL fails
+      logger.warn("Failed to use INSERT ON CONFLICT, falling back to regular insert", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      
+      const [lead] = await this.db
+        .insert(adfLeads)
+        .values(completeLeadData)
+        .returning({ id: adfLeads.id });
+      return lead.id;
+    }
   }
 
   /**

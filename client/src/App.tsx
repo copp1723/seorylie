@@ -12,7 +12,7 @@ import CSSDebug from "./components/css-debug";
 import EmergencyCSSFix from "./components/emergency-css-fix"; // Re-enabled to fix white screen issue
 import { VerifyCSSLoading } from "./components/VerifyCSSLoading"; // Added CSS verification component
 
-// Page imports
+// Page imports - Light pages loaded normally
 import Dashboard from "./pages/dashboard";
 import Login from "./pages/login";
 import AuthPage from "./pages/auth-page";
@@ -20,14 +20,20 @@ import VerifyMagicLink from "./pages/verify-magic-link";
 import SimplePromptTestPage from "./pages/SimplePromptTestPage";
 import EnhancedPromptTesting from "./pages/enhanced-prompt-testing";
 import Conversations from "./pages/conversations";
-import Analytics from "./pages/analytics";
 import Personas from "./pages/personas";
 import Settings from "./pages/settings";
 import Security from "./pages/security";
 import NotFound from "./pages/not-found";
-import AgentStudio from "./pages/agent-studio";
-import IntegrationDashboardPage from "./pages/integration-dashboard";
 import AdminDealershipsPage from "./pages/admin/dealerships";
+
+// Heavy pages loaded lazily
+import { 
+  LazyAnalyticsPage,
+  LazyAgentStudioPage,
+  LazyLoadWrapper,
+  PageSkeleton
+} from "./utils/lazy-loading";
+import IntegrationDashboardPage from "./pages/integration-dashboard";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -84,7 +90,9 @@ function App() {
                     </Route>
                     <Route path="/analytics">
                       <ProtectedRoute>
-                        <Analytics />
+                        <LazyLoadWrapper fallback={<PageSkeleton />}>
+                          <LazyAnalyticsPage />
+                        </LazyLoadWrapper>
                       </ProtectedRoute>
                     </Route>
                     <Route path="/personas">
@@ -105,7 +113,9 @@ function App() {
                     {/* Agent Studio route - added as requested */}
                     <Route path="/agent-studio">
                       <ProtectedRoute>
-                        <AgentStudio />
+                        <LazyLoadWrapper fallback={<PageSkeleton />}>
+                          <LazyAgentStudioPage />
+                        </LazyLoadWrapper>
                       </ProtectedRoute>
                     </Route>
                     {/* Integration Dashboard route */}

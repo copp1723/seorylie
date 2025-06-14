@@ -44,8 +44,19 @@ export class SendGridService {
     }
 
     sgMail.setApiKey(apiKey);
+    
+    // Configure timeout and other client settings
+    sgMail.setClient({
+      apiKey: apiKey,
+      timeout: 20000, // 20 second timeout
+      retry: {
+        maximumRetries: 2,
+        maximumRetryDelay: 2000,
+      }
+    });
+    
     this.initialized = true;
-    logger.info("SendGrid service initialized");
+    logger.info("SendGrid service initialized with timeout configuration");
   }
 
   /**

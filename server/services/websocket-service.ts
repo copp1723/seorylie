@@ -129,6 +129,9 @@ class WebSocketService {
     number,
     { mode: string; cachedAt: number; ttl: number }
   >();
+  
+  // Cache cleanup interval
+  private cacheCleanupTimer: NodeJS.Timeout | null = null;
 
   /**
    * Initialize the WebSocket server
@@ -169,6 +172,7 @@ class WebSocketService {
       this.handleNewConnection(ws, request),
     );
     this.setupHealthCheck();
+    this.setupCacheCleanup();
     this.registerShutdownHandlers();
   }
 
@@ -181,6 +185,45 @@ class WebSocketService {
       CONFIG.HEALTH_CHECK_INTERVAL,
     );
     this.timers.add(healthCheckTimer);
+  }
+  
+  /**
+   * Set up periodic cache cleanup to prevent memory leaks
+   */
+  private setupCacheCleanup(): void {
+    this.cacheCleanupTimer = setInterval(() => {
+      const now = Date.now();
+      
+      // Clean up expired rate limit entries
+      for (const [clientId, rateLimit] of this.rateLimitCache.entries()) {
+        if (now > rateLimit.resetTime && !this.clients.has(clientId)) {
+          this.rateLimitCache.delete(clientId);
+        }
+      }
+      
+      // Clean up expired dealership mode cache entries
+      for (const [dealershipId, cache] of this.dealershipModeCache.entries()) {
+        if (now - cache.cachedAt > cache.ttl) {
+          this.dealershipModeCache.delete(dealershipId);
+        }
+      }
+      
+      // Limit cache sizes to prevent unbounded growth
+      if (this.rateLimitCache.size > 10000) {
+        // Remove oldest entries
+        const entriesToRemove = this.rateLimitCache.size - 5000;
+        let removed = 0;
+        for (const [clientId] of this.rateLimitCache.entries()) {
+          if (!this.clients.has(clientId)) {
+            this.rateLimitCache.delete(clientId);
+            removed++;
+            if (removed >= entriesToRemove) break;
+          }
+        }
+      }
+    }, 60000); // Run every minute
+    
+    this.timers.add(this.cacheCleanupTimer);
   }
 
   /**

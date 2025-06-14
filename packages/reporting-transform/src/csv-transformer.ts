@@ -3,7 +3,7 @@
  * @description Transforms CSV files by removing vendor branding and replacing with white-label Rylie SEO branding
  */
 
-import { S3 } from "aws-sdk";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 import path from "path";
 import { promisify } from "util";
@@ -97,7 +97,7 @@ export interface CSVTransformResult {
  * CSV Transformer class for white-labeling vendor reports
  */
 export class CSVTransformer {
-  private s3: S3;
+  private s3Client: S3Client;
   private options: CSVTransformOptions;
   private tempDir: string;
   private transformId: string;
@@ -138,10 +138,12 @@ export class CSVTransformer {
     };
 
     // Initialize S3 client
-    this.s3 = new S3({
+    this.s3Client = new S3Client({
       region: process.env.AWS_REGION || "us-east-1",
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+      },
     });
 
     // Generate unique ID for this transformation
@@ -467,12 +469,12 @@ export class CSVTransformer {
     }
 
     if (this.options.inputCsvS3Key) {
-      const s3Response = await this.s3
-        .getObject({
-          Bucket: process.env.S3_BUCKET_NAME || "rylie-seo-reports",
-          Key: this.options.inputCsvS3Key,
-        })
-        .promise();
+      const command = new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME || "rylie-seo-reports",
+        Key: this.options.inputCsvS3Key,
+      });
+
+      const s3Response = await this.s3Client.send(command);
 
       if (!s3Response.Body) {
         throw new Error(
@@ -480,7 +482,12 @@ export class CSVTransformer {
         );
       }
 
-      return s3Response.Body as Buffer;
+      // Convert stream to buffer
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of s3Response.Body as any) {
+        chunks.push(chunk);
+      }
+      return Buffer.concat(chunks);
     }
 
     throw new Error(
@@ -513,18 +520,18 @@ export class CSVTransformer {
         process.env.S3_BUCKET_NAME ||
         "rylie-seo-reports";
 
-      await this.s3
-        .putObject({
-          Bucket: s3Bucket,
-          Key: this.options.outputCsvS3Key,
-          Body: transformedCsvBuffer,
-          ContentType: "text/csv",
-          Metadata: {
-            "x-amz-meta-white-label": this.options.whiteLabelName,
-            "x-amz-meta-transform-id": this.transformId,
-          },
-        })
-        .promise();
+      const command = new PutObjectCommand({
+        Bucket: s3Bucket,
+        Key: this.options.outputCsvS3Key,
+        Body: transformedCsvBuffer,
+        ContentType: "text/csv",
+        Metadata: {
+          "white-label": this.options.whiteLabelName,
+          "transform-id": this.transformId,
+        },
+      });
+
+      await this.s3Client.send(command);
 
       // Generate S3 URL
       result.transformedCsvS3Key = this.options.outputCsvS3Key;

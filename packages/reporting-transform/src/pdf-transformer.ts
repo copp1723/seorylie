@@ -4,7 +4,7 @@
  */
 
 import { PDFDocument, PDFImage, PDFPage, rgb, StandardFonts } from "pdf-lib";
-import { S3 } from "aws-sdk";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import fs from "fs";
 import path from "path";
@@ -93,7 +93,7 @@ export interface PDFTransformResult {
  * PDF Transformer class for white-labeling vendor reports
  */
 export class PDFTransformer {
-  private s3: S3;
+  private s3Client: S3Client;
   private options: PDFTransformOptions;
   private tempDir: string;
   private transformId: string;
@@ -126,10 +126,12 @@ export class PDFTransformer {
     };
 
     // Initialize S3 client
-    this.s3 = new S3({
+    this.s3Client = new S3Client({
       region: process.env.AWS_REGION || "us-east-1",
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+      },
     });
 
     // Generate unique ID for this transformation
@@ -536,12 +538,12 @@ export class PDFTransformer {
     }
 
     if (this.options.inputPdfS3Key) {
-      const s3Response = await this.s3
-        .getObject({
-          Bucket: process.env.S3_BUCKET_NAME || "rylie-seo-reports",
-          Key: this.options.inputPdfS3Key,
-        })
-        .promise();
+      const command = new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME || "rylie-seo-reports",
+        Key: this.options.inputPdfS3Key,
+      });
+
+      const s3Response = await this.s3Client.send(command);
 
       if (!s3Response.Body) {
         throw new Error(
@@ -549,7 +551,12 @@ export class PDFTransformer {
         );
       }
 
-      return s3Response.Body as Buffer;
+      // Convert stream to buffer
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of s3Response.Body as any) {
+        chunks.push(chunk);
+      }
+      return Buffer.concat(chunks);
     }
 
     throw new Error(
@@ -570,12 +577,12 @@ export class PDFTransformer {
       this.options.whiteLabelLogoS3Key &&
       this.options.whiteLabelLogoS3Bucket
     ) {
-      const s3Response = await this.s3
-        .getObject({
-          Bucket: this.options.whiteLabelLogoS3Bucket,
-          Key: this.options.whiteLabelLogoS3Key,
-        })
-        .promise();
+      const command = new GetObjectCommand({
+        Bucket: this.options.whiteLabelLogoS3Bucket,
+        Key: this.options.whiteLabelLogoS3Key,
+      });
+
+      const s3Response = await this.s3Client.send(command);
 
       if (!s3Response.Body) {
         throw new Error(
@@ -583,7 +590,12 @@ export class PDFTransformer {
         );
       }
 
-      return s3Response.Body as Buffer;
+      // Convert stream to buffer
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of s3Response.Body as any) {
+        chunks.push(chunk);
+      }
+      return Buffer.concat(chunks);
     }
 
     // Return default logo (a simple placeholder)
@@ -632,18 +644,18 @@ export class PDFTransformer {
         process.env.S3_BUCKET_NAME ||
         "rylie-seo-reports";
 
-      await this.s3
-        .putObject({
-          Bucket: s3Bucket,
-          Key: this.options.outputPdfS3Key,
-          Body: transformedPdfBuffer,
-          ContentType: "application/pdf",
-          Metadata: {
-            "x-amz-meta-white-label": this.options.whiteLabelName,
-            "x-amz-meta-transform-id": this.transformId,
-          },
-        })
-        .promise();
+      const command = new PutObjectCommand({
+        Bucket: s3Bucket,
+        Key: this.options.outputPdfS3Key,
+        Body: transformedPdfBuffer,
+        ContentType: "application/pdf",
+        Metadata: {
+          "white-label": this.options.whiteLabelName,
+          "transform-id": this.transformId,
+        },
+      });
+
+      await this.s3Client.send(command);
 
       // Generate S3 URL
       result.transformedPdfS3Key = this.options.outputPdfS3Key;

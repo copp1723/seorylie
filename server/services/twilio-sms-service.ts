@@ -62,8 +62,12 @@ export class TwilioSMSService {
         );
       }
 
-      // Create and cache client
-      const client = twilio(credentials.accountSid, credentials.authToken);
+      // Create and cache client with timeout configuration
+      const client = twilio(credentials.accountSid, credentials.authToken, {
+        timeout: 20000, // 20 second timeout
+        autoRetry: true,
+        maxRetries: 2,
+      });
       this.clientCache.set(dealershipId, client);
       this.credentialsCache.set(dealershipId, credentials);
 
@@ -488,18 +492,29 @@ export class TwilioSMSService {
     messageId: string,
     phoneNumber: string,
   ): Promise<void> {
-    // In production, this should use proper encryption
-    // For now, we'll use a simple reversible encoding
     const crypto = require("crypto");
-    const key =
-      process.env.PHONE_ENCRYPTION_KEY || "default-key-change-in-production";
-    const cipher = crypto.createCipher("aes-256-cbc", key);
+    
+    // Ensure we have a proper encryption key
+    const encryptionKey = process.env.PHONE_ENCRYPTION_KEY;
+    if (!encryptionKey || encryptionKey.length < 32) {
+      throw new Error("PHONE_ENCRYPTION_KEY must be set and at least 32 characters long");
+    }
+    
+    // Use the key to derive a proper 32-byte key and 16-byte IV
+    const key = crypto.scryptSync(encryptionKey, 'salt', 32);
+    const iv = crypto.randomBytes(16);
+    
+    // Use createCipheriv instead of deprecated createCipher
+    const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
     let encrypted = cipher.update(phoneNumber, "utf8", "hex");
     encrypted += cipher.final("hex");
+    
+    // Store IV with the encrypted data for decryption
+    const encryptedWithIv = iv.toString('hex') + ':' + encrypted;
 
     await db.execute(sql`
       UPDATE sms_messages
-      SET encrypted_phone = ${encrypted}
+      SET encrypted_phone = ${encryptedWithIv}
       WHERE id = ${messageId}
     `);
   }
@@ -521,14 +536,35 @@ export class TwilioSMSService {
       }
 
       const crypto = require("crypto");
-      const key =
-        process.env.PHONE_ENCRYPTION_KEY || "default-key-change-in-production";
-      const decipher = crypto.createDecipher("aes-256-cbc", key);
-      let decrypted = decipher.update(result[0].encrypted_phone, "hex", "utf8");
+      
+      // Ensure we have a proper encryption key
+      const encryptionKey = process.env.PHONE_ENCRYPTION_KEY;
+      if (!encryptionKey || encryptionKey.length < 32) {
+        logger.error("PHONE_ENCRYPTION_KEY not properly configured");
+        return null;
+      }
+      
+      // Extract IV and encrypted data
+      const parts = result[0].encrypted_phone.split(':');
+      if (parts.length !== 2) {
+        logger.error("Invalid encrypted phone format");
+        return null;
+      }
+      
+      const iv = Buffer.from(parts[0], 'hex');
+      const encryptedData = parts[1];
+      
+      // Use the same key derivation as encryption
+      const key = crypto.scryptSync(encryptionKey, 'salt', 32);
+      
+      // Use createDecipheriv instead of deprecated createDecipher
+      const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
+      let decrypted = decipher.update(encryptedData, "hex", "utf8");
       decrypted += decipher.final("utf8");
 
       return decrypted;
-    } catch {
+    } catch (error) {
+      logger.error("Failed to decrypt phone number", { error, messageId });
       return null;
     }
   }

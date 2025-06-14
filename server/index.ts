@@ -23,6 +23,7 @@ import {
 
 // Dynamic imports for routes and middleware
 import { connectDB } from './models/database';
+import { databasePoolMonitor } from './services/database-pool-monitor';
 
 // Load environment variables
 envConfig();
@@ -379,6 +380,27 @@ const startServer = async (): Promise<void> => {
     // Initialize database
     await initializeDatabase();
     
+    // Start database pool monitoring
+    databasePoolMonitor.start();
+    
+    // Listen for pool events
+    databasePoolMonitor.on('poolWarning', (data) => {
+      logger.warn('Database pool warning', data);
+    });
+    
+    databasePoolMonitor.on('poolUnhealthy', (data) => {
+      logger.error('Database pool unhealthy', data);
+    });
+    
+    databasePoolMonitor.on('poolCritical', async (data) => {
+      logger.error('Database pool critical', data);
+      // Attempt recovery
+      const recovered = await databasePoolMonitor.attemptRecovery();
+      if (!recovered) {
+        logger.error('Database pool recovery failed');
+      }
+    });
+    
     // Setup routes
     await setupRoutes();
     
@@ -419,7 +441,10 @@ const startServer = async (): Promise<void> => {
         
         // Close database connections, etc.
         try {
-          // Add cleanup logic here
+          // Stop database pool monitoring
+          databasePoolMonitor.stop();
+          
+          // Add other cleanup logic here
           logger.info('Cleanup completed');
           process.exit(0);
         } catch (error) {

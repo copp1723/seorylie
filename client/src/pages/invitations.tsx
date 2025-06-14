@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-// import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -23,7 +22,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, Search, Plus, Mail } from "lucide-react";
-// import { queryClient } from "@/lib/queryClient";
 import PageHeading from "@/components/page-heading";
 
 interface Invitation {
@@ -66,12 +64,6 @@ export default function InvitationsPage() {
     console.log("Refetch temporarily disabled");
   };
 
-  // TODO: Re-enable React Query
-  // const { data, isLoading, isError, error, refetch } =
-  //   useQuery<InvitationsApiResponse>({
-  //     queryKey: ["/api/magic-link/invitations"],
-  //     staleTime: 1000 * 60 * 10, // 10 minutes
-  //   });
 
   // Mutation for resending an invitation - TEMPORARILY DISABLED
   const resendMutation = {
@@ -85,43 +77,6 @@ export default function InvitationsPage() {
     isPending: false,
   };
 
-  // TODO: Re-enable React Query
-  // const resendMutation = useMutation({
-  //   mutationFn: async (invitationId: number) => {
-  //     const response = await fetch("/api/magic-link/resend", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ invitationId }),
-  //     });
-  //
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.message || "Failed to resend invitation");
-  //     }
-  //
-  //     return await response.json();
-  //   },
-  //   onSuccess: () => {
-  //     toast({
-  //       title: "Invitation Resent",
-  //       description: "The magic link invitation has been resent successfully.",
-  //       variant: "default",
-  //     });
-  //
-  //     queryClient.invalidateQueries({
-  //       queryKey: ["/api/magic-link/invitations"],
-  //     });
-  //   },
-  //   onError: (error: Error) => {
-  //     toast({
-  //       title: "Failed to Resend Invitation",
-  //       description: error.message || "Please try again later.",
-  //       variant: "destructive",
-  //     });
-  //   },
-  // });
 
   const handleResend = async (invitationId: number) => {
     try {
@@ -301,14 +256,14 @@ export default function InvitationsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleResend(inv.id)}
-                        disabled={inv.used || resendMutation.isLoading}
+                        disabled={inv.used || resendMutation.isPending}
                         title={
                           inv.used
                             ? "Invitation already used"
                             : "Resend invitation"
                         }
                       >
-                        {resendMutation.isLoading ? (
+                        {resendMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Mail className="h-4 w-4" />

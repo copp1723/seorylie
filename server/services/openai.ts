@@ -22,7 +22,11 @@ try {
     );
     openai = null;
   } else {
-    openai = new OpenAI({ apiKey });
+    openai = new OpenAI({ 
+      apiKey,
+      timeout: 30000, // 30 second timeout
+      maxRetries: 2, // OpenAI client internal retries
+    });
     console.log("OpenAI API configured successfully");
   }
 } catch (error) {

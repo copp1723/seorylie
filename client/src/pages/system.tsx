@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -37,7 +37,6 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-// import { apiRequest } from "@/lib/queryClient";
 
 interface Invitation {
   id: number;
@@ -77,32 +76,38 @@ const SystemPage: React.FC = () => {
 
   const { data: invitationsData } = useQuery({
     queryKey: ["/api/magic-link/invitations"],
-    queryFn: () =>
-      apiRequest<{ invitations: Invitation[] }>("/api/magic-link/invitations", {
-        method: "GET",
-      }),
+    queryFn: async () => {
+      const response = await fetch("/api/magic-link/invitations");
+      if (!response.ok) throw new Error("Failed to fetch invitations");
+      return response.json();
+    },
   });
 
   const { data: dealershipsData } = useQuery({
     queryKey: ["/api/dealerships"],
-    queryFn: () =>
-      apiRequest<{ dealerships: Dealership[] }>("/api/dealerships", {
-        method: "GET",
-      }),
+    queryFn: async () => {
+      const response = await fetch("/api/dealerships");
+      if (!response.ok) throw new Error("Failed to fetch dealerships");
+      return response.json();
+    },
   });
 
   const queryClient = useQueryClient();
 
   const createInvitation = useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
       email: string;
       role: string;
       dealership_id: number | null;
-    }) =>
-      apiRequest("/api/magic-link/invite", {
+    }) => {
+      const response = await fetch("/api/magic-link/invite", {
         method: "POST",
-        body: data,
-      }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to create invitation");
+      return response.json();
+    },
     onSuccess: () => {
       toast({
         title: "Invitation Sent",
@@ -134,29 +139,6 @@ const SystemPage: React.FC = () => {
     isPending: false,
   };
 
-  // TODO: Re-enable React Query
-  // const deleteInvitation = useMutation({
-  //   mutationFn: (invitationId: number) =>
-  //     apiRequest(`/api/magic-link/invitations/${invitationId}`, {
-  //       method: "DELETE",
-  //     }),
-  //   onSuccess: () => {
-  //     toast({
-  //       title: "Invitation Deleted",
-  //       description: "The invitation has been deleted",
-  //     });
-  //     queryClient.invalidateQueries({
-  //       queryKey: ["/api/magic-link/invitations"],
-  //     });
-  //   },
-  //   onError: (error) => {
-  //     toast({
-  //       title: "Error",
-  //       description: `Failed to delete invitation: ${error.message}`,
-  //       variant: "destructive",
-  //     });
-  //   },
-  // });
 
   // Resend invitation mutation - TEMPORARILY DISABLED
   const resendInvitation = {
@@ -170,29 +152,6 @@ const SystemPage: React.FC = () => {
     isPending: false,
   };
 
-  // TODO: Re-enable React Query
-  // const resendInvitation = useMutation({
-  //   mutationFn: (invitationId: number) =>
-  //     apiRequest(`/api/magic-link/invitations/${invitationId}/resend`, {
-  //       method: "POST",
-  //     }),
-  //   onSuccess: () => {
-  //     toast({
-  //       title: "Invitation Resent",
-  //       description: "The invitation has been resent",
-  //     });
-  //     queryClient.invalidateQueries({
-  //       queryKey: ["/api/magic-link/invitations"],
-  //     });
-  //   },
-  //   onError: (error) => {
-  //     toast({
-  //       title: "Error",
-  //       description: `Failed to resend invitation: ${error.message}`,
-  //       variant: "destructive",
-  //     });
-  //   },
-  // });
 
   // Change password mutation - TEMPORARILY DISABLED
   const changePassword = {
@@ -209,30 +168,6 @@ const SystemPage: React.FC = () => {
     isPending: false,
   };
 
-  // TODO: Re-enable React Query
-  // const changePassword = useMutation({
-  //   mutationFn: (data: { currentPassword: string; newPassword: string }) =>
-  //     apiRequest("/api/user/change-password", {
-  //       method: "POST",
-  //       body: data,
-  //     }),
-  //   onSuccess: () => {
-  //     toast({
-  //       title: "Password Changed",
-  //       description: "Your password has been updated successfully",
-  //     });
-  //     setCurrentPassword("");
-  //     setNewPassword("");
-  //     setConfirmPassword("");
-  //   },
-  //   onError: (error) => {
-  //     toast({
-  //       title: "Error",
-  //       description: `Failed to change password: ${error.message}`,
-  //       variant: "destructive",
-  //     });
-  //   },
-  // });
 
   // Handle invitation form submit
   const handleInviteSubmit = (e: React.FormEvent) => {
