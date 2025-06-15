@@ -44,6 +44,17 @@ export function apiAuth(requiredScope?: string) {
         scopes: record.permissions || [],
       };
 
+      if (
+        requiredScope &&
+        !req.apiClient.scopes.includes(requiredScope) &&
+        !req.apiClient.scopes.includes("*")
+      ) {
+        return res.status(403).json({
+          error: "insufficient_scope",
+          message: "API key lacks required permissions",
+        });
+      }
+
       // Update last used timestamp
       await db
         .update(apiKeys)
