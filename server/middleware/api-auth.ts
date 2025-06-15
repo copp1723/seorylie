@@ -8,6 +8,14 @@ import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { db, apiKeys } from "../db";
 import logger from "../utils/logger";
 
+/**
+ * Creates Express middleware for API key authentication and authorization.
+ *
+ * Validates the API key from the `X-API-Key` header against the database, ensuring it is active and not expired. On success, attaches client information and permissions to the request. Responds with HTTP 401 if the API key is missing or invalid, or HTTP 500 on internal errors.
+ *
+ * @param requiredScope - Optional permission scope required for access.
+ * @returns An Express middleware function for API key authentication.
+ */
 export function apiAuth(requiredScope?: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
