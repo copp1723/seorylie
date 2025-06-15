@@ -4,6 +4,8 @@
  */
 
 import { Request, Response, NextFunction } from "express";
+import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { db, apiKeys } from "../db";
 import logger from "../utils/logger";
 
 export function apiAuth(requiredScope?: string) {
@@ -18,22 +20,35 @@ export function apiAuth(requiredScope?: string) {
         });
       }
 
-      // For now, accept any API key for testing
-      // TODO: Implement proper validation against database
-      if (!apiKey.startsWith("cleanrylie_")) {
+      // Look up API key in database
+      const record = await db.query.apiKeys.findFirst({
+        where: and(
+          eq(apiKeys.key, apiKey),
+          eq(apiKeys.isActive, true),
+          or(isNull(apiKeys.expiresAt), gt(apiKeys.expiresAt, new Date())),
+        ),
+      });
+
+      if (!record) {
         return res.status(401).json({
           error: "invalid_api_key",
-          message: "Invalid API key format",
+          message: "API key not found or inactive",
         });
       }
 
-      // Add mock client info to request
+      // Populate request context
       req.apiClient = {
-        clientId: "test_client",
-        clientName: "Test Client",
-        dealershipId: 1,
-        scopes: ["*"],
+        clientId: `apikey_${record.id}`,
+        clientName: record.name,
+        dealershipId: record.dealershipId,
+        scopes: record.permissions || [],
       };
+
+      // Update last used timestamp
+      await db
+        .update(apiKeys)
+        .set({ lastUsedAt: new Date() })
+        .where(eq(apiKeys.id, record.id));
 
       logger.info("API access", {
         clientId: req.apiClient.clientId,
