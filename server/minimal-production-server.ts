@@ -5,6 +5,7 @@ import cors from "cors";
 import helmet from "helmet";
 import path from "path";
 import { createServer } from "http";
+import seoworks from "./routes/seoworks";
 
 // In production Docker, the bundled server is at /app/dist/minimal-production-server.js
 // So __dirname should be /app/dist, and static files are at /app/dist/public
@@ -115,6 +116,9 @@ app.get("/health", (req, res) => {
     staticPath: publicPath,
   });
 });
+
+// SEOworks routes
+app.use("/api", seoworks);
 
 // Debug endpoint for static files
 app.get("/api/debug/static", (req, res) => {
