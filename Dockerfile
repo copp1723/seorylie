@@ -53,7 +53,9 @@ COPY --chown=appuser:appgroup client ./client
 COPY --chown=appuser:appgroup shared ./shared
 COPY --chown=appuser:appgroup assets ./assets
 COPY --chown=appuser:appgroup tsconfig.json ./
-COPY --chown=appuser:appgroup vite.config.ts ./
+COPY --chown=appuser:appgroup config ./config
+COPY --chown=appuser:appgroup tailwind.config.ts ./
+COPY --chown=appuser:appgroup postcss.config.cjs ./
 
 # Expose client port
 EXPOSE 5173
@@ -118,7 +120,7 @@ COPY --chown=appuser:appgroup config ./config
 COPY --chown=appuser:appgroup migrations ./migrations
 COPY --chown=appuser:appgroup client ./client
 COPY --chown=appuser:appgroup tailwind.config.ts ./
-COPY --chown=appuser:appgroup postcss.config.js ./
+COPY --chown=appuser:appgroup postcss.config.cjs ./
 COPY --chown=appuser:appgroup assets ./assets
 
 # Switch to app user for build
