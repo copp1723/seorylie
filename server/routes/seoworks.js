@@ -4,7 +4,7 @@ import pg from "pg";
 const router = Router();
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const API_KEY = process.env.SEOWORKS_API_KEY || "CHANGE_ME";
+const API_KEY = process.env.SEO_WORKS_API_KEY || "CHANGE_ME";
 
 /* POST  /api/seoworks/task */
 router.post("/seoworks/task", async (req, res) => {
