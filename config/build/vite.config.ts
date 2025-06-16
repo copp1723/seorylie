@@ -6,16 +6,6 @@ import path from 'path'
 export default defineConfig({
   root: path.resolve(__dirname, '../../client'),
   plugins: [react()],
-  css: {
-    postcss: {
-      plugins: [
-        require('tailwindcss')({
-          config: path.resolve(__dirname, '../../tailwind.config.ts')
-        }),
-        require('autoprefixer')(),
-      ],
-    },
-  },
   build: {
     outDir: path.resolve(__dirname, '../../dist/public'),
     emptyOutDir: true,
@@ -104,8 +94,8 @@ export default defineConfig({
       usePolling: true,
     },
   },
-  // Ensure proper loading of CSS files
+  // Optimize dependencies for faster dev server startup
   optimizeDeps: {
-    exclude: ['tailwindcss', 'autoprefixer'],
+    include: ['react', 'react-dom', 'react-router-dom'],
   },
 })
