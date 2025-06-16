@@ -110,11 +110,13 @@ COPY --chown=appuser:appgroup web-console/package*.json ./web-console/
 RUN cd web-console && npm install --legacy-peer-deps
 
 # Copy source files needed for build
+COPY --chown=appuser:appgroup packages ./packages
 COPY --chown=appuser:appgroup server ./server
 COPY --chown=appuser:appgroup shared ./shared
 COPY --chown=appuser:appgroup database ./database
 COPY --chown=appuser:appgroup scripts ./scripts
 COPY --chown=appuser:appgroup tsconfig.json ./
+COPY --chown=appuser:appgroup tsconfig.server.json ./
 COPY --chown=appuser:appgroup web-console ./web-console
 COPY --chown=appuser:appgroup config ./config
 COPY --chown=appuser:appgroup migrations ./migrations
