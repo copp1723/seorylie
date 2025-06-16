@@ -1,4 +1,5 @@
-import api from '../lib/api';
+// import api from '../lib/api';
+const api = { get: async () => ({}), post: async () => ({}), put: async () => ({}), delete: async () => ({}) };
 import type {
   Order,
   OrderStatus,

@@ -1,11 +1,11 @@
 import { QueryClient } from '@tanstack/react-query';
-import { handleApiError } from './api';
+// import { handleApiError } from './api';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
       retry: (failureCount, error: any) => {
         // Don't retry on 4xx errors (client errors)
         if (error?.response?.status >= 400 && error?.response?.status < 500) {
@@ -20,8 +20,8 @@ export const queryClient = new QueryClient({
     mutations: {
       retry: false,
       onError: (error: any) => {
-        const apiError = handleApiError(error);
-        console.error('Mutation error:', apiError);
+        // const apiError = handleApiError(error);
+        console.error('Mutation error:', error);
         // You can add global error handling here (e.g., toast notifications)
       },
     },

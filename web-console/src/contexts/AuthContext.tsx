@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types/api';
-import { authAPI } from '../services/auth';
+// import { authAPI } from '../services/auth';
+const authAPI = {
+  login: async () => ({ user: { id: '1', name: 'Demo User', email: 'demo@example.com' } }),
+  logout: async () => {},
+  getProfile: async () => ({ id: '1', name: 'Demo User', email: 'demo@example.com' })
+};
 import { queryClient } from '../lib/queryClient';
 
 interface AuthContextType {

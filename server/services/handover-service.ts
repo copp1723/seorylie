@@ -14,6 +14,29 @@ export interface HandoverOptions {
   enableSms?: boolean;
 }
 
+export interface HandoverRequest {
+  conversationId: string;
+  reason: string;
+  description?: string;
+  urgency?: "low" | "normal" | "high" | "critical";
+  metadata?: Record<string, any>;
+}
+
+export interface ConversationContext {
+  conversationId: string;
+  messages: Array<{
+    role: string;
+    content: string;
+    timestamp: Date;
+  }>;
+  customerInfo?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  dealershipId: number;
+}
+
 export interface HandoverData {
   leadId: number;
   customerName: string;
@@ -523,6 +546,98 @@ export class HandoverService extends EventEmitter {
       });
       return 0;
     }
+  }
+
+  /**
+   * Create a handover from a conversation (method expected by AI Response Service)
+   */
+  async createHandover(
+    dealershipId: number,
+    request: HandoverRequest
+  ): Promise<HandoverResult> {
+    try {
+      // Map HandoverRequest to HandoverData format
+      const handoverData: HandoverData = {
+        leadId: 0, // Will be set based on conversation lookup
+        customerName: "Customer", // Will be enhanced from conversation
+        dealershipId,
+        reason: this.mapReasonToHandoverReason(request.reason),
+        escalationLevel: request.urgency || "normal",
+        additionalData: {
+          conversationId: request.conversationId,
+          description: request.description,
+          ...request.metadata,
+        },
+      };
+
+      // Try to get lead information from conversation
+      try {
+        const leadInfo = await db.query.adfLeads.findFirst({
+          where: eq(adfLeads.conversationId, request.conversationId),
+          columns: {
+            id: true,
+            customerFullName: true,
+            customerEmail: true,
+            customerPhone: true,
+            vendorName: true,
+          },
+        });
+
+        if (leadInfo) {
+          handoverData.leadId = leadInfo.id;
+          handoverData.customerName = leadInfo.customerFullName || "Customer";
+          handoverData.customerEmail = leadInfo.customerEmail || undefined;
+          handoverData.customerPhone = leadInfo.customerPhone || undefined;
+          handoverData.sourceProvider = leadInfo.vendorName || undefined;
+        }
+      } catch (error) {
+        logger.warn("Could not retrieve lead info for handover", {
+          conversationId: request.conversationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      // If no lead ID found, create a placeholder
+      if (handoverData.leadId === 0) {
+        logger.warn("Creating handover without associated lead", {
+          conversationId: request.conversationId,
+        });
+        // In production, you might want to create a lead record here
+      }
+
+      // Trigger the handover using existing method
+      return await this.triggerHandover(handoverData);
+    } catch (error) {
+      logger.error("Error creating handover", {
+        error: error instanceof Error ? error.message : String(error),
+        dealershipId,
+        conversationId: request.conversationId,
+      });
+
+      return {
+        success: false,
+        errors: [error instanceof Error ? error.message : "Unknown error"],
+      };
+    }
+  }
+
+  /**
+   * Map generic reason string to HandoverReason type
+   */
+  private mapReasonToHandoverReason(reason: string): HandoverReason {
+    const reasonMap: Record<string, HandoverReason> = {
+      "ai_limitation": "complex_question",
+      "customer_request": "explicit_request",
+      "negative_sentiment": "negative_sentiment",
+      "pricing": "pricing_negotiation",
+      "financing": "financing_request",
+      "test_drive": "test_drive_request",
+      "trade_in": "trade_in_appraisal",
+      "high_value": "high_value_opportunity",
+      "multiple_failures": "multiple_failed_responses",
+    };
+
+    return reasonMap[reason] || "other";
   }
 }
 

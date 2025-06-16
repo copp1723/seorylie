@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ChatMessage } from "./chat-message";
+import { ChatMessage } from "./chat/ChatMessage";
 
 interface EmbeddedChatProps {
   containerId?: string;
