@@ -1,4 +1,4 @@
-import { lazy, Suspense, ComponentType } from 'react';
+import React, { lazy, Suspense, ComponentType } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Chart components lazy loading
@@ -111,3 +111,52 @@ export function withLazyLoad<P extends object>(
     </Suspense>
   );
 }
+
+// Alias for backward compatibility
+export const withLazyLoading = withLazyLoad;
+
+// Enhanced lazy loading with preload support
+export function enhancedLazy<T extends ComponentType<any>>(
+  loader: () => Promise<{ default: T }>
+) {
+  const LazyComponent = lazy(loader);
+  
+  // Add preload method
+  (LazyComponent as any).preload = loader;
+  
+  return LazyComponent;
+}
+
+// Viewport-based lazy loading component
+export const ViewportLazyLoad: React.FC<{
+  children: React.ReactNode;
+  rootMargin?: string;
+  threshold?: number;
+}> = ({ children, rootMargin = '100px', threshold = 0 }) => {
+  const [isIntersecting, setIsIntersecting] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsIntersecting(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin, threshold }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [rootMargin, threshold]);
+
+  return (
+    <div ref={ref}>
+      {isIntersecting ? children : <PageSkeleton />}
+    </div>
+  );
+};
