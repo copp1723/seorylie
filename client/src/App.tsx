@@ -13,7 +13,7 @@ import EmergencyCSSFix from "./components/emergency-css-fix"; // Re-enabled to f
 import { VerifyCSSLoading } from "./components/VerifyCSSLoading"; // Added CSS verification component
 
 // Page imports - Light pages loaded normally
-import Dashboard from "./pages/dashboard";
+import Dashboard from "./pages/seo-dashboard";
 import Login from "./pages/login";
 import AuthPage from "./pages/auth-page";
 import VerifyMagicLink from "./pages/verify-magic-link";

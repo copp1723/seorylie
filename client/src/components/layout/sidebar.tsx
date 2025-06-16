@@ -77,24 +77,24 @@ export default function Sidebar() {
       href: "/",
     },
     {
-      icon: <Zap className="h-4 w-4" />,
-      label: "Prompt Testing",
-      href: "/enhanced-prompt-testing",
-    },
-    {
-      icon: <MessageSquare className="h-4 w-4" />,
-      label: "Chat",
-      href: "/chat",
-    },
-    {
       icon: <BarChart3 className="h-4 w-4" />,
       label: "Analytics",
       href: "/analytics",
     },
     {
-      icon: <GitMerge className="h-4 w-4" />,
-      label: "Integration",
-      href: "/integration",
+      icon: <TestTube className="h-4 w-4" />,
+      label: "SEO Tasks",
+      href: "/tasks",
+    },
+    {
+      icon: <Users className="h-4 w-4" />,
+      label: "Clients",
+      href: "/clients",
+    },
+    {
+      icon: <Building2 className="h-4 w-4" />,
+      label: "Projects",
+      href: "/projects",
     },
     {
       icon: <Settings className="h-4 w-4" />,
@@ -125,7 +125,7 @@ export default function Sidebar() {
   return (
     <div className="w-64 border-r border-gray-200 bg-white h-screen flex flex-col">
       <div className="p-6">
-        <h2 className="text-xl font-semibold text-gray-900">RylieAI</h2>
+        <h2 className="text-xl font-semibold text-gray-900">OneKeelSEO</h2>
       </div>
 
       <div className="flex-1 overflow-auto px-4">
