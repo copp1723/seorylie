@@ -522,17 +522,6 @@ export default function Dashboard() {
 
       {/* Conversations Table - Loaded when visible */}
       <ViewportLazyLoad rootMargin="100px">
-              rows={5}
-              columns={4}
-              animation="wave"
-              showHeader={true}
-              showPagination={true}
-              aria-label="Loading conversations"
-            />
-          </div>
-        }
-        margin="100px"
-      >
         <div className="mt-8">
           {isLoadingKey(CONVERSATIONS_KEY) ||
           isLoadingKey(FILTER_CHANGE_KEY) ? (
