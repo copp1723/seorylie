@@ -1,15 +1,41 @@
 services:
   - type: web
-    name: cleanrylie-web
+    name: seorylie-production           # updated service name
     env: docker
-    dockerfilePath: ./Dockerfile
+    branch: main
+
+    # Docker configuration
+    dockerfilePath: ./Dockerfile        # uses the multi-stage Dockerfile
+    dockerContext: .
+    dockerCommand: npm run start        # executes the production start script (final stage)
+
     plan: starter
     region: oregon
-    branch: main
-    buildCommand: ""
-    startCommand: ""
+
+    # Health-check endpoint inside the container
+    healthCheckPath: /health
+
     envVars:
+      # Standard runtime flags
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
+
+      # Critical secrets (synchronisation disabled)
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+
+      # Non-secret, useful defaults (can be overridden in dashboard)
+      - key: FRONTEND_URL
+        value: https://seorylie.com
+      - key: CORS_ORIGIN
+        value: https://seorylie.com
