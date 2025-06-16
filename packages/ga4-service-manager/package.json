@@ -14,6 +14,7 @@
   "dependencies": {
     "@google-analytics/data": "^5.1.0",
     "@rylie-seo/seo-schema": "file:../seo-schema",
+    "@rylie-seo/ga4-reporter": "file:../ga4-reporter",
     "google-auth-library": "^10.0.0-rc.3",
     "googleapis": "^150.0.1",
     "pino": "^8.14.1",

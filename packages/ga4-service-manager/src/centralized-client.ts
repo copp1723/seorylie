@@ -45,8 +45,8 @@ export class CentralizedGA4Client extends GA4Client {
       ...options,
       credentials: {
         client_email: serviceAccountManager.getServiceAccountEmail(),
-        private_key: '', // Will be set by service account manager
-        project_id: serviceAccountManager['config'].projectId,
+        private_key: serviceAccountManager.getPrivateKey(),
+        project_id: serviceAccountManager.getProjectId(),
       },
       whiteLabelName: options.tenantBranding?.companyName || options.whiteLabelName,
       whiteLabelColorPrimary: options.tenantBranding?.primaryColor || options.whiteLabelColorPrimary,
@@ -60,7 +60,7 @@ export class CentralizedGA4Client extends GA4Client {
 
     // Override the analytics client with the service account manager's client
     this['analyticsDataClient'] = serviceAccountManager.getAnalyticsDataClient();
-    this['jwtClient'] = serviceAccountManager.getAuthClient();
+    // Don't override jwtClient as it causes type conflicts
 
     logger.info({ tenantId: this.tenantId, propertyId: options.propertyId }, 'CentralizedGA4Client initialized');
   }

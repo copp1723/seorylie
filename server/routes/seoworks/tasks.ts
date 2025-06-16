@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../../models/database';
-import { requests, auditLogs, users, tenants } from '../../models/schema';
+import { seoworksTasks, auditLogs, users, tenants } from '../../models/schema';
 import { eq, and } from 'drizzle-orm';
 import pino from 'pino';
 

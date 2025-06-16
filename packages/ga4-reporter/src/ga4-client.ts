@@ -166,10 +166,10 @@ export interface GA4ReportResult {
  * GA4 Client for fetching and processing analytics data
  */
 export class GA4Client {
-  private analyticsDataClient: BetaAnalyticsDataClient;
-  private analyticsAdmin: any;
-  private jwtClient: JWT;
-  private options: GA4ClientOptions;
+  protected analyticsDataClient!: BetaAnalyticsDataClient;
+  protected analyticsAdmin: any;
+  protected jwtClient!: JWT;
+  protected options: GA4ClientOptions;
   private chartJSCanvas: ChartJSNodeCanvas;
 
   /**
@@ -202,6 +202,14 @@ export class GA4Client {
   }
 
   /**
+   * Get the GA4 property ID
+   * @returns The property ID
+   */
+  public getPropertyId(): string {
+    return this.options.propertyId;
+  }
+
+  /**
    * Initialize Google Analytics clients
    */
   private initializeClients(): void {
@@ -229,19 +237,19 @@ export class GA4Client {
 
       // Initialize Analytics Data API client
       this.analyticsDataClient = new BetaAnalyticsDataClient({
-        auth: this.jwtClient,
+        auth: this.jwtClient as any,
       });
 
       // Initialize Analytics Admin API client
       this.analyticsAdmin = google.analyticsadmin({
         version: "v1alpha",
-        auth: this.jwtClient,
+        auth: this.jwtClient as any,
       });
 
       logger.info("GA4Client initialized successfully");
     } catch (error) {
       logger.error({ error }, "Failed to initialize GA4Client");
-      throw new Error(`Failed to initialize GA4Client: ${error.message}`);
+      throw new Error(`Failed to initialize GA4Client: ${(error as Error).message}`);
     }
   }
 
@@ -254,9 +262,9 @@ export class GA4Client {
    */
   private getDateRange(
     dateRange: "last7days" | "last30days" | "last90days" | "custom" = this
-      .options.defaultDateRange,
-    customStartDate: string = this.options.customStartDate,
-    customEndDate: string = this.options.customEndDate,
+      .options.defaultDateRange || "last30days",
+    customStartDate: string = this.options.customStartDate || "",
+    customEndDate: string = this.options.customEndDate || "",
   ): { startDate: string; endDate: string } {
     const today = new Date();
     const endDate = format(today, "yyyy-MM-dd");
@@ -301,9 +309,9 @@ export class GA4Client {
     metrics: string[],
     dimensions: string[] = [],
     dateRange: "last7days" | "last30days" | "last90days" | "custom" = this
-      .options.defaultDateRange,
-    customStartDate: string = this.options.customStartDate,
-    customEndDate: string = this.options.customEndDate,
+      .options.defaultDateRange || "last30days",
+    customStartDate: string = this.options.customStartDate || "",
+    customEndDate: string = this.options.customEndDate || "",
     filters: any = {},
   ): Promise<any> {
     try {
@@ -323,7 +331,7 @@ export class GA4Client {
       }));
 
       // Build request
-      const request = {
+      const request: any = {
         property: `properties/${this.options.propertyId}`,
         dateRanges: [
           {
@@ -337,7 +345,7 @@ export class GA4Client {
 
       // Add filters if provided
       if (Object.keys(filters).length > 0) {
-        request["dimensionFilter"] = this.buildDimensionFilter(filters);
+        request.dimensionFilter = this.buildDimensionFilter(filters);
       }
 
       // Run the report
@@ -350,7 +358,7 @@ export class GA4Client {
         { error, metrics, dimensions, dateRange },
         "Failed to run GA4 report",
       );
-      throw new Error(`Failed to run GA4 report: ${error.message}`);
+      throw new Error(`Failed to run GA4 report: ${(error as Error).message}`);
     }
   }
 
@@ -439,24 +447,24 @@ export class GA4Client {
   private processReportResponse(response: any): any {
     // Extract dimensions and metrics
     const dimensionHeaders = response.dimensionHeaders.map(
-      (header) => header.name,
+      (header: any) => header.name,
     );
-    const metricHeaders = response.metricHeaders.map((header) => header.name);
+    const metricHeaders = response.metricHeaders.map((header: any) => header.name);
 
     // Process rows
     const rows = [];
 
     if (response.rows) {
       for (const row of response.rows) {
-        const rowData = {};
+        const rowData: any = {};
 
         // Process dimensions
-        row.dimensionValues.forEach((value, index) => {
+        row.dimensionValues.forEach((value: any, index: number) => {
           rowData[dimensionHeaders[index]] = value.value;
         });
 
         // Process metrics
-        row.metricValues.forEach((value, index) => {
+        row.metricValues.forEach((value: any, index: number) => {
           rowData[metricHeaders[index]] = value.value;
         });
 
@@ -465,10 +473,10 @@ export class GA4Client {
     }
 
     // Process totals
-    const totals = {};
+    const totals: any = {};
 
     if (response.totals && response.totals.length > 0) {
-      response.totals[0].metricValues.forEach((value, index) => {
+      response.totals[0].metricValues.forEach((value: any, index: number) => {
         totals[metricHeaders[index]] = value.value;
       });
     }
@@ -494,9 +502,9 @@ export class GA4Client {
   public async generateReport(
     reportType: GA4ReportType = GA4ReportType.OVERVIEW,
     dateRange: "last7days" | "last30days" | "last90days" | "custom" = this
-      .options.defaultDateRange,
-    customStartDate: string = this.options.customStartDate,
-    customEndDate: string = this.options.customEndDate,
+      .options.defaultDateRange || "last30days",
+    customStartDate: string = this.options.customStartDate || "",
+    customEndDate: string = this.options.customEndDate || "",
   ): Promise<GA4ReportResult> {
     try {
       const reportId = uuidv4();
@@ -574,7 +582,7 @@ export class GA4Client {
         rows: [],
         totals: {},
         charts: [],
-        error,
+        error: error as Error,
       };
     }
   }
@@ -635,12 +643,12 @@ export class GA4Client {
 
     // Add dimensions
     result.dimensions = {
-      dates: sessionsReport.rows.map((row) => row.date),
+      dates: sessionsReport.rows.map((row: any) => row.date),
       trafficSources: trafficSourceReport.rows.map(
-        (row) => `${row.sessionSource} / ${row.sessionMedium}`,
+        (row: any) => `${row.sessionSource} / ${row.sessionMedium}`,
       ),
-      pages: topPagesReport.rows.slice(0, 10).map((row) => row.pageTitle),
-      devices: deviceReport.rows.map((row) => row.deviceCategory),
+      pages: topPagesReport.rows.slice(0, 10).map((row: any) => row.pageTitle),
+      devices: deviceReport.rows.map((row: any) => row.deviceCategory),
     };
 
     // Add metrics
@@ -655,23 +663,23 @@ export class GA4Client {
     // Generate charts
     const sessionsTrendChart = await this.generateLineChart(
       "Sessions Trend",
-      sessionsReport.rows.map((row) => row.date),
+      sessionsReport.rows.map((row: any) => row.date),
       [
         {
           label: "Sessions",
-          data: sessionsReport.rows.map((row) => row.sessions),
-          borderColor: this.options.whiteLabelColorPrimary,
+          data: sessionsReport.rows.map((row: any) => row.sessions),
+          borderColor: this.options.whiteLabelColorPrimary || "#4A90E2",
           backgroundColor: this.hexToRgba(
-            this.options.whiteLabelColorPrimary,
+            this.options.whiteLabelColorPrimary || "#4A90E2",
             0.1,
           ),
         },
         {
           label: "Users",
-          data: sessionsReport.rows.map((row) => row.users),
-          borderColor: this.options.whiteLabelColorSecondary,
+          data: sessionsReport.rows.map((row: any) => row.users),
+          borderColor: this.options.whiteLabelColorSecondary || "#50E3C2",
           backgroundColor: this.hexToRgba(
-            this.options.whiteLabelColorSecondary,
+            this.options.whiteLabelColorSecondary || "#50E3C2",
             0.1,
           ),
         },
@@ -682,14 +690,14 @@ export class GA4Client {
       "Traffic Sources",
       trafficSourceReport.rows
         .slice(0, 5)
-        .map((row) => `${row.sessionSource} / ${row.sessionMedium}`),
-      trafficSourceReport.rows.slice(0, 5).map((row) => row.sessions),
+        .map((row: any) => `${row.sessionSource} / ${row.sessionMedium}`),
+      trafficSourceReport.rows.slice(0, 5).map((row: any) => row.sessions),
     );
 
     const deviceChart = await this.generatePieChart(
       "Device Categories",
-      deviceReport.rows.map((row) => row.deviceCategory),
-      deviceReport.rows.map((row) => row.sessions),
+      deviceReport.rows.map((row: any) => row.deviceCategory),
+      deviceReport.rows.map((row: any) => row.sessions),
     );
 
     // Add charts to result
@@ -754,11 +762,11 @@ export class GA4Client {
 
     // Add dimensions
     result.dimensions = {
-      dates: sessionsReport.rows.map((row) => row.date),
+      dates: sessionsReport.rows.map((row: any) => row.date),
       trafficSources: trafficSourceReport.rows.map(
-        (row) => `${row.sessionSource} / ${row.sessionMedium}`,
+        (row: any) => `${row.sessionSource} / ${row.sessionMedium}`,
       ),
-      referrals: referralReport.rows.map((row) => row.sessionSource),
+      referrals: referralReport.rows.map((row: any) => row.sessionSource),
     };
 
     // Add metrics
@@ -772,23 +780,23 @@ export class GA4Client {
     // Generate charts
     const sessionsTrendChart = await this.generateLineChart(
       "Traffic Trend",
-      sessionsReport.rows.map((row) => row.date),
+      sessionsReport.rows.map((row: any) => row.date),
       [
         {
           label: "Sessions",
-          data: sessionsReport.rows.map((row) => row.sessions),
-          borderColor: this.options.whiteLabelColorPrimary,
+          data: sessionsReport.rows.map((row: any) => row.sessions),
+          borderColor: this.options.whiteLabelColorPrimary || "#4A90E2",
           backgroundColor: this.hexToRgba(
-            this.options.whiteLabelColorPrimary,
+            this.options.whiteLabelColorPrimary || "#4A90E2",
             0.1,
           ),
         },
         {
           label: "Users",
-          data: sessionsReport.rows.map((row) => row.users),
-          borderColor: this.options.whiteLabelColorSecondary,
+          data: sessionsReport.rows.map((row: any) => row.users),
+          borderColor: this.options.whiteLabelColorSecondary || "#50E3C2",
           backgroundColor: this.hexToRgba(
-            this.options.whiteLabelColorSecondary,
+            this.options.whiteLabelColorSecondary || "#50E3C2",
             0.1,
           ),
         },
@@ -799,18 +807,18 @@ export class GA4Client {
       "Traffic Sources",
       trafficSourceReport.rows
         .slice(0, 5)
-        .map((row) => `${row.sessionSource} / ${row.sessionMedium}`),
-      trafficSourceReport.rows.slice(0, 5).map((row) => row.sessions),
+        .map((row: any) => `${row.sessionSource} / ${row.sessionMedium}`),
+      trafficSourceReport.rows.slice(0, 5).map((row: any) => row.sessions),
     );
 
     const referralChart = await this.generateBarChart(
       "Top Referrals",
-      referralReport.rows.slice(0, 10).map((row) => row.sessionSource),
+      referralReport.rows.slice(0, 10).map((row: any) => row.sessionSource),
       [
         {
           label: "Sessions",
-          data: referralReport.rows.slice(0, 10).map((row) => row.sessions),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+          data: referralReport.rows.slice(0, 10).map((row: any) => row.sessions),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
@@ -883,9 +891,9 @@ export class GA4Client {
 
     // Add dimensions
     result.dimensions = {
-      dates: engagementReport.rows.map((row) => row.date),
-      pages: pageEngagementReport.rows.slice(0, 20).map((row) => row.pageTitle),
-      events: eventReport.rows.map((row) => row.eventName),
+      dates: engagementReport.rows.map((row: any) => row.date),
+      pages: pageEngagementReport.rows.slice(0, 20).map((row: any) => row.pageTitle),
+      events: eventReport.rows.map((row: any) => row.eventName),
     };
 
     // Add metrics
@@ -900,16 +908,16 @@ export class GA4Client {
     // Generate charts
     const engagementTrendChart = await this.generateLineChart(
       "Engagement Trend",
-      engagementReport.rows.map((row) => row.date),
+      engagementReport.rows.map((row: any) => row.date),
       [
         {
           label: "Engagement Rate",
           data: engagementReport.rows.map(
-            (row) => parseFloat(row.engagementRate) * 100,
+            (row: any) => parseFloat(row.engagementRate) * 100,
           ),
-          borderColor: this.options.whiteLabelColorPrimary,
+          borderColor: this.options.whiteLabelColorPrimary || "#4A90E2",
           backgroundColor: this.hexToRgba(
-            this.options.whiteLabelColorPrimary,
+            this.options.whiteLabelColorPrimary || "#4A90E2",
             0.1,
           ),
           yAxisID: "y",
@@ -917,11 +925,11 @@ export class GA4Client {
         {
           label: "Bounce Rate",
           data: engagementReport.rows.map(
-            (row) => parseFloat(row.bounceRate) * 100,
+            (row: any) => parseFloat(row.bounceRate) * 100,
           ),
-          borderColor: this.options.whiteLabelColorSecondary,
+          borderColor: this.options.whiteLabelColorSecondary || "#50E3C2",
           backgroundColor: this.hexToRgba(
-            this.options.whiteLabelColorSecondary,
+            this.options.whiteLabelColorSecondary || "#50E3C2",
             0.1,
           ),
           yAxisID: "y",
@@ -946,22 +954,22 @@ export class GA4Client {
       "Top Pages by Views",
       pageEngagementReport.rows
         .slice(0, 10)
-        .map((row) => this.truncateString(row.pageTitle, 30)),
+        .map((row: any) => this.truncateString(row.pageTitle, 30)),
       [
         {
           label: "Page Views",
           data: pageEngagementReport.rows
             .slice(0, 10)
-            .map((row) => row.screenPageViews),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+            .map((row: any) => row.screenPageViews),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
 
     const topEventsChart = await this.generatePieChart(
       "Top Events",
-      eventReport.rows.slice(0, 10).map((row) => row.eventName),
-      eventReport.rows.slice(0, 10).map((row) => row.eventCount),
+      eventReport.rows.slice(0, 10).map((row: any) => row.eventName),
+      eventReport.rows.slice(0, 10).map((row: any) => row.eventCount),
     );
 
     // Add charts to result
@@ -1027,11 +1035,11 @@ export class GA4Client {
 
     // Add dimensions
     result.dimensions = {
-      dates: conversionsReport.rows.map((row) => row.date),
+      dates: conversionsReport.rows.map((row: any) => row.date),
       sources: conversionSourceReport.rows.map(
-        (row) => `${row.sessionSource} / ${row.sessionMedium}`,
+        (row: any) => `${row.sessionSource} / ${row.sessionMedium}`,
       ),
-      pages: conversionPageReport.rows.map((row) => row.pagePath),
+      pages: conversionPageReport.rows.map((row: any) => row.pagePath),
     };
 
     // Add metrics
@@ -1043,14 +1051,14 @@ export class GA4Client {
     // Generate charts
     const conversionTrendChart = await this.generateLineChart(
       "Conversion Trend",
-      conversionsReport.rows.map((row) => row.date),
+      conversionsReport.rows.map((row: any) => row.date),
       [
         {
           label: "Conversions",
-          data: conversionsReport.rows.map((row) => row.conversions),
-          borderColor: this.options.whiteLabelColorPrimary,
+          data: conversionsReport.rows.map((row: any) => row.conversions),
+          borderColor: this.options.whiteLabelColorPrimary || "#4A90E2",
           backgroundColor: this.hexToRgba(
-            this.options.whiteLabelColorPrimary,
+            this.options.whiteLabelColorPrimary || "#4A90E2",
             0.1,
           ),
           yAxisID: "y",
@@ -1058,11 +1066,11 @@ export class GA4Client {
         {
           label: "Conversion Rate",
           data: conversionsReport.rows.map(
-            (row) => parseFloat(row.conversionRate) * 100,
+            (row: any) => parseFloat(row.conversionRate) * 100,
           ),
-          borderColor: this.options.whiteLabelColorSecondary,
+          borderColor: this.options.whiteLabelColorSecondary || "#50E3C2",
           backgroundColor: this.hexToRgba(
-            this.options.whiteLabelColorSecondary,
+            this.options.whiteLabelColorSecondary || "#50E3C2",
             0.1,
           ),
           yAxisID: "y1",
@@ -1100,14 +1108,14 @@ export class GA4Client {
       "Conversions by Source",
       conversionSourceReport.rows
         .slice(0, 10)
-        .map((row) => `${row.sessionSource} / ${row.sessionMedium}`),
+        .map((row: any) => `${row.sessionSource} / ${row.sessionMedium}`),
       [
         {
           label: "Conversions",
           data: conversionSourceReport.rows
             .slice(0, 10)
-            .map((row) => row.conversions),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+            .map((row: any) => row.conversions),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
@@ -1116,14 +1124,14 @@ export class GA4Client {
       "Conversions by Page",
       conversionPageReport.rows
         .slice(0, 10)
-        .map((row) => this.truncateString(row.pagePath, 30)),
+        .map((row: any) => this.truncateString(row.pagePath, 30)),
       [
         {
           label: "Conversions",
           data: conversionPageReport.rows
             .slice(0, 10)
-            .map((row) => row.conversions),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+            .map((row: any) => row.conversions),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
@@ -1193,11 +1201,11 @@ export class GA4Client {
 
     // Add dimensions
     result.dimensions = {
-      pages: pagesReport.rows.slice(0, 50).map((row) => row.pageTitle),
+      pages: pagesReport.rows.slice(0, 50).map((row: any) => row.pageTitle),
       landingPages: landingPagesReport.rows
         .slice(0, 20)
-        .map((row) => row.landingPage),
-      exitPages: exitPagesReport.rows.slice(0, 20).map((row) => row.exitPage),
+        .map((row: any) => row.landingPage),
+      exitPages: exitPagesReport.rows.slice(0, 20).map((row: any) => row.exitPage),
     };
 
     // Add metrics
@@ -1212,12 +1220,12 @@ export class GA4Client {
       "Top Pages by Views",
       pagesReport.rows
         .slice(0, 10)
-        .map((row) => this.truncateString(row.pageTitle, 30)),
+        .map((row: any) => this.truncateString(row.pageTitle, 30)),
       [
         {
           label: "Page Views",
-          data: pagesReport.rows.slice(0, 10).map((row) => row.screenPageViews),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+          data: pagesReport.rows.slice(0, 10).map((row: any) => row.screenPageViews),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
@@ -1226,12 +1234,12 @@ export class GA4Client {
       "Top Landing Pages",
       landingPagesReport.rows
         .slice(0, 10)
-        .map((row) => this.truncateString(row.landingPage, 30)),
+        .map((row: any) => this.truncateString(row.landingPage, 30)),
       [
         {
           label: "Sessions",
-          data: landingPagesReport.rows.slice(0, 10).map((row) => row.sessions),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+          data: landingPagesReport.rows.slice(0, 10).map((row: any) => row.sessions),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
@@ -1240,12 +1248,12 @@ export class GA4Client {
       "Top Exit Pages",
       exitPagesReport.rows
         .slice(0, 10)
-        .map((row) => this.truncateString(row.exitPage, 30)),
+        .map((row: any) => this.truncateString(row.exitPage, 30)),
       [
         {
           label: "Exits",
-          data: exitPagesReport.rows.slice(0, 10).map((row) => row.exits),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+          data: exitPagesReport.rows.slice(0, 10).map((row: any) => row.exits),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
@@ -1316,16 +1324,16 @@ export class GA4Client {
     result.rows = [...organicSearchReport.rows];
     result.totals = {
       organicSessions: organicSearchReport.rows
-        .filter((row) => row.sessionMedium === "organic")
-        .reduce((sum, row) => sum + parseInt(row.sessions), 0),
+        .filter((row: any) => row.sessionMedium === "organic")
+        .reduce((sum: number, row: any) => sum + parseInt(row.sessions), 0),
     };
 
     // Add dimensions
     result.dimensions = {
       organicSources: organicSearchReport.rows
-        .filter((row) => row.sessionMedium === "organic")
-        .map((row) => row.sessionSource),
-      landingPages: organicLandingReport.rows.map((row) => row.landingPage),
+        .filter((row: any) => row.sessionMedium === "organic")
+        .map((row: any) => row.sessionSource),
+      landingPages: organicLandingReport.rows.map((row: any) => row.landingPage),
     };
 
     // Add metrics
@@ -1337,27 +1345,27 @@ export class GA4Client {
     const organicSourcesChart = await this.generatePieChart(
       "Organic Traffic Sources",
       organicSearchReport.rows
-        .filter((row) => row.sessionMedium === "organic")
+        .filter((row: any) => row.sessionMedium === "organic")
         .slice(0, 10)
-        .map((row) => row.sessionSource),
+        .map((row: any) => row.sessionSource),
       organicSearchReport.rows
-        .filter((row) => row.sessionMedium === "organic")
+        .filter((row: any) => row.sessionMedium === "organic")
         .slice(0, 10)
-        .map((row) => row.sessions),
+        .map((row: any) => row.sessions),
     );
 
     const organicLandingChart = await this.generateBarChart(
       "Top Landing Pages for Organic Traffic",
       organicLandingReport.rows
         .slice(0, 10)
-        .map((row) => this.truncateString(row.landingPage, 30)),
+        .map((row: any) => this.truncateString(row.landingPage, 30)),
       [
         {
           label: "Sessions",
           data: organicLandingReport.rows
             .slice(0, 10)
-            .map((row) => row.sessions),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+            .map((row: any) => row.sessions),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
@@ -1431,14 +1439,14 @@ export class GA4Client {
 
     // Add dimensions
     result.dimensions = {
-      devices: deviceReport.rows.map((row) => row.deviceCategory),
-      browsers: browserReport.rows.slice(0, 10).map((row) => row.browser),
+      devices: deviceReport.rows.map((row: any) => row.deviceCategory),
+      browsers: browserReport.rows.slice(0, 10).map((row: any) => row.browser),
       operatingSystems: osReport.rows
         .slice(0, 10)
-        .map((row) => row.operatingSystem),
+        .map((row: any) => row.operatingSystem),
       screenResolutions: screenReport.rows
         .slice(0, 10)
-        .map((row) => row.screenResolution),
+        .map((row: any) => row.screenResolution),
     };
 
     // Add metrics
@@ -1452,30 +1460,30 @@ export class GA4Client {
     // Generate charts
     const deviceChart = await this.generatePieChart(
       "Device Categories",
-      deviceReport.rows.map((row) => row.deviceCategory),
-      deviceReport.rows.map((row) => row.sessions),
+      deviceReport.rows.map((row: any) => row.deviceCategory),
+      deviceReport.rows.map((row: any) => row.sessions),
     );
 
     const browserChart = await this.generateBarChart(
       "Top Browsers",
-      browserReport.rows.slice(0, 10).map((row) => row.browser),
+      browserReport.rows.slice(0, 10).map((row: any) => row.browser),
       [
         {
           label: "Sessions",
-          data: browserReport.rows.slice(0, 10).map((row) => row.sessions),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+          data: browserReport.rows.slice(0, 10).map((row: any) => row.sessions),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
 
     const osChart = await this.generateBarChart(
       "Top Operating Systems",
-      osReport.rows.slice(0, 10).map((row) => row.operatingSystem),
+      osReport.rows.slice(0, 10).map((row: any) => row.operatingSystem),
       [
         {
           label: "Sessions",
-          data: osReport.rows.slice(0, 10).map((row) => row.sessions),
-          backgroundColor: this.options.whiteLabelColorPrimary,
+          data: osReport.rows.slice(0, 10).map((row: any) => row.sessions),
+          backgroundColor: this.options.whiteLabelColorPrimary || "#4A90E2",
         },
       ],
     );
@@ -1514,7 +1522,7 @@ export class GA4Client {
     datasets: any[],
     scales: any = {},
   ): Promise<string> {
-    const configuration = {
+    const configuration: any = {
       type: "line",
       data: {
         labels,
@@ -1595,7 +1603,7 @@ export class GA4Client {
     datasets: any[],
     scales: any = {},
   ): Promise<string> {
-    const configuration = {
+    const configuration: any = {
       type: "bar",
       data: {
         labels,
@@ -1676,7 +1684,7 @@ export class GA4Client {
     // Generate colors for pie slices
     const colors = this.generateColors(data.length);
 
-    const configuration = {
+    const configuration: any = {
       type: "pie",
       data: {
         labels,
@@ -1854,7 +1862,7 @@ export class GA4Client {
           summary += `Users accessed the site using the following devices:\n\n`;
           report.dimensions.devices.forEach((device) => {
             const deviceSessions =
-              report.rows.find((row) => row.deviceCategory === device)
+              report.rows.find((row: any) => row.deviceCategory === device)
                 ?.sessions || 0;
             const percentage =
               (parseInt(deviceSessions) /
@@ -1884,7 +1892,7 @@ export class GA4Client {
             .forEach((source, index) => {
               const sourceSessions =
                 report.rows.find(
-                  (row) =>
+                  (row: any) =>
                     `${row.sessionSource} / ${row.sessionMedium}` === source,
                 )?.sessions || 0;
               summary += `${index + 1}. **${source}**: ${sourceSessions} sessions\n`;
@@ -1987,7 +1995,7 @@ export class GA4Client {
       }
 
       // Combine reports into a single GA4Report
-      const ga4Report: GA4Report = {
+      const ga4Report: any = {
         id: uuidv4(),
         sandboxId,
         periodStart: startDate,
@@ -2021,10 +2029,10 @@ export class GA4Client {
 
         // Add device breakdown
         if (overviewReport.dimensions.devices) {
-          const deviceBreakdown = {};
+          const deviceBreakdown: any = {};
           overviewReport.dimensions.devices.forEach((device) => {
             const deviceSessions =
-              overviewReport.rows.find((row) => row.deviceCategory === device)
+              overviewReport.rows.find((row: any) => row.deviceCategory === device)
                 ?.sessions || 0;
             deviceBreakdown[device] = parseInt(deviceSessions);
           });
@@ -2037,7 +2045,7 @@ export class GA4Client {
         (report) => report.reportType === GA4ReportType.PAGES,
       );
       if (pagesReport && pagesReport.rows) {
-        ga4Report.topPages = pagesReport.rows.slice(0, 10).map((row) => ({
+        ga4Report.topPages = pagesReport.rows.slice(0, 10).map((row: any) => ({
           title: row.pageTitle || "",
           path: row.pagePath || "",
           views: parseInt(row.screenPageViews) || 0,
@@ -2079,7 +2087,7 @@ export class GA4Client {
         { error, sandboxId },
         "Failed to generate weekly GA4 report",
       );
-      throw new Error(`Failed to generate weekly GA4 report: ${error.message}`);
+      throw new Error(`Failed to generate weekly GA4 report: ${(error as Error).message}`);
     }
   }
 }

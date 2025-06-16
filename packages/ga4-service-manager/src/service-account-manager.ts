@@ -243,12 +243,6 @@ export class GA4ServiceAccountManager {
     return results;
   }
 
-  /**
-   * Get the service account email for client onboarding instructions
-   */
-  getServiceAccountEmail(): string {
-    return this.config.serviceAccountEmail;
-  }
 
   /**
    * Get onboarding instructions for clients
@@ -410,6 +404,27 @@ export class GA4ServiceAccountManager {
    */
   getAnalyticsDataClient(): BetaAnalyticsDataClient {
     return this.analyticsDataClient;
+  }
+
+  /**
+   * Get service account email
+   */
+  getServiceAccountEmail(): string {
+    return this.config.serviceAccountEmail;
+  }
+
+  /**
+   * Get project ID
+   */
+  getProjectId(): string {
+    return this.config.projectId;
+  }
+
+  /**
+   * Get private key
+   */
+  getPrivateKey(): string {
+    return this.config.privateKey;
   }
 
   /**
