@@ -116,6 +116,10 @@ COPY --chown=appuser:appgroup tsconfig.json ./
 COPY --chown=appuser:appgroup web-console ./web-console
 COPY --chown=appuser:appgroup config ./config
 COPY --chown=appuser:appgroup migrations ./migrations
+COPY --chown=appuser:appgroup client ./client
+COPY --chown=appuser:appgroup tailwind.config.ts ./
+COPY --chown=appuser:appgroup postcss.config.js ./
+COPY --chown=appuser:appgroup assets ./assets
 
 # Switch to app user for build
 USER appuser
