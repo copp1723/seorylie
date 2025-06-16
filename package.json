@@ -5,7 +5,8 @@
   "description": "Seorylie - AI-Powered SEO & Automotive Dealership Platform",
   "main": "index.js",
   "scripts": {
-    "build": "npm run build:web-console && npm run build:server",
+    "build": "npm run build:packages && npm run build:web-console && npm run build:server",
+    "build:packages": "cd packages/ga4-service-manager && npm run build || true",
     "build:web-console": "cd web-console && npm run build && cd .. && mkdir -p dist/public && cp -r web-console/dist/* dist/public/",
     "build:server": "tsc -p tsconfig.server.json || true",
     "build:client": "vite build --config config/build/vite.config.ts",
