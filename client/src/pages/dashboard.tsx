@@ -14,31 +14,12 @@ import {
   SkeletonCard,
   SkeletonTable,
 } from "@/components/loading/SkeletonLoader";
-import {
-  enhancedLazy,
-  withLazyLoading,
-  ViewportLazyLoad,
-} from "@/utils/lazy-loading";
+import { ViewportLazyLoad } from "@/utils/lazy-loading";
 import { logEvent } from "@/utils/analytics";
 
 // Lazy load components that aren't immediately visible
-const LazyConversationChart = withLazyLoading(
-  () => import("@/components/conversation-chart"),
-  {
-    id: "conversation-chart",
-    preload: true,
-    trackProgress: true,
-  },
-);
-
-const LazyPersonaChart = withLazyLoading(
-  () => import("@/components/persona-chart"),
-  {
-    id: "persona-chart",
-    preload: false,
-    trackProgress: true,
-  },
-);
+const LazyConversationChart = React.lazy(() => import("@/components/conversation-chart"));
+const LazyPersonaChart = React.lazy(() => import("@/components/persona-chart"));
 
 export default function Dashboard() {
   const [dealershipFilter, setDealershipFilter] = useState("all");
@@ -507,30 +488,7 @@ export default function Dashboard() {
       </div>
 
       {/* Lazy loaded charts section */}
-      <ViewportLazyLoad
-        fallback={
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 mt-8">
-            <SkeletonCard
-              height="300px"
-              header={true}
-              lines={1}
-              animation="wave"
-              aria-label="Loading conversation chart"
-            />
-            <SkeletonCard
-              height="300px"
-              header={true}
-              lines={1}
-              animation="wave"
-              aria-label="Loading persona chart"
-            />
-          </div>
-        }
-        margin="200px"
-        onVisible={() =>
-          logEvent("dashboard_charts_visible", { timestamp: Date.now() })
-        }
-      >
+      <ViewportLazyLoad rootMargin="200px">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 mt-8">
           <Suspense
             fallback={
@@ -563,10 +521,7 @@ export default function Dashboard() {
       </ViewportLazyLoad>
 
       {/* Conversations Table - Loaded when visible */}
-      <ViewportLazyLoad
-        fallback={
-          <div className="mt-8">
-            <SkeletonTable
+      <ViewportLazyLoad rootMargin="100px">
               rows={5}
               columns={4}
               animation="wave"

@@ -51,11 +51,14 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <EmergencyCSSFix />
-            <DebugTest />
-            <CSSDebug />
-            <VerifyCSSLoading />{" "}
-            {/* Added CSS verification component to diagnose Tailwind issues */}
+            {import.meta.env.DEV && (
+              <>
+                <EmergencyCSSFix />
+                <DebugTest />
+                <CSSDebug />
+                <VerifyCSSLoading />
+              </>
+            )}
             <Toaster />
             <Switch>
               {/* Public routes */}
