@@ -1,5 +1,6 @@
 import { type Express } from "express";
 import adfRoutes from "./routes/adf-routes";
+import seoworks from "./routes/seoworks";
 import { updateDeliveryStatus } from "./services/email-service";
 import logger from "./utils/logger";
 
@@ -84,4 +85,7 @@ export function setupRoutes(app: Express) {
 
   // ADF routes
   app.use("/api/adf", adfRoutes);
+
+  // SEOworks routes
+  app.use("/api", seoworks);
 }
