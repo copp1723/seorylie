@@ -7,6 +7,7 @@
   "scripts": {
     "build": "npm run build:web-console && npm run build:server",
     "build:web-console": "cd web-console && npm run build && cd .. && mkdir -p dist/public && cp -r web-console/dist/* dist/public/",
+    "build:server": "tsc -p tsconfig.server.json || true",
     "build:client": "vite build --config config/build/vite.config.ts",
     "start": "NODE_ENV=production node dist/minimal-production-server.js",
     "dev": "NODE_ENV=development tsx server/index.ts",

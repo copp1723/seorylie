@@ -35,3 +35,16 @@ export function debounce<T extends (...args: any[]) => any>(
     timeout = setTimeout(() => func(...args), wait);
   };
 }
+
+// Safe logging utilities for production
+export function safeLog(...args: any[]) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(...args);
+  }
+}
+
+export function safeLogError(message: string, error: any) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.error(message, error);
+  }
+}

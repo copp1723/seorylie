@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./",
+    "skipLibCheck": true,
+    "noEmit": false
+  },
+  "include": [
+    "server/**/*",
+    "minimal-production-server.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "client",
+    "web-console",
+    "tests",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

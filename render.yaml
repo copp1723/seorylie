@@ -31,8 +31,6 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
-      - key: SENDGRID_API_KEY
-        sync: false
 
       # Non-secret, useful defaults (can be overridden in dashboard)
       - key: FRONTEND_URL
