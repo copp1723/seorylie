@@ -5,7 +5,8 @@
   "description": "Seorylie - AI-Powered SEO & Automotive Dealership Platform",
   "main": "index.js",
   "scripts": {
-    "build": "npm run build:server",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "vite build --config config/build/vite.config.ts",
     "start": "NODE_ENV=production node dist/minimal-production-server.js",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "test": "npm run test:vitest && npm run test:jest",
