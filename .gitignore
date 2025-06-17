@@ -19,6 +19,14 @@ build/
 config/credentials/
 *.json
 
+# Service account keys and credentials
+ga4-service-account-key.json
+*-service-account-key.json
+server/config/ga4-service-account-key.json
+*.pem
+*.key
+*.cert
+
 # IDE files
 .vscode/
 .idea/

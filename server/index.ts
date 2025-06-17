@@ -236,7 +236,11 @@ const setupRoutes = async () => {
       import('./routes/admin').catch(() => ({ adminRoutes: null })),
       import('./routes/reports').catch(() => ({ reportRoutes: null })),
       import('./routes/ga4/onboarding').catch(() => null),
-      import('./integrations/seoworks/routes').catch(() => null)
+      import('./integrations/seoworks/routes').catch(() => null),
+      import('./routes/seoworks/tasks').catch(() => null),
+      import('./routes/dealership-onboarding').catch(() => null),
+      import('./routes/ga4-tenant-onboarding').catch(() => null),
+      import('./routes/ga4-reports').catch(() => null)
     ]);
 
     // Setup protected routes
@@ -244,7 +248,7 @@ const setupRoutes = async () => {
     app.use('/api', aiProxyMiddleware);
 
     // Setup route handlers with error handling
-    const [clientResult, agencyResult, adminResult, reportResult, ga4Result, seoWorksResult] = routes;
+    const [clientResult, agencyResult, adminResult, reportResult, ga4Result, integratedSeoWorksResult, seoWorksResult, dealershipOnboardingResult, ga4TenantOnboardingResult, ga4ReportsResult] = routes;
 
     if (clientResult.status === 'fulfilled' && clientResult.value.clientRoutes) {
       app.use('/api/client', clientResult.value.clientRoutes);
@@ -286,11 +290,38 @@ const setupRoutes = async () => {
       });
     }
 
-    if (seoWorksResult.status === 'fulfilled' && seoWorksResult.value) {
+    // Try the integrated seoworks first, then fall back to the new one
+    if (integratedSeoWorksResult.status === 'fulfilled' && integratedSeoWorksResult.value) {
+      app.use('/api/seoworks', integratedSeoWorksResult.value.default || integratedSeoWorksResult.value);
+    } else if (seoWorksResult.status === 'fulfilled' && seoWorksResult.value) {
       app.use('/api/seoworks', seoWorksResult.value.default || seoWorksResult.value);
     } else {
       app.get('/api/seoworks/*', (req, res) => {
         res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'SEOWorks routes not available' } });
+      });
+    }
+
+    if (dealershipOnboardingResult.status === 'fulfilled' && dealershipOnboardingResult.value) {
+      app.use('/api/dealership-onboarding', dealershipOnboardingResult.value.default || dealershipOnboardingResult.value);
+    } else {
+      app.get('/api/dealership-onboarding/*', (req, res) => {
+        res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'Dealership onboarding routes not available' } });
+      });
+    }
+
+    if (ga4TenantOnboardingResult.status === 'fulfilled' && ga4TenantOnboardingResult.value) {
+      app.use('/api/ga4', ga4TenantOnboardingResult.value.default || ga4TenantOnboardingResult.value);
+    } else {
+      app.get('/api/ga4/*', (req, res) => {
+        res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'GA4 tenant onboarding routes not available' } });
+      });
+    }
+
+    if (ga4ReportsResult.status === 'fulfilled' && ga4ReportsResult.value) {
+      app.use('/api/ga4/reports', ga4ReportsResult.value.default || ga4ReportsResult.value);
+    } else {
+      app.get('/api/ga4/reports/*', (req, res) => {
+        res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'GA4 reports routes not available' } });
       });
     }
 
