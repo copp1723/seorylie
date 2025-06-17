@@ -32,9 +32,11 @@ export class MonitoringService {
   recordKPI() {}
 
   // Enhanced methods for adf-email-listener compatibility
-  registerCounter(name: string, description: string) {}
-  registerHistogram(name: string, description: string) {}
+  registerCounter(name: string, description: string, labels?: string[]) {}
+  registerHistogram(name: string, description: string, labels?: string[], buckets?: number[]) {}
   registerUpDownCounter(name: string, description: string) {}
+  registerGauge(name: string, description: string, labels?: string[]) {}
+  setGauge(name: string, value: number, labels: any[]) {}
   registerObservableGauge(
     name: string,
     description: string,

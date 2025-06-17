@@ -18,7 +18,7 @@ let connection: ReturnType<typeof postgres> | null = null;
 export async function connectDB(): Promise<void> {
   try {
     // Create connection URL
-    const connectionUrl = config.isDevelopment() || config.isTest()
+    const connectionUrl = config.IS_DEVELOPMENT || config.IS_TEST
       ? `postgresql://${config.DB_USER}:${config.DB_PASSWORD}@${config.DB_HOST}:${config.DB_PORT}/${config.DB_NAME}`
       : process.env.DATABASE_URL;
 
@@ -28,7 +28,7 @@ export async function connectDB(): Promise<void> {
 
     // Create postgres connection
     connection = postgres(connectionUrl, {
-      max: config.isTest() ? 1 : 10, // Limit connections in test environment
+      max: config.IS_TEST ? 1 : 10, // Limit connections in test environment
       idle_timeout: 20,
       connect_timeout: 10,
     });

@@ -51,7 +51,7 @@ const createRateLimiter = () => {
     legacyHeaders: false,
     skip: (req) => {
       // Skip rate limiting for health checks in development
-      return isDev() && req.path === '/health';
+      return isDev && req.path === '/health';
     }
   });
 };
@@ -62,7 +62,7 @@ const createRateLimiter = () => {
 const setupSecurity = () => {
   // Helmet configuration
   app.use(helmet({
-    contentSecurityPolicy: isProd() ? undefined : false, // Disable CSP in development
+    contentSecurityPolicy: isProd ? undefined : false, // Disable CSP in development
     crossOriginEmbedderPolicy: false // Allow embedding for white-label use
   }));
 
@@ -100,7 +100,7 @@ const setupRequestProcessing = () => {
     },
     skip: (req) => {
       // Skip logging health checks in production to reduce noise
-      return isProd() && req.path === '/health';
+      return isProd && req.path === '/health';
     }
   }));
 
@@ -284,7 +284,7 @@ const setupRoutes = async () => {
     logger.error('Failed to load routes or middleware', { error });
     
     // In development, provide helpful error message
-    if (isDev()) {
+    if (isDev) {
       app.use('/api/*', (req, res) => {
         res.status(503).json({
           error: {
@@ -425,7 +425,7 @@ const startServer = async (): Promise<void> => {
         }
       });
       
-      if (isDev()) {
+      if (isDev) {
         console.log(`\n🔗 Server ready at: http://localhost:${PORT}`);
         console.log(`📊 Health check: http://localhost:${PORT}/health`);
         console.log(`📖 API docs: http://localhost:${PORT}/\n`);

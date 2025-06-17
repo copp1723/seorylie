@@ -22,7 +22,7 @@
     "ingest-leads": "ts-node scripts/ingest-leads.ts",
     "generate": "drizzle-kit generate:pg",
     "studio": "drizzle-kit studio",
-    "prepare": "husky install",
+    "prepare": "husky install || true",
     "setup": "bash scripts/setup-dev.sh full",
     "setup:verify": "bash scripts/setup-dev.sh verify",
     "setup:install": "bash scripts/setup-dev.sh install",
