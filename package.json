@@ -2,6 +2,10 @@
   "name": "seorylie-simple",
   "version": "1.0.0",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "setup:db": "node setup-db.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3"
   }
 }
