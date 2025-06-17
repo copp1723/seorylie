@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npm run build:packages && npm run build:web-console && npm run build:server",
-    "build:packages": "cd packages/seo-schema && npm install && npm run build && cd ../ga4-reporter && npm install && npm run build && cd ../ga4-service-manager && npm install && npm run build && cd ../core-agent && npm install && npm run build || true",
+    "build:packages": "echo 'Skipping package builds for deployment' || true",
     "build:web-console": "cd web-console && npm run build && cd .. && mkdir -p dist/public && cp -r web-console/dist/* dist/public/",
     "build:server": "node config/build/esbuild.config.js",
     "build:client": "vite build --config config/build/vite.config.ts",
@@ -317,5 +317,9 @@
     "packages/*",
     "web-console"
   ],
-  "private": true
+  "private": true,
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.43.0",
+    "@rollup/rollup-linux-x64-musl": "^4.43.0"
+  }
 }
