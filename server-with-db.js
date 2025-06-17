@@ -254,6 +254,18 @@ const server = http.createServer(async (req, res) => {
         }
       });
       
+    } else if (req.url === '/dashboard') {
+      // Serve admin dashboard
+      fs.readFile(path.join(__dirname, 'dashboard.html'), 'utf8', (err, data) => {
+        if (err) {
+          res.writeHead(500);
+          res.end('Error loading dashboard');
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(data);
+        }
+      });
+      
     } else {
       res.writeHead(404);
       res.end(JSON.stringify({ 
