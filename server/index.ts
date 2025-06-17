@@ -407,9 +407,11 @@ const startServer = async (): Promise<void> => {
     // Setup error handling (must be last)
     setupErrorHandling();
     
-    // Start HTTP server
-    const server = app.listen(PORT, () => {
+    // Start HTTP server - bind to 0.0.0.0 in production
+    const HOST = process.env.HOST || '0.0.0.0';
+    const server = app.listen(PORT, HOST, () => {
       logger.info('✅ Rylie SEO Hub server started successfully', {
+        host: HOST,
         port: PORT,
         environment: config.NODE_ENV,
         features: {
