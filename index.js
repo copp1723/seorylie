@@ -31,6 +31,7 @@ const server = http.createServer((req, res) => {
       port: PORT,
       endpoints: {
         health: '/health',
+        chat: '/chat',
         ga4_properties: '/api/ga4/properties',
         seoworks_webhook: '/api/seoworks/webhook',
         dealership_onboard: '/api/dealerships/onboard'
@@ -72,6 +73,19 @@ const server = http.createServer((req, res) => {
         message: 'Dealership onboarding initiated',
         data: JSON.parse(body || '{}')
       }));
+    });
+  } else if (req.url === '/chat') {
+    // Serve the chat interface
+    const fs = require('fs');
+    const path = require('path');
+    fs.readFile(path.join(__dirname, 'chat.html'), 'utf8', (err, data) => {
+      if (err) {
+        res.writeHead(500);
+        res.end('Error loading chat interface');
+      } else {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(data);
+      }
     });
   } else {
     res.writeHead(404);
