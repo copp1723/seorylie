@@ -19,7 +19,17 @@ export class MonitoringService {
 
   // Stub methods
   recordMetric() {}
-  incrementCounter(name: string, labels?: Record<string, string>) {}
+  incrementCounter(name: string, value?: number | Record<string, string>, labels?: Record<string, string>) {
+    // Handle both signatures - value as number or labels as first param
+    if (typeof value === 'object' && !labels) {
+      // Old signature: incrementCounter(name, labels)
+      labels = value;
+      value = 1;
+    } else if (typeof value !== 'number') {
+      value = 1;
+    }
+    // Stub implementation
+  }
   recordDuration() {}
   updateGauge() {}
   getHealthStatus() {
@@ -47,6 +57,16 @@ export class MonitoringService {
     value: number,
     labels?: Record<string, string>,
   ) {}
+  
+  // Add missing observeHistogram method
+  observeHistogram(
+    name: string,
+    value: number,
+    labels?: Record<string, string>,
+  ) {
+    // Stub implementation - just record as histogram
+    this.recordHistogram(name, value, labels);
+  }
   decrementUpDownCounter(name: string) {}
   incrementUpDownCounter(name: string) {}
   registerHealthCheck(name: string, checkFunction: Function) {
