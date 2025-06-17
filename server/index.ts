@@ -10,6 +10,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { config as envConfig } from 'dotenv';
 import { config, isDev, isProd } from './config';
 import { 
@@ -28,6 +29,12 @@ import { databasePoolMonitor } from './services/database-pool-monitor';
 
 // Load environment variables
 envConfig();
+
+// Get __dirname equivalent for ES modules
+// In production, the dist folder structure is different
+const __dirname = isProd 
+  ? path.join(process.cwd(), 'dist')
+  : path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = config.PORT;
@@ -121,8 +128,12 @@ const setupRequestProcessing = () => {
  */
 const setupRoutes = async () => {
   // Serve static files from the web console build
-  const publicPath = path.join(__dirname, '../dist/public');
+  const publicPath = isProd 
+    ? path.join(process.cwd(), 'dist/public')
+    : path.join(__dirname, '../dist/public');
   app.use(express.static(publicPath));
+  
+  logger.info('Serving static files from', { publicPath });
 
   // API info endpoint - moved to /api path
   app.get('/api', (req, res) => {
@@ -329,7 +340,9 @@ const setupErrorHandling = () => {
     }
     
     // Otherwise, serve the SPA index.html
-    const indexPath = path.join(__dirname, '../dist/public/index.html');
+    const indexPath = isProd 
+      ? path.join(process.cwd(), 'dist/public/index.html')
+      : path.join(__dirname, '../dist/public/index.html');
     res.sendFile(indexPath, (err) => {
       if (err) {
         req.logger?.error('Failed to serve index.html', { error: err });
