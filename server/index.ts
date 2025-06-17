@@ -13,6 +13,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config as envConfig } from 'dotenv';
 import { config, isDev, isProd } from './config';
+import { getPort, getHost } from './utils/port-config';
 import { 
   logger, 
   errorHandler, 
@@ -37,7 +38,7 @@ const __dirname = isProd
   : path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
-const PORT = config.PORT;
+const PORT = getPort();  // Use utility to ensure proper PORT detection
 
 // Setup global error handlers early
 setupGlobalErrorHandlers();
@@ -435,6 +436,15 @@ const initializeDatabase = async (): Promise<void> => {
  */
 const startServer = async (): Promise<void> => {
   try {
+    // Log environment variables for debugging
+    logger.info('Environment configuration', {
+      PORT_ENV: process.env.PORT,
+      NODE_ENV: process.env.NODE_ENV,
+      HOST_ENV: process.env.HOST,
+      ACTUAL_PORT: PORT,
+      ACTUAL_HOST: getHost()
+    });
+    
     logger.info('🚀 Starting Rylie SEO Hub server...', {
       version: '1.0.0',
       environment: config.NODE_ENV,
@@ -476,7 +486,7 @@ const startServer = async (): Promise<void> => {
     setupErrorHandling();
     
     // Start HTTP server - bind to 0.0.0.0 in production
-    const HOST = process.env.HOST || '0.0.0.0';
+    const HOST = getHost();  // Use utility to ensure proper HOST detection
     const server = app.listen(PORT, HOST, () => {
       logger.info('✅ Rylie SEO Hub server started successfully', {
         host: HOST,
