@@ -109,8 +109,16 @@ async function runTests() {
     console.log(`   Status: ${properties.status}`);
     console.log(`   Properties found: ${properties.data.count}`);
     
-    // Test 6: Chat interface
-    console.log('\n6️⃣  Testing chat interface...');
+    // Test 6: Weekly rollup
+    console.log('\n6️⃣  Testing weekly rollup...');
+    const rollup = await makeRequest('/api/seoworks/weekly-rollup');
+    console.log(`   Status: ${rollup.status}`);
+    if (rollup.data.weekly_summary) {
+      console.log(`   Weeks included: ${rollup.data.weekly_summary.length}`);
+    }
+    
+    // Test 7: Chat interface
+    console.log('\n7️⃣  Testing chat interface...');
     const chat = await makeRequest('/chat');
     console.log(`   Status: ${chat.status}`);
     console.log(`   Chat UI available: ${chat.status === 200 ? '✅' : '❌'}`);

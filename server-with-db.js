@@ -71,6 +71,7 @@ const server = http.createServer(async (req, res) => {
           ga4_properties: '/api/ga4/properties',
           seoworks_webhook: '/api/seoworks/webhook',
           seoworks_tasks: '/api/seoworks/tasks',
+          seoworks_weekly_rollup: '/api/seoworks/weekly-rollup',
           dealership_onboard: '/api/dealerships/onboard'
         }
       }));
@@ -164,6 +165,66 @@ const server = http.createServer(async (req, res) => {
         message: 'SEOWerks Tasks',
         count: result.rows.length,
         tasks: result.rows
+      }));
+      
+    } else if (req.url === '/api/seoworks/weekly-rollup' && req.method === 'GET') {
+      // Get weekly rollup of SEOWerks tasks
+      const result = await db.query(`
+        WITH weekly_stats AS (
+          SELECT 
+            DATE_TRUNC('week', created_at) as week_start,
+            task_type,
+            status,
+            COUNT(*) as task_count,
+            COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count,
+            COUNT(CASE WHEN completion_date IS NOT NULL THEN 1 END) as with_completion_date,
+            AVG(
+              CASE 
+                WHEN completion_date IS NOT NULL AND created_at IS NOT NULL 
+                THEN EXTRACT(EPOCH FROM (completion_date - created_at))/3600 
+              END
+            ) as avg_completion_hours
+          FROM seoworks_tasks
+          WHERE created_at >= CURRENT_DATE - INTERVAL '4 weeks'
+          GROUP BY DATE_TRUNC('week', created_at), task_type, status
+        ),
+        summary AS (
+          SELECT 
+            week_start,
+            SUM(task_count) as total_tasks,
+            SUM(completed_count) as total_completed,
+            AVG(avg_completion_hours) as avg_completion_time
+          FROM weekly_stats
+          GROUP BY week_start
+          ORDER BY week_start DESC
+        )
+        SELECT 
+          to_char(week_start, 'YYYY-MM-DD') as week,
+          total_tasks,
+          total_completed,
+          ROUND(avg_completion_time::numeric, 2) as avg_hours_to_complete,
+          ROUND((total_completed::numeric / NULLIF(total_tasks, 0) * 100), 1) as completion_rate
+        FROM summary
+      `);
+      
+      // Get task type breakdown for current week
+      const typeBreakdown = await db.query(`
+        SELECT 
+          task_type,
+          COUNT(*) as count,
+          COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
+        FROM seoworks_tasks
+        WHERE created_at >= DATE_TRUNC('week', CURRENT_DATE)
+        GROUP BY task_type
+        ORDER BY count DESC
+      `);
+      
+      res.writeHead(200);
+      res.end(JSON.stringify({ 
+        message: 'SEOWerks Weekly Rollup',
+        weekly_summary: result.rows,
+        current_week_breakdown: typeBreakdown.rows,
+        generated_at: new Date().toISOString()
       }));
       
     } else if (req.url === '/api/dealerships/onboard' && req.method === 'POST') {
