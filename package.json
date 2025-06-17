@@ -5,10 +5,11 @@
   "description": "Seorylie - AI-Powered SEO & Automotive Dealership Platform",
   "main": "index.js",
   "scripts": {
-    "build": "npm run build:packages && npm run build:web-console && npm run build:server",
+    "build": "npm run build:server",
     "build:packages": "echo 'Skipping package builds for deployment' || true",
     "build:web-console": "cd web-console && npm run build && cd .. && mkdir -p dist/public && cp -r web-console/dist/* dist/public/",
     "build:server": "node config/build/esbuild.config.js",
+    "build:production": "npm run build:server",
     "build:client": "vite build --config config/build/vite.config.ts",
     "start": "NODE_ENV=production node dist/index.js",
     "dev": "NODE_ENV=development tsx server/index.ts",
