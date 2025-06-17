@@ -20,14 +20,20 @@ RUN npm install --legacy-peer-deps
 # Copy all source files
 COPY . .
 
-# Build the application
-RUN npm run build:server
+# Make build script executable
+RUN chmod +x scripts/simple-build.js
+
+# Build the application using simple build script
+RUN node scripts/simple-build.js
+
+# Verify the build worked
+RUN ls -la dist/ && test -f dist/index.js || exit 1
 
 # Remove dev dependencies after build
 RUN npm prune --production
 
 # Create necessary directories
-RUN mkdir -p logs dist
+RUN mkdir -p logs
 
 # Use PORT from environment
 ENV PORT=${PORT:-3000}
