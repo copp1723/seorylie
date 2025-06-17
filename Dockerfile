@@ -1,4 +1,4 @@
 FROM node:20-slim
 WORKDIR /app
-COPY index.js .
+COPY package.json index.js ./
 CMD ["node", "index.js"]
