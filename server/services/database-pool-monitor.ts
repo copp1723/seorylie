@@ -205,6 +205,11 @@ class DatabasePoolMonitor extends EventEmitter {
    */
   private async getConnectionStats(): Promise<{ active: number; idle: number; total: number } | null> {
     try {
+      // Skip if client is not available
+      if (!client) {
+        return null;
+      }
+
       // Query pg_stat_activity for connection info
       const result = await client`
         SELECT 
@@ -229,6 +234,12 @@ class DatabasePoolMonitor extends EventEmitter {
     const startTime = Date.now();
 
     try {
+      // Skip health check if client is not available
+      if (!client) {
+        logger.debug("Database client not available, skipping health check");
+        return;
+      }
+
       // Simple query to test pool health
       await client`SELECT 1 as health_check`;
       

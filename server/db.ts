@@ -8,13 +8,21 @@ import * as schema from "../shared/index";
 import logger from "./utils/logger";
 
 // Database connection configuration
-const connectionString =
-  process.env.DATABASE_URL || "postgresql://localhost:5432/dev_db";
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const connectionString = process.env.DATABASE_URL || 
+  (isDevelopment ? "postgresql://localhost:5432/dev_db" : null);
 
 console.log("Database configuration:", {
   hasConnectionString: !!process.env.DATABASE_URL,
   defaultUsed: !process.env.DATABASE_URL,
+  environment: process.env.NODE_ENV,
+  willConnect: !!connectionString,
 });
+
+// Skip database connection in production if no DATABASE_URL is set
+if (!connectionString && !isDevelopment) {
+  console.warn("⚠️ No DATABASE_URL provided in production - database features will be disabled");
+}
 
 // Enhanced connection configuration with pooling
 const connectionConfig = {
@@ -34,10 +42,10 @@ const connectionConfig = {
 };
 
 // Create postgres client with enhanced configuration
-const client = postgres(connectionString, connectionConfig);
+const client = connectionString ? postgres(connectionString, connectionConfig) : null;
 
 // Create drizzle instance with schema
-const db = drizzle(client, { schema });
+const db = client ? drizzle(client, { schema }) : null;
 
 /**
  * Check database connection health
@@ -52,6 +60,14 @@ export async function checkDatabaseConnection(): Promise<{
   latency?: number;
 }> {
   const startTime = Date.now();
+
+  if (!client) {
+    return {
+      isHealthy: false,
+      error: "Database client not initialized - no DATABASE_URL provided",
+      latency: Date.now() - startTime,
+    };
+  }
 
   try {
     // Test basic connectivity
@@ -77,7 +93,7 @@ export async function checkDatabaseConnection(): Promise<{
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    logger.warn("Database health check failed (development mode)", {
+    logger.warn("Database health check failed", {
       error: errorMessage,
       latency: `${Date.now() - startTime}ms`,
     });
@@ -111,6 +127,11 @@ export async function testDatabaseConnection(
  * Gracefully close database connections
  */
 export async function closeDatabaseConnections(): Promise<void> {
+  if (!client) {
+    logger.info("No database connections to close");
+    return;
+  }
+  
   try {
     logger.info("Closing database connections...");
     await client.end();
