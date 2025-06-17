@@ -60,7 +60,7 @@ const server = http.createServer(async (req, res) => {
         timestamp: new Date().toISOString()
       }));
       
-    } else if (req.url === '/') {
+    } else if (req.url === '/api') {
       res.writeHead(200);
       res.end(JSON.stringify({ 
         message: 'Rylie SEO API with Database',
@@ -265,6 +265,23 @@ const server = http.createServer(async (req, res) => {
           res.end(data);
         }
       });
+      
+    } else if (req.url === '/app') {
+      // Serve customer app (professional UI)
+      fs.readFile(path.join(__dirname, 'customer-app.html'), 'utf8', (err, data) => {
+        if (err) {
+          res.writeHead(500);
+          res.end('Error loading customer app');
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(data);
+        }
+      });
+      
+    } else if (req.url === '/') {
+      // Root redirects to customer app
+      res.writeHead(302, { 'Location': '/app' });
+      res.end();
       
     } else {
       res.writeHead(404);
