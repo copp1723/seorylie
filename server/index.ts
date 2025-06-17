@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { config as envConfig } from 'dotenv';
 import { config, isDev, isProd } from './config';
 import { 
@@ -119,8 +120,12 @@ const setupRequestProcessing = () => {
  * Setup core application routes
  */
 const setupRoutes = async () => {
-  // Root endpoint - API information
-  app.get('/', (req, res) => {
+  // Serve static files from the web console build
+  const publicPath = path.join(__dirname, '../dist/public');
+  app.use(express.static(publicPath));
+
+  // API info endpoint - moved to /api path
+  app.get('/api', (req, res) => {
     res.status(200).json({
       service: 'Rylie SEO Hub',
       version: '1.0.0',
@@ -304,21 +309,40 @@ const setupRoutes = async () => {
  * Setup error handling and 404 routes
  */
 const setupErrorHandling = () => {
-  // 404 handler
-  app.use('*', (req, res) => {
-    const error = {
-      code: ErrorCode.RESOURCE_NOT_FOUND,
-      message: 'Route not found',
-      path: req.originalUrl,
-      traceId: req.traceId
-    };
+  // SPA fallback - serve index.html for non-API routes
+  app.get('*', (req, res) => {
+    // If it's an API route, return 404 JSON
+    if (req.path.startsWith('/api/')) {
+      const error = {
+        code: ErrorCode.RESOURCE_NOT_FOUND,
+        message: 'API route not found',
+        path: req.originalUrl,
+        traceId: req.traceId
+      };
+      
+      req.logger?.warn('API route not found', { 
+        method: req.method, 
+        path: req.originalUrl 
+      });
+      
+      return res.status(404).json({ error });
+    }
     
-    req.logger?.warn('Route not found', { 
-      method: req.method, 
-      path: req.originalUrl 
+    // Otherwise, serve the SPA index.html
+    const indexPath = path.join(__dirname, '../dist/public/index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        req.logger?.error('Failed to serve index.html', { error: err });
+        res.status(404).json({
+          error: {
+            code: ErrorCode.RESOURCE_NOT_FOUND,
+            message: 'Page not found',
+            path: req.originalUrl,
+            traceId: req.traceId
+          }
+        });
+      }
     });
-    
-    res.status(404).json({ error });
   });
 
   // Global error handler (must be last)
