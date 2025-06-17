@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS seoworks_tasks (
   completion_notes TEXT,
   post_title TEXT,
   post_url TEXT,
+  completion_date TIMESTAMPTZ,
   payload JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

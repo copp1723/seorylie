@@ -28,6 +28,7 @@ const testTask = {
   dealership_id: 'test-dealer-001',
   post_title: 'Test Blog Post: Top 10 Car Maintenance Tips',
   post_url: 'https://example.com/blog/car-maintenance-tips',
+  completion_date: new Date().toISOString(),
   completion_notes: 'Successfully generated and published blog post',
   payload: {
     word_count: 1250,

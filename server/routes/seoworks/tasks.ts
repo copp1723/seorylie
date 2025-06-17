@@ -33,6 +33,7 @@ const taskWebhookSchema = z.object({
   completion_notes: z.string().optional(),
   post_title: z.string().optional(),
   post_url: z.string().optional(),
+  completion_date: z.string().optional(), // Date when task was completed
   payload: z.record(z.any()).optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional()
@@ -77,11 +78,11 @@ router.post('/task', validateApiKey, async (req: Request, res: Response) => {
       INSERT INTO seoworks_tasks (
         id, task_type, status, dealership_id, 
         completion_notes, post_title, post_url, 
-        payload, created_at, updated_at
+        completion_date, payload, created_at, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, 
-        COALESCE($9::timestamptz, NOW()), 
-        COALESCE($10::timestamptz, NOW())
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, 
+        COALESCE($10::timestamptz, NOW()), 
+        COALESCE($11::timestamptz, NOW())
       )
       ON CONFLICT (id) DO UPDATE SET
         task_type = EXCLUDED.task_type,
@@ -90,6 +91,7 @@ router.post('/task', validateApiKey, async (req: Request, res: Response) => {
         completion_notes = EXCLUDED.completion_notes,
         post_title = EXCLUDED.post_title,
         post_url = EXCLUDED.post_url,
+        completion_date = EXCLUDED.completion_date,
         payload = EXCLUDED.payload,
         updated_at = NOW()
       RETURNING *;
@@ -103,6 +105,7 @@ router.post('/task', validateApiKey, async (req: Request, res: Response) => {
       validatedData.completion_notes || null,
       validatedData.post_title || null,
       validatedData.post_url || null,
+      validatedData.completion_date || null,
       validatedData.payload || null,
       validatedData.created_at || null,
       validatedData.updated_at || null

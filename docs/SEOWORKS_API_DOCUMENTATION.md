@@ -43,6 +43,7 @@ Main endpoint for receiving task updates from SEOWerks.
   "dealership_id": "dealer-123",
   "post_title": "10 Tips for Car Maintenance",
   "post_url": "https://dealership.com/blog/car-maintenance",
+  "completion_date": "2024-06-17T14:30:00Z",
   "completion_notes": "Successfully published",
   "payload": {
     "word_count": 1200,
@@ -61,6 +62,7 @@ Main endpoint for receiving task updates from SEOWerks.
 - `dealership_id` (string): ID of the associated dealership
 - `post_title` (string): Title of the blog post
 - `post_url` (string): URL where the content was published
+- `completion_date` (string): ISO 8601 date when task was completed (e.g., "2024-06-17T14:30:00Z")
 - `completion_notes` (string): Any notes about the completion
 - `payload` (object): Additional data specific to the task
 

@@ -56,6 +56,7 @@
     "setup:ga4-tables": "node scripts/setup-ga4-multi-tenant.js",
     "test:seoworks": "node scripts/test-seoworks-api.js",
     "setup:seoworks": "node scripts/setup-seoworks-table.js",
+    "update:seoworks": "node scripts/update-seoworks-completion-date.js",
     "test:onboarding": "node scripts/test-dealership-onboarding.js",
     "test:load:chat": "k6 run test/load/chat-load-test.js",
     "test:load:api": "k6 run test/load/api-load-test.js",
