@@ -220,7 +220,7 @@ const setupRoutes = async () => {
       import('./routes/admin').catch(() => ({ adminRoutes: null })),
       import('./routes/reports').catch(() => ({ reportRoutes: null })),
       import('./routes/ga4/onboarding').catch(() => null),
-      import('./routes/seoworks/tasks').catch(() => null)
+      import('./integrations/seoworks/routes').catch(() => null)
     ]);
 
     // Setup protected routes
