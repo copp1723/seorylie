@@ -25,18 +25,40 @@ const server = http.createServer((req, res) => {
       timestamp: new Date().toISOString()
     }));
   } else if (req.url === '/') {
-    res.writeHead(200);
-    res.end(JSON.stringify({ 
-      message: 'Rylie SEO API',
-      port: PORT,
-      endpoints: {
-        health: '/health',
-        chat: '/chat',
-        ga4_properties: '/api/ga4/properties',
-        seoworks_webhook: '/api/seoworks/webhook',
-        dealership_onboard: '/api/dealerships/onboard'
-      }
-    }));
+    // Simple landing page
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Rylie SEO</title>
+        <style>
+          body { font-family: sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+          h1 { color: #3b82f6; }
+          .links { margin-top: 30px; }
+          .links a { 
+            display: inline-block; 
+            margin: 10px; 
+            padding: 15px 30px; 
+            background: #3b82f6; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 8px;
+          }
+          .links a:hover { background: #2563eb; }
+        </style>
+      </head>
+      <body>
+        <h1>🚀 Welcome to Rylie SEO</h1>
+        <p>Your AI-powered SEO assistant and project management platform.</p>
+        <div class="links">
+          <a href="/chat">Chat Assistant</a>
+          <a href="/dashboard">Admin Dashboard</a>
+          <a href="/api">API Documentation</a>
+        </div>
+      </body>
+      </html>
+    `);
   } else if (req.url === '/api/ga4/properties' && req.method === 'GET') {
     res.writeHead(200);
     res.end(JSON.stringify({ 
