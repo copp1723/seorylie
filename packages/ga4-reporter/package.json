@@ -24,7 +24,7 @@
   "private": true,
   "dependencies": {
     "@fastify/jwt": "9.1.0",
-    "@google-analytics/data": "^5.1.0",
+    "@google-analytics/data": "5.1.0",
     "@sendgrid/mail": "8.1.5",
     "axios": "^1.4.0",
     "bullmq": "^4.6.3",

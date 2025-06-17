@@ -15,6 +15,10 @@ build/
 .env.test.local
 .env.production.local
 
+# GA4 Service Account Credentials
+config/credentials/
+*.json
+
 # IDE files
 .vscode/
 .idea/

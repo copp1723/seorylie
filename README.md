@@ -180,6 +180,27 @@ npm run seed
 
 The system will validate your configuration on startup and provide helpful error messages for missing or invalid settings.
 
+### **Google Analytics 4 Integration**
+
+The platform supports Google Analytics 4 integration for tracking and reporting:
+
+1. **Quick Setup**
+   ```bash
+   ./setup-ga4.sh
+   ```
+
+2. **Manual Setup**
+   - Follow the guide in `docs/GA4_SETUP.md`
+   - Configure service account credentials
+   - Update `.env` with GA4 settings
+
+3. **Verify Configuration**
+   ```bash
+   npm run setup:ga4:verify
+   ```
+
+See [GA4 Setup Documentation](docs/GA4_SETUP.md) for detailed instructions.
+
 ---
 
 ## 🛠️ **Development Commands**

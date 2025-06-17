@@ -1,128 +1,161 @@
 #!/bin/bash
 
-# GA4 Integration Setup Script for Rylie SEO Hub
-# This script helps set up the centralized GA4 service account integration
+# GA4 Service Account Setup Helper Script
+# This script guides users through the GA4 service account setup process
 
-echo \"🚀 Setting up GA4 Integration for Rylie SEO Hub\"
-echo \"=============================================\"
+set -e
 
-# Check if we're in the right directory
-if [ ! -f \"package.json\" ]; then
-    echo \"❌ Error: Please run this script from the root of the Rylie SEO project\"
+echo "========================================="
+echo "  GA4 Service Account Setup Assistant"
+echo "========================================="
+echo ""
+
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_success() {
+    echo -e "${GREEN}✓ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠ $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}✗ $1${NC}"
+}
+
+# Check if Node.js is installed
+if ! command -v node &> /dev/null; then
+    print_error "Node.js is not installed. Please install Node.js 18+ first."
     exit 1
 fi
 
-echo \"📦 Installing dependencies for GA4 Service Manager...\"
-
-# Navigate to ga4-service-manager package and install dependencies
-if [ -d \"packages/ga4-service-manager\" ]; then
-    cd packages/ga4-service-manager
-    if command -v npm &> /dev/null; then
-        npm install
-    elif command -v yarn &> /dev/null; then
-        yarn install
-    else
-        echo \"❌ Error: npm or yarn not found. Please install Node.js and npm\"
-        exit 1
-    fi
-    cd ../..
-else
-    echo \"❌ Error: GA4 Service Manager package not found\"
-    exit 1
+# Check if npm dependencies are installed
+if [ ! -d "node_modules" ]; then
+    print_warning "Node modules not found. Installing dependencies..."
+    npm install
 fi
 
-# Build the package
-echo \"🔨 Building GA4 Service Manager package...\"
-cd packages/ga4-service-manager
-if command -v npx &> /dev/null; then
-    npx tsc
-    echo \"✅ GA4 Service Manager built successfully\"
-else
-    echo \"⚠️  Warning: TypeScript compiler not found. You may need to build manually\"
-fi
-cd ../..
-
-# Check for required environment variables
-echo \"🔧 Checking environment configuration...\"
-
-ENV_FILE=\".env\"
-EXAMPLE_FILE=\".env.example\"
-
-if [ ! -f \"$ENV_FILE\" ]; then
-    if [ -f \"$EXAMPLE_FILE\" ]; then
-        echo \"📋 Creating .env file from .env.example...\"
-        cp \"$EXAMPLE_FILE\" \"$ENV_FILE\"
-        echo \"✅ .env file created\"
+# Check if .env file exists
+if [ ! -f ".env" ]; then
+    if [ -f ".env.example" ]; then
+        print_warning ".env file not found. Creating from .env.example..."
+        cp .env.example .env
+        print_success ".env file created. Please update it with your GA4 configuration."
     else
-        echo \"❌ Error: .env.example file not found\"
+        print_error ".env.example file not found. Cannot create .env file."
         exit 1
     fi
 fi
 
-# Check for GA4 configuration
-echo \"📊 Checking GA4 configuration...\"
+# Main menu
+echo ""
+echo "What would you like to do?"
+echo ""
+echo "1) View GA4 Setup Documentation"
+echo "2) Verify GA4 Configuration"
+echo "3) Create credentials directory"
+echo "4) Open Google Cloud Console"
+echo "5) Open Google Analytics"
+echo "6) Exit"
+echo ""
 
-REQUIRED_VARS=(
-    \"GA4_SERVICE_ACCOUNT_EMAIL\"
-    \"GA4_PROJECT_ID\"
-    \"GA4_PRIVATE_KEY\"
-    \"GA4_KEY_ID\"
-    \"GA4_ENCRYPTION_KEY\"
-)
+read -p "Enter your choice (1-6): " choice
 
-MISSING_VARS=()
+case $choice in
+    1)
+        # View documentation
+        if [ -f "docs/GA4_SETUP.md" ]; then
+            if command -v mdcat &> /dev/null; then
+                mdcat docs/GA4_SETUP.md | less -R
+            elif command -v glow &> /dev/null; then
+                glow docs/GA4_SETUP.md
+            else
+                less docs/GA4_SETUP.md
+            fi
+        else
+            print_error "Documentation file not found at docs/GA4_SETUP.md"
+            exit 1
+        fi
+        ;;
+    
+    2)
+        # Verify configuration
+        echo ""
+        print_warning "Checking GA4 configuration..."
+        echo ""
+        npm run setup:ga4:verify
+        ;;
+    
+    3)
+        # Create credentials directory
+        echo ""
+        print_warning "Creating credentials directory..."
+        mkdir -p config/credentials
+        print_success "Created directory: config/credentials/"
+        echo ""
+        echo "Place your GA4 service account JSON file in this directory."
+        echo "Remember to update the GA4_SERVICE_ACCOUNT_KEY_PATH in your .env file."
+        echo ""
+        
+        # Add to .gitignore if not already present
+        if ! grep -q "config/credentials/" .gitignore 2>/dev/null; then
+            echo "" >> .gitignore
+            echo "# GA4 Service Account Credentials" >> .gitignore
+            echo "config/credentials/" >> .gitignore
+            print_success "Added config/credentials/ to .gitignore"
+        fi
+        ;;
+    
+    4)
+        # Open Google Cloud Console
+        echo ""
+        print_warning "Opening Google Cloud Console..."
+        if command -v open &> /dev/null; then
+            open "https://console.cloud.google.com/"
+        elif command -v xdg-open &> /dev/null; then
+            xdg-open "https://console.cloud.google.com/"
+        else
+            echo "Please open: https://console.cloud.google.com/"
+        fi
+        ;;
+    
+    5)
+        # Open Google Analytics
+        echo ""
+        print_warning "Opening Google Analytics..."
+        if command -v open &> /dev/null; then
+            open "https://analytics.google.com/"
+        elif command -v xdg-open &> /dev/null; then
+            xdg-open "https://analytics.google.com/"
+        else
+            echo "Please open: https://analytics.google.com/"
+        fi
+        ;;
+    
+    6)
+        echo ""
+        print_success "Goodbye!"
+        exit 0
+        ;;
+    
+    *)
+        print_error "Invalid choice. Please run the script again."
+        exit 1
+        ;;
+esac
 
-for var in \"${REQUIRED_VARS[@]}\"; do
-    if ! grep -q \"^$var=\" \"$ENV_FILE\" || grep -q \"^$var=$\" \"$ENV_FILE\" || grep -q \"^$var=.*your-.*\" \"$ENV_FILE\"; then
-        MISSING_VARS+=(\"$var\")
-    fi
-done
-
-if [ ${#MISSING_VARS[@]} -gt 0 ]; then
-    echo \"⚠️  Warning: The following GA4 environment variables need to be configured:\"
-    for var in \"${MISSING_VARS[@]}\"; do
-        echo \"   - $var\"
-    done
-    echo \"\"
-    echo \"📝 Please update your .env file with the actual values before using GA4 features.\"
-    echo \"   See the setup documentation for instructions on creating a Google Cloud service account.\"
-else
-    echo \"✅ GA4 environment variables are configured\"
-fi
-
-# Database migration check
-echo \"🗄️  Checking database migrations...\"
-
-if [ -f \"migrations/0002_add_ga4_integration.sql\" ]; then
-    echo \"✅ GA4 database migration file found\"
-    echo \"   Run 'npm run migrate' to apply the migration to your database\"
-else
-    echo \"❌ Error: GA4 migration file not found\"
-fi
-
-# Final setup summary
-echo \"\"
-echo \"🎉 GA4 Integration Setup Complete!\"
-echo \"=================================\"
-echo \"\"
-echo \"📋 Next Steps:\"
-echo \"1. Configure your GA4 environment variables in .env\"
-echo \"2. Run 'npm run migrate' to create the GA4 database tables\"
-echo \"3. Start your server with 'npm run dev'\"
-echo \"4. Test the GA4 endpoints at: http://localhost:3000/api/ga4/health\"
-echo \"\"
-echo \"📚 Documentation:\"
-echo \"- GA4 API endpoints: /api/ga4/*\"
-echo \"- Onboarding flow: /api/ga4/onboarding/*\"
-echo \"- Service account info: /api/ga4/service-account-info\"
-echo \"\"
-echo \"🔧 Troubleshooting:\"
-echo \"- Check logs for any configuration issues\"
-echo \"- Ensure your Google Cloud service account has Analytics API access\"
-echo \"- Verify the encryption key is at least 32 characters\"
-echo \"\"
-
-# Make the script executable
-chmod +x setup-ga4.sh
-
-echo \"✅ Setup script completed successfully!\"
+echo ""
+echo "========================================="
+print_success "Setup assistant completed!"
+echo ""
+echo "Next steps:"
+echo "1. Follow the documentation in docs/GA4_SETUP.md"
+echo "2. Update your .env file with GA4 credentials"
+echo "3. Run 'npm run setup:ga4:verify' to test the connection"
+echo "========================================="

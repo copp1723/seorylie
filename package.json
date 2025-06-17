@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npm run build:packages && npm run build:web-console && npm run build:server",
-    "build:packages": "cd packages/ga4-reporter && npm install && npm run build && cd ../ga4-service-manager && npm install && npm run build || true",
+    "build:packages": "cd packages/seo-schema && npm install && npm run build && cd ../ga4-reporter && npm install && npm run build && cd ../ga4-service-manager && npm install && npm run build && cd ../core-agent && npm install && npm run build || true",
     "build:web-console": "cd web-console && npm run build && cd .. && mkdir -p dist/public && cp -r web-console/dist/* dist/public/",
     "build:server": "node config/build/esbuild.config.js",
     "build:client": "vite build --config config/build/vite.config.ts",
@@ -63,6 +63,7 @@
     "setup:kunes:dryrun": "tsx scripts/setup-kunes-dealerships-dryrun.ts",
     "test:kunes": "tsx scripts/test-kunes-setup.ts",
     "setup:sendgrid": "tsx scripts/setup-sendgrid-gradual.ts",
+    "setup:ga4:verify": "tsx scripts/setup-ga4-service-account.ts",
     "test:notifications": "tsx scripts/test-notification-system.ts",
     "env:validate": "tsx tools/validation/validate-environment.ts",
     "env:check": "tsx scripts/check-env.ts",

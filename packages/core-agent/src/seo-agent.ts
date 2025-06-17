@@ -18,6 +18,7 @@ import { OpenAI } from "openai";
 import { Queue, QueueEvents } from "bullmq";
 import Redis from "ioredis";
 import pino from "pino";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Import schemas and prompts from seo-schema package
 import {
@@ -160,6 +161,13 @@ export class SEOAgent {
       // Add dealership context to system message
       const systemMessage = `${prompt.systemMessage}\n\nYou are assisting ${this.dealershipName}. Remember to personalize your responses accordingly.`;
 
+      // Convert function definitions to proper format
+      const functions = prompt.functionDefinitions.map((fn: any) => ({
+        name: fn.name,
+        description: fn.description,
+        parameters: zodToJsonSchema(fn.parameters),
+      }));
+
       // Call OpenAI with function calling
       const response = await this.openai.chat.completions.create({
         model: "gpt-4-turbo",
@@ -167,7 +175,7 @@ export class SEOAgent {
           { role: "system", content: systemMessage },
           { role: "user", content: prompt.userMessage },
         ],
-        functions: prompt.functionDefinitions,
+        functions,
         function_call: "auto",
         temperature: 0.7,
       });

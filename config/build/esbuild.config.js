@@ -55,6 +55,13 @@ const commonConfig = {
   platform: 'node',
   format: 'esm',
   bundle: true,
+  banner: {
+    js: `
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const Buffer = globalThis.Buffer;
+`
+  },
   external: [
     // Node.js built-ins
     'fs', 'path', 'crypto', 'http', 'https', 'url', 'util', 'events', 'stream',
@@ -71,6 +78,7 @@ const commonConfig = {
     'cpu-features', 'ioredis', 'redis', 'bull', 'bullmq',
     
     // Large dependencies that work better external
+    'compression', 'safe-buffer',
     'axios', 'lodash', 'moment', 'date-fns', 'uuid', 'nanoid',
     'bcrypt', 'jsonwebtoken', 'express', 'socket.io', 'ws',
     'nodemailer', 'handlebars', 'winston', 'prom-client',
