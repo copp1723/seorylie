@@ -82,6 +82,9 @@ const commonConfig = {
     'colors', 'bottleneck', 'opossum', 'postgres', 'pg',
     '@opentelemetry/api',
     
+    // Local packages
+    '@rylie-seo/ga4-reporter', '@rylie-seo/ga4-service-manager', '@rylie-seo/seo-schema',
+    
     // AWS SDK v3 packages - problematic with bundling
     '@aws-sdk/client-s3', '@aws-sdk/lib-storage', '@aws-sdk/s3-request-presigner',
     '@smithy/types', '@smithy/util-utf8', '@smithy/util-base64',

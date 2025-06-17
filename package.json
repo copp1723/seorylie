@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "build": "npm run build:packages && npm run build:web-console && npm run build:server",
-    "build:packages": "cd packages/ga4-service-manager && npm install && npm run build || true",
+    "build:packages": "cd packages/ga4-reporter && npm install && npm run build && cd ../ga4-service-manager && npm install && npm run build || true",
     "build:web-console": "cd web-console && npm run build && cd .. && mkdir -p dist/public && cp -r web-console/dist/* dist/public/",
     "build:server": "node config/build/esbuild.config.js",
     "build:client": "vite build --config config/build/vite.config.ts",
