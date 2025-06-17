@@ -32,6 +32,10 @@ services:
       - key: OPENAI_API_KEY
         sync: false
 
+      # SEOWerks API integration
+      - key: SEO_WORKS_API_KEY
+        value: e7fcafb5d36ded4c9fb2fdc84b055357f15e00b4730c5c73597b64a7b90fc115
+
       # Non-secret, useful defaults (can be overridden in dashboard)
       - key: FRONTEND_URL
         value: https://seorylie.com
