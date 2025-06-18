@@ -36,6 +36,12 @@ import AgencyPerformance from "./pages/agency/performance";
 // Lazy load agency users page
 const LazyAgencyUsers = React.lazy(() => import('./pages/agency/users'));
 
+// Import new demo pages
+import AgencyTasks from "./pages/agency/tasks";
+import AgencyRequests from "./pages/agency/requests";
+import AgencySettings from "./pages/agency/settings";
+import AgencyReports from "./pages/agency/reports";
+
 // Heavy pages loaded lazily
 import { 
   LazyAnalyticsPage,
@@ -182,6 +188,30 @@ function App() {
                         <LazyLoadWrapper fallback={<PageSkeleton />}>
                           <LazyAgencyUsers />
                         </LazyLoadWrapper>
+                      </ProtectedRoute>
+                    </Route>
+                    {/* Agency Tasks route */}
+                    <Route path="/agency/tasks">
+                      <ProtectedRoute>
+                        <AgencyTasks />
+                      </ProtectedRoute>
+                    </Route>
+                    {/* Agency Requests route */}
+                    <Route path="/agency/requests">
+                      <ProtectedRoute>
+                        <AgencyRequests />
+                      </ProtectedRoute>
+                    </Route>
+                    {/* Agency Settings route */}
+                    <Route path="/agency/settings">
+                      <ProtectedRoute>
+                        <AgencySettings />
+                      </ProtectedRoute>
+                    </Route>
+                    {/* Agency Reports route */}
+                    <Route path="/agency/reports">
+                      <ProtectedRoute>
+                        <AgencyReports />
                       </ProtectedRoute>
                     </Route>
                     {/* Catch-all route */}

@@ -16,6 +16,9 @@ import {
   ClipboardList,
   ListTodo,
   Activity,
+  FileText,
+  Inbox,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -104,6 +107,26 @@ export default function Sidebar() {
       icon: <Users className="h-4 w-4" />,
       label: "User Management",
       href: "/agency/users",
+    },
+    {
+      icon: <ListTodo className="h-4 w-4" />,
+      label: "Tasks",
+      href: "/agency/tasks",
+    },
+    {
+      icon: <Inbox className="h-4 w-4" />,
+      label: "Requests",
+      href: "/agency/requests",
+    },
+    {
+      icon: <FileText className="h-4 w-4" />,
+      label: "Reports",
+      href: "/agency/reports",
+    },
+    {
+      icon: <SlidersHorizontal className="h-4 w-4" />,
+      label: "Settings",
+      href: "/agency/settings",
     },
     {
       icon: <TestTube className="h-4 w-4" />,
