@@ -12,7 +12,7 @@ coverage
 .gitignore
 README.md
 docs
-scripts
+# scripts - needed for migrations and setup
 test
 .husky
 .vscode

@@ -38,10 +38,10 @@ RUN npm ci --only=production --legacy-peer-deps
 # Copy server and config files
 COPY server ./server
 COPY migrations ./migrations
-COPY scripts ./scripts
-COPY *.js ./
-COPY *.html ./
-COPY tsconfig*.json ./
+# Only copy scripts if it exists
+COPY script[s] ./scripts/ 
+# Copy all root level files
+COPY *.js *.html *.json ./
 
 # Copy built client from builder stage
 COPY --from=builder /app/dist ./dist

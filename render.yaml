@@ -5,7 +5,7 @@ services:
     branch: main
 
     # Docker configuration
-    dockerfilePath: ./Dockerfile.production  # uses the production Dockerfile with client build
+    dockerfilePath: ./Dockerfile.render      # uses the optimized Render Dockerfile
     dockerContext: .
     dockerCommand: npm run start        # executes the production start script (final stage)
 
