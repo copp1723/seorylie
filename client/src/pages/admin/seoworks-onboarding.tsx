@@ -19,7 +19,7 @@ import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../components/ui/use-toast";
 import { format } from "date-fns";
 
 interface OnboardingSubmission {

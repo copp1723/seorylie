@@ -1,13 +1,12 @@
 services:
   - type: web
     name: seorylie-production           # updated service name
-    env: docker
+    env: node                          # Use Node.js environment instead of Docker
     branch: main
-
-    # Docker configuration
-    dockerfilePath: ./Dockerfile.simple      # uses the simple Dockerfile without client build
-    dockerContext: .
-    dockerCommand: npm run start        # executes the production start script (final stage)
+    
+    # Build configuration
+    buildCommand: npm install && npm run build:client
+    startCommand: npm start
 
     plan: starter
     region: oregon

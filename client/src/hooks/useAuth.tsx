@@ -5,7 +5,7 @@ import React, {
   useState,
   useEffect,
 } from "react";
-import { toastSuccess, toastError } from "@/components/ui/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 export interface User {
   id: number;
@@ -139,6 +139,22 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { toast } = useToast();
+  
+  const toastSuccess = (options: { title: string; description?: string }) => {
+    toast({
+      title: options.title,
+      description: options.description,
+    });
+  };
+  
+  const toastError = (options: { title: string; description?: string }) => {
+    toast({
+      title: options.title,
+      description: options.description,
+      variant: "destructive",
+    });
+  };
 
   // Fetch current user on mount
   useEffect(() => {

@@ -23,7 +23,7 @@ import { Input } from "../../components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
 import { Alert, AlertDescription } from "../../components/ui/alert";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../components/ui/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
 
 interface QueueTask {
