@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { ga4Service } from '../services/ga4Service';
 import { authenticateToken } from '../middleware/simpleAuth';
+import { ga4Cache } from '../middleware/ga4-cache';
+import { subMinutes } from 'date-fns';
 
 const router = Router();
 
-// Get analytics data
-router.get('/analytics', authenticateToken, async (req: Request, res: Response) => {
+// Get analytics data (cached for 5 minutes)
+router.get('/analytics', authenticateToken, ga4Cache(), async (req: Request, res: Response) => {
   try {
     const { propertyId, startDate, endDate } = req.query;
 
@@ -59,8 +61,8 @@ router.get('/verify-property/:propertyId', authenticateToken, async (req: Reques
   }
 });
 
-// Get specific metric data
-router.get('/metrics/:metric', authenticateToken, async (req: Request, res: Response) => {
+// Get specific metric data (cached for 5 minutes)
+router.get('/metrics/:metric', authenticateToken, ga4Cache(), async (req: Request, res: Response) => {
   try {
     const { metric } = req.params;
     const { propertyId, startDate, endDate } = req.query;
@@ -100,6 +102,53 @@ router.get('/metrics/:metric', authenticateToken, async (req: Request, res: Resp
     console.error('Error fetching metric data:', error);
     res.status(500).json({
       error: 'Failed to fetch metric data'
+    });
+  }
+});
+
+// Get real-time traffic data (cached for 30 seconds)
+router.get('/realtime', authenticateToken, ga4Cache({ realtime: true }), async (req: Request, res: Response) => {
+  try {
+    const { propertyId } = req.query;
+
+    if (!propertyId) {
+      return res.status(400).json({
+        error: 'Missing required parameter: propertyId'
+      });
+    }
+
+    const realtimeData = await ga4Service.getRealTimeData(propertyId as string);
+    res.json(realtimeData);
+  } catch (error) {
+    console.error('Error fetching real-time data:', error);
+    res.status(500).json({
+      error: 'Failed to fetch real-time data'
+    });
+  }
+});
+
+// Get geographic distribution data (cached for 5 minutes)
+router.get('/geographic', authenticateToken, ga4Cache(), async (req: Request, res: Response) => {
+  try {
+    const { propertyId, startDate, endDate } = req.query;
+
+    if (!propertyId || !startDate || !endDate) {
+      return res.status(400).json({
+        error: 'Missing required parameters: propertyId, startDate, endDate'
+      });
+    }
+
+    const geographicData = await ga4Service.getGeographicData({
+      propertyId: propertyId as string,
+      startDate: startDate as string,
+      endDate: endDate as string
+    });
+
+    res.json(geographicData);
+  } catch (error) {
+    console.error('Error fetching geographic data:', error);
+    res.status(500).json({
+      error: 'Failed to fetch geographic data'
     });
   }
 });

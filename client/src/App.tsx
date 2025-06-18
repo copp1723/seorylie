@@ -31,6 +31,7 @@ import AdminSEOWerksOnboarding from "./pages/admin/seoworks-onboarding";
 import SEOWorksQueueDashboard from "./pages/admin/seowerks-queue";
 import SEOWorksChatPage from "./pages/seoworks-chat";
 import AgencyAnalytics from "./pages/agency/analytics";
+import EnhancedAnalytics from "./pages/agency/enhanced-analytics";
 import AgencyPerformance from "./pages/agency/performance";
 
 // Lazy load agency users page
@@ -174,6 +175,12 @@ function App() {
                     <Route path="/agency/analytics">
                       <ProtectedRoute>
                         <AgencyAnalytics />
+                      </ProtectedRoute>
+                    </Route>
+                    {/* Enhanced Analytics route */}
+                    <Route path="/agency/analytics-enhanced">
+                      <ProtectedRoute>
+                        <EnhancedAnalytics />
                       </ProtectedRoute>
                     </Route>
                     {/* Agency Performance route */}

@@ -1,54 +1,61 @@
 #!/usr/bin/env node
+/**
+ * Check dealerships table structure
+ */
 
-// Quick script to check existing dealerships
-import pkg from 'pg';
-const { Pool } = pkg;
+const { Client } = require('pg');
+
+const DATABASE_URL = "postgresql://seorylie_db_user:IFgPS0XSnJJql8P4LUOB92KqOVuhAKGK@dpg-d184im15pdvs73brlnv0-a.oregon-postgres.render.com/seorylie_db";
 
 async function checkDealerships() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
+  const client = new Client({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
   });
-
+  
   try {
-    console.log('Checking existing dealerships...');
+    await client.connect();
     
-    // First check what columns exist
-    const columns = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'dealerships'");
-    console.log('Available columns:', columns.rows.map(r => r.column_name));
-
-    const result = await pool.query('SELECT id, name, contact_email, subdomain FROM dealerships ORDER BY id LIMIT 15');
+    // Get dealerships table structure
+    console.log('🔍 Checking dealerships table structure...\n');
     
-    if (result.rows.length === 0) {
-      console.log('No dealerships found. We can use ID 1 for Kunes RV Fox.');
-      return 1;
-    }
+    const columnsResult = await client.query(`
+      SELECT column_name, data_type, column_default
+      FROM information_schema.columns 
+      WHERE table_name = 'dealerships'
+      ORDER BY ordinal_position
+    `);
     
-    console.log('Existing dealerships:');
-    result.rows.forEach(row => {
-      console.log(`ID: ${row.id}, Name: ${row.name}, Email: ${row.contact_email}, Subdomain: ${row.subdomain}`);
+    console.log('Dealerships columns:');
+    columnsResult.rows.forEach(col => {
+      console.log(`  ${col.column_name}: ${col.data_type} ${col.column_default ? `(default: ${col.column_default})` : ''}`);
     });
     
-    // Find next available ID
-    const maxId = Math.max(...result.rows.map(row => row.id));
-    const nextId = maxId + 1;
-    console.log(`\nNext available ID: ${nextId}`);
-    return nextId;
+    // Check primary key
+    const pkResult = await client.query(`
+      SELECT a.attname
+      FROM pg_index i
+      JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+      WHERE i.indrelid = 'dealerships'::regclass AND i.indisprimary;
+    `);
+    
+    console.log(`\nPrimary key: ${pkResult.rows.map(r => r.attname).join(', ')}`);
+    
+    // Get sample data
+    const dataResult = await client.query(`
+      SELECT * FROM dealerships LIMIT 5
+    `);
+    
+    console.log(`\nSample data (${dataResult.rows.length} rows):`);
+    dataResult.rows.forEach(row => {
+      console.log(`  ID: ${row.id}, Name: ${row.name || 'N/A'}`);
+    });
     
   } catch (error) {
-    console.error('Error checking dealerships:', error.message);
-    return 1; // Default to ID 1
+    console.error('Error:', error.message);
   } finally {
-    await pool.end();
+    await client.end();
   }
 }
 
-checkDealerships().then(id => {
-  console.log(`\nRecommended dealership ID for Kunes RV Fox: ${id}`);
-  process.exit(0);
-}).catch(error => {
-  console.error('Script failed:', error);
-  process.exit(1);
-});
+checkDealerships().catch(console.error);

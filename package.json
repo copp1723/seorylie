@@ -22,25 +22,34 @@
     "seed:demo": "ts-node scripts/seed-demo-data.ts",
     "setup:real-ga4": "ts-node scripts/setup-real-ga4.ts",
     "check:ga4": "ts-node scripts/check-ga4-status.ts",
+    "check:db": "ts-node scripts/verify-database.ts",
+    "db:create": "ts-node scripts/create-database.ts",
+    "db:migrate": "ts-node scripts/run-migrations.ts",
+    "db:setup": "npm run db:create && npm run db:migrate",
     "health:consolidate-email": "ts-node scripts/health-check/consolidate-email-services.ts",
     "health:refactor-orchestrator": "ts-node scripts/health-check/refactor-orchestrator.ts",
     "health:progress": "ts-node scripts/health-check/track-progress.ts"
   },
   "dependencies": {
     "@google-analytics/data": "^5.1.0",
+    "@radix-ui/react-progress": "^1.1.7",
     "@supabase/supabase-js": "^2.50.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/socket.io": "^3.0.1",
     "bcryptjs": "^3.0.2",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.5.0",
     "googleapis": "^150.0.1",
     "pg": "^8.11.3",
+    "recharts": "^2.15.3",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.3",
+    "@types/pg": "^8.15.4",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
 }
