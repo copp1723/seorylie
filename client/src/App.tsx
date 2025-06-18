@@ -25,6 +25,10 @@ import Settings from "./pages/settings";
 import Security from "./pages/security";
 import NotFound from "./pages/not-found";
 import AdminDealershipsPage from "./pages/admin/dealerships";
+import PublicOnboarding from "./pages/public-onboarding";
+import AdminSEOWerksOnboarding from "./pages/admin/seoworks-onboarding";
+import SEOWorksQueueDashboard from "./pages/admin/seowerks-queue";
+import SEOWorksChatPage from "./pages/seoworks-chat";
 
 // Heavy pages loaded lazily
 import { 
@@ -65,6 +69,8 @@ function App() {
               <Route path="/login" component={Login} />
               <Route path="/auth" component={AuthPage} />
               <Route path="/verify-magic-link" component={VerifyMagicLink} />
+              <Route path="/onboarding" component={PublicOnboarding} />
+              <Route path="/seoworks-signup" component={PublicOnboarding} />
               <Route
                 path="/simple-prompt-test"
                 component={SimplePromptTestPage}
@@ -113,6 +119,12 @@ function App() {
                         <Security />
                       </ProtectedRoute>
                     </Route>
+                    {/* SEOWerks Chat for dealerships */}
+                    <Route path="/seoworks-chat">
+                      <ProtectedRoute>
+                        <SEOWorksChatPage />
+                      </ProtectedRoute>
+                    </Route>
                     {/* Agent Studio route - added as requested */}
                     <Route path="/agent-studio">
                       <ProtectedRoute>
@@ -131,6 +143,18 @@ function App() {
                     <Route path="/admin/dealerships">
                       <ProtectedRoute>
                         <AdminDealershipsPage />
+                      </ProtectedRoute>
+                    </Route>
+                    {/* Admin SEOWerks Onboarding route */}
+                    <Route path="/admin/seoworks-onboarding">
+                      <ProtectedRoute>
+                        <AdminSEOWerksOnboarding />
+                      </ProtectedRoute>
+                    </Route>
+                    {/* Admin SEOWerks Queue route */}
+                    <Route path="/admin/seowerks-queue">
+                      <ProtectedRoute>
+                        <SEOWorksQueueDashboard />
                       </ProtectedRoute>
                     </Route>
                     {/* Catch-all route */}

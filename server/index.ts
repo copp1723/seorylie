@@ -220,7 +220,11 @@ const setupRoutes = async () => {
       import('./routes/admin').catch(() => ({ adminRoutes: null })),
       import('./routes/reports').catch(() => ({ reportRoutes: null })),
       import('./routes/ga4/onboarding').catch(() => null),
-      import('./integrations/seoworks/routes').catch(() => null)
+      import('./integrations/seoworks/routes').catch(() => null),
+      import('./routes/public-seoworks-onboarding').catch(() => null),
+      import('./routes/admin-seoworks-onboarding').catch(() => null),
+      import('./routes/seoworks-chat').catch(() => null),
+      import('./routes/admin-seowerks-queue').catch(() => null)
     ]);
 
     // Setup protected routes
@@ -228,7 +232,7 @@ const setupRoutes = async () => {
     app.use('/api', aiProxyMiddleware);
 
     // Setup route handlers with error handling
-    const [clientResult, agencyResult, adminResult, reportResult, ga4Result, seoWorksResult] = routes;
+    const [clientResult, agencyResult, adminResult, reportResult, ga4Result, seoWorksResult, publicOnboardingResult, adminOnboardingResult, seowerksChatResult, seoworksQueueResult] = routes;
 
     if (clientResult.status === 'fulfilled' && clientResult.value.clientRoutes) {
       app.use('/api/client', clientResult.value.clientRoutes);
@@ -276,6 +280,34 @@ const setupRoutes = async () => {
       app.get('/api/seoworks/*', (req, res) => {
         res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'SEOWorks routes not available' } });
       });
+    }
+
+    // Setup public onboarding route (no auth required)
+    if (publicOnboardingResult.status === 'fulfilled' && publicOnboardingResult.value) {
+      app.use(publicOnboardingResult.value.default || publicOnboardingResult.value);
+    } else {
+      logger.warn('Public onboarding route not available');
+    }
+
+    // Setup admin onboarding routes
+    if (adminOnboardingResult.status === 'fulfilled' && adminOnboardingResult.value) {
+      app.use(adminOnboardingResult.value.default || adminOnboardingResult.value);
+    } else {
+      logger.warn('Admin onboarding routes not available');
+    }
+
+    // Setup SEOWerks chat routes
+    if (seowerksChatResult.status === 'fulfilled' && seowerksChatResult.value) {
+      app.use(seowerksChatResult.value.default || seowerksChatResult.value);
+    } else {
+      logger.warn('SEOWerks chat routes not available');
+    }
+
+    // Setup SEOWerks queue routes
+    if (seoworksQueueResult.status === 'fulfilled' && seoworksQueueResult.value) {
+      app.use('/api/admin', seoworksQueueResult.value.default || seoworksQueueResult.value);
+    } else {
+      logger.warn('SEOWerks queue routes not available');
     }
 
     logger.info('Route setup completed with available modules');

@@ -13,6 +13,8 @@ import {
   Paintbrush,
   MessageSquare,
   GitMerge,
+  ClipboardList,
+  ListTodo,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -68,13 +70,19 @@ export default function Sidebar() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === "super_admin";
   const isDealershipAdmin = user?.role === "dealership_admin";
-  const showAdminSection = isSuperAdmin || isDealershipAdmin;
+  const isSEOWerksTeam = user?.role === "seowerks_team";
+  const showAdminSection = isSuperAdmin || isDealershipAdmin || isSEOWerksTeam;
 
   const navigationItems = [
     {
       icon: <Home className="h-4 w-4" />,
       label: "Dashboard",
       href: "/",
+    },
+    {
+      icon: <MessageSquare className="h-4 w-4" />,
+      label: "SEOWerks Assistant",
+      href: "/seoworks-chat",
     },
     {
       icon: <BarChart3 className="h-4 w-4" />,
@@ -119,6 +127,16 @@ export default function Sidebar() {
       icon: <Paintbrush className="h-4 w-4" />,
       label: "Branding & Persona",
       href: "/admin/branding",
+    },
+    {
+      icon: <ClipboardList className="h-4 w-4" />,
+      label: "SEOWerks Onboarding",
+      href: "/admin/seoworks-onboarding",
+    },
+    {
+      icon: <ListTodo className="h-4 w-4" />,
+      label: "SEOWerks Queue",
+      href: "/admin/seowerks-queue",
     },
   ];
 
