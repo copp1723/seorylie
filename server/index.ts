@@ -9,8 +9,11 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { config as envConfig } from 'dotenv';
 import { config, isDev, isProd } from './config';
+import { getPort, getHost } from './utils/port-config';
 import { 
   logger, 
   errorHandler, 
@@ -28,8 +31,14 @@ import { databasePoolMonitor } from './services/database-pool-monitor';
 // Load environment variables
 envConfig();
 
+// Get __dirname equivalent for ES modules
+// In production, the dist folder structure is different
+const __dirname = isProd 
+  ? path.join(process.cwd(), 'dist')
+  : path.dirname(fileURLToPath(import.meta.url));
+
 const app = express();
-const PORT = config.PORT;
+const PORT = getPort();  // Use utility to ensure proper PORT detection
 
 // Setup global error handlers early
 setupGlobalErrorHandlers();
@@ -119,8 +128,16 @@ const setupRequestProcessing = () => {
  * Setup core application routes
  */
 const setupRoutes = async () => {
-  // Root endpoint - API information
-  app.get('/', (req, res) => {
+  // Serve static files from the web console build
+  const publicPath = isProd 
+    ? path.join(process.cwd(), 'dist/public')
+    : path.join(__dirname, '../dist/public');
+  app.use(express.static(publicPath));
+  
+  logger.info('Serving static files from', { publicPath });
+
+  // API info endpoint - moved to /api path
+  app.get('/api', (req, res) => {
     res.status(200).json({
       service: 'Rylie SEO Hub',
       version: '1.0.0',
@@ -224,7 +241,12 @@ const setupRoutes = async () => {
       import('./routes/public-seoworks-onboarding').catch(() => null),
       import('./routes/admin-seoworks-onboarding').catch(() => null),
       import('./routes/seoworks-chat').catch(() => null),
-      import('./routes/admin-seowerks-queue').catch(() => null)
+      import('./routes/admin-seowerks-queue').catch(() => null),
+      import('./routes/seoworks/tasks').catch(() => null),
+      import('./routes/dealership-onboarding').catch(() => null),
+      import('./routes/ga4-tenant-onboarding').catch(() => null),
+      import('./routes/ga4-reports').catch(() => null),
+      import('./routes/deliverables').catch(() => null)
     ]);
 
     // Setup protected routes
@@ -232,7 +254,23 @@ const setupRoutes = async () => {
     app.use('/api', aiProxyMiddleware);
 
     // Setup route handlers with error handling
-    const [clientResult, agencyResult, adminResult, reportResult, ga4Result, seoWorksResult, publicOnboardingResult, adminOnboardingResult, seowerksChatResult, seoworksQueueResult] = routes;
+    const [
+      clientResult, 
+      agencyResult, 
+      adminResult, 
+      reportResult, 
+      ga4Result, 
+      integratedSeoWorksResult, 
+      publicOnboardingResult, 
+      adminOnboardingResult, 
+      seowerksChatResult, 
+      seoworksQueueResult,
+      seoWorksResult, 
+      dealershipOnboardingResult, 
+      ga4TenantOnboardingResult, 
+      ga4ReportsResult,
+      deliverablesResult
+    ] = routes;
 
     if (clientResult.status === 'fulfilled' && clientResult.value.clientRoutes) {
       app.use('/api/client', clientResult.value.clientRoutes);
@@ -274,7 +312,10 @@ const setupRoutes = async () => {
       });
     }
 
-    if (seoWorksResult.status === 'fulfilled' && seoWorksResult.value) {
+    // Try the integrated seoworks first, then fall back to the new one
+    if (integratedSeoWorksResult.status === 'fulfilled' && integratedSeoWorksResult.value) {
+      app.use('/api/seoworks', integratedSeoWorksResult.value.default || integratedSeoWorksResult.value);
+    } else if (seoWorksResult.status === 'fulfilled' && seoWorksResult.value) {
       app.use('/api/seoworks', seoWorksResult.value.default || seoWorksResult.value);
     } else {
       app.get('/api/seoworks/*', (req, res) => {
@@ -309,6 +350,40 @@ const setupRoutes = async () => {
     } else {
       logger.warn('SEOWerks queue routes not available');
     }
+    
+    // Setup dealership onboarding routes
+    if (dealershipOnboardingResult.status === 'fulfilled' && dealershipOnboardingResult.value) {
+      app.use('/api/dealership-onboarding', dealershipOnboardingResult.value.default || dealershipOnboardingResult.value);
+    } else {
+      app.get('/api/dealership-onboarding/*', (req, res) => {
+        res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'Dealership onboarding routes not available' } });
+      });
+    }
+
+    // Setup GA4 tenant onboarding routes
+    if (ga4TenantOnboardingResult.status === 'fulfilled' && ga4TenantOnboardingResult.value) {
+      app.use('/api/ga4', ga4TenantOnboardingResult.value.default || ga4TenantOnboardingResult.value);
+    } else {
+      app.get('/api/ga4/*', (req, res) => {
+        res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'GA4 tenant onboarding routes not available' } });
+      });
+    }
+
+    // Setup GA4 reports routes
+    if (ga4ReportsResult.status === 'fulfilled' && ga4ReportsResult.value) {
+      app.use('/api/ga4/reports', ga4ReportsResult.value.default || ga4ReportsResult.value);
+    } else {
+      app.get('/api/ga4/reports/*', (req, res) => {
+        res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'GA4 reports routes not available' } });
+      });
+    }
+    
+    // Setup deliverables routes
+    if (deliverablesResult.status === 'fulfilled' && deliverablesResult.value) {
+      app.use('/api/deliverables', deliverablesResult.value.default || deliverablesResult.value);
+    } else {
+      logger.warn('Deliverables routes not available');
+    }
 
     logger.info('Route setup completed with available modules');
 
@@ -336,21 +411,42 @@ const setupRoutes = async () => {
  * Setup error handling and 404 routes
  */
 const setupErrorHandling = () => {
-  // 404 handler
-  app.use('*', (req, res) => {
-    const error = {
-      code: ErrorCode.RESOURCE_NOT_FOUND,
-      message: 'Route not found',
-      path: req.originalUrl,
-      traceId: req.traceId
-    };
+  // SPA fallback - serve index.html for non-API routes
+  app.get('*', (req, res) => {
+    // If it's an API route, return 404 JSON
+    if (req.path.startsWith('/api/')) {
+      const error = {
+        code: ErrorCode.RESOURCE_NOT_FOUND,
+        message: 'API route not found',
+        path: req.originalUrl,
+        traceId: req.traceId
+      };
+      
+      req.logger?.warn('API route not found', { 
+        method: req.method, 
+        path: req.originalUrl 
+      });
+      
+      return res.status(404).json({ error });
+    }
     
-    req.logger?.warn('Route not found', { 
-      method: req.method, 
-      path: req.originalUrl 
+    // Otherwise, serve the SPA index.html
+    const indexPath = isProd 
+      ? path.join(process.cwd(), 'dist/public/index.html')
+      : path.join(__dirname, '../dist/public/index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        req.logger?.error('Failed to serve index.html', { error: err });
+        res.status(404).json({
+          error: {
+            code: ErrorCode.RESOURCE_NOT_FOUND,
+            message: 'Page not found',
+            path: req.originalUrl,
+            traceId: req.traceId
+          }
+        });
+      }
     });
-    
-    res.status(404).json({ error });
   });
 
   // Global error handler (must be last)
@@ -399,6 +495,15 @@ const initializeDatabase = async (): Promise<void> => {
  */
 const startServer = async (): Promise<void> => {
   try {
+    // Log environment variables for debugging
+    logger.info('Environment configuration', {
+      PORT_ENV: process.env.PORT,
+      NODE_ENV: process.env.NODE_ENV,
+      HOST_ENV: process.env.HOST,
+      ACTUAL_PORT: PORT,
+      ACTUAL_HOST: getHost()
+    });
+    
     logger.info('🚀 Starting Rylie SEO Hub server...', {
       version: '1.0.0',
       environment: config.NODE_ENV,
@@ -439,9 +544,11 @@ const startServer = async (): Promise<void> => {
     // Setup error handling (must be last)
     setupErrorHandling();
     
-    // Start HTTP server
-    const server = app.listen(PORT, () => {
+    // Start HTTP server - bind to 0.0.0.0 in production
+    const HOST = getHost();  // Use utility to ensure proper HOST detection
+    const server = app.listen(PORT, HOST, () => {
       logger.info('✅ Rylie SEO Hub server started successfully', {
+        host: HOST,
         port: PORT,
         environment: config.NODE_ENV,
         features: {

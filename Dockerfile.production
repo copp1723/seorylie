@@ -1,0 +1,32 @@
+# Optimized production Dockerfile for faster builds
+FROM node:20-slim
+
+# Install only essential system dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production --legacy-peer-deps
+
+# Copy source files
+COPY . .
+
+# Build the server
+RUN npm run build:server
+
+# Expose port (Render will override with PORT env)
+EXPOSE 3000
+
+# Use non-root user
+USER node
+
+# Start the application
+CMD ["npm", "start"]
