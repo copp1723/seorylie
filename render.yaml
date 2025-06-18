@@ -5,7 +5,7 @@ services:
     branch: main
 
     # Docker configuration
-    dockerfilePath: ./Dockerfile        # uses the multi-stage Dockerfile
+    dockerfilePath: ./Dockerfile.production  # uses the production Dockerfile with client build
     dockerContext: .
     dockerCommand: npm run start        # executes the production start script (final stage)
 

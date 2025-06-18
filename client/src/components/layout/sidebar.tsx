@@ -19,6 +19,12 @@ import {
   FileText,
   Inbox,
   SlidersHorizontal,
+  Shield,
+  LineChart,
+  MessagesSquare,
+  User,
+  Sparkles,
+  Plug,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -78,6 +84,7 @@ export default function Sidebar() {
   const showAdminSection = isSuperAdmin || isDealershipAdmin || isSEOWerksTeam;
 
   const navigationItems = [
+    // Core Features
     {
       icon: <Home className="h-4 w-4" />,
       label: "Dashboard",
@@ -85,9 +92,16 @@ export default function Sidebar() {
     },
     {
       icon: <MessageSquare className="h-4 w-4" />,
-      label: "SEOWerks Assistant",
+      label: "SEOWerks Chat",
       href: "/seoworks-chat",
     },
+    {
+      icon: <MessagesSquare className="h-4 w-4" />,
+      label: "Conversations",
+      href: "/conversations",
+    },
+    
+    // Analytics Section
     {
       icon: <BarChart3 className="h-4 w-4" />,
       label: "Analytics",
@@ -99,15 +113,17 @@ export default function Sidebar() {
       href: "/agency/analytics",
     },
     {
+      icon: <LineChart className="h-4 w-4" />,
+      label: "Enhanced Analytics",
+      href: "/agency/analytics-enhanced",
+    },
+    {
       icon: <Activity className="h-4 w-4" />,
       label: "Performance",
       href: "/agency/performance",
     },
-    {
-      icon: <Users className="h-4 w-4" />,
-      label: "User Management",
-      href: "/agency/users",
-    },
+    
+    // Work Management
     {
       icon: <ListTodo className="h-4 w-4" />,
       label: "Tasks",
@@ -123,35 +139,46 @@ export default function Sidebar() {
       label: "Reports",
       href: "/agency/reports",
     },
+    
+    // AI & Development Tools
     {
-      icon: <SlidersHorizontal className="h-4 w-4" />,
-      label: "Settings",
-      href: "/agency/settings",
+      icon: <Sparkles className="h-4 w-4" />,
+      label: "Agent Studio",
+      href: "/agent-studio",
     },
     {
       icon: <TestTube className="h-4 w-4" />,
-      label: "SEO Tasks",
-      href: "/tasks",
+      label: "Prompt Testing",
+      href: "/enhanced-prompt-testing",
     },
+    
+    // Integration & Configuration
+    {
+      icon: <Plug className="h-4 w-4" />,
+      label: "Integration Hub",
+      href: "/integration",
+    },
+    {
+      icon: <User className="h-4 w-4" />,
+      label: "Personas",
+      href: "/personas",
+    },
+    
+    // User & System Management
     {
       icon: <Users className="h-4 w-4" />,
-      label: "Clients",
-      href: "/clients",
+      label: "User Management",
+      href: "/agency/users",
     },
     {
-      icon: <Building2 className="h-4 w-4" />,
-      label: "Projects",
-      href: "/projects",
+      icon: <Shield className="h-4 w-4" />,
+      label: "Security",
+      href: "/security",
     },
     {
       icon: <Settings className="h-4 w-4" />,
-      label: "System Settings",
-      href: "/system",
-    },
-    {
-      icon: <Users className="h-4 w-4" />,
-      label: "System Setup",
-      href: "/setup",
+      label: "Settings",
+      href: "/settings",
     },
   ];
 

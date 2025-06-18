@@ -1,11 +1,30 @@
-# Optimized production Dockerfile for faster builds
-FROM node:20-slim
+# Production Dockerfile for Seorylie with client build
+FROM node:20-slim AS builder
 
-# Install only essential system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy all files
+COPY . .
+
+# Install ALL dependencies (needed for build)
+RUN npm install --legacy-peer-deps
+
+# Build the Vite client application
+RUN npm run build:vite
+
+# Production stage
+FROM node:20-slim
+
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y \
+    dumb-init \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -16,17 +35,26 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm ci --only=production --legacy-peer-deps
 
-# Copy source files
-COPY . .
+# Copy server and config files
+COPY server ./server
+COPY migrations ./migrations
+COPY scripts ./scripts
+COPY *.js ./
+COPY *.html ./
+COPY tsconfig*.json ./
 
-# Build the server
-RUN npm run build:server
+# Copy built client from builder stage
+COPY --from=builder /app/dist ./dist
 
-# Expose port (Render will override with PORT env)
-EXPOSE 3000
+# Create non-root user
+RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app
+USER appuser
 
-# Use non-root user
-USER node
+# Expose port (Render will use PORT env)
+EXPOSE 10000
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application
 CMD ["npm", "start"]
