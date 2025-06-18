@@ -7,7 +7,7 @@ import {
   ToastDescription,
   ToastTitle,
 } from "@/components/ui/toast";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import {
   AlertCircle,
   AlertTriangle,

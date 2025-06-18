@@ -15,6 +15,7 @@ import {
   GitMerge,
   ClipboardList,
   ListTodo,
+  Activity,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,21 @@ export default function Sidebar() {
       icon: <BarChart3 className="h-4 w-4" />,
       label: "Analytics",
       href: "/analytics",
+    },
+    {
+      icon: <BarChart3 className="h-4 w-4" />,
+      label: "GA4 Dashboard",
+      href: "/agency/analytics",
+    },
+    {
+      icon: <Activity className="h-4 w-4" />,
+      label: "Performance",
+      href: "/agency/performance",
+    },
+    {
+      icon: <Users className="h-4 w-4" />,
+      label: "User Management",
+      href: "/agency/users",
     },
     {
       icon: <TestTube className="h-4 w-4" />,

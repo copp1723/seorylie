@@ -6,9 +6,24 @@
     "start:simple": "node index.js",
     "setup:db": "node setup-db.js",
     "setup:ga4": "node setup-ga4-credentials.js",
+    "setup:ga4-simple": "node setup-ga4-simple.js",
     "dev": "DATABASE_URL=postgresql://postgres:password@localhost:5432/seorylie node server-with-db.js"
   },
   "dependencies": {
-    "pg": "^8.11.3"
+    "@google-analytics/data": "^5.1.0",
+    "@supabase/supabase-js": "^2.50.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/socket.io": "^3.0.1",
+    "bcryptjs": "^3.0.2",
+    "date-fns": "^4.1.0",
+    "googleapis": "^150.0.1",
+    "pg": "^8.11.3",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.3",
+    "typescript": "^5.8.3"
   }
 }

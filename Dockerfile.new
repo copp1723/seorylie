@@ -1,0 +1,34 @@
+# Base Node.js image
+FROM node:20-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy the root package.json and pnpm-workspace.yaml
+COPY package.json pnpm-workspace.yaml ./
+
+# Copy all package.json files from packages and apps
+COPY packages/server/package.json ./packages/server/
+COPY packages/client/package.json ./packages/client/
+# Add additional lines here for each package/app in your monorepo
+
+# Install all dependencies using pnpm
+RUN pnpm install --prod
+
+# Copy the rest of the monorepo source code
+COPY . .
+
+# Build all packages
+RUN pnpm run build
+
+# Set the entrypoint to the server package
+WORKDIR /app/packages/server
+
+# Expose the port the server runs on
+EXPOSE 3000
+
+# Start the server
+CMD [ "pnpm", "start" ]

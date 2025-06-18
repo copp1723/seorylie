@@ -12,6 +12,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config as envConfig } from 'dotenv';
+import { createServer } from 'http';
 import { config, isDev, isProd } from './config';
 import { getPort, getHost } from './utils/port-config';
 import { 
@@ -23,6 +24,7 @@ import {
   ErrorCode,
   createConfigError 
 } from './utils/errors';
+import { setupSEOWebSocket } from './websocket/seoWebSocket';
 
 // Dynamic imports for routes and middleware
 import { connectDB } from './models/database';
@@ -122,6 +124,18 @@ const setupRequestProcessing = () => {
     extended: true, 
     limit: '10mb' 
   }));
+
+  // CDN asset handling (only in production)
+  if (isProd) {
+    import('./middleware/cdnAssets').then(({ cdnAssetMiddleware, imageOptimizationMiddleware, preloadAssetsMiddleware }) => {
+      app.use(preloadAssetsMiddleware);
+      app.use(cdnAssetMiddleware);
+      app.use(imageOptimizationMiddleware);
+      logger.info('CDN middleware configured');
+    }).catch(err => {
+      logger.warn('CDN middleware not available', { error: err });
+    });
+  }
 };
 
 /**
@@ -246,6 +260,9 @@ const setupRoutes = async () => {
       import('./routes/dealership-onboarding').catch(() => null),
       import('./routes/ga4-tenant-onboarding').catch(() => null),
       import('./routes/ga4-reports').catch(() => null),
+      import('./routes/ga4-routes').catch(() => null),
+      import('./routes/agency-performance-routes').catch(() => null),
+      import('./routes/agency-users-routes').catch(() => null),
       import('./routes/deliverables').catch(() => null)
     ]);
 
@@ -269,6 +286,9 @@ const setupRoutes = async () => {
       dealershipOnboardingResult, 
       ga4TenantOnboardingResult, 
       ga4ReportsResult,
+      ga4RoutesResult,
+      agencyPerformanceResult,
+      agencyUsersResult,
       deliverablesResult
     ] = routes;
 
@@ -283,6 +303,15 @@ const setupRoutes = async () => {
     if (agencyResult.status === 'fulfilled' && agencyResult.value.agencyRoutes) {
       app.use('/api/agency', agencyResult.value.agencyRoutes);
     } else {
+      // Set up individual agency routes if main routes not available
+      if (agencyPerformanceResult.status === 'fulfilled' && agencyPerformanceResult.value) {
+        app.use('/api/agency', agencyPerformanceResult.value.default || agencyPerformanceResult.value);
+      }
+      if (agencyUsersResult.status === 'fulfilled' && agencyUsersResult.value) {
+        app.use('/api/agency', agencyUsersResult.value.default || agencyUsersResult.value);
+      }
+      
+      // Fallback for missing routes
       app.get('/api/agency/*', (req, res) => {
         res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'Agency routes not available' } });
       });
@@ -306,6 +335,8 @@ const setupRoutes = async () => {
 
     if (ga4Result.status === 'fulfilled' && ga4Result.value) {
       app.use('/api/ga4', ga4Result.value.default || ga4Result.value);
+    } else if (ga4RoutesResult.status === 'fulfilled' && ga4RoutesResult.value) {
+      app.use('/api/ga4', ga4RoutesResult.value.default || ga4RoutesResult.value);
     } else {
       app.get('/api/ga4/*', (req, res) => {
         res.status(503).json({ error: { code: ErrorCode.CONFIGURATION_ERROR, message: 'GA4 routes not available' } });
@@ -544,9 +575,25 @@ const startServer = async (): Promise<void> => {
     // Setup error handling (must be last)
     setupErrorHandling();
     
+    // Start scheduled jobs
+    try {
+      const { startOnboardingProcessor } = await import('./jobs/processOnboardings');
+      startOnboardingProcessor();
+      logger.info('📅 Scheduled jobs started');
+    } catch (error) {
+      logger.warn('Failed to start scheduled jobs', { error });
+    }
+
+    // Create HTTP server
+    const httpServer = createServer(app);
+    
+    // Setup WebSocket server
+    const io = setupSEOWebSocket(httpServer);
+    logger.info('🔌 WebSocket server initialized');
+
     // Start HTTP server - bind to 0.0.0.0 in production
     const HOST = getHost();  // Use utility to ensure proper HOST detection
-    const server = app.listen(PORT, HOST, () => {
+    const server = httpServer.listen(PORT, HOST, () => {
       logger.info('✅ Rylie SEO Hub server started successfully', {
         host: HOST,
         port: PORT,

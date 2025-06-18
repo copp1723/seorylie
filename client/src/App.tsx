@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./hooks/useAuth";
+import { SEONotificationProvider } from "./hooks/useSEONotifications";
 import ProtectedRoute from "./components/protected-route";
 import Layout from "./components/layout/layout";
 import DebugTest from "./components/debug-test";
@@ -29,6 +30,11 @@ import PublicOnboarding from "./pages/public-onboarding";
 import AdminSEOWerksOnboarding from "./pages/admin/seoworks-onboarding";
 import SEOWorksQueueDashboard from "./pages/admin/seowerks-queue";
 import SEOWorksChatPage from "./pages/seoworks-chat";
+import AgencyAnalytics from "./pages/agency/analytics";
+import AgencyPerformance from "./pages/agency/performance";
+
+// Lazy load agency users page
+const LazyAgencyUsers = React.lazy(() => import('./pages/agency/users'));
 
 // Heavy pages loaded lazily
 import { 
@@ -55,16 +61,17 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            {import.meta.env.DEV && (
-              <>
-                <EmergencyCSSFix />
-                <DebugTest />
-                <CSSDebug />
-                <VerifyCSSLoading />
-              </>
-            )}
-            <Toaster />
-            <Switch>
+            <SEONotificationProvider>
+              {import.meta.env.DEV && (
+                <>
+                  <EmergencyCSSFix />
+                  <DebugTest />
+                  <CSSDebug />
+                  <VerifyCSSLoading />
+                </>
+              )}
+              <Toaster />
+              <Switch>
               {/* Public routes */}
               <Route path="/login" component={Login} />
               <Route path="/auth" component={AuthPage} />
@@ -157,12 +164,33 @@ function App() {
                         <SEOWorksQueueDashboard />
                       </ProtectedRoute>
                     </Route>
+                    {/* Agency Analytics route */}
+                    <Route path="/agency/analytics">
+                      <ProtectedRoute>
+                        <AgencyAnalytics />
+                      </ProtectedRoute>
+                    </Route>
+                    {/* Agency Performance route */}
+                    <Route path="/agency/performance">
+                      <ProtectedRoute>
+                        <AgencyPerformance />
+                      </ProtectedRoute>
+                    </Route>
+                    {/* Agency Users route */}
+                    <Route path="/agency/users">
+                      <ProtectedRoute>
+                        <LazyLoadWrapper fallback={<PageSkeleton />}>
+                          <LazyAgencyUsers />
+                        </LazyLoadWrapper>
+                      </ProtectedRoute>
+                    </Route>
                     {/* Catch-all route */}
                     <Route component={NotFound} />
                   </Switch>
                 </Layout>
               </Route>
             </Switch>
+            </SEONotificationProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
