@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import {
@@ -15,7 +15,8 @@ import {
   Calendar,
   User,
   Building2,
-  ExternalLink
+  ExternalLink,
+  X
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -33,6 +34,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { useToast } from '../../components/ui/use-toast';
 import { format } from 'date-fns';
 import { useCDN } from '../../hooks/useCDN';
+import { Skeleton } from '../../components/ui/skeleton';
+import { EmptyState } from '../../components/ui/empty-state';
+import { ErrorState } from '../../components/ui/error-state';
 
 interface Task {
   id: string;
@@ -72,7 +76,7 @@ export default function TasksPage() {
   const { getDeliverableUrl } = useCDN();
 
   // Fetch tasks
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading, error, refetch } = useQuery({
     queryKey: ['agency-tasks', searchQuery, filterStatus, filterType],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -174,21 +178,21 @@ export default function TasksPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'review': return 'bg-yellow-100 text-yellow-800';
-      case 'requested': return 'bg-purple-100 text-purple-800';
-      case 'cancelled': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'completed': return 'bg-green-100 text-green-900';
+      case 'in_progress': return 'bg-blue-100 text-blue-900';
+      case 'review': return 'bg-amber-100 text-amber-900';
+      case 'requested': return 'bg-purple-100 text-purple-900';
+      case 'cancelled': return 'bg-gray-100 text-gray-900';
+      default: return 'bg-gray-100 text-gray-900';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high': return 'bg-red-100 text-red-900';
+      case 'medium': return 'bg-amber-100 text-amber-900';
+      case 'low': return 'bg-emerald-100 text-emerald-900';
+      default: return 'bg-gray-100 text-gray-900';
     }
   };
 
@@ -202,19 +206,19 @@ export default function TasksPage() {
     }
   };
 
-  const handleExportTasks = () => {
+  const handleExportTasks = useCallback(() => {
     toast({
       title: 'Exporting Tasks',
       description: 'Your task list is being exported to CSV.',
     });
-  };
+  }, [toast]);
 
-  const groupedTasks = {
+  const groupedTasks = useMemo(() => ({
     requested: tasks.filter(t => t.status === 'requested'),
     in_progress: tasks.filter(t => t.status === 'in_progress'),
     review: tasks.filter(t => t.status === 'review'),
     completed: tasks.filter(t => t.status === 'completed')
-  };
+  }), [tasks]);
 
   return (
     <div className="space-y-6">
@@ -296,9 +300,47 @@ export default function TasksPage() {
             <CardContent>
               <div className="space-y-4">
                 {isLoading ? (
-                  <p className="text-center py-8">Loading tasks...</p>
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-3">
+                              <Skeleton className="h-4 w-4 rounded" />
+                              <Skeleton className="h-5 w-48" />
+                              <Skeleton className="h-5 w-20" />
+                              <Skeleton className="h-5 w-16" />
+                            </div>
+                            <Skeleton className="h-4 w-full max-w-md" />
+                            <div className="flex items-center gap-4">
+                              <Skeleton className="h-3 w-24" />
+                              <Skeleton className="h-3 w-24" />
+                              <Skeleton className="h-3 w-24" />
+                            </div>
+                          </div>
+                          <Skeleton className="h-8 w-8 rounded" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <ErrorState
+                    title="Failed to load tasks"
+                    description="We couldn't load your tasks. Please check your connection and try again."
+                    onRetry={refetch}
+                  />
                 ) : tasks.length === 0 ? (
-                  <p className="text-center py-8 text-muted-foreground">No tasks found</p>
+                  <EmptyState
+                    icon={<ListTodo className="h-12 w-12" />}
+                    title="No tasks yet"
+                    description="Create your first SEO task to get started"
+                    action={
+                      <Button onClick={() => setLocation('/seoworks-chat')}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Task
+                      </Button>
+                    }
+                  />
                 ) : (
                   tasks.map((task) => (
                     <div
@@ -391,9 +433,10 @@ export default function TasksPage() {
 
         {/* Kanban View */}
         <TabsContent value="kanban">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="overflow-x-auto pb-4">
+            <div className="inline-flex gap-4 min-w-full md:grid md:grid-cols-4">
             {Object.entries(groupedTasks).map(([status, statusTasks]) => (
-              <Card key={status}>
+              <Card key={status} className="min-w-[280px] md:min-w-0">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium">
@@ -434,6 +477,7 @@ export default function TasksPage() {
                 </CardContent>
               </Card>
             ))}
+            </div>
           </div>
         </TabsContent>
       </Tabs>
@@ -452,8 +496,9 @@ export default function TasksPage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setSelectedTask(null)}
+                  aria-label="Close task details"
                 >
-                  ×
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             </CardHeader>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import {
@@ -13,7 +13,8 @@ import {
   Filter,
   ArrowRight,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Plus
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -22,6 +23,9 @@ import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { useToast } from '../../components/ui/use-toast';
 import { format, formatDistanceToNow } from 'date-fns';
+import { Skeleton } from '../../components/ui/skeleton';
+import { EmptyState } from '../../components/ui/empty-state';
+import { ErrorState } from '../../components/ui/error-state';
 
 interface Request {
   id: string;
@@ -50,7 +54,7 @@ export default function RequestsPage() {
   const queryClient = useQueryClient();
 
   // Fetch requests (using tasks with status 'requested' as requests)
-  const { data: requests = [], isLoading } = useQuery({
+  const { data: requests = [], isLoading, error, refetch } = useQuery({
     queryKey: ['agency-requests', filterPackage],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -181,26 +185,35 @@ export default function RequestsPage() {
 
   const getPackageColor = (pkg: string) => {
     switch (pkg) {
-      case 'PLATINUM': return 'bg-purple-100 text-purple-800';
-      case 'GOLD': return 'bg-yellow-100 text-yellow-800';
-      case 'SILVER': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-blue-100 text-blue-800';
+      case 'PLATINUM': return 'bg-purple-100 text-purple-900';
+      case 'GOLD': return 'bg-amber-100 text-amber-900';
+      case 'SILVER': return 'bg-gray-100 text-gray-900';
+      default: return 'bg-blue-100 text-blue-900';
     }
   };
 
-  const pendingRequests = requests.filter(r => r.status === 'pending');
-  const urgentRequests = pendingRequests.filter(r => r.priority === 'high');
+  const pendingRequests = useMemo(() => 
+    requests.filter(r => r.status === 'pending'), [requests]
+  );
+  
+  const urgentRequests = useMemo(() => 
+    pendingRequests.filter(r => r.priority === 'high'), [pendingRequests]
+  );
 
   // Analytics
-  const requestsByType = requests.reduce((acc, req) => {
-    acc[req.type] = (acc[req.type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const requestsByType = useMemo(() => 
+    requests.reduce((acc, req) => {
+      acc[req.type] = (acc[req.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>), [requests]
+  );
 
-  const requestsByPackage = requests.reduce((acc, req) => {
-    acc[req.dealership_package] = (acc[req.dealership_package] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const requestsByPackage = useMemo(() =>
+    requests.reduce((acc, req) => {
+      acc[req.dealership_package] = (acc[req.dealership_package] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>), [requests]
+  );
 
   return (
     <div className="space-y-6">
@@ -328,11 +341,44 @@ export default function RequestsPage() {
             <CardContent>
               <div className="space-y-4">
                 {isLoading ? (
-                  <p className="text-center py-8">Loading requests...</p>
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-3">
+                              <Skeleton className="h-4 w-4" />
+                              <Skeleton className="h-5 w-48" />
+                              <Skeleton className="h-5 w-20" />
+                              <Skeleton className="h-5 w-16" />
+                            </div>
+                            <Skeleton className="h-4 w-full max-w-md" />
+                            <div className="flex items-center gap-4">
+                              <Skeleton className="h-3 w-32" />
+                              <Skeleton className="h-3 w-24" />
+                              <Skeleton className="h-3 w-24" />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Skeleton className="h-8 w-20" />
+                            <Skeleton className="h-8 w-20" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <ErrorState
+                    title="Failed to load requests"
+                    description="We couldn't load the requests. Please check your connection and try again."
+                    onRetry={refetch}
+                  />
                 ) : pendingRequests.length === 0 ? (
-                  <p className="text-center py-8 text-muted-foreground">
-                    No pending requests
-                  </p>
+                  <EmptyState
+                    icon={<Inbox className="h-12 w-12" />}
+                    title="No pending requests"
+                    description="All requests have been processed. New requests will appear here."
+                  />
                 ) : (
                   pendingRequests.map((request) => (
                     <div key={request.id} className="border rounded-lg p-4">
@@ -390,9 +436,11 @@ export default function RequestsPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              const reason = prompt('Reason for rejection:');
-                              if (reason) {
-                                rejectRequestMutation.mutate({ requestId: request.id, reason });
+                              if (confirm('Are you sure you want to reject this request?')) {
+                                const reason = prompt('Please provide a reason for rejection:');
+                                if (reason && reason.trim()) {
+                                  rejectRequestMutation.mutate({ requestId: request.id, reason });
+                                }
                               }
                             }}
                           >

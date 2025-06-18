@@ -66,6 +66,7 @@ interface AgencySettings {
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState<Partial<AgencySettings>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
