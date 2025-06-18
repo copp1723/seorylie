@@ -41,9 +41,13 @@ RUN npm ci --only=production --legacy-peer-deps
 # Copy application files (be explicit about what we need)
 COPY server ./server
 COPY migrations ./migrations
-COPY --from=builder /app/dist ./dist
+# Copy dist if it exists, otherwise create empty directory
+COPY --from=builder /app/dist* ./dist/ 
 COPY *.js ./
 COPY *.html ./
+# Also copy src directory for React app
+COPY src ./src
+COPY client ./client
 
 # Create uploads directory if needed
 RUN mkdir -p uploads

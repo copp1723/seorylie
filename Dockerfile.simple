@@ -1,0 +1,52 @@
+# Simple Dockerfile for Render - no client build
+FROM node:20-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    dumb-init \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies
+RUN npm ci --only=production --legacy-peer-deps
+
+# Copy server files
+COPY server ./server
+COPY migrations ./migrations
+COPY *.js ./
+COPY *.html ./
+
+# Copy pre-built dist directory if it exists
+COPY dis[t] ./dist/ 
+
+# Create necessary directories
+RUN mkdir -p dist/public uploads
+
+# Ensure we have at least a basic index.html
+RUN if [ ! -f dist/public/index.html ]; then \
+    mkdir -p dist/public && \
+    echo '<!DOCTYPE html><html><head><title>Seorylie</title><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><h1>Seorylie Platform</h1><p>Client application not built. Please build locally with npm run build:vite</p></body></html>' > dist/public/index.html; \
+    fi
+
+# Create non-root user
+RUN useradd -m -u 1001 appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
+# Expose port
+EXPOSE 10000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 10000) + '/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"
+
+# Use dumb-init to handle signals
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["npm", "start"]
