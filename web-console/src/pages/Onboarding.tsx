@@ -21,6 +21,8 @@ import { Select } from "../components/ui/select";
 import { useBranding } from "../contexts/BrandingContext";
 import { submitToSEOWerks, transformToSEOWerksFormat, validateSEOWerksData } from "../services/seowerks-integration";
 import { safeLog, safeLogError } from "../lib/utils";
+import { dealersAPI } from "../services/dealers";
+import useAuth from "../hooks/useAuth";
 
 interface OnboardingData {
   // Basic Business Info
@@ -131,6 +133,7 @@ export default function Onboarding() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { branding } = useBranding();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState<OnboardingData>({
     // Basic Business Info
@@ -219,6 +222,27 @@ export default function Onboarding() {
     setSubmitError(null);
 
     try {
+      // If agency/super, create dealer tenant first
+      if (user && (user.role === "agency" || user.role === "super")) {
+        try {
+          await dealersAPI.create({
+            name: formData.businessName,
+            email: formData.email,
+            contactName: formData.contactName || formData.businessName,
+            brand: {
+              primaryColor: branding.primaryColor,
+              secondaryColor: branding.secondaryColor,
+            },
+          });
+        } catch (err: any) {
+          // Ignore duplicate dealer errors
+          const status = err?.response?.status ?? err?.status;
+          if (status !== 409) {
+            throw err;
+          }
+        }
+      }
+
       // Transform data for SEOWerks
       const seowerksData = transformToSEOWerksFormat(formData);
 

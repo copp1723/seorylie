@@ -10,8 +10,21 @@ import type { StringValue } from "ms";
 
 export interface JWTPayload {
   userId: string;
-  dealershipId: number;
-  role: string;
+  /**
+   * The tenant this user belongs to (agency OR dealer).
+   * UUID string to support multi-tenant hierarchy.
+   */
+  tenantId: string;
+  /**
+   * User role in the system.
+   */
+  role: "super" | "agency" | "dealer";
+  /**
+   * DEPRECATED – kept only for backward compatibility with
+   * legacy tokens generated before the multi-tenant migration.
+   * Will be removed after 2025-Q3.
+   */
+  dealershipId?: number;
   permissions: string[];
   iat?: number;
   exp?: number;
@@ -102,11 +115,11 @@ export class JWTAuthService {
       const token = jwt.sign(tokenPayload, secret, signOptions);
 
       // Store token info for tracking/revocation
-      this.storeTokenInfo(jti, payload.userId, payload.dealershipId, expiresIn);
+      this.storeTokenInfo(jti, payload.userId, payload.tenantId, expiresIn);
 
       logger.info("JWT token generated", {
         userId: payload.userId,
-        dealershipId: payload.dealershipId,
+        tenantId: payload.tenantId,
         role: payload.role,
         jti,
         expiresIn,
@@ -146,8 +159,13 @@ export class JWTAuthService {
         algorithms: ["HS256"],
       }) as JWTPayload;
 
+      // Map legacy dealershipId to tenantId for backward compatibility
+      if (!payload.tenantId && payload.dealershipId) {
+        (payload as any).tenantId = String(payload.dealershipId);
+      }
+
       // Additional validation
-      if (!payload.userId || !payload.dealershipId || !payload.role) {
+      if (!payload.userId || !payload.tenantId || !payload.role) {
         throw new Error("Invalid token payload");
       }
 
@@ -190,7 +208,7 @@ export class JWTAuthService {
       // Generate new token
       const newPayload = {
         userId: payload.userId,
-        dealershipId: payload.dealershipId,
+        tenantId: payload.tenantId,
         role: payload.role,
         permissions: payload.permissions,
       };
@@ -289,7 +307,7 @@ export class JWTAuthService {
   private async storeTokenInfo(
     jti: string,
     userId: string,
-    dealershipId: number,
+    tenantId: string,
     expiresIn: StringValue,
   ): Promise<void> {
     try {
@@ -299,7 +317,7 @@ export class JWTAuthService {
 
       await db.execute(sql`
         INSERT INTO jwt_tokens (jti, user_id, dealership_id, issued_at, expires_at, active)
-        VALUES (${jti}, ${userId}, ${dealershipId}, NOW(), ${expiresAt}, true)
+        VALUES (${jti}, ${userId}, ${tenantId}, NOW(), ${expiresAt}, true)
       `);
     } catch (error) {
       // Log error but don't throw - token generation should still succeed

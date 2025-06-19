@@ -35,7 +35,7 @@ interface BrandingContextType {
 
 // Default branding fallback
 const defaultBranding: AgencyBranding = {
-  agency_id: '',
+  agency_id: 'default',
   company_name: 'RylieSEO',
   primary_color: '#2563eb',
   secondary_color: '#1e40af',
@@ -114,8 +114,8 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
     }
 
     // Fall back to user's agency from auth context
-    if (user?.agency_id) {
-      return user.agency_id;
+    if (user?.agencyId) {
+      return user.agencyId;
     }
 
     return null;
@@ -149,7 +149,7 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
       }
     },
     staleTime: 300000, // Consider data stale after 5 minutes
-    cacheTime: 3600000, // Keep in React Query cache for 1 hour
+    gcTime: 3600000, // Keep in React Query cache for 1 hour
   });
 
   // Update branding mutation
@@ -173,13 +173,13 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
     onSuccess: (data) => {
       // Clear cache and refetch
       brandingCache.clear(data.agency_id);
-      queryClient.invalidateQueries(['agency-branding']);
+      queryClient.invalidateQueries({ queryKey: ['agency-branding'] });
     },
   });
 
   // Apply branding to DOM
   useEffect(() => {
-    const activeBranding = isPreviewMode && previewBranding 
+    const activeBranding = isPreviewMode && previewBranding && branding
       ? { ...branding, ...previewBranding } 
       : branding;
 

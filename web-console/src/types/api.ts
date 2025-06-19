@@ -25,7 +25,13 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  role: 'client' | 'agency' | 'admin';
+  /**
+   * RBAC role for the authenticated user.
+   * dealer  – end-dealer users
+   * agency  – agency admins/staff
+   * super   – SEO Werks super-admin
+   */
+  role: 'dealer' | 'agency' | 'super';
   tenantId?: string;
   agencyId?: string;
   createdAt: string;

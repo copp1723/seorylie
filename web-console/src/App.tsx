@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from './lib/queryClient';
 import { AppErrorBoundary } from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import Chat from './pages/Chat';
@@ -20,22 +21,77 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AppErrorBoundary>
         <BrandingProvider>
-          <AuthProvider>
-            <Router>
+          {/* Router must wrap AuthProvider so hooks have access to navigation context */}
+          <Router>
+            <AuthProvider>
               <MainLayout>
                 <Routes>
+                  {/* Public / landing */}
                   <Route path="/" element={<Dashboard />} />
-                  <Route path="/chat" element={<Chat />} />
-                  <Route path="/requests" element={<Requests />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/internal" element={<Internal />} />
-                  <Route path="/orders" element={<Orders />} />
+
+                  {/* Protected – any authenticated role */}
+                  <Route
+                    path="/chat"
+                    element={
+                      <ProtectedRoute>
+                        <Chat />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/requests"
+                    element={
+                      <ProtectedRoute>
+                        <Requests />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports"
+                    element={
+                      <ProtectedRoute>
+                        <Reports />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute>
+                        <Settings />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Role-restricted pages */}
+                  <Route
+                    path="/onboarding"
+                    element={
+                      <ProtectedRoute roles={['agency', 'super']}>
+                        <Onboarding />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/orders"
+                    element={
+                      <ProtectedRoute roles={['dealer', 'agency', 'super']}>
+                        <Orders />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/internal"
+                    element={
+                      <ProtectedRoute roles={['super']}>
+                        <Internal />
+                      </ProtectedRoute>
+                    }
+                  />
                 </Routes>
               </MainLayout>
-            </Router>
-          </AuthProvider>
+            </AuthProvider>
+          </Router>
         </BrandingProvider>
       </AppErrorBoundary>
       {/* Show React Query DevTools in development */}

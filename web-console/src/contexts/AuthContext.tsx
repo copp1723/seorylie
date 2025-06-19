@@ -2,9 +2,29 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '../types/api';
 // import { authAPI } from '../services/auth';
 const authAPI = {
-  login: async () => ({ user: { id: '1', name: 'Demo User', email: 'demo@example.com' } }),
+  login: async () => ({ 
+    user: { 
+      id: '1', 
+      email: 'demo@example.com',
+      firstName: 'Demo',
+      lastName: 'User',
+      role: 'dealer' as const,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    token: 'mock-token',
+    refreshToken: 'mock-refresh-token'
+  }),
   logout: async () => {},
-  getProfile: async () => ({ id: '1', name: 'Demo User', email: 'demo@example.com' })
+  getProfile: async () => ({ 
+    id: '1', 
+    email: 'demo@example.com',
+    firstName: 'Demo',
+    lastName: 'User',
+    role: 'dealer' as const,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  })
 };
 import { queryClient } from '../lib/queryClient';
 
@@ -26,6 +46,9 @@ export const useAuthContext = () => {
   }
   return context;
 };
+
+// Alias for backwards compatibility
+export const useAuth = useAuthContext;
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -60,7 +83,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await authAPI.login({ email, password });
+      const response = await authAPI.login();
       
       // Store tokens
       localStorage.setItem('authToken', response.token);

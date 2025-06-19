@@ -30,7 +30,7 @@ import { validateProductionSafety } from "./utils/production-safety-checks";
 
 // Routes
 import healthRoutes from "./routes/health-routes";
-import { setupRoutes } from "./routes";
+// Removed duplicate routes import - routes are set up inline
 
 // Observability
 import { setupMetrics } from "./observability/metrics";
@@ -243,7 +243,7 @@ class EnhancedServer {
     this.app.use("/api/health", healthRoutes);
 
     // API routes
-    setupRoutes(this.app);
+    // Routes are now set up inline in the setupRoutes method
 
     // Catch-all route for SPA
     this.app.get("*", (req, res) => {

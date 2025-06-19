@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useBranding } from '../contexts/AgencyBrandingContext';
-import { HexColorPicker } from 'react-colorful';
 import { Upload, Eye, EyeOff, Save, RotateCcw, Palette, Type, Moon, Sun } from 'lucide-react';
+
+// Lazy load color picker
+const HexColorPicker = lazy(() => import('react-colorful').then(m => ({ default: m.HexColorPicker })));
 
 interface BrandingPreviewProps {
   className?: string;
@@ -11,18 +13,19 @@ export const BrandingPreview: React.FC<BrandingPreviewProps> = ({ className = ''
   const { branding, updateBranding, previewBranding, resetPreview, isPreviewMode, isUpdating } = useBranding();
   const [localBranding, setLocalBranding] = useState(branding);
   const [showColorPicker, setShowColorPicker] = useState<string | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  // File state removed - handled directly in upload handlers
 
   if (!branding) return null;
 
   const handleColorChange = (field: string, color: string) => {
+    if (!localBranding) return;
     const updates = { ...localBranding, [field]: color };
     setLocalBranding(updates);
     previewBranding(updates);
   };
 
   const handleInputChange = (field: string, value: any) => {
+    if (!localBranding) return;
     const updates = { ...localBranding, [field]: value };
     setLocalBranding(updates);
     previewBranding(updates);
@@ -35,7 +38,8 @@ export const BrandingPreview: React.FC<BrandingPreviewProps> = ({ className = ''
   };
 
   const handleSave = async () => {
-    await updateBranding(localBranding!);
+    if (!localBranding) return;
+    await updateBranding(localBranding);
     resetPreview();
   };
 
@@ -198,10 +202,12 @@ export const BrandingPreview: React.FC<BrandingPreviewProps> = ({ className = ''
                 </button>
                 {showColorPicker === 'primary' && (
                   <div className="absolute z-10 mt-2">
-                    <HexColorPicker
-                      color={localBranding?.primary_color || '#000000'}
-                      onChange={(color) => handleColorChange('primary_color', color)}
-                    />
+                    <Suspense fallback={<div className="w-[200px] h-[200px] bg-gray-200 animate-pulse rounded" />}>
+                      <HexColorPicker
+                        color={localBranding?.primary_color || '#000000'}
+                        onChange={(color: string) => handleColorChange('primary_color', color)}
+                      />
+                    </Suspense>
                   </div>
                 )}
               </div>
@@ -224,10 +230,12 @@ export const BrandingPreview: React.FC<BrandingPreviewProps> = ({ className = ''
                 </button>
                 {showColorPicker === 'secondary' && (
                   <div className="absolute z-10 mt-2">
-                    <HexColorPicker
-                      color={localBranding?.secondary_color || '#000000'}
-                      onChange={(color) => handleColorChange('secondary_color', color)}
-                    />
+                    <Suspense fallback={<div className="w-[200px] h-[200px] bg-gray-200 animate-pulse rounded" />}>
+                      <HexColorPicker
+                        color={localBranding?.secondary_color || '#000000'}
+                        onChange={(color: string) => handleColorChange('secondary_color', color)}
+                      />
+                    </Suspense>
                   </div>
                 )}
               </div>
@@ -250,10 +258,12 @@ export const BrandingPreview: React.FC<BrandingPreviewProps> = ({ className = ''
                 </button>
                 {showColorPicker === 'accent' && (
                   <div className="absolute z-10 mt-2">
-                    <HexColorPicker
-                      color={localBranding?.accent_color || '#000000'}
-                      onChange={(color) => handleColorChange('accent_color', color)}
-                    />
+                    <Suspense fallback={<div className="w-[200px] h-[200px] bg-gray-200 animate-pulse rounded" />}>
+                      <HexColorPicker
+                        color={localBranding?.accent_color || '#000000'}
+                        onChange={(color: string) => handleColorChange('accent_color', color)}
+                      />
+                    </Suspense>
                   </div>
                 )}
               </div>

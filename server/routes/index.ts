@@ -27,6 +27,7 @@ import promptTestRoutes from "./prompt-test";
 import promptTestingRoutes from "./prompt-testing-routes";
 import simplePromptTestRoutes from "./simple-prompt-test";
 import twilioWebhooks from "./twilio-webhooks";
+import dealersRoutes from "./dealers-routes";
 import userManagementRoutes from "./user-management-routes";
 
 export {
@@ -54,5 +55,6 @@ export {
   promptTestingRoutes,
   simplePromptTestRoutes,
   twilioWebhooks,
+  dealersRoutes,
   userManagementRoutes,
 };

@@ -29,6 +29,8 @@ import { setupSEOWebSocket } from './websocket/seoWebSocket';
 // Dynamic imports for routes and middleware
 import { connectDB } from './models/database';
 import { databasePoolMonitor } from './services/database-pool-monitor';
+// Public agency-signup (no auth)
+import publicSignupRoutes from './routes/public-signup';
 
 // Load environment variables
 envConfig();
@@ -265,6 +267,12 @@ const setupRoutes = async () => {
       import('./routes/agency-users-routes').catch(() => null),
       import('./routes/deliverables').catch(() => null)
     ]);
+
+    // ---------------------------------------------------------------------
+    // Public routes – must be registered BEFORE authMiddleware
+    // ---------------------------------------------------------------------
+    // Public agency signup (create new tenant + admin)
+    app.use('/api/tenants', publicSignupRoutes);
 
     // Setup protected routes
     app.use('/api', authMiddleware);

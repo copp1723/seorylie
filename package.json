@@ -1,6 +1,7 @@
 {
   "name": "seorylie-web-console",
   "version": "1.0.0",
+  "packageManager": "pnpm@9.1.0",
   "scripts": {
     "build": "cd web-console && npm run build",
     "start": "node server.js",
@@ -72,6 +73,7 @@
     "dotenv": "^16.5.0",
     "googleapis": "^150.0.1",
     "lucide-react": "^0.517.0",
+    "lru-cache": "^10.1.0",
     "pg": "^8.11.3",
     "postcss": "^8.5.6",
     "react": "^19.1.0",

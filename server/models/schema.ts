@@ -1,39 +1,56 @@
-/**
- * @file Database Schema Definitions
- * @description Drizzle ORM schema definitions for SEORYLIE
- */
-
-import { pgTable, text, timestamp, boolean, integer, serial, uuid, jsonb } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  integer,
+  serial,
+  uuid,
+  jsonb,
+  pgEnum,
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
-// Users table
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+export const userRoleEnum = pgEnum('user_role', ['super', 'agency', 'dealer']);
+
+// ---------------------------------------------------------------------------
+// Tenants (multi-tenant root)
+// ---------------------------------------------------------------------------
+export const tenants = pgTable('tenants', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  brand: jsonb('brand'),          // {logoUrl, primaryColor, ...}
+  parentId: uuid('parent_id').references(() => tenants.id), // agency → null, dealer → agencyId
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  isActive: boolean('is_active').default(true),
+});
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name'),
-  role: text('role').default('client'),
-  tenantId: text('tenant_id'),
+  role: userRoleEnum('role').default('dealer'),
+  tenantId: uuid('tenant_id').references(() => tenants.id),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
   isActive: boolean('is_active').default(true),
 });
 
-// Tenants table for multi-tenancy
-export const tenants = pgTable('tenants', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  slug: text('slug').notNull().unique(),
-  settings: text('settings'), // JSON string
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-  isActive: boolean('is_active').default(true),
-});
-
-// SEO requests table
+// ---------------------------------------------------------------------------
+// SEO Requests
+// ---------------------------------------------------------------------------
 export const seoRequests = pgTable('seo_requests', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id),
-  tenantId: integer('tenant_id').references(() => tenants.id),
+  tenantId: uuid('tenant_id').references(() => tenants.id),
   title: text('title').notNull(),
   description: text('description'),
   status: text('status').default('pending'),
@@ -44,19 +61,23 @@ export const seoRequests = pgTable('seo_requests', {
   completedAt: timestamp('completed_at'),
 });
 
-// Reports table
+// ---------------------------------------------------------------------------
+// Reports
+// ---------------------------------------------------------------------------
 export const reports = pgTable('reports', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id),
-  tenantId: integer('tenant_id').references(() => tenants.id),
-  type: text('type').notNull(), // 'ga4', 'seo', 'performance', etc.
+  tenantId: uuid('tenant_id').references(() => tenants.id),
+  type: text('type').notNull(),
   title: text('title').notNull(),
-  data: text('data'), // JSON string
+  data: text('data'),
   generatedAt: timestamp('generated_at').defaultNow(),
   isPublic: boolean('is_public').default(false),
 });
 
-// SEOWorks Tasks table
+// ---------------------------------------------------------------------------
+// Seoworks Tasks (unchanged)
+// ---------------------------------------------------------------------------
 export const seoworksTasks = pgTable('seoworks_tasks', {
   id: text('id').primaryKey(),
   taskType: text('task_type').notNull(),
@@ -67,22 +88,26 @@ export const seoworksTasks = pgTable('seoworks_tasks', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-// Audit logs table
+// ---------------------------------------------------------------------------
+// Audit Logs
+// ---------------------------------------------------------------------------
 export const auditLogs = pgTable('audit_logs', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id),
-  tenantId: integer('tenant_id').references(() => tenants.id),
+  tenantId: uuid('tenant_id').references(() => tenants.id),
   action: text('action').notNull(),
   resource: text('resource'),
   resourceId: text('resource_id'),
-  details: text('details'), // JSON string
+  details: text('details'),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
   traceId: text('trace_id'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-// GA4 Properties table - maps tenants to their GA4 properties
+// ---------------------------------------------------------------------------
+// GA4 tables (already uuid tenantId) – unchanged except reference arrow
+// ---------------------------------------------------------------------------
 export const ga4Properties = pgTable('ga4_properties', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
@@ -98,7 +123,6 @@ export const ga4Properties = pgTable('ga4_properties', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-// GA4 Service Account Credentials
 export const ga4ServiceAccount = pgTable('ga4_service_account', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   environment: text('environment').notNull().default('production'),
@@ -113,7 +137,6 @@ export const ga4ServiceAccount = pgTable('ga4_service_account', {
   expiresAt: timestamp('expires_at'),
 });
 
-// GA4 Report Cache
 export const ga4ReportCache = pgTable('ga4_report_cache', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid('tenant_id').notNull().references(() => tenants.id),
@@ -126,7 +149,6 @@ export const ga4ReportCache = pgTable('ga4_report_cache', {
   cacheKey: text('cache_key').notNull().unique(),
 });
 
-// GA4 API Usage Tracking
 export const ga4ApiUsage = pgTable('ga4_api_usage', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid('tenant_id').references(() => tenants.id),
@@ -142,7 +164,9 @@ export const ga4ApiUsage = pgTable('ga4_api_usage', {
   day: text('day').notNull(),
 });
 
-// Export types for TypeScript inference
+// ---------------------------------------------------------------------------
+// Export Types
+// ---------------------------------------------------------------------------
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Tenant = typeof tenants.$inferSelect;
