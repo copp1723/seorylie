@@ -90,7 +90,8 @@ const server = http.createServer(async (req, res) => {
         status: 'ok', 
         port: PORT,
         database: db._connected ? 'connected' : 'disconnected',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        commit: process.env.GIT_COMMIT || process.env.RENDER_GIT_COMMIT || 'local'
       }));
       
     } else if (pathname === '/api') {
@@ -434,4 +435,5 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Health check: http://0.0.0.0:${PORT}/health`);
   console.log(`✅ React app: http://0.0.0.0:${PORT}/`);
   console.log(`✅ Serving static files from: ${path.join(__dirname, 'web-console', 'dist')}`);
+  console.log(`✅ Commit: ${process.env.GIT_COMMIT || process.env.RENDER_GIT_COMMIT || 'local'}`);
 });
