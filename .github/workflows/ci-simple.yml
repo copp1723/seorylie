@@ -1,0 +1,93 @@
+name: CI Pipeline (Simplified)
+
+on:
+  push:
+    branches: [ main, develop, feature/*, release/*, ai-refactor/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # Lint and type check job
+  lint:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install web-console dependencies
+        working-directory: ./web-console
+        run: npm install
+
+      - name: Lint code
+        working-directory: ./web-console
+        run: npm run lint
+
+      - name: Type check
+        working-directory: ./web-console
+        run: npx tsc --noEmit
+
+  # Build test
+  build:
+    name: Build Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [lint]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install web-console dependencies
+        working-directory: ./web-console
+        run: npm install
+
+      - name: Build web-console
+        working-directory: ./web-console
+        run: npm run build
+
+  # Final status check job
+  ci-status:
+    name: CI Status Check
+    runs-on: ubuntu-latest
+    needs: [lint, build]
+    if: always()
+    steps:
+      - name: Check status of required jobs
+        run: |
+          if [[ "${{ needs.lint.result }}" == "success" && "${{ needs.build.result }}" == "success" ]]; then
+            echo "✅ All required jobs passed!"
+            exit 0
+          else
+            echo "❌ Some required jobs failed!"
+            echo "lint: ${{ needs.lint.result }}"
+            echo "build: ${{ needs.build.result }}"
+            exit 1
+          fi

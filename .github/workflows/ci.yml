@@ -45,6 +45,7 @@ jobs:
         run: |
           echo "📦 Installing dependencies..."
           npm install
+          cd web-console && npm install
           echo "✅ Dependencies installed successfully"
 
       - name: Run Snyk to check for vulnerabilities
@@ -80,7 +81,9 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          cd web-console && npm install
 
       - name: Lint code
         run: npm run lint
@@ -124,7 +127,9 @@ jobs:
           cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          cd web-console && npm install
 
       - name: Run unit tests for ${{ matrix.service }}
         run: ${{ matrix.test_command }}

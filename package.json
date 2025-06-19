@@ -28,7 +28,7 @@
     "db:create": "ts-node scripts/create-database.ts",
     "db:migrate": "ts-node scripts/run-migrations.ts",
     "db:setup": "npm run db:create && npm run db:migrate",
-    "lint": "cd web-console && npm install && npm run lint",
+    "lint": "cd web-console && npm run lint",
     "check": "cd web-console && npx tsc --noEmit",
     "typecheck": "cd web-console && npx tsc --noEmit",
     "format:check": "echo 'Format check not configured yet'",
