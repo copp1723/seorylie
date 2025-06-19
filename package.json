@@ -2,7 +2,7 @@
   "name": "seorylie-simple",
   "version": "1.0.0",
   "scripts": {
-    "start": "node server-with-db.js",
+    "start": "node server.js",
     "build:vite": "vite build --config config/build/vite.config.ts",
     "build:client": "npm run build:vite",
     "start:simple": "node index.js",
