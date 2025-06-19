@@ -4,13 +4,13 @@ import path from 'path'
 
 // Enhanced Vite config with explicit Tailwind CSS processing
 export default defineConfig({
-  root: path.resolve(__dirname, '../../client'),
+  root: path.resolve(__dirname, '../../web-console'),
   plugins: [react()],
   build: {
     outDir: path.resolve(__dirname, '../../dist/public'),
     emptyOutDir: true,
     rollupOptions: {
-      input: path.resolve(__dirname, '../../client/index.html'),
+      input: path.resolve(__dirname, '../../web-console/index.html'),
       output: {
         // Manual chunks for better code splitting
         manualChunks: {
@@ -79,12 +79,12 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, '../../client/src'),
+      '@': path.resolve(__dirname, '../../web-console/src'),
       '@shared': path.resolve(__dirname, '../../shared'),
-      '@components': path.resolve(__dirname, '../../client/src/components'),
-      '@hooks': path.resolve(__dirname, '../../client/src/hooks'),
-      '@pages': path.resolve(__dirname, '../../client/src/pages'),
-      '@utils': path.resolve(__dirname, '../../client/src/utils'),
+      '@components': path.resolve(__dirname, '../../web-console/src/components'),
+      '@hooks': path.resolve(__dirname, '../../web-console/src/hooks'),
+      '@pages': path.resolve(__dirname, '../../web-console/src/pages'),
+      '@utils': path.resolve(__dirname, '../../web-console/src/utils'),
     },
   },
   // Enable HMR in development
