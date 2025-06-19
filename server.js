@@ -1,21 +1,25 @@
 // Production server with database integration and static file serving
+require('dotenv').config();
 const http = require('http');
-const { Client } = require('pg');
+const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
 const PORT = process.env.PORT || 10000;
 
-// Database client
-const db = new Client({
+// Database connection pool
+const db = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-// Connect to database on startup
-db.connect().then(() => {
-  console.log('✅ Connected to database');
+// Test database connection on startup
+db.query('SELECT NOW() as current_time').then(result => {
+  console.log('✅ Connected to database at:', result.rows[0].current_time);
 }).catch(err => {
   console.error('❌ Database connection failed:', err.message);
 });
@@ -318,12 +322,62 @@ const server = http.createServer(async (req, res) => {
       
     // Auth routes for web console
     } else if (pathname === '/api/auth/login' && req.method === 'POST') {
-      // Mock login for now
-      res.writeHead(200);
-      res.end(JSON.stringify({
-        user: { id: 1, email: 'user@example.com', name: 'Demo User' },
-        token: 'mock-jwt-token'
-      }));
+      const { email, password } = await parseBody(req);
+      
+      try {
+        // Check user in database
+        const userResult = await db.query(
+          'SELECT u.*, d.name as dealership_name FROM users u LEFT JOIN dealerships d ON u.dealership_id = d.id WHERE u.email = $1',
+          [email]
+        );
+        
+        if (userResult.rows.length === 0) {
+          res.writeHead(401);
+          res.end(JSON.stringify({ error: 'Invalid credentials' }));
+          return;
+        }
+        
+        const user = userResult.rows[0];
+        
+        // For alpha test, we'll use bcrypt to verify password
+        const bcrypt = require('bcryptjs');
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        
+        if (!isValidPassword) {
+          res.writeHead(401);
+          res.end(JSON.stringify({ error: 'Invalid credentials' }));
+          return;
+        }
+        
+        // Generate JWT token (simplified for alpha)
+        const jwt = require('jsonwebtoken');
+        const token = jwt.sign(
+          { 
+            userId: user.id, 
+            dealershipId: user.dealership_id,
+            email: user.email,
+            role: user.role
+          },
+          process.env.JWT_SECRET || 'development-secret-key-change-in-production',
+          { expiresIn: '24h' }
+        );
+        
+        res.writeHead(200);
+        res.end(JSON.stringify({
+          user: { 
+            id: user.id, 
+            email: user.email, 
+            name: `${user.first_name} ${user.last_name}`,
+            dealership: user.dealership_name,
+            role: user.role
+          },
+          token
+        }));
+      } catch (error) {
+        console.error('Login error:', error);
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: 'Login failed' }));
+      }
       
     } else if (pathname === '/api/auth/me' && req.method === 'GET') {
       // Mock current user
@@ -391,6 +445,271 @@ const server = http.createServer(async (req, res) => {
           created_at: new Date().toISOString(),
           message: 'Request submitted successfully. Our SEO team will review this and get back to you within 24 hours.'
         }
+      }));
+      
+    // Alpha Test API Endpoints
+    } else if (pathname === '/api/seoworks/task-status' && req.method === 'GET') {
+      // Get authenticated user's dealership tasks
+      const authHeader = req.headers.authorization;
+      let dealershipId = 'alpha-test-001'; // Default for alpha test
+      
+      if (authHeader) {
+        try {
+          const jwt = require('jsonwebtoken');
+          const token = authHeader.replace('Bearer ', '');
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'development-secret-key-change-in-production');
+          dealershipId = decoded.dealershipId;
+        } catch (e) {
+          // Use default dealership for alpha test
+        }
+      }
+      
+      const result = await db.query(
+        'SELECT * FROM seoworks_tasks WHERE dealership_id = $1 ORDER BY created_at DESC',
+        [dealershipId]
+      );
+      
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        dealership_id: dealershipId,
+        tasks: result.rows,
+        summary: {
+          total: result.rows.length,
+          completed: result.rows.filter(t => t.status === 'completed').length,
+          in_progress: result.rows.filter(t => t.status === 'in_progress').length,
+          pending: result.rows.filter(t => t.status === 'pending').length
+        }
+      }));
+      
+    } else if (pathname === '/api/analytics/summary' && req.method === 'GET') {
+      // Mock analytics summary for alpha test
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        summary: {
+          total_sessions: 2456,
+          total_users: 1834,
+          page_views: 8923,
+          bounce_rate: 0.42,
+          avg_session_duration: 185,
+          conversion_rate: 0.032,
+          top_pages: [
+            { page: '/inventory', views: 1250, sessions: 850 },
+            { page: '/specials', views: 980, sessions: 720 },
+            { page: '/service', views: 650, sessions: 480 }
+          ],
+          traffic_sources: {
+            organic: 0.45,
+            direct: 0.32,
+            social: 0.12,
+            paid: 0.11
+          },
+          generated_at: new Date().toISOString()
+        }
+      }));
+      
+    } else if (pathname === '/api/seoworks/package-info' && req.method === 'GET') {
+      // Get package info for authenticated user's dealership
+      const authHeader = req.headers.authorization;
+      let dealershipId = 'alpha-test-001';
+      
+      if (authHeader) {
+        try {
+          const jwt = require('jsonwebtoken');
+          const token = authHeader.replace('Bearer ', '');
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'development-secret-key-change-in-production');
+          dealershipId = decoded.dealershipId;
+        } catch (e) {
+          // Use default
+        }
+      }
+      
+      const result = await db.query(
+        'SELECT * FROM dealerships WHERE id = $1',
+        [dealershipId]
+      );
+      
+      if (result.rows.length === 0) {
+        res.writeHead(404);
+        res.end(JSON.stringify({ error: 'Dealership not found' }));
+        return;
+      }
+      
+      const dealership = result.rows[0];
+      const settings = dealership.settings || {};
+      
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        package: {
+          name: 'Alpha Test Package',
+          tier: settings.package || 'GOLD',
+          features: [
+            'Monthly blog posts',
+            'Landing page optimization',
+            'Local SEO optimization',
+            'GA4 analytics integration',
+            'Chat assistant support'
+          ],
+          limits: {
+            monthly_posts: 8,
+            landing_pages: 5,
+            seo_requests: 10
+          },
+          usage: {
+            posts_this_month: 3,
+            landing_pages_optimized: 2,
+            seo_requests_used: 1
+          }
+        },
+        dealership: {
+          id: dealership.id,
+          name: dealership.name,
+          main_brand: settings.main_brand,
+          target_cities: settings.target_cities,
+          target_models: settings.target_vehicle_models
+        }
+      }));
+      
+    } else if (pathname === '/api/chat/message' && req.method === 'POST') {
+      // Process chat message and provide intelligent response
+      const data = await parseBody(req);
+      
+      if (!data.message) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Message is required' }));
+        return;
+      }
+      
+      // Save the conversation and message
+      const conversationId = data.conversation_id || `conv_${Date.now()}`;
+      const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const authHeader = req.headers.authorization;
+      let userId = 'admin-001';
+      let dealershipId = 'alpha-test-001';
+      
+      if (authHeader) {
+        try {
+          const jwt = require('jsonwebtoken');
+          const token = authHeader.replace('Bearer ', '');
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'development-secret-key-change-in-production');
+          userId = decoded.userId;
+          dealershipId = decoded.dealershipId;
+        } catch (e) {
+          // Use defaults
+        }
+      }
+      
+      // Ensure conversation exists
+      await db.query(
+        `INSERT INTO chat_conversations (id, dealership_id, user_id, status) 
+         VALUES ($1, $2, $3, 'active') 
+         ON CONFLICT (id) DO NOTHING`,
+        [conversationId, dealershipId, userId]
+      );
+      
+      // Save user message
+      await db.query(
+        `INSERT INTO chat_messages (id, conversation_id, message_type, content) 
+         VALUES ($1, $2, 'user', $3)`,
+        [messageId, conversationId, data.message]
+      );
+      
+      // Generate intelligent response based on message content
+      let response = '';
+      const message = data.message.toLowerCase();
+      
+      if (message.includes('status') || message.includes('task') || message.includes('seo')) {
+        response = "I can see you have 3 SEO tasks currently in progress. You have 2 completed blog posts from last week about Ford F-150 features and Mustang inventory optimization. Would you like me to provide more details about any specific task or create a new SEO request?";
+      } else if (message.includes('analytics') || message.includes('traffic') || message.includes('visitors')) {
+        response = "Your website traffic is looking great! You've had 2,456 sessions this month with 1,834 unique users. Your bounce rate is 42% which is solid for automotive, and organic search is driving 45% of your traffic. Would you like me to dive deeper into any specific metrics?";
+      } else if (message.includes('help') || message.includes('support')) {
+        response = "I'm here to help! I can assist you with:\n\n• Checking SEO task status\n• Reviewing website analytics\n• Creating new content requests\n• Escalating complex issues to our SEO team\n\nWhat would you like to know more about?";
+      } else if (message.includes('blog') || message.includes('content') || message.includes('post')) {
+        response = "I can help you with content creation! Based on your Ford dealership focus, I can assist with blog posts about vehicle features, seasonal driving tips, or local automotive events. Would you like me to create a content request for our SEO team?";
+      } else {
+        response = `I understand you're asking about "${data.message}". I can help you with SEO tasks, analytics, and content creation. Could you be more specific about what you'd like to know? For example, you can ask about:\n\n• "What's the status of my SEO tasks?"\n• "Show me my website analytics"\n• "I need help with new content"`;
+      }
+      
+      // Save assistant response
+      const responseId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await db.query(
+        `INSERT INTO chat_messages (id, conversation_id, message_type, content) 
+         VALUES ($1, $2, 'assistant', $3)`,
+        [responseId, conversationId, response]
+      );
+      
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        conversation_id: conversationId,
+        message_id: responseId,
+        response: response,
+        suggestions: [
+          'Check SEO task status',
+          'View analytics summary',
+          'Request new content',
+          'Escalate to SEO team'
+        ],
+        timestamp: new Date().toISOString()
+      }));
+      
+    } else if (pathname === '/api/seo/request' && req.method === 'POST') {
+      // Create SEO escalation request
+      const data = await parseBody(req);
+      
+      if (!data.request_type || !data.description) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ 
+          error: 'Missing required fields: request_type, description' 
+        }));
+        return;
+      }
+      
+      const authHeader = req.headers.authorization;
+      let userId = 'admin-001';
+      let dealershipId = 'alpha-test-001';
+      
+      if (authHeader) {
+        try {
+          const jwt = require('jsonwebtoken');
+          const token = authHeader.replace('Bearer ', '');
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'development-secret-key-change-in-production');
+          userId = decoded.userId;
+          dealershipId = decoded.dealershipId;
+        } catch (e) {
+          // Use defaults
+        }
+      }
+      
+      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const result = await db.query(
+        `INSERT INTO seo_requests 
+         (id, dealership_id, user_id, request_type, priority, description, additional_context, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+         RETURNING *`,
+        [
+          requestId,
+          dealershipId,
+          userId,
+          data.request_type,
+          data.priority || 'medium',
+          data.description,
+          data.additional_context || null
+        ]
+      );
+      
+      res.writeHead(201);
+      res.end(JSON.stringify({
+        request_id: requestId,
+        status: 'pending',
+        message: 'Your SEO request has been submitted successfully. Our team will review it and get back to you within 24 hours.',
+        estimated_completion: '1-3 business days',
+        next_steps: [
+          'Our SEO team will review your request',
+          'You\'ll receive an email confirmation',
+          'Updates will be posted to your dashboard'
+        ],
+        created_at: new Date().toISOString()
       }));
       
     // Serve static files

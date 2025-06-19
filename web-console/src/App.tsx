@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import Internal from './pages/Internal';
 import Orders from './pages/Orders';
 import AnalyticsEnhanced from './pages/agency/AnalyticsEnhanced';
+import Login from './pages/Login';
 import { AuthProvider } from './contexts/AuthContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 
@@ -27,8 +28,18 @@ function App() {
             <AuthProvider>
               <MainLayout>
                 <Routes>
-                  {/* Public / landing */}
-                  <Route path="/" element={<Dashboard />} />
+                  {/* Public Login Route */}
+                  <Route path="/login" element={<Login />} />
+
+                  {/* Protected Dashboard - Main landing page for authenticated users */}
+                  <Route 
+                    path="/" 
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
 
                   {/* Protected – any authenticated role */}
                   <Route
