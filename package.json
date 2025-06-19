@@ -5,6 +5,7 @@
     "start": "node server.js",
     "build:vite": "vite build --config config/build/vite.config.ts",
     "build:client": "npm run build:vite",
+    "build": "npm run build:client",
     "start:simple": "node index.js",
     "setup:db": "node setup-db.js",
     "setup:ga4": "node setup-ga4-credentials.js",

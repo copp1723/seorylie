@@ -315,6 +315,47 @@ const server = http.createServer(async (req, res) => {
         conversionRate: 0.032
       }));
       
+    // Auth routes for web console
+    } else if (pathname === '/api/auth/login' && req.method === 'POST') {
+      // Mock login for now
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        user: { id: 1, email: 'user@example.com', name: 'Demo User' },
+        token: 'mock-jwt-token'
+      }));
+      
+    } else if (pathname === '/api/auth/me' && req.method === 'GET') {
+      // Mock current user
+      res.writeHead(200);
+      res.end(JSON.stringify({ 
+        id: 1, 
+        email: 'user@example.com', 
+        name: 'Demo User' 
+      }));
+      
+    } else if (pathname === '/api/auth/logout' && req.method === 'POST') {
+      res.writeHead(200);
+      res.end(JSON.stringify({ 
+        message: 'Logged out successfully' 
+      }));
+      
+    } else if (pathname === '/api/user' && req.method === 'GET') {
+      res.writeHead(200);
+      res.end(JSON.stringify({ 
+        id: 1, 
+        email: 'user@example.com', 
+        name: 'Demo User' 
+      }));
+      
+    } else if (pathname === '/api/reports/metrics' && req.method === 'GET') {
+      res.writeHead(200);
+      res.end(JSON.stringify({
+        totalRequests: 24,
+        completedRequests: 18,
+        pendingRequests: 6,
+        avgCompletionTime: '2.3 days'
+      }));
+      
     // Serve static files
     } else {
       // Try to serve static files from dist/public
