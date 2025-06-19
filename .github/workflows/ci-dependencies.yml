@@ -32,6 +32,10 @@ jobs:
     - name: Verify environment setup
       run: npm run setup:verify
     
+    # Ensure script is executable (prevents permission issues on fresh checkouts)
+    - name: Ensure verify script is executable
+      run: chmod +x scripts/verify-setup.sh
+    
     # Run verification script
     - name: Run setup verification
       run: ./scripts/verify-setup.sh
