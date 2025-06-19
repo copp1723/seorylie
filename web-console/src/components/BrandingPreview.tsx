@@ -24,7 +24,7 @@ export const BrandingPreview: React.FC<BrandingPreviewProps> = ({ className = ''
     previewBranding(updates);
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     if (!localBranding) return;
     const updates = { ...localBranding, [field]: value };
     setLocalBranding(updates);

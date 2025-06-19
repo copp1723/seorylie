@@ -1,5 +1,11 @@
 // import api from '../lib/api';
-const api = { get: async () => ({}), post: async () => ({}), put: async () => ({}), delete: async () => ({}) };
+const api = { 
+  get: async (_url: string, _config?: any) => ({ data: {} as any }), 
+  post: async (_url: string, _data?: any, _config?: any) => ({ data: {} as any }), 
+  put: async (_url: string, _data?: any, _config?: any) => ({ data: {} as any }), 
+  delete: async (_url: string, _config?: any) => ({ data: {} as any }),
+  patch: async (_url: string, _data?: any, _config?: any) => ({ data: {} as any })
+};
 import type {
   AdminClient,
   AdminStats,

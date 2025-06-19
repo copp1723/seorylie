@@ -28,6 +28,10 @@
     "db:create": "ts-node scripts/create-database.ts",
     "db:migrate": "ts-node scripts/run-migrations.ts",
     "db:setup": "npm run db:create && npm run db:migrate",
+    "lint": "cd web-console && npm run lint",
+    "check": "cd web-console && npx tsc --noEmit",
+    "test": "echo 'No tests configured yet'",
+    "setup:verify": "node -v && npm -v",
     "health:consolidate-email": "ts-node scripts/health-check/consolidate-email-services.ts",
     "health:refactor-orchestrator": "ts-node scripts/health-check/refactor-orchestrator.ts",
     "health:progress": "ts-node scripts/health-check/track-progress.ts"

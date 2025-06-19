@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { useBranding } from "../contexts/BrandingContext";
-import { useAuth } from "../contexts/AuthContext";
+// import { useAuth } from "../hooks/useAuth";
 import { generateChatResponse, submitSEORequest, type ChatMessage } from "../services/chat-service";
 import { safeLogError } from "../lib/utils";
 

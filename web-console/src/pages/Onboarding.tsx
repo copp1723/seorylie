@@ -22,7 +22,7 @@ import { useBranding } from "../contexts/BrandingContext";
 import { submitToSEOWerks, transformToSEOWerksFormat, validateSEOWerksData } from "../services/seowerks-integration";
 import { safeLog, safeLogError } from "../lib/utils";
 import { dealersAPI } from "../services/dealers";
-import useAuth from "../hooks/useAuth";
+import { useAuth } from "../hooks/useAuth";
 
 interface OnboardingData {
   // Basic Business Info
@@ -130,8 +130,9 @@ const seoGoals = [
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  // TODO: Implement loading and error UI states
+  // const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [submitError, setSubmitError] = useState<string | null>(null);
   const { branding } = useBranding();
   const { user } = useAuth();
 
@@ -218,8 +219,9 @@ export default function Onboarding() {
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setSubmitError(null);
+    // TODO: Uncomment when implementing loading/error states
+    // setIsSubmitting(true);
+    // setSubmitError(null);
 
     try {
       // If agency/super, create dealer tenant first
@@ -284,9 +286,11 @@ export default function Onboarding() {
       setIsSubmitted(true);
     } catch (error) {
       safeLogError('Onboarding submission error', error);
-      setSubmitError(error instanceof Error ? error.message : 'Submission failed');
+      // TODO: Uncomment when implementing error state
+      // setSubmitError(error instanceof Error ? error.message : 'Submission failed');
     } finally {
-      setIsSubmitting(false);
+      // TODO: Uncomment when implementing loading state
+      // setIsSubmitting(false);
     }
   };
 
@@ -300,11 +304,12 @@ export default function Onboarding() {
                formData.billingEmail;
       case 3:
         return formData.package && formData.mainBrand;
-      case 4:
+      case 4: {
         const validModels = formData.targetVehicleModels.filter(Boolean).length >= 3;
         const validCities = formData.targetCities.filter(Boolean).length >= 3;
         const validDealers = formData.targetDealers.filter(Boolean).length >= 3;
         return validModels && validCities && validDealers;
+      }
       default:
         return false;
     }

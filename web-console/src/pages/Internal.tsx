@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Shield, Users, BarChart3, Settings, Database, Activity } from "lucide-react";
+import { Shield, Users, BarChart3, Database, Activity } from "lucide-react";
 
 export default function Internal() {
   return (

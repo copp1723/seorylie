@@ -13,12 +13,10 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { useBranding } from "../contexts/BrandingContext";
-import { useAuth } from "../hooks/useAuth";
 import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const { branding } = useBranding();
-  const { user } = useAuth();
 
   // Mock data - in real app, fetch from API
   const stats = {

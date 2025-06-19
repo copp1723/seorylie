@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingsAPI } from '../services/settings';
 import { queryKeys } from '../lib/queryClient';
-import { ProfileInput, NotificationSettingsInput, BrandingSettingsInput, PasswordChangeInput } from '../schemas/validation';
+import { ProfileInput, NotificationSettingsInput, PasswordChangeInput } from '../schemas/validation';
 
 // Profile hooks
 export const useProfile = () => {

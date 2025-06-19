@@ -292,7 +292,7 @@ export class ChatResponseCache {
 
     // Try fuzzy matching for similar questions
     const allEntries = Array.from(this.cache.entries());
-    for (const [key, value] of allEntries) {
+    for (const [, value] of allEntries) {
       if (value.message && this.calculateSimilarity(message, value.message) >= this.similarityThreshold) {
         console.debug('[ChatCache] Similar match found');
         return value.response;

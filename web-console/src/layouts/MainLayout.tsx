@@ -34,7 +34,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const filteredNavItems = navItems.filter(item => 
-    !item.adminOnly || user?.role === 'admin'
+    !item.adminOnly || user?.role === 'super'
   );
 
   return (
