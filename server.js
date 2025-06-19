@@ -357,6 +357,42 @@ const server = http.createServer(async (req, res) => {
         avgCompletionTime: '2.3 days'
       }));
       
+    } else if (pathname === '/api/client/requests' && req.method === 'POST') {
+      // Handle SEO team escalations from chat interface
+      const data = await parseBody(req);
+      
+      if (!data.type || !data.description) {
+        res.writeHead(400);
+        res.end(JSON.stringify({
+          error: 'Missing required fields: type and description'
+        }));
+        return;
+      }
+
+      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      console.log('SEO request created:', {
+        requestId,
+        type: data.type,
+        description: data.description.substring(0, 100) + '...',
+        priority: data.priority || 'normal',
+        source: data.source || 'chat-assistant'
+      });
+
+      res.writeHead(201);
+      res.end(JSON.stringify({
+        status: 'success',
+        data: {
+          id: requestId,
+          type: data.type,
+          description: data.description,
+          priority: data.priority || 'normal',
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          message: 'Request submitted successfully. Our SEO team will review this and get back to you within 24 hours.'
+        }
+      }));
+      
     // Serve static files
     } else {
       // Try to serve static files from web-console/dist

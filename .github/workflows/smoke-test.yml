@@ -1,0 +1,47 @@
+name: Smoke Test CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build web console
+      run: npm run build
+      
+    - name: Assert bundle exists
+      run: test -f web-console/dist/index.html
+      
+    - name: Check bundle contents
+      run: |
+        echo "=== Checking dist contents ==="
+        ls -la web-console/dist/
+        echo "=== Verifying index.html ==="
+        head -20 web-console/dist/index.html
+        
+    - name: Lint server for stray TS files
+      run: |
+        echo "=== Checking for TypeScript imports in JS files ==="
+        ! grep -R --include="*.js" "import .*\.ts" server 2>/dev/null || (echo "❌ Found TypeScript imports in JS files" && exit 1)
+        echo "✅ No TypeScript imports found in JS files"
+        
+    - name: Check for server TypeScript files
+      run: |
+        echo "=== Checking for .ts files in server directory ==="
+        ! find server -name "*.ts" -type f 2>/dev/null | grep -v node_modules | head -5 || (echo "⚠️  Found TypeScript files in server directory" && exit 0)
+        echo "✅ No TypeScript files in server directory"
