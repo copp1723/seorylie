@@ -13,6 +13,7 @@ import Onboarding from './pages/Onboarding';
 import Settings from './pages/Settings';
 import Internal from './pages/Internal';
 import Orders from './pages/Orders';
+import AnalyticsEnhanced from './pages/agency/AnalyticsEnhanced';
 import { AuthProvider } from './contexts/AuthContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 
@@ -51,6 +52,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <Reports />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/agency/analytics-enhanced"
+                    element={
+                      <ProtectedRoute roles={['agency', 'super']}>
+                        <AnalyticsEnhanced />
                       </ProtectedRoute>
                     }
                   />

@@ -9,7 +9,8 @@ import {
   User,
   LogOut,
   Menu,
-  Search
+  Search,
+  Activity
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -21,6 +22,7 @@ const navItems = [
   { to: "/chat", label: "Chat", icon: MessageSquare },
   { to: "/requests", label: "Requests", icon: FileText },
   { to: "/reports", label: "Reports", icon: BarChart3 },
+  { to: "/agency/analytics-enhanced", label: "Analytics+", icon: Activity, agencyOnly: true },
   { to: "/onboarding", label: "Onboarding", icon: UserPlus },
   { to: "/orders", label: "Orders", icon: FileText },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
@@ -33,9 +35,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { branding } = useBranding();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const filteredNavItems = navItems.filter(item => 
-    !item.adminOnly || user?.role === 'super'
-  );
+  const filteredNavItems = navItems.filter(item => {
+    if (item.adminOnly && user?.role !== 'super') return false;
+    if (item.agencyOnly && !['agency', 'super'].includes(user?.role || '')) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-background">
