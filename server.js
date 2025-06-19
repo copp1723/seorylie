@@ -358,11 +358,11 @@ const server = http.createServer(async (req, res) => {
       
     // Serve static files
     } else {
-      // Try to serve static files from dist/public
-      let filePath = path.join(__dirname, 'dist', 'public', pathname === '/' ? 'index.html' : pathname);
+      // Try to serve static files from web-console/dist
+      let filePath = path.join(__dirname, 'web-console', 'dist', pathname === '/' ? 'index.html' : pathname);
       
       // Security: prevent directory traversal
-      if (!filePath.startsWith(path.join(__dirname, 'dist', 'public'))) {
+      if (!filePath.startsWith(path.join(__dirname, 'web-console', 'dist'))) {
         res.writeHead(403);
         res.end('Forbidden');
         return;
@@ -373,7 +373,7 @@ const server = http.createServer(async (req, res) => {
         if (err) {
           // If file not found and it's not an API route, serve index.html for client-side routing
           if (!pathname.startsWith('/api/') && !pathname.includes('.')) {
-            filePath = path.join(__dirname, 'dist', 'public', 'index.html');
+            filePath = path.join(__dirname, 'web-console', 'dist', 'index.html');
             fs.readFile(filePath, (err, data) => {
               if (err) {
                 console.log('404 Error:', pathname);
@@ -433,5 +433,5 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`✅ Health check: http://0.0.0.0:${PORT}/health`);
   console.log(`✅ React app: http://0.0.0.0:${PORT}/`);
-  console.log(`✅ Serving static files from: ${path.join(__dirname, 'dist', 'public')}`);
+  console.log(`✅ Serving static files from: ${path.join(__dirname, 'web-console', 'dist')}`);
 });
