@@ -15,6 +15,75 @@ export function setupRoutes(app: Express) {
     res.json({ message: "Cleanrylie API" });
   });
 
+  // Auth routes for web console
+  app.post("/api/auth/login", (req, res) => {
+    // Mock login for now
+    res.json({
+      user: { id: 1, email: "user@example.com", name: "Demo User" },
+      token: "mock-jwt-token"
+    });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    // Mock current user
+    res.json({ id: 1, email: "user@example.com", name: "Demo User" });
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    res.json({ message: "Logged out successfully" });
+  });
+
+  // User routes
+  app.get("/api/user", (req, res) => {
+    res.json({ id: 1, email: "user@example.com", name: "Demo User" });
+  });
+
+  // Dashboard/Reports routes
+  app.get("/api/reports/metrics", (req, res) => {
+    res.json({
+      totalRequests: 24,
+      completedRequests: 18,
+      pendingRequests: 6,
+      avgCompletionTime: "2.3 days"
+    });
+  });
+
+  // Requests routes
+  app.get("/api/requests", (req, res) => {
+    res.json([
+      { id: 1, title: "Blog Post", status: "completed", createdAt: "2025-01-15" },
+      { id: 2, title: "Page Creation", status: "in-progress", createdAt: "2025-01-16" },
+      { id: 3, title: "Technical SEO", status: "pending", createdAt: "2025-01-17" }
+    ]);
+  });
+
+  app.post("/api/requests", (req, res) => {
+    res.json({ id: Date.now(), ...req.body, status: "pending", createdAt: new Date().toISOString() });
+  });
+
+  // Auth routes for web console
+  app.post("/api/auth/login", (req, res) => {
+    // Mock login for now
+    res.json({
+      user: { id: 1, email: "user@example.com", name: "Demo User" },
+      token: "mock-jwt-token"
+    });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    // Mock current user
+    res.json({ id: 1, email: "user@example.com", name: "Demo User" });
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    res.json({ message: "Logged out successfully" });
+  });
+
+  // User routes
+  app.get("/api/user", (req, res) => {
+    res.json({ id: 1, email: "user@example.com", name: "Demo User" });
+  });
+
   // SendGrid webhook endpoint for email delivery tracking
   app.post("/api/webhooks/sendgrid", (req, res) => {
     try {
