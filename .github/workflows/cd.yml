@@ -1,0 +1,534 @@
+name: CD Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'release/*'
+
+env:
+  NODE_VERSION: "20"
+  REGISTRY: ghcr.io
+  IMAGE_NAME: seorylie
+
+jobs:
+  build-release:
+    name: Build Release Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-tag: ${{ steps.image.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            VERSION=${{ steps.version.outputs.version }}
+
+      - name: Set image tag output
+        id: image
+        run: |
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
+          echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "Image tag: $IMAGE_TAG"
+
+  security-scan-release:
+    name: Security Scan Release Image
+    runs-on: ubuntu-latest
+    needs: build-release
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ needs.build-release.outputs.image-tag }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  prepare-helm-values:
+    name: Prepare Helm Values
+    runs-on: ubuntu-latest
+    needs: [build-release, security-scan-release]
+    timeout-minutes: 5
+    outputs:
+      values-staging: ${{ steps.values.outputs.staging }}
+      values-production: ${{ steps.values.outputs.production }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create helm directory if not exists
+        run: mkdir -p helm/templates
+
+      - name: Generate Helm values
+        id: values
+        run: |
+          VERSION="${{ needs.build-release.outputs.version }}"
+          IMAGE_TAG="${{ needs.build-release.outputs.image-tag }}"
+          
+          # Create staging values
+          cat > helm/values-staging.yaml << EOF
+          image:
+            repository: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+            tag: "${VERSION}"
+            pullPolicy: Always
+          
+          replicaCount: 2
+          
+          service:
+            type: ClusterIP
+            port: 3000
+          
+          ingress:
+            enabled: true
+            className: "nginx"
+            annotations:
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+            hosts:
+              - host: staging-seorylie.yourdomain.com
+                paths:
+                  - path: /
+                    pathType: Prefix
+            tls:
+              - secretName: seorylie-staging-tls
+                hosts:
+                  - staging-seorylie.yourdomain.com
+          
+          env:
+            NODE_ENV: staging
+            PORT: 3000
+          
+          secrets:
+            database:
+              host: \${{ secrets.STAGING_DB_HOST }}
+              name: \${{ secrets.STAGING_DB_NAME }}
+              user: \${{ secrets.STAGING_DB_USER }}
+              password: \${{ secrets.STAGING_DB_PASSWORD }}
+            redis:
+              url: \${{ secrets.STAGING_REDIS_URL }}
+            jwt:
+              secret: \${{ secrets.STAGING_JWT_SECRET }}
+          
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 500m
+              memory: 512Mi
+          
+          nodeSelector: {}
+          tolerations: []
+          affinity: {}
+          
+          autoscaling:
+            enabled: false
+            minReplicas: 2
+            maxReplicas: 10
+            targetCPUUtilizationPercentage: 80
+          EOF
+          
+          # Create production values
+          cat > helm/values-production.yaml << EOF
+          image:
+            repository: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+            tag: "${VERSION}"
+            pullPolicy: Always
+          
+          replicaCount: 3
+          
+          service:
+            type: ClusterIP
+            port: 3000
+          
+          ingress:
+            enabled: true
+            className: "nginx"
+            annotations:
+              cert-manager.io/cluster-issuer: "letsencrypt-prod"
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+              nginx.ingress.kubernetes.io/rate-limit: "100"
+            hosts:
+              - host: seorylie.yourdomain.com
+                paths:
+                  - path: /
+                    pathType: Prefix
+            tls:
+              - secretName: seorylie-production-tls
+                hosts:
+                  - seorylie.yourdomain.com
+          
+          env:
+            NODE_ENV: production
+            PORT: 3000
+          
+          secrets:
+            database:
+              host: \${{ secrets.PRODUCTION_DB_HOST }}
+              name: \${{ secrets.PRODUCTION_DB_NAME }}
+              user: \${{ secrets.PRODUCTION_DB_USER }}
+              password: \${{ secrets.PRODUCTION_DB_PASSWORD }}
+            redis:
+              url: \${{ secrets.PRODUCTION_REDIS_URL }}
+            jwt:
+              secret: \${{ secrets.PRODUCTION_JWT_SECRET }}
+          
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+          
+          nodeSelector: {}
+          tolerations: []
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                      - seorylie
+                  topologyKey: kubernetes.io/hostname
+          
+          autoscaling:
+            enabled: true
+            minReplicas: 3
+            maxReplicas: 20
+            targetCPUUtilizationPercentage: 70
+            targetMemoryUtilizationPercentage: 80
+          EOF
+          
+          echo "staging=$(cat helm/values-staging.yaml | base64 -w 0)" >> $GITHUB_OUTPUT
+          echo "production=$(cat helm/values-production.yaml | base64 -w 0)" >> $GITHUB_OUTPUT
+
+      - name: Upload Helm values as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-values-${{ needs.build-release.outputs.version }}
+          path: helm/
+          retention-days: 30
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-release, prepare-helm-values]
+    timeout-minutes: 15
+    environment:
+      name: staging
+      url: https://staging-seorylie.yourdomain.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.12.0'
+
+      - name: Configure Kubernetes context
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
+          kubectl config current-context
+
+      - name: Download Helm values
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-values-${{ needs.build-release.outputs.version }}
+          path: helm/
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install seorylie-staging ./helm \
+            --namespace seorylie-staging \
+            --create-namespace \
+            --values helm/values-staging.yaml \
+            --set image.tag="${{ needs.build-release.outputs.version }}" \
+            --wait \
+            --timeout=10m
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/seorylie-staging -n seorylie-staging --timeout=300s
+          kubectl get pods -n seorylie-staging
+
+  ssh-deploy-alternative:
+    name: SSH Deploy (Alternative)
+    runs-on: ubuntu-latest
+    needs: [build-release, security-scan-release]
+    if: github.event.inputs.deployment_method == 'ssh' || contains(github.ref, 'ssh-deploy')
+    timeout-minutes: 15
+    environment:
+      name: production-ssh
+      url: https://seorylie.yourdomain.com
+    steps:
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy via SSH
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            # Navigate to application directory
+            cd /opt/seorylie
+            
+            # Create backup of current deployment
+            sudo docker tag seorylie:current seorylie:backup-$(date +%Y%m%d-%H%M%S) || true
+            
+            # Pull new image
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            sudo docker pull ${{ needs.build-release.outputs.image-tag }}
+            
+            # Tag as current
+            sudo docker tag ${{ needs.build-release.outputs.image-tag }} seorylie:current
+            
+            # Update environment variables
+            cat > .env.production << 'ENV_EOF'
+            NODE_ENV=production
+            PORT=3000
+            DATABASE_URL=${{ secrets.PRODUCTION_DATABASE_URL }}
+            REDIS_URL=${{ secrets.PRODUCTION_REDIS_URL }}
+            JWT_SECRET=${{ secrets.PRODUCTION_JWT_SECRET }}
+            ENV_EOF
+            
+            # Stop existing container
+            sudo docker stop seorylie-app || true
+            sudo docker rm seorylie-app || true
+            
+            # Start new container
+            sudo docker run -d \
+              --name seorylie-app \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              --env-file .env.production \
+              --health-cmd="curl -f http://localhost:3000/health || exit 1" \
+              --health-interval=30s \
+              --health-timeout=10s \
+              --health-retries=3 \
+              seorylie:current
+            
+            # Wait for health check
+            echo "Waiting for application to be healthy..."
+            sleep 30
+            
+            # Verify deployment
+            if sudo docker exec seorylie-app curl -f http://localhost:3000/health; then
+              echo "✅ Deployment successful!"
+              # Clean up old images (keep last 3)
+              sudo docker images seorylie --format "table {{.Tag}}\t{{.CreatedAt}}" | grep -v "current\|latest" | tail -n +4 | awk '{print $1}' | xargs -r sudo docker rmi seorylie: || true
+            else
+              echo "❌ Health check failed, rolling back..."
+              sudo docker stop seorylie-app
+              sudo docker rm seorylie-app
+              sudo docker run -d --name seorylie-app --restart unless-stopped -p 3000:3000 --env-file .env.production seorylie:backup-$(date +%Y%m%d-*)
+              exit 1
+            fi
+          EOF
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, prepare-helm-values]
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://seorylie.yourdomain.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.12.0'
+
+      - name: Configure Kubernetes context
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config
+          kubectl config current-context
+
+      - name: Download Helm values
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-values-${{ needs.build-release.outputs.version }}
+          path: helm/
+
+      - name: Deploy with Helm (Canary)
+        run: |
+          # First deploy canary (10% traffic)
+          helm upgrade --install seorylie-canary ./helm \
+            --namespace seorylie-production \
+            --create-namespace \
+            --values helm/values-production.yaml \
+            --set image.tag="${{ needs.build-release.outputs.version }}" \
+            --set replicaCount=1 \
+            --set service.name=seorylie-canary \
+            --wait \
+            --timeout=10m
+
+      - name: Canary health check
+        run: |
+          sleep 60
+          kubectl rollout status deployment/seorylie-canary -n seorylie-production --timeout=300s
+          
+          # Run basic health checks
+          CANARY_POD=$(kubectl get pods -n seorylie-production -l app.kubernetes.io/name=seorylie-canary -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec $CANARY_POD -n seorylie-production -- curl -f http://localhost:3000/health
+
+      - name: Full production deployment
+        run: |
+          # Deploy full production after canary success
+          helm upgrade --install seorylie-production ./helm \
+            --namespace seorylie-production \
+            --values helm/values-production.yaml \
+            --set image.tag="${{ needs.build-release.outputs.version }}" \
+            --wait \
+            --timeout=15m
+
+      - name: Verify production deployment
+        run: |
+          kubectl rollout status deployment/seorylie-production -n seorylie-production --timeout=600s
+          kubectl get pods -n seorylie-production
+          
+          # Clean up canary deployment
+          helm uninstall seorylie-canary -n seorylie-production || true
+
+      - name: Run smoke tests
+        run: |
+          # Basic smoke tests
+          curl -f https://seorylie.yourdomain.com/health || exit 1
+          curl -f https://seorylie.yourdomain.com/api/status || exit 1
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [deploy-production, build-release]
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.build-release.outputs.version }}
+          release_name: Release ${{ needs.build-release.outputs.version }}
+          body: |
+            ## Release ${{ needs.build-release.outputs.version }}
+            
+            ### 🚀 Deployed Components
+            - **Docker Image**: `${{ needs.build-release.outputs.image-tag }}`
+            - **Staging**: https://staging-seorylie.yourdomain.com
+            - **Production**: https://seorylie.yourdomain.com
+            
+            ### 📋 Deployment Summary
+            - ✅ Security scan passed
+            - ✅ Staging deployment successful
+            - ✅ Production deployment successful
+            - ✅ Smoke tests passed
+            
+            ### 🔧 Infrastructure
+            - Kubernetes deployment with Helm
+            - Multi-platform Docker image (linux/amd64, linux/arm64)
+            - Auto-scaling enabled in production
+            - TLS certificates configured
+            
+            **Image**: `${{ needs.build-release.outputs.image-tag }}`
+          draft: false
+          prerelease: ${{ contains(needs.build-release.outputs.version, 'rc') || contains(needs.build-release.outputs.version, 'beta') || contains(needs.build-release.outputs.version, 'alpha') }}
+
+  notify-deployment:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [create-release, deploy-production]
+    if: always()
+    steps:
+      - name: Notify success
+        if: needs.deploy-production.result == 'success'
+        run: |
+          echo "🎉 Deployment ${{ needs.build-release.outputs.version }} completed successfully!"
+          echo "Production URL: https://seorylie.yourdomain.com"
+
+      - name: Notify failure
+        if: needs.deploy-production.result == 'failure'
+        run: |
+          echo "❌ Deployment ${{ needs.build-release.outputs.version }} failed!"
+          exit 1
+

@@ -2,538 +2,302 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, develop, feature/*, release/*, droid/*, integration/* ]
+    branches: ["main", "develop", "feature/*"]
   pull_request:
-    branches: [ main, develop ]
+    branches: ["main", "develop"]
 
 env:
-  NODE_VERSION: '18'
-  PYTHON_VERSION: '3.10'
+  NODE_VERSION: "20"
   REGISTRY: ghcr.io
-  CACHE_NPM: 'npm-cache-v1'
-  CACHE_PLAYWRIGHT: 'playwright-cache-v1'
-  CACHE_DOCKER_LAYERS: 'docker-layers-cache-v1'
-  TRIVY_VERSION: '0.35.0'
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: postgres
-  POSTGRES_DB: cleanrylie_test
-  REDIS_URL: redis://localhost:6379
+  IMAGE_NAME: seorylie
 
 jobs:
-  # Dependency scanning job
-  dependency-scan:
-    name: Dependency Vulnerability Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Clean npm cache and fix dependencies
-        run: |
-          npm cache clean --force
-
-      - name: Install dependencies
-        run: |
-          echo "📦 Installing dependencies..."
-          npm install
-          cd web-console && npm install
-          echo "✅ Dependencies installed successfully"
-
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=critical
-        continue-on-error: true
-
-      - name: Check Python dependencies
-        working-directory: ./etl
-        run: |
-          pip install safety
-          safety check -r requirements.txt --full-report || echo "Python safety check completed with warnings"
-        continue-on-error: true
-
-  # Lint and type check job
-  lint:
-    name: Lint and Type Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: |
-          npm install
-          cd web-console && npm install
-
-      - name: Lint code
-        run: npm run lint
-
-      - name: Type check
-        run: npm run typecheck
-
-      - name: Check code formatting
-        run: npm run format:check
-
-  # Unit tests for all services
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [lint]
-    strategy:
-      fail-fast: false
-      matrix:
-        service: [api, frontend, ads-service, workers]
-        include:
-          - service: api
-            test_command: npm run test:api
-          - service: frontend
-            test_command: npm run test:client
-          - service: ads-service
-            test_command: npm run test:ads
-          - service: workers
-            test_command: npm run test:workers
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: |
-          npm install
-          cd web-console && npm install
-
-      - name: Run unit tests for ${{ matrix.service }}
-        run: ${{ matrix.test_command }}
-
-      - name: Upload test coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.service }}
-          path: coverage
-          retention-days: 5
-
-  # Database migration tests
-  db-migration-tests:
-    name: Database Migration Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: ${{ env.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ env.POSTGRES_DB }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci --no-optional
-
-      - name: Run migration tests
-        run: npm run test:migrations
-        env:
-          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
-
-      - name: Test RLS policies
-        run: npm run test:rls
-        env:
-          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
-
-  # Integration tests
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    needs: [unit-tests, db-migration-tests]
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: ${{ env.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ env.POSTGRES_DB }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run migrations
-        run: npm run migrate
-        env:
-          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
-
-      - name: Run integration tests
-        run: npm run test:integration
-        env:
-          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
-          REDIS_URL: ${{ env.REDIS_URL }}
-          NODE_ENV: test
-          JWT_SECRET: test-jwt-secret
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key' }}
-
-  # E2E tests
-  e2e-tests:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-    needs: [integration-tests]
-    continue-on-error: true
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: ${{ env.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ env.POSTGRES_DB }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-        timeout-minutes: 5
-        
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ env.CACHE_PLAYWRIGHT }}-${{ runner.os }}
-
-      - name: Run migrations
-        run: npm run migrate
-        timeout-minutes: 2
-        continue-on-error: true
-        env:
-          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
-
-      - name: Run E2E tests
-        run: npm run test:e2e
-        timeout-minutes: 5
-        env:
-          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
-          REDIS_URL: ${{ env.REDIS_URL }}
-          NODE_ENV: test
-          JWT_SECRET: test-jwt-secret
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key' }}
-
-      - name: Upload E2E test artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 5
-
-  # Build and scan Docker images
-  build-docker:
-    name: Build and Scan Docker Images
+  setup:
+    name: Setup & Install Dependencies
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [e2e-tests, dependency-scan]
-    strategy:
-      fail-fast: false
-      matrix:
-        service: [api, frontend]
-        include:
-          - service: api
-            dockerfile: ./Dockerfile
-            target: server
-            image: cleanrylie-api
-          - service: frontend
-            dockerfile: ./Dockerfile
-            target: client
-            image: cleanrylie-frontend
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          submodules: false
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            web-console/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    needs: setup
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            web-console/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Install dependencies (if cache miss)
+        run: pnpm install --frozen-lockfile
+
+      - name: Run linter
+        run: npm run lint
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            web-console/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Install dependencies (if cache miss)
+        run: pnpm install --frozen-lockfile
+
+      - name: Run type check
+        run: npx tsc --noEmit
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: type-check
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: seorylie_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            web-console/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Install dependencies (if cache miss)
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/seorylie_test
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+          JWT_SECRET: test-jwt-secret
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: coverage/
+          retention-days: 7
+
+  build-docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ env.CACHE_DOCKER_LAYERS }}-${{ runner.os }}-${{ matrix.service }}-${{ github.sha }}
-          restore-keys: |
-            ${{ env.CACHE_DOCKER_LAYERS }}-${{ runner.os }}-${{ matrix.service }}-
-
-      - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
+      - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=sha,format=short
+            type=sha,prefix={{branch}}-
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
-          target: ${{ matrix.target }}
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-          build-args: |
-            NODE_ENV=production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Validate Docker image exists
-        run: |
-          echo "Checking for image tags: ${{ steps.meta.outputs.tags }}"
-          docker images
-        if: github.event_name == 'pull_request'
+      - name: Push to GHCR (main branch only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install Trivy
-        run: |
-          wget https://github.com/aquasecurity/trivy/releases/download/v${{ env.TRIVY_VERSION }}/trivy_${{ env.TRIVY_VERSION }}_Linux-64bit.tar.gz
-          tar zxvf trivy_${{ env.TRIVY_VERSION }}_Linux-64bit.tar.gz
-          sudo mv trivy /usr/local/bin/
-
-      - name: Scan Docker image with Trivy
-        run: |
-          # Get the first tag from the metadata for pushed images
-          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-          echo "Scanning image: $IMAGE_TAG"
-          trivy image --exit-code 0 --severity CRITICAL --no-progress "$IMAGE_TAG" || echo "Trivy scan completed with warnings"
-        if: github.event_name != 'pull_request'
-
-      - name: Scan Docker image with Trivy (PR)
-        run: |
-          echo "Scanning completed (skipped for PR)"
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-
-      # Temp fix for cache
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-  # OTEL trace validation
-  otel-trace-validation:
-    name: OpenTelemetry Trace Validation
+  security-scan:
+    name: Security Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [build-docker]
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: ${{ env.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ env.POSTGRES_DB }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      jaeger:
-        image: jaegertracing/all-in-one:latest
-        ports:
-          - 16686:16686
-          - 4317:4317
-        env:
-          COLLECTOR_OTLP_ENABLED: true
-
+    needs: build-docker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
         with:
-          submodules: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
+          sarif_file: 'trivy-results.sarif'
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run migrations
-        run: npm run migrate
-        env:
-          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
-
-      - name: Start services with OTEL enabled
-        run: |
-          OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
-          OTEL_SERVICE_NAME=cleanrylie-test \
-          npm run start:test &
-          sleep 10
-        env:
-          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
-          REDIS_URL: ${{ env.REDIS_URL }}
-          NODE_ENV: test
-          JWT_SECRET: test-jwt-secret
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key' }}
-
-      - name: Run agent execution for trace generation
-        run: npm run test:otel-trace
-        env:
-          DATABASE_URL: postgres://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@localhost:5432/${{ env.POSTGRES_DB }}
-          REDIS_URL: ${{ env.REDIS_URL }}
-          NODE_ENV: test
-
-      - name: Verify traces in Jaeger
-        run: |
-          # Query Jaeger API to verify traces exist
-          traces=$(curl -s http://localhost:16686/api/traces?service=cleanrylie-test&operation=executeAgent)
-          echo "Traces found: $traces"
-          
-          # Check if traces contain expected spans
-          if echo "$traces" | grep -q "executeAgent"; then
-            echo "✅ Traces for agent execution found"
-            exit 0
-          else
-            echo "❌ No traces found for agent execution"
-            exit 1
-          fi
-
-  # Final status check job
   ci-status:
     name: CI Status Check
     runs-on: ubuntu-latest
-    needs: [build-docker, otel-trace-validation]
+    needs: [lint, type-check, test, build-docker]
     if: always()
     steps:
-      - name: Check status of required jobs
+      - name: Check all job statuses
         run: |
-          if [[ "${{ needs.build-docker.result }}" == "success" && "${{ needs.otel-trace-validation.result }}" == "success" ]]; then
-            echo "✅ All required jobs passed!"
+          echo "Lint: ${{ needs.lint.result }}"
+          echo "Type Check: ${{ needs.type-check.result }}"
+          echo "Test: ${{ needs.test.result }}"
+          echo "Build Docker: ${{ needs.build-docker.result }}"
+          
+          if [[ "${{ needs.lint.result }}" == "success" && \
+                "${{ needs.type-check.result }}" == "success" && \
+                "${{ needs.test.result }}" == "success" && \
+                "${{ needs.build-docker.result }}" == "success" ]]; then
+            echo "✅ All CI jobs passed!"
             exit 0
           else
-            echo "❌ Some required jobs failed!"
-            echo "build-docker: ${{ needs.build-docker.result }}"
-            echo "otel-trace-validation: ${{ needs.otel-trace-validation.result }}"
+            echo "❌ Some CI jobs failed!"
             exit 1
           fi

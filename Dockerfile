@@ -11,7 +11,7 @@ COPY . .
 
 # Build web-console (frontend)
 WORKDIR /app/web-console
-RUN npm install && npm run build
+RUN NODE_ENV=development npm install && npm run build
 
 # Build TypeScript server bundles
 WORKDIR /app

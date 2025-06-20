@@ -1,0 +1,16 @@
+apiVersion: v2
+name: seorylie
+description: A Helm chart for seorylie application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - seorylie
+  - web-application
+  - node
+maintainers:
+  - name: seorylie-team
+home: https://github.com/seorylie/seorylie
+sources:
+  - https://github.com/seorylie/seorylie
+
