@@ -1,0 +1,288 @@
+Statistical profiling result from isolate-0x140008000-64691-v8.log, (90 ticks, 4 unaccounted, 0 excluded).
+
+ [Shared libraries]:
+   ticks  total  nonlib   name
+     13   14.4%          /usr/lib/system/libsystem_c.dylib
+      5    5.6%          /usr/lib/libc++.1.dylib
+      1    1.1%          /usr/lib/system/libsystem_platform.dylib
+      1    1.1%          /usr/lib/system/libsystem_malloc.dylib
+      1    1.1%          /usr/lib/system/libsystem_kernel.dylib
+
+ [JavaScript]:
+   ticks  total  nonlib   name
+
+ [C++]:
+   ticks  total  nonlib   name
+     36   40.0%   52.2%  t _OUTLINED_FUNCTION_8
+      9   10.0%   13.0%  T _write
+      5    5.6%    7.2%  T _thread_info
+      3    3.3%    4.3%  t __os_once_gate_broadcast
+      2    2.2%    2.9%  t __os_nospin_lock_unlock_slow
+      2    2.2%    2.9%  T _pthread_key_create
+      2    2.2%    2.9%  T ___pthread_init
+      1    1.1%    1.4%  t __pthread_bsdthread_init
+      1    1.1%    1.4%  T node::cares_wrap::ChannelWrap::New(v8::FunctionCallbackInfo<v8::Value> const&)
+      1    1.1%    1.4%  T _recvmsg
+      1    1.1%    1.4%  T _mig_get_reply_port
+      1    1.1%    1.4%  T _mach_vm_map
+      1    1.1%    1.4%  T ___sigaltstack
+
+ [Summary]:
+   ticks  total  nonlib   name
+      0    0.0%    0.0%  JavaScript
+     65   72.2%   94.2%  C++
+      0    0.0%    0.0%  GC
+     21   23.3%          Shared libraries
+      4    4.4%          Unaccounted
+
+ [C++ entry points]:
+   ticks    cpp   total   name
+     42   72.4%   46.7%  t _OUTLINED_FUNCTION_8
+      3    5.2%    3.3%  t __os_once_gate_broadcast
+      3    5.2%    3.3%  T _write
+      2    3.4%    2.2%  t __os_nospin_lock_unlock_slow
+      2    3.4%    2.2%  T _pthread_key_create
+      2    3.4%    2.2%  T ___pthread_init
+      1    1.7%    1.1%  t __pthread_bsdthread_init
+      1    1.7%    1.1%  T node::cares_wrap::ChannelWrap::New(v8::FunctionCallbackInfo<v8::Value> const&)
+      1    1.7%    1.1%  T _mig_get_reply_port
+      1    1.7%    1.1%  T ___sigaltstack
+
+ [Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 1.0% are not shown.
+
+   ticks parent  name
+     36   40.0%  t _OUTLINED_FUNCTION_8
+      9   25.0%    t _OUTLINED_FUNCTION_8
+      3   33.3%      JS: ~<anonymous> node:internal/main/eval_string:1:1
+      2   22.2%      JS: ~lookupAndConnect node:net:1310:26
+      2  100.0%        JS: ~Socket.connect node:net:1222:36
+      2  100.0%          JS: ~connect node:net:235:17
+      2  100.0%            JS: ~createSocket node:_http_agent:296:53
+      2   22.2%      JS: ~calculateServerName node:_http_agent:334:29
+      2  100.0%        JS: ~normalizeServerName node:_http_agent:329:29
+      2  100.0%          JS: ~addRequest node:_http_agent:230:49
+      2  100.0%            JS: ~ClientRequest node:_http_client:137:23
+      1   11.1%      JS: ~runProfile [eval]:18:26
+      1  100.0%        Script: ~<anonymous> [eval]:1:1
+      1  100.0%          t _OUTLINED_FUNCTION_8
+      1  100.0%            JS: ~<anonymous> [eval]-wrapper:6:14
+      1   11.1%      JS: ~ClientRequest node:_http_client:137:23
+      1  100.0%        JS: ~request node:http:101:17
+      1  100.0%          JS: ~get node:http:112:13
+      1  100.0%            JS: ~<anonymous> [eval]:7:22
+      7   19.4%    JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      7  100.0%      JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      2   28.6%        JS: ~<anonymous> node:internal/streams/duplex:1:1
+      2  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      2  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      2   28.6%        JS: ~<anonymous> node:http:1:1
+      2  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      2  100.0%            Script: ~<anonymous> [eval]:1:1
+      1   14.3%        JS: ~<anonymous> node:stream:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1   14.3%        JS: ~<anonymous> node:internal/streams/operators:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1   14.3%        JS: ~<anonymous> node:_http_agent:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      2    5.6%    JS: ~<anonymous> node:internal/main/eval_string:1:1
+      1    2.8%    JS: ~request node:http:101:17
+      1  100.0%      JS: ~get node:http:112:13
+      1  100.0%        JS: ~<anonymous> [eval]:7:22
+      1  100.0%          t _OUTLINED_FUNCTION_8
+      1  100.0%            JS: ~makeRequest [eval]:6:21
+      1    2.8%    JS: ~onError node:_http_incoming:439:17
+      1  100.0%      JS: ^processTicksAndRejections node:internal/process/task_queues:72:35
+      1    2.8%    JS: ~emitLookup node:net:1446:46
+      1  100.0%      JS: ~onlookupall node:dns:120:21
+      1    2.8%    JS: ~createSocket node:_http_agent:296:53
+      1  100.0%      JS: ~addRequest node:_http_agent:230:49
+      1  100.0%        JS: ~ClientRequest node:_http_client:137:23
+      1  100.0%          JS: ~request node:http:101:17
+      1  100.0%            JS: ~get node:http:112:13
+      1    2.8%    JS: ~afterWriteTick node:internal/streams/writable:691:24
+      1    2.8%    JS: ~WriteStream node:tty:88:21
+      1  100.0%      JS: ~refresh node:internal/util/colors:26:10
+      1  100.0%        JS: ~<anonymous> node:internal/util/colors:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1    2.8%    JS: ~Writable.uncork node:internal/streams/writable:518:37
+      1  100.0%      JS: ~_flushOutput node:_http_outgoing:1152:63
+      1  100.0%        JS: ~_flush node:_http_outgoing:1135:51
+      1  100.0%          JS: ~onSocketNT node:_http_client:889:20
+      1    2.8%    JS: ~Socket.read node:net:780:33
+      1  100.0%      JS: ~resume_ node:internal/streams/readable:1257:17
+      1    2.8%    JS: ~Socket node:net:362:16
+      1  100.0%      JS: ~WriteStream node:tty:88:21
+      1  100.0%        t _OUTLINED_FUNCTION_8
+      1  100.0%          JS: ~runProfile [eval]:18:26
+      1  100.0%            Script: ~<anonymous> [eval]:1:1
+      1    2.8%    JS: ^once node:events:640:44
+      1  100.0%      t _OUTLINED_FUNCTION_8
+      1  100.0%        JS: ~runProfile [eval]:18:26
+      1  100.0%          t _OUTLINED_FUNCTION_8
+      1  100.0%            t _OUTLINED_FUNCTION_8
+      1    2.8%    JS: ^insert node:internal/timers:388:16
+      1  100.0%      JS: ^_unrefTimer node:net:520:52
+      1  100.0%        JS: ~Socket.connect node:net:1222:36
+      1  100.0%          JS: ~connect node:net:235:17
+      1  100.0%            JS: ~createSocket node:_http_agent:296:53
+      1    2.8%    JS: ^emitAfterScript node:internal/async_hooks:517:25
+      1  100.0%      JS: ^processTicksAndRejections node:internal/process/task_queues:72:35
+      1    2.8%    JS: ^channel node:diagnostics_channel:221:17
+      1  100.0%      JS: ~<anonymous> node:net:1:1
+      1  100.0%        JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%          JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1  100.0%            JS: ~<anonymous> node:_http_agent:1:1
+
+     13   14.4%  /usr/lib/system/libsystem_c.dylib
+      4   30.8%    JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      4  100.0%      JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1   25.0%        JS: ~<anonymous> node:module:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            t _OUTLINED_FUNCTION_8
+      1   25.0%        JS: ~<anonymous> node:internal/streams/duplex:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1   25.0%        JS: ~<anonymous> node:internal/main/eval_string:1:1
+      1   25.0%        JS: ~<anonymous> node:_http_agent:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      2   15.4%    JS: ^once node:events:640:44
+      2  100.0%      t _OUTLINED_FUNCTION_8
+      2  100.0%        JS: ~runProfile [eval]:18:26
+      2  100.0%          t _OUTLINED_FUNCTION_8
+      2  100.0%            t _OUTLINED_FUNCTION_8
+      1    7.7%    t _OUTLINED_FUNCTION_8
+      1  100.0%      JS: ~<anonymous> node:internal/main/eval_string:1:1
+      1    7.7%    JS: ^set node:internal/streams/readable:131:8
+      1  100.0%      t _OUTLINED_FUNCTION_8
+      1  100.0%        JS: ~undestroy node:internal/streams/destroy:173:19
+      1  100.0%          JS: ~initSocketHandle node:net:318:26
+      1  100.0%            JS: ~Socket.connect node:net:1222:36
+      1    7.7%    JS: ^emitAfterScript node:internal/async_hooks:517:25
+      1  100.0%      JS: ^processTicksAndRejections node:internal/process/task_queues:72:35
+
+      9   10.0%  T _write
+      2   22.2%    JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      2  100.0%      JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1   50.0%        JS: ~<anonymous> node:internal/streams/readable:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1   50.0%        JS: ~<anonymous> node:internal/streams/compose:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1   11.1%    JS: ~<anonymous> node:net:1:1
+      1  100.0%      JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%        JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1  100.0%          JS: ~<anonymous> node:_http_agent:1:1
+      1  100.0%            JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+
+      5    5.6%  T _thread_info
+
+      5    5.6%  /usr/lib/libc++.1.dylib
+      1   20.0%    t _OUTLINED_FUNCTION_8
+      1  100.0%      JS: ~<anonymous> node:internal/main/eval_string:1:1
+      1   20.0%    JS: ~Socket.read node:net:780:33
+      1  100.0%      JS: ~resume_ node:internal/streams/readable:1257:17
+      1   20.0%    JS: ~Duplex node:internal/streams/duplex:64:16
+      1  100.0%      JS: ~Socket node:net:362:16
+      1  100.0%        JS: ~connect node:net:235:17
+      1  100.0%          JS: ~createSocket node:_http_agent:296:53
+      1  100.0%            JS: ~addRequest node:_http_agent:230:49
+
+      4    4.4%  UNKNOWN
+      3   75.0%    JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      3  100.0%      JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1   33.3%        JS: ~<anonymous> node:module:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            t _OUTLINED_FUNCTION_8
+      1   33.3%        JS: ~<anonymous> node:http:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            Script: ~<anonymous> [eval]:1:1
+      1   33.3%        JS: ~<anonymous> node:_http_common:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1   25.0%    JS: ~<anonymous> node:_http_outgoing:610:85
+      1  100.0%      JS: ^wrappedFn node:internal/errors:535:21
+      1  100.0%        JS: ~setHeader node:_http_outgoing:640:57
+      1  100.0%          JS: ~ClientRequest node:_http_client:137:23
+      1  100.0%            JS: ~request node:http:101:17
+
+      3    3.3%  t __os_once_gate_broadcast
+      1   33.3%    JS: ~end node:_http_outgoing:1027:45
+      1  100.0%      JS: ~get node:http:112:13
+      1  100.0%        JS: ~<anonymous> [eval]:7:22
+      1  100.0%          t _OUTLINED_FUNCTION_8
+      1  100.0%            JS: ~makeRequest [eval]:6:21
+      1   33.3%    JS: ~afterWriteTick node:internal/streams/writable:691:24
+      1   33.3%    JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%      JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1  100.0%        JS: ~<anonymous> node:_http_agent:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+
+      2    2.2%  t __os_nospin_lock_unlock_slow
+      2  100.0%    t _OUTLINED_FUNCTION_8
+      2  100.0%      JS: ~<anonymous> node:internal/main/eval_string:1:1
+
+      2    2.2%  T _pthread_key_create
+      2  100.0%    JS: ~<anonymous> node:internal/main/eval_string:1:1
+
+      2    2.2%  T ___pthread_init
+      1   50.0%    t _OUTLINED_FUNCTION_8
+      1  100.0%      JS: ~<anonymous> node:internal/main/eval_string:1:1
+      1   50.0%    JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%      JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1  100.0%        JS: ~<anonymous> node:_http_client:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+
+      1    1.1%  t __pthread_bsdthread_init
+      1  100.0%    JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%      JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1  100.0%        JS: ~<anonymous> node:stream:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+
+      1    1.1%  T node::cares_wrap::ChannelWrap::New(v8::FunctionCallbackInfo<v8::Value> const&)
+      1  100.0%    JS: ~<anonymous> node:dns:1:1
+      1  100.0%      JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%        JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1  100.0%          JS: ~lookupAndConnect node:net:1310:26
+      1  100.0%            JS: ~Socket.connect node:net:1222:36
+
+      1    1.1%  T _recvmsg
+
+      1    1.1%  T _mig_get_reply_port
+      1  100.0%    JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%      JS: ^requireBuiltin node:internal/bootstrap/realm:420:24
+      1  100.0%        JS: ~<anonymous> node:http:1:1
+      1  100.0%          JS: ^compileForInternalLoader node:internal/bootstrap/realm:383:27
+      1  100.0%            Script: ~<anonymous> [eval]:1:1
+
+      1    1.1%  T _mach_vm_map
+      1  100.0%    t _OUTLINED_FUNCTION_8
+      1  100.0%      JS: ~socketOnData node:_http_client:551:22
+      1  100.0%        JS: ^emit node:events:454:44
+      1  100.0%          JS: ~addChunk node:internal/streams/readable:548:18
+      1  100.0%            JS: ~readableAddChunkPushByteMode node:internal/streams/readable:461:38
+
+      1    1.1%  T ___sigaltstack
+      1  100.0%    JS: ~handleWriteReq node:internal/stream_base_commons:46:24
+      1  100.0%      JS: ~writeGeneric node:internal/stream_base_commons:146:22
+      1  100.0%        JS: ^Socket._writeGeneric node:net:935:42
+      1  100.0%          JS: ~connect node:net:942:42
+      1  100.0%            JS: ^emit node:events:454:44
+
+      1    1.1%  /usr/lib/system/libsystem_platform.dylib
+
+      1    1.1%  /usr/lib/system/libsystem_malloc.dylib
+
+      1    1.1%  /usr/lib/system/libsystem_kernel.dylib
+

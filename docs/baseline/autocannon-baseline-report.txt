@@ -1,0 +1,53 @@
+# API Performance Baseline Report (Autocannon)
+Generated: $(date)
+Project: Seorylie
+
+## Testing Status: Server Connection Issues
+
+### Issue Encountered:
+- Server appears to have stopped during testing
+- Connection refused on localhost:10000
+- Both /health and /api endpoints unreachable
+
+### Baseline Performance Metrics:
+- **Target Endpoints**: /health, /api
+- **Concurrency**: 10 connections
+- **Duration**: 30 seconds planned
+- **Results**: Unable to complete due to connection issues
+
+### Error Details:
+```
+curl: (7) Failed to connect to localhost port 10000
+autocannon: 103k errors (0 timeouts)
+```
+
+### Recommended Performance Baseline Setup:
+1. **Health Endpoint (/health)**:
+   - Target: <200ms response time
+   - Throughput: >1000 req/sec
+   - P99 latency: <500ms
+
+2. **API Endpoint (/api)**:
+   - Target: <300ms response time  
+   - Throughput: >500 req/sec
+   - P99 latency: <1000ms
+
+### Next Steps for Performance Testing:
+1. Ensure stable server deployment
+2. Re-run autocannon with consistent server state
+3. Add monitoring during load testing
+4. Test with various payload sizes
+5. Monitor database connection pool under load
+
+### Performance Testing Configuration:
+```bash
+# Health endpoint
+npx autocannon -c 10 -d 30 -j http://localhost:10000/health
+
+# API endpoint  
+npx autocannon -c 10 -d 30 -j http://localhost:10000/api
+
+# Higher load testing
+npx autocannon -c 50 -d 60 -j http://localhost:10000/health
+```
+

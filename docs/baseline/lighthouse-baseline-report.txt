@@ -1,0 +1,30 @@
+# Lighthouse Baseline Report
+Generated: $(date)
+Project: Seorylie
+
+## Lighthouse Analysis Status: Not Applicable
+
+### Issue:
+Both /health and /api endpoints serve JSON/text content rather than HTML:
+- `/health` returns JSON (application/json)
+- `/api` returns JSON (text/plain)
+
+### Lighthouse Error:
+"The page provided is not HTML (served as MIME type application/json)"
+
+### Frontend Analysis Needed:
+1. Check if project has a web frontend interface
+2. Identify HTML-serving endpoints for proper Lighthouse analysis
+3. Consider building a frontend dashboard for the API
+
+### Alternative Performance Testing:
+- Using autocannon for API endpoint performance benchmarking
+- Focus on API response times and throughput metrics
+- Monitor JSON payload sizes and parsing performance
+
+### Recommendations:
+1. Add HTML frontend interface for comprehensive Lighthouse analysis  
+2. Use API-specific performance tools (autocannon, ab, wrk)
+3. Monitor Core Web Vitals if/when frontend is added
+4. Consider lighthouse-ci for future frontend performance monitoring
+
