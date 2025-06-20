@@ -500,9 +500,24 @@ const setupErrorHandling = () => {
     const indexPath = isProd 
       ? path.join(process.cwd(), 'dist/public/index.html')
       : path.join(__dirname, '../dist/public/index.html');
+    
+    // Log the path for debugging
+    if (!require('fs').existsSync(indexPath)) {
+      req.logger?.error('index.html not found at expected path', { 
+        indexPath,
+        cwd: process.cwd(),
+        __dirname,
+        isProd
+      });
+    }
+    
     res.sendFile(indexPath, (err) => {
       if (err) {
-        req.logger?.error('Failed to serve index.html', { error: err });
+        req.logger?.error('Failed to serve index.html', { 
+          error: err.message,
+          indexPath,
+          cwd: process.cwd()
+        });
         res.status(404).json({
           error: {
             code: ErrorCode.RESOURCE_NOT_FOUND,
