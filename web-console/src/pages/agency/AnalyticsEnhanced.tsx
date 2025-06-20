@@ -4,17 +4,13 @@ import { subDays, format } from "date-fns";
 import { RefreshCw, Download, Calendar, Eye, Users, Target, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { useToast } from "../../components/ui/use-toast";
 import { RealTimeTraffic } from "../../components/dashboard/RealTimeTraffic";
 import { MetricCardWithSparkline } from "../../components/dashboard/MetricCardWithSparkline";
 import { GeographicTraffic } from "../../components/dashboard/GeographicTraffic";
 import {
-  LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -69,7 +65,7 @@ interface AnalyticsData {
 const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 export default function EnhancedAnalyticsPage() {
-  const [dateRange, setDateRange] = useState({
+  const [dateRange] = useState({
     startDate: subDays(new Date(), 30),
     endDate: new Date()
   });
@@ -77,7 +73,7 @@ export default function EnhancedAnalyticsPage() {
   const { toast } = useToast();
 
   // Fetch analytics data
-  const { data: analyticsData, isLoading, error, refetch } = useQuery({
+  const { data: analyticsData, isPending, error, refetch } = useQuery({
     queryKey: ['analytics', selectedProperty, dateRange],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -102,7 +98,7 @@ export default function EnhancedAnalyticsPage() {
   });
 
   // Calculate sparkline data from daily metrics
-  const getSparklineData = (metric: keyof typeof analyticsData.dailyMetrics[0]) => {
+  const getSparklineData = (metric: 'sessions' | 'users' | 'pageviews' | 'conversions') => {
     if (!analyticsData?.dailyMetrics) return [];
     return analyticsData.dailyMetrics
       .slice(-7) // Last 7 days
@@ -134,7 +130,7 @@ export default function EnhancedAnalyticsPage() {
     
     const totalSessions = analyticsData.trafficSources.reduce((sum, source) => sum + source.sessions, 0);
     
-    return analyticsData.trafficSources.map((source, index) => ({
+    return analyticsData.trafficSources.map((source) => ({
       name: `${source.source} / ${source.medium}`,
       value: source.sessions,
       percentage: ((source.sessions / totalSessions) * 100).toFixed(1)
@@ -181,7 +177,7 @@ export default function EnhancedAnalyticsPage() {
     }
   };
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <RefreshCw className="h-8 w-8 animate-spin text-primary" />
@@ -402,7 +398,7 @@ export default function EnhancedAnalyticsPage() {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {getTrafficSourceDistribution().map((entry, index) => (
+                      {getTrafficSourceDistribution().map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>

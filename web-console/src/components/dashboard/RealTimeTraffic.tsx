@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { 
-  Users, 
   Activity, 
   Globe, 
   Monitor, 
@@ -55,7 +54,7 @@ export function RealTimeTraffic({ propertyId }: RealTimeTrafficProps) {
   const [pulseAnimation, setPulseAnimation] = useState(false);
   
   // Fetch real-time data
-  const { data, isLoading, error } = useQuery({
+  const { data, isPending, error } = useQuery({
     queryKey: ['realtime-traffic', propertyId],
     queryFn: async () => {
       const response = await fetch(`/api/ga4/realtime?propertyId=${propertyId}`, {
@@ -96,13 +95,13 @@ export function RealTimeTraffic({ propertyId }: RealTimeTrafficProps) {
     }
   };
 
-  const getDevicePercentage = (device: keyof typeof data.devices) => {
+  const getDevicePercentage = (device: 'desktop' | 'mobile' | 'tablet') => {
     if (!data) return 0;
     const total = data.devices.desktop + data.devices.mobile + data.devices.tablet;
     return total > 0 ? (data.devices[device] / total) * 100 : 0;
   };
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <Card>
         <CardHeader>

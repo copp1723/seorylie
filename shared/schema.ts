@@ -25,11 +25,12 @@ export const users = pgTable(
   {
     id: serial("id").primaryKey(),
     username: varchar("username", { length: 100 }).notNull(),
+    name: varchar("name", { length: 100 }), // Added missing name field
     email: varchar("email", { length: 100 }).notNull(),
     password: varchar("password", { length: 100 }).notNull(),
     role: varchar("role", { length: 50 }).default("user").notNull(),
     dealershipId: integer("dealership_id"),
-    // isActive: boolean("is_active").default(true).notNull(), // Temporarily removed - column missing in DB
+    isActive: boolean("is_active").default(true), // Re-enabled with nullable
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -666,6 +667,7 @@ export const tools = pgTable(
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 100 }).notNull(),
     description: text("description"),
+    category: varchar("category", { length: 50 }), // Added missing category field
     type: varchar("type", { length: 50 }).default("EXTERNAL_API").notNull(),
     service: varchar("service", { length: 50 }).notNull(),
     endpoint: varchar("endpoint", { length: 255 }),
