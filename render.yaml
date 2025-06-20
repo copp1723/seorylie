@@ -5,8 +5,15 @@ services:
     branch: main
     
     # Build configuration
-    buildCommand: NODE_ENV=development npm install && cd web-console && NODE_ENV=development npm install && npm run build && cd .. && npm run build:server
-    startCommand: npm start
+    buildCommand: |
+      # Enable corepack for pnpm
+      corepack enable
+      corepack prepare pnpm@9.1.0 --activate
+      # Install all dependencies (including dev) for build
+      pnpm install --frozen-lockfile
+      # Build the application
+      pnpm run build
+    startCommand: pnpm start
 
     plan: starter
     region: oregon

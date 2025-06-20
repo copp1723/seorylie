@@ -25,7 +25,7 @@
     "test:coverage:threshold": "vitest run --coverage --coverage.thresholds.lines=80",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx --max-warnings=0",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
-    "precommit": "npm run test",
+    "precommit": "pnpm run test",
     "prepare": "husky"
   },
   "dependencies": {

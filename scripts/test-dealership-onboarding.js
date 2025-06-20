@@ -10,7 +10,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 // Configuration
-const API_BASE_URL = process.env.ONBOARDING_TEST_URL || 'https://seorylie.onrender.com/api/dealership-onboarding';
+const API_BASE_URL = process.env.ONBOARDING_TEST_URL || 'http://localhost:10000/api/dealership-onboarding';
 const TEST_SUBDOMAIN = `test-dealer-${Date.now()}`;
 
 // Test dealership data

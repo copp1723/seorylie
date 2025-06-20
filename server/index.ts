@@ -265,7 +265,9 @@ const setupRoutes = async () => {
       import('./routes/ga4-routes').catch(() => null),
       import('./routes/agency-performance-routes').catch(() => null),
       import('./routes/agency-users-routes').catch(() => null),
-      import('./routes/deliverables').catch(() => null)
+      import('./routes/deliverables').catch(() => null),
+      import('./routes/task-status-api').catch(() => null),
+      import('./routes/enhanced-chat-api').catch(() => null)
     ]);
 
     // ---------------------------------------------------------------------
@@ -297,7 +299,9 @@ const setupRoutes = async () => {
       ga4RoutesResult,
       agencyPerformanceResult,
       agencyUsersResult,
-      deliverablesResult
+      deliverablesResult,
+      taskStatusResult,
+      enhancedChatResult
     ] = routes;
 
     if (clientResult.status === 'fulfilled' && clientResult.value.clientRoutes) {
@@ -422,6 +426,20 @@ const setupRoutes = async () => {
       app.use('/api/deliverables', deliverablesResult.value.default || deliverablesResult.value);
     } else {
       logger.warn('Deliverables routes not available');
+    }
+    
+    // Setup task status API routes
+    if (taskStatusResult.status === 'fulfilled' && taskStatusResult.value) {
+      app.use('/api/tasks', taskStatusResult.value.default || taskStatusResult.value);
+    } else {
+      logger.warn('Task status API routes not available');
+    }
+    
+    // Setup enhanced chat API routes
+    if (enhancedChatResult.status === 'fulfilled' && enhancedChatResult.value) {
+      app.use('/api/chat', enhancedChatResult.value.default || enhancedChatResult.value);
+    } else {
+      logger.warn('Enhanced chat API routes not available');
     }
 
     logger.info('Route setup completed with available modules');

@@ -5,7 +5,7 @@ The Dealership Onboarding API provides endpoints to create and manage dealership
 
 ## Base URL
 - **Production:** `https://seorylie.onrender.com/api/dealership-onboarding`
-- **Local Development:** `http://localhost:3003/api/dealership-onboarding`
+- **Local Development:** `http://localhost:10000/api/dealership-onboarding`
 
 ## Endpoints
 

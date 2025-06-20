@@ -3,30 +3,32 @@
  * @description Ensures the test infrastructure is working properly
  */
 
+import { describe, it, expect } from 'vitest';
+
 describe('Test Infrastructure', () => {
-  test('Jest is working correctly', () => {
+  it('Vitest is working correctly', () => {
     expect(true).toBe(true);
   });
 
-  test('Environment variables are set for tests', () => {
+  it('Environment variables are set for tests', () => {
     expect(process.env.NODE_ENV).toBe('test');
-    expect(process.env.JWT_SECRET).toBeDefined();
+    // JWT_SECRET is not required in test environment
+    expect(process.env.IS_TEST).toBe('true');
   });
 
-  test('Global test utilities are available', () => {
-    expect(global.testUtils).toBeDefined();
-    expect(global.testUtils.mockRequest).toBeFunction();
-    expect(global.testUtils.mockResponse).toBeFunction();
-    expect(global.testUtils.mockNext).toBeFunction();
+  it('Global test utilities are available', () => {
+    expect(globalThis.testUtils).toBeDefined();
+    expect(typeof globalThis.testUtils.mockEnv).toBe('function');
+    expect(typeof globalThis.testUtils.restoreEnv).toBe('function');
   });
 
-  test('Mock services are configured', () => {
-    // Test that external services are mocked
-    const mockRequest = global.testUtils.mockRequest();
-    const mockResponse = global.testUtils.mockResponse();
+  it('Mock services are configured', () => {
+    // Test that global utilities work
+    globalThis.testUtils.mockEnv('TEST_VAR', 'test-value');
+    expect(process.env.TEST_VAR).toBe('test-value');
     
-    expect(mockRequest.traceId).toBe('test-trace-id');
-    expect(mockResponse.status).toBeFunction();
+    globalThis.testUtils.restoreEnv();
+    expect(process.env.TEST_VAR).toBeUndefined();
   });
 });
 
