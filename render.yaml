@@ -33,7 +33,7 @@ services:
 
       # SEOWerks API integration
       - key: SEO_WORKS_API_KEY
-        value: e7fcafb5d36ded4c9fb2fdc84b055357f15e00b4730c5c73597b64a7b90fc115
+        sync: false
 
       # Non-secret, useful defaults (can be overridden in dashboard)
       - key: FRONTEND_URL
