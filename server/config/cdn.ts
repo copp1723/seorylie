@@ -4,7 +4,7 @@
  */
 
 interface CDNConfig {
-  provider: 'cloudflare' | 'cloudfront' | 'fastly' | 'supabase';
+  provider: 'cloudflare' | 'cloudfront' | 'fastly';
   baseUrl: string;
   customDomain?: string;
   settings: {
@@ -21,8 +21,8 @@ interface CDNConfig {
 
 // Environment-based CDN configuration
 export const cdnConfig: CDNConfig = {
-  provider: (process.env.CDN_PROVIDER as CDNConfig['provider']) || 'supabase',
-  baseUrl: process.env.CDN_BASE_URL || 'https://your-project.supabase.co/storage/v1/object/public',
+  provider: (process.env.CDN_PROVIDER as CDNConfig['provider']) || 'cloudflare',
+  baseUrl: process.env.CDN_BASE_URL || '',  // No default CDN - serve locally
   customDomain: process.env.CDN_CUSTOM_DOMAIN,
   settings: {
     cache: {
@@ -56,8 +56,6 @@ export function getCDNUrl(path: string, options?: {
       return buildCloudflareUrl(baseUrl, cleanPath, options);
     case 'cloudfront':
       return buildCloudfrontUrl(baseUrl, cleanPath, options);
-    case 'supabase':
-      return buildSupabaseUrl(baseUrl, cleanPath, options);
     default:
       return `${baseUrl}/${cleanPath}`;
   }
@@ -94,25 +92,6 @@ function buildCloudfrontUrl(baseUrl: string, path: string, options?: any): strin
   return `${baseUrl}/${path}?${params.toString()}`;
 }
 
-// Supabase Storage URL builder
-function buildSupabaseUrl(baseUrl: string, path: string, options?: any): string {
-  if (!options || !cdnConfig.settings.imageOptimization) {
-    return `${baseUrl}/${path}`;
-  }
-
-  // Supabase supports image transformations
-  const transforms = [];
-  if (options.width) transforms.push(`width=${options.width}`);
-  if (options.height) transforms.push(`height=${options.height}`);
-  if (options.quality) transforms.push(`quality=${options.quality}`);
-  if (options.format) transforms.push(`format=${options.format}`);
-
-  if (transforms.length > 0) {
-    return `${baseUrl}/${path}?${transforms.join('&')}`;
-  }
-
-  return `${baseUrl}/${path}`;
-}
 
 // Get appropriate cache headers for asset type
 export function getCacheHeaders(assetType: 'image' | 'document' | 'style' | 'script'): Record<string, string> {
