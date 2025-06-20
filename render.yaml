@@ -10,9 +10,9 @@ services:
       corepack enable
       corepack prepare pnpm@9.1.0 --activate
       # Install all dependencies (including dev) for build
-      pnpm install --frozen-lockfile
+      NODE_ENV=development pnpm install --frozen-lockfile
       # Build the application
-      pnpm run build
+      NODE_ENV=production pnpm run build
     startCommand: pnpm start
 
     plan: starter
