@@ -5,7 +5,7 @@ services:
     branch: main
     
     # Build configuration
-    buildCommand: NODE_ENV=development npm install && npm run build
+    buildCommand: NODE_ENV=development npm install && cd web-console && npm install && npm run build && cd .. && npm run build:server
     startCommand: npm start
 
     plan: starter
