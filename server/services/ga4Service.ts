@@ -6,13 +6,20 @@ import { ga4Auth } from './ga4Auth';
 // Initialize the GA4 Data API client (lazy initialization)
 let analyticsDataClient: BetaAnalyticsDataClient | null = null;
 
-function getAnalyticsClient(): BetaAnalyticsDataClient {
+async function getAnalyticsClient(): Promise<BetaAnalyticsDataClient | null> {
   if (!analyticsDataClient && ga4Auth.isConfigured()) {
-    analyticsDataClient = new BetaAnalyticsDataClient({
-      keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS
-    });
+    try {
+      // Get the auth instance that handles both env vars and files
+      const auth = await ga4Auth.getAuthClient();
+      analyticsDataClient = new BetaAnalyticsDataClient({
+        auth: auth
+      });
+    } catch (error) {
+      console.error('Failed to initialize GA4 analytics client:', error);
+      return null;
+    }
   }
-  return analyticsDataClient!;
+  return analyticsDataClient;
 }
 
 // GA4 property IDs
@@ -73,7 +80,12 @@ export class GA4Service {
     }
 
     const { propertyId, startDate, endDate } = params;
-    const client = getAnalyticsClient();
+    const client = await getAnalyticsClient();
+    
+    if (!client) {
+      console.warn('GA4 client not available, returning mock data');
+      return this.getMockSummary();
+    }
     
     // Calculate previous period for comparison
     const currentStartDate = new Date(startDate);
