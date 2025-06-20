@@ -57,9 +57,14 @@
 
 ### Remaining Tasks:
 1. Fix Express route handler types
-2. Resolve database query parameter mismatches
+2. Resolve database query parameter mismatches  
 3. Address middleware authentication issues
 4. Update API response transformations for naming convention
+5. Fix missing module imports (drizzle-kit, inquirer, bcrypt, etc.)
+6. Fix db client null checks in scripts
+7. Update schema field mismatches (username vs name)
+8. Fix WebSocket metric recording calls
+9. Resolve path alias issues (@/lib/utils, @shared/schema)
 
 ## Next Steps for Integration
 
