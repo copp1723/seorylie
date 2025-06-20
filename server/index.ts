@@ -603,9 +603,10 @@ const startServer = async (): Promise<void> => {
     
     // Start scheduled jobs
     try {
-      const { startOnboardingProcessor } = await import('./jobs/processOnboardings');
-      startOnboardingProcessor();
-      logger.info('📅 Scheduled jobs started');
+      // Temporarily disabled - uses Supabase which is not configured
+      // const { startOnboardingProcessor } = await import('./jobs/processOnboardings');
+      // startOnboardingProcessor();
+      logger.info('📅 Scheduled jobs disabled (Supabase not configured)');
     } catch (error) {
       logger.warn('Failed to start scheduled jobs', { error });
     }
