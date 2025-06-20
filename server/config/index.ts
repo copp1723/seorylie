@@ -40,6 +40,13 @@ export const config = {
   REDIS_URL: env.REDIS_URL,
   OPENAI_API_KEY: env.OPENAI_API_KEY,
   
+  // Rate limiting
+  RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW || '900000', 10), // 15 minutes
+  RATE_LIMIT_MAX_REQUESTS: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+  
+  // CORS
+  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['*'],
+  
   // Derived configs
   IS_PRODUCTION: env.NODE_ENV === 'production',
   IS_DEVELOPMENT: env.NODE_ENV === 'development',
