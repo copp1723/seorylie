@@ -82,7 +82,7 @@ const Buffer = globalThis.Buffer;
     'compression', 'safe-buffer',
     'axios', 'lodash', 'moment', 'date-fns', 'uuid', 'nanoid',
     'bcrypt', 'bcryptjs', 'jsonwebtoken', 'express', 'socket.io', 'ws',
-    'nodemailer', 'handlebars', 'winston', 'prom-client',
+    'nodemailer', 'handlebars', 'prom-client',
     'openai', '@sendgrid/mail', 'twilio', 'drizzle-orm', 'drizzle-zod',
     'fast-xml-parser', 'xml-parser', 'mailparser', 'imap',
     'cors', 'helmet', 'express-rate-limit', 'express-session',
