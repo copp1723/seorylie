@@ -1,7 +1,18 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import { seoNotificationService } from '../services/seoNotificationService';
+// Disabled - requires Supabase
+// import { seoNotificationService } from '../services/seoNotificationService';
 import logger from '../utils/logger';
+
+// Mock notification service to prevent crashes
+const seoNotificationService = {
+  registerWebSocket: () => {},
+  unregisterWebSocket: () => {},
+  subscribe: () => {},
+  unsubscribe: () => {},
+  getNotificationHistory: async () => [],
+  markAsRead: async () => {}
+};
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
