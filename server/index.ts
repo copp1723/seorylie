@@ -75,7 +75,7 @@ const createRateLimiter = () => {
 const setupSecurity = () => {
   // Helmet configuration
   app.use(helmet({
-    contentSecurityPolicy: isProd ? undefined : false, // Disable CSP in development
+    contentSecurityPolicy: false, // Disable CSP - was blocking assets
     crossOriginEmbedderPolicy: false // Allow embedding for white-label use
   }));
 
@@ -127,7 +127,9 @@ const setupRequestProcessing = () => {
     limit: '10mb' 
   }));
 
-  // CDN asset handling (only in production)
+  // CDN asset handling disabled - causing CSP and asset loading issues
+  // The CDN is configured for Supabase which is not being used
+  /*
   if (isProd) {
     import('./middleware/cdnAssets')
       .then(({ cdnAssetMiddleware, imageOptimizationMiddleware, preloadAssetsMiddleware }) => {
@@ -144,6 +146,7 @@ const setupRequestProcessing = () => {
         // Continue without CDN middleware
       });
   }
+  */
 };
 
 /**
