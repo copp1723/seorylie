@@ -25,12 +25,12 @@ export const users = pgTable(
   {
     id: serial("id").primaryKey(),
     username: varchar("username", { length: 100 }).notNull(),
-    name: varchar("name", { length: 100 }), // Added missing name field
-    email: varchar("email", { length: 100 }).notNull(),
+    name: varchar("name", { length: 100 }).notNull(), // Required name field for user identification
+    email: varchar("email", { length: 100 }).notNull().unique(),
     password: varchar("password", { length: 100 }).notNull(),
     role: varchar("role", { length: 50 }).default("user").notNull(),
-    dealershipId: integer("dealership_id"),
-    isActive: boolean("is_active").default(true), // Re-enabled with nullable
+    dealershipId: integer("dealership_id").references(() => dealerships.id, { onDelete: 'set null' }),
+    isActive: boolean("is_active").default(true).notNull(), // Non-nullable with default
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -39,6 +39,8 @@ export const users = pgTable(
       emailIdx: index("email_idx").on(table.email),
       usernameIdx: index("username_idx").on(table.username),
       dealershipIdIdx: index("dealership_id_idx").on(table.dealershipId),
+      isActiveIdx: index("is_active_idx").on(table.isActive),
+      nameIdx: index("name_idx").on(table.name),
     };
   },
 );
@@ -49,7 +51,7 @@ export const dealerships = pgTable(
   {
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 100 }).notNull(),
-    subdomain: varchar("subdomain", { length: 100 }).notNull(),
+    subdomain: varchar("subdomain", { length: 100 }).notNull().unique(),
     contactEmail: varchar("contact_email", { length: 100 }),
     contactPhone: varchar("contact_phone", { length: 20 }),
     address: varchar("address", { length: 255 }),
@@ -67,6 +69,8 @@ export const dealerships = pgTable(
     return {
       subdomainIdx: index("subdomain_idx").on(table.subdomain),
       nameIdx: index("name_idx").on(table.name),
+      isActiveIdx: index("dealership_is_active_idx").on(table.isActive),
+      contactEmailIdx: index("dealership_contact_email_idx").on(table.contactEmail),
     };
   },
 );
@@ -682,6 +686,7 @@ export const tools = pgTable(
       nameIdx: index("tool_name_idx").on(table.name),
       serviceIdx: index("service_idx").on(table.service),
       typeIdx: index("tool_type_idx").on(table.type),
+      categoryIdx: index("tool_category_idx").on(table.category),
       isActiveIdx: index("tool_is_active_idx").on(table.isActive),
     };
   },

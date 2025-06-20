@@ -795,68 +795,233 @@ export const leadActivitiesRelations = relations(leadActivities, ({ one }) => ({
   }),
 }));
 
-// ===== ZOD SCHEMAS =====
+// ===== ENHANCED ZOD SCHEMAS WITH DUAL-CASE SUPPORT =====
 
-export const insertLeadSourceSchema = createInsertSchema(leadSourcesTable).omit(
+// Import enhanced schema mappers
+import {
+  createSelectSchemaWithMapping,
+  createInsertSchemaWithMapping,
+  createMappedSchemas,
+  createTransitionalSchema
+} from './schema-mappers';
+
+// Create enhanced schema mappings for all lead management tables
+export const enhancedLeadSourceSchemas = createMappedSchemas(leadSourcesTable, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedDealershipHandoverSettingsSchemas = createMappedSchemas(dealershipHandoverSettings, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedLeadManagementCustomerSchemas = createMappedSchemas(customers, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedVehicleInterestSchemas = createMappedSchemas(vehicleInterests, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedLeadSchemas = createMappedSchemas(leads, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedLeadManagementConversationSchemas = createMappedSchemas(conversations, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedLeadManagementMessageSchemas = createMappedSchemas(messages, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedHandoverSchemas = createMappedSchemas(handovers, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedLeadActivitySchemas = createMappedSchemas(leadActivities, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt']
+});
+
+// ===== TRANSITIONAL SCHEMAS FOR API ENDPOINTS =====
+
+// Lead creation schema with legacy key support
+export const createLeadRequestSchema = createTransitionalSchema(
   {
-    id: true,
-    createdAt: true,
-    updatedAt: true,
+    dealershipId: z.number(),
+    customerId: z.string().uuid().optional(),
+    vehicleInterestId: z.string().uuid().optional(),
+    sourceId: z.string().uuid(),
+    assignedUserId: z.number().optional(),
+    status: z.enum(leadStatuses).default('new'),
+    priority: z.enum(leadPriorities).default('medium'),
+    description: z.string().optional(),
+    tags: z.array(z.string()).default([]),
+    customFields: z.record(z.any()).default({}),
+    budget: z.number().optional(),
+    timeframe: z.string().optional(),
+    urgency: z.enum(leadPriorities).default('medium')
   },
+  {
+    // Legacy mappings for API backward compatibility
+    'dealership_id': 'dealershipId',
+    'customer_id': 'customerId',
+    'vehicle_interest_id': 'vehicleInterestId',
+    'source_id': 'sourceId',
+    'assigned_user_id': 'assignedUserId',
+    'custom_fields': 'customFields'
+  }
 );
 
-export const insertDealershipHandoverSettingsSchema = createInsertSchema(
-  dealershipHandoverSettings,
-).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertCustomerSchema = createInsertSchema(customers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertVehicleInterestSchema = createInsertSchema(
-  vehicleInterests,
-).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertLeadSchema = createInsertSchema(leads).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertConversationSchema = createInsertSchema(conversations).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertMessageSchema = createInsertSchema(messages).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertHandoverSchema = createInsertSchema(handovers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertLeadActivitySchema = createInsertSchema(leadActivities).omit(
+// Customer creation schema with dual-case support
+export const createCustomerRequestSchema = createTransitionalSchema(
   {
-    id: true,
-    createdAt: true,
+    dealershipId: z.number(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    fullName: z.string(),
+    email: z.string().email().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zipCode: z.string().optional(),
+    country: z.string().default('US'),
+    preferredLanguage: z.string().default('en'),
+    tags: z.array(z.string()).default([]),
+    customFields: z.record(z.any()).default({}),
+    leadSourceAttribution: z.record(z.any()).optional()
   },
+  {
+    // Legacy mappings
+    'dealership_id': 'dealershipId',
+    'first_name': 'firstName',
+    'last_name': 'lastName',
+    'full_name': 'fullName',
+    'zip_code': 'zipCode',
+    'preferred_language': 'preferredLanguage',
+    'custom_fields': 'customFields',
+    'lead_source_attribution': 'leadSourceAttribution'
+  }
 );
+
+// Message creation schema with transitional support
+export const createMessageRequestSchema = createTransitionalSchema(
+  {
+    conversationId: z.string().uuid(),
+    content: z.string().min(1),
+    contentType: z.enum(['text', 'html', 'markdown']).default('text'),
+    subject: z.string().optional(),
+    type: z.enum(messageTypes),
+    sender: z.enum(messageSenders),
+    senderUserId: z.number().optional(),
+    senderName: z.string().optional(),
+    senderEmail: z.string().optional(),
+    attachments: z.array(
+      z.object({
+        filename: z.string(),
+        contentType: z.string(),
+        size: z.number(),
+        url: z.string()
+      })
+    ).default([]),
+    inReplyTo: z.string().uuid().optional(),
+    scheduledAt: z.string().datetime().optional()
+  },
+  {
+    // Legacy mappings
+    'conversation_id': 'conversationId',
+    'content_type': 'contentType',
+    'sender_user_id': 'senderUserId',
+    'sender_name': 'senderName',
+    'sender_email': 'senderEmail',
+    'in_reply_to': 'inReplyTo',
+    'scheduled_at': 'scheduledAt'
+  }
+);
+
+// Handover request schema with enhanced validation
+export const createHandoverRequestSchema = createTransitionalSchema(
+  {
+    conversationId: z.string().uuid(),
+    leadId: z.string().uuid(),
+    reason: z.enum(handoverReasons),
+    description: z.string().min(1),
+    toUserId: z.number().optional(),
+    requestedById: z.number().optional(),
+    urgency: z.enum(leadPriorities).default('medium'),
+    context: z.record(z.any()).default({}),
+    handoverNotes: z.string().optional(),
+    dossier: z.object({
+      customerName: z.string(),
+      customerContact: z.string(),
+      conversationSummary: z.string(),
+      customerInsights: z.array(
+        z.object({
+          key: z.string(),
+          value: z.string(),
+          confidence: z.number().min(0).max(100)
+        })
+      ).default([]),
+      vehicleInterests: z.array(
+        z.object({
+          make: z.string(),
+          model: z.string(),
+          year: z.number(),
+          confidence: z.number().min(0).max(100)
+        })
+      ).default([]),
+      suggestedApproach: z.string(),
+      urgency: z.enum(['low', 'medium', 'high']),
+      escalationReason: z.string()
+    }).optional()
+  },
+  {
+    // Legacy mappings
+    'conversation_id': 'conversationId',
+    'lead_id': 'leadId',
+    'to_user_id': 'toUserId',
+    'requested_by_id': 'requestedById',
+    'handover_notes': 'handoverNotes',
+    'customer_name': 'customerName',
+    'customer_contact': 'customerContact',
+    'conversation_summary': 'conversationSummary',
+    'customer_insights': 'customerInsights',
+    'vehicle_interests': 'vehicleInterests',
+    'suggested_approach': 'suggestedApproach',
+    'escalation_reason': 'escalationReason'
+  }
+);
+
+// ===== BACKWARD COMPATIBILITY SCHEMAS (DEPRECATED) =====
+
+// Keep legacy schemas for existing code compatibility but mark as deprecated
+export const insertLeadSourceSchema = enhancedLeadSourceSchemas.insert;
+export const insertDealershipHandoverSettingsSchema = enhancedDealershipHandoverSettingsSchemas.insert;
+export const insertCustomerSchema = enhancedLeadManagementCustomerSchemas.insert;
+export const insertVehicleInterestSchema = enhancedVehicleInterestSchemas.insert;
+export const insertLeadSchema = enhancedLeadSchemas.insert;
+export const insertConversationSchema = enhancedLeadManagementConversationSchemas.insert;
+export const insertMessageSchema = enhancedLeadManagementMessageSchemas.insert;
+export const insertHandoverSchema = enhancedHandoverSchemas.insert;
+export const insertLeadActivitySchema = enhancedLeadActivitySchemas.insert;
 
 // ===== INFERRED TYPES =====
 

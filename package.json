@@ -25,7 +25,11 @@
     "test:coverage:threshold": "vitest run --coverage --coverage.thresholds.lines=80",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx --max-warnings=0",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
-    "precommit": "pnpm run test",
+    "schema:check": "tsx scripts/compare-schema.ts",
+    "schema:ci": "tsx scripts/ci-schema-check.ts",
+    "schema:validate": "pnpm run schema:check && pnpm run circular:check",
+    "circular:check": "madge --circular --extensions ts,tsx shared/ server/ web-console/src/",
+    "precommit": "pnpm run test && pnpm run schema:validate",
     "prepare": "husky"
   },
   "dependencies": {
@@ -93,6 +97,7 @@
     "fs-extra": "^11.2.0",
     "husky": "^9.1.7",
     "lighthouse": "^12.6.1",
+    "madge": "^8.0.0",
     "postgres": "^3.4.7",
     "ts-node": "^10.9.2",
     "vitest": "^3.2.4"
