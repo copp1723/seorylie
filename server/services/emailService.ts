@@ -8,8 +8,11 @@ import { getDB } from '../models/database';
 
 // Initialize SendGrid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+let emailServiceAvailable = false;
+
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
+  emailServiceAvailable = true;
 } else {
   console.warn('SendGrid API key not configured - emails will not be sent');
 }
@@ -61,7 +64,7 @@ interface DeliverableReadyEmailData {
  * Send onboarding confirmation emails
  */
 export async function sendOnboardingEmails(data: OnboardingEmailData): Promise<void> {
-  if (!SENDGRID_API_KEY) {
+  if (!emailServiceAvailable) {
     console.log('Email service not configured - skipping onboarding emails');
     return;
   }
@@ -126,8 +129,13 @@ export async function sendOnboardingEmails(data: OnboardingEmailData): Promise<v
       // dynamicTemplateData: data
     };
 
-    await sgMail.send(dealershipEmail);
-    console.log(`Onboarding confirmation sent to ${data.dealershipEmail}`);
+    try {
+      await sgMail.send(dealershipEmail);
+      console.log(`Onboarding confirmation sent to ${data.dealershipEmail}`);
+    } catch (emailError) {
+      console.error('Failed to send dealership email:', emailError);
+      // Don't throw - continue with team email
+    }
 
     // Email to SEOWerks team
     const teamEmail = {
@@ -146,8 +154,13 @@ export async function sendOnboardingEmails(data: OnboardingEmailData): Promise<v
       `
     };
 
-    await sgMail.send(teamEmail);
-    console.log('Team notification sent for new onboarding');
+    try {
+      await sgMail.send(teamEmail);
+      console.log('Team notification sent for new onboarding');
+    } catch (emailError) {
+      console.error('Failed to send team email:', emailError);
+      // Don't throw - allow process to continue
+    }
 
     // Log email activity (using database directly)
     const db = getDB();
@@ -170,7 +183,7 @@ export async function sendOnboardingEmails(data: OnboardingEmailData): Promise<v
  * Send task completed notification
  */
 export async function sendTaskCompletedEmail(data: TaskCompletedEmailData): Promise<void> {
-  if (!SENDGRID_API_KEY) {
+  if (!emailServiceAvailable) {
     console.log('Email service not configured - skipping task completed email');
     return;
   }
@@ -205,12 +218,16 @@ export async function sendTaskCompletedEmail(data: TaskCompletedEmailData): Prom
       `
     };
 
-    await sgMail.send(email);
-    console.log(`Task completed email sent to ${data.agencyEmail}`);
-
+    try {
+      await sgMail.send(email);
+      console.log(`Task completed email sent to ${data.agencyEmail}`);
+    } catch (emailError) {
+      console.error('Failed to send task completed email:', emailError);
+      // Don't throw - allow process to continue without email
+    }
   } catch (error) {
-    console.error('Failed to send task completed email:', error);
-    throw error;
+    console.error('Error preparing task completed email:', error);
+    // Don't throw - allow process to continue
   }
 }
 
@@ -218,7 +235,7 @@ export async function sendTaskCompletedEmail(data: TaskCompletedEmailData): Prom
  * Send deliverable ready notification
  */
 export async function sendDeliverableReadyEmail(data: DeliverableReadyEmailData): Promise<void> {
-  if (!SENDGRID_API_KEY) {
+  if (!emailServiceAvailable) {
     console.log('Email service not configured - skipping deliverable ready email');
     return;
   }
@@ -249,12 +266,16 @@ export async function sendDeliverableReadyEmail(data: DeliverableReadyEmailData)
       `
     };
 
-    await sgMail.send(email);
-    console.log(`Deliverable ready email sent to ${data.agencyEmails.length} recipients`);
-
+    try {
+      await sgMail.send(email);
+      console.log(`Deliverable ready email sent to ${data.agencyEmails.length} recipients`);
+    } catch (emailError) {
+      console.error('Failed to send deliverable ready email:', emailError);
+      // Don't throw - allow process to continue without email
+    }
   } catch (error) {
-    console.error('Failed to send deliverable ready email:', error);
-    throw error;
+    console.error('Error preparing deliverable ready email:', error);
+    // Don't throw - allow process to continue
   }
 }
 
@@ -266,7 +287,7 @@ export async function sendWeeklyDigest(
   recipients: string[],
   metrics: any
 ): Promise<void> {
-  if (!SENDGRID_API_KEY) {
+  if (!emailServiceAvailable) {
     console.log('Email service not configured - skipping weekly digest');
     return;
   }

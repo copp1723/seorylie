@@ -32,6 +32,28 @@ export class GA4AuthService {
 
   private initializeAuth() {
     try {
+      // Try to load from GA4_CREDENTIALS_JSON environment variable first
+      const ga4CredsEnv = process.env.GA4_CREDENTIALS_JSON;
+      
+      if (ga4CredsEnv) {
+        try {
+          // Decode from base64 if provided
+          const credentialsJson = Buffer.from(ga4CredsEnv, 'base64').toString('utf8');
+          this.credentials = JSON.parse(credentialsJson);
+          
+          // Create auth client
+          this.auth = new google.auth.GoogleAuth({
+            credentials: this.credentials,
+            scopes: SCOPES
+          });
+          
+          console.log('GA4 authentication initialized from environment variable');
+          return;
+        } catch (envError) {
+          console.warn('Failed to parse GA4_CREDENTIALS_JSON from environment:', envError);
+        }
+      }
+      
       // Check if service account file exists
       if (fs.existsSync(SERVICE_ACCOUNT_PATH)) {
         const credentialsJson = fs.readFileSync(SERVICE_ACCOUNT_PATH, 'utf8');
@@ -43,9 +65,9 @@ export class GA4AuthService {
           scopes: SCOPES
         });
 
-        console.log('GA4 authentication initialized with service account');
+        console.log('GA4 authentication initialized with service account file');
       } else {
-        console.warn('GA4 service account credentials not found at:', SERVICE_ACCOUNT_PATH);
+        console.warn('GA4 service account credentials not found');
         console.warn('GA4 analytics will use mock data until credentials are configured');
       }
     } catch (error) {

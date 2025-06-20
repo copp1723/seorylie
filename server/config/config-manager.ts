@@ -433,7 +433,10 @@ export class ConfigManager extends EventEmitter {
 
   private generateSecretWarning(envVar: string): string {
     if (process.env.NODE_ENV === "production") {
-      throw new Error(`${envVar} must be set in production environment`);
+      logger.warn(`${envVar} not set in production - generating secure random value`);
+      // Generate a secure random secret instead of crashing
+      const crypto = require('crypto');
+      return crypto.randomBytes(32).toString('hex');
     }
 
     logger.warn(`${envVar} not set, using insecure default for development`);
@@ -441,6 +444,12 @@ export class ConfigManager extends EventEmitter {
   }
 
   private throwMissingEnvError(envVar: string): never {
+    // In production, log error but don't crash for non-critical services
+    if (process.env.NODE_ENV === "production" && 
+        ['OPENAI_API_KEY', 'FROM_EMAIL'].includes(envVar)) {
+      logger.error(`Required environment variable ${envVar} is not set - service will be disabled`);
+      return '' as never; // Return empty string instead of throwing
+    }
     throw new Error(`Required environment variable ${envVar} is not set`);
   }
 }

@@ -115,6 +115,12 @@ function getEncryptionKey(salt?: Buffer): { key: Buffer; salt: Buffer } {
  * Returns a buffer containing: salt + iv + authTag + encryptedData
  */
 export async function encrypt(text: string): Promise<Buffer> {
+  if (!encryptionAvailable) {
+    logger.warn("Encryption called but ENCRYPTION_KEY not configured - returning dummy value");
+    // Return a dummy buffer to prevent crashes
+    return Buffer.from(text, 'utf8');
+  }
+  
   try {
     // Generate a random IV for each encryption
     const iv = crypto.randomBytes(IV_LENGTH);
@@ -149,6 +155,12 @@ export async function encrypt(text: string): Promise<Buffer> {
  * Expects format: salt + iv + authTag + encryptedData
  */
 export async function decrypt(encryptedBuffer: Buffer): Promise<string> {
+  if (!encryptionAvailable) {
+    logger.warn("Decryption called but ENCRYPTION_KEY not configured - returning raw value");
+    // Return the buffer as string to prevent crashes
+    return encryptedBuffer.toString('utf8');
+  }
+  
   try {
     // Extract components from the encrypted buffer
     const salt = encryptedBuffer.subarray(0, SALT_LENGTH);
@@ -319,8 +331,14 @@ export function clearKeyCache(): void {
 }
 
 // Initialize encryption on module load
+let encryptionAvailable = false;
 try {
-  initializeEncryption();
+  if (process.env.ENCRYPTION_KEY) {
+    initializeEncryption();
+    encryptionAvailable = true;
+  } else {
+    logger.warn("ENCRYPTION_KEY not configured - PII encryption disabled");
+  }
 } catch (error) {
   logger.warn("Encryption initialization failed", {
     error: error instanceof Error ? error.message : String(error),

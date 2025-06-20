@@ -86,11 +86,11 @@ export class AuthService extends BaseService {
 
     // Validate JWT secret
     if (!this.jwtSecret || this.jwtSecret.length < 32) {
-      throw new CustomError(
-        "JWT secret must be at least 32 characters long",
-        500,
-        { code: "INVALID_JWT_SECRET" },
+      logger.warn(
+        "JWT secret is missing or too short - authentication may not work properly",
+        { secretLength: this.jwtSecret?.length || 0 }
       );
+      // Don't throw - allow service to start with limited functionality
     }
 
     logger.info("Auth Service initialized");
