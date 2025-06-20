@@ -129,14 +129,20 @@ const setupRequestProcessing = () => {
 
   // CDN asset handling (only in production)
   if (isProd) {
-    import('./middleware/cdnAssets').then(({ cdnAssetMiddleware, imageOptimizationMiddleware, preloadAssetsMiddleware }) => {
-      app.use(preloadAssetsMiddleware);
-      app.use(cdnAssetMiddleware);
-      app.use(imageOptimizationMiddleware);
-      logger.info('CDN middleware configured');
-    }).catch(err => {
-      logger.warn('CDN middleware not available', { error: err });
-    });
+    import('./middleware/cdnAssets')
+      .then(({ cdnAssetMiddleware, imageOptimizationMiddleware, preloadAssetsMiddleware }) => {
+        app.use(preloadAssetsMiddleware);
+        app.use(cdnAssetMiddleware);
+        app.use(imageOptimizationMiddleware);
+        logger.info('CDN middleware configured');
+      })
+      .catch(err => {
+        logger.warn('CDN middleware not available', { 
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined
+        });
+        // Continue without CDN middleware
+      });
   }
 };
 
@@ -678,6 +684,15 @@ const startServer = async (): Promise<void> => {
     process.exit(1);
   }
 };
+
+// Add a global catch for any unhandled promises during startup
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection during startup:', reason);
+  // Don't exit in production - let the server continue
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+});
 
 // Start the server
 startServer().catch(error => {
