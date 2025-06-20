@@ -48,6 +48,7 @@ const aliasPlugin = {
 
       return { path: importPath };
     });
+
   },
 };
 
@@ -80,15 +81,16 @@ const Buffer = globalThis.Buffer;
     // Large dependencies that work better external
     'compression', 'safe-buffer',
     'axios', 'lodash', 'moment', 'date-fns', 'uuid', 'nanoid',
-    'bcrypt', 'jsonwebtoken', 'express', 'socket.io', 'ws',
+    'bcrypt', 'bcryptjs', 'jsonwebtoken', 'express', 'socket.io', 'ws',
     'nodemailer', 'handlebars', 'winston', 'prom-client',
-    'openai', '@sendgrid/mail', 'twilio', 'drizzle-orm',
+    'openai', '@sendgrid/mail', 'twilio', 'drizzle-orm', 'drizzle-zod',
     'fast-xml-parser', 'xml-parser', 'mailparser', 'imap',
     'cors', 'helmet', 'express-rate-limit', 'express-session',
     'express-validator', 'cookie-parser', 'csurf', 'dotenv',
     'zod', 'zod-to-json-schema', 'csv-writer', 'gray-matter',
     'colors', 'bottleneck', 'opossum', 'postgres', 'pg',
-    '@opentelemetry/api',
+    '@opentelemetry/api', 'morgan', 'node-cron', 'multer',
+    'pdf-lib', 'cheerio', 'pizzip', 'docxtemplater',
     
     // Local packages
     '@rylie-seo/ga4-reporter', '@rylie-seo/ga4-service-manager', '@rylie-seo/seo-schema',
