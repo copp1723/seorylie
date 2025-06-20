@@ -29,7 +29,7 @@ Perfect! I've updated the API to include the completion date field as you reques
 
 ## API Details:
 - **Endpoint**: `https://seorylie.onrender.com/api/seoworks/task`
-- **API Key**: `e7fcafb5d36ded4c9fb2fdc84b055357f15e00b4730c5c73597b64a7b90fc115`
+- **API Key**: `[REDACTED_API_KEY]`
 - **Method**: POST
 - **Headers**: 
   - `x-api-key: [your api key]`
@@ -38,7 +38,7 @@ Perfect! I've updated the API to include the completion date field as you reques
 ## Test Example:
 ```bash
 curl -X POST https://seorylie.onrender.com/api/seoworks/task \
-  -H "x-api-key: e7fcafb5d36ded4c9fb2fdc84b055357f15e00b4730c5c73597b64a7b90fc115" \
+  -H "x-api-key: [REDACTED_API_KEY]" \
   -H "Content-Type: application/json" \
   -d '{
     "id": "test-001",
