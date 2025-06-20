@@ -1,54 +1,42 @@
-# Multi-stage build for Node.js application
+# -------- Build stage --------
 FROM node:20-alpine AS build
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Install root dependencies
 COPY package*.json ./
-COPY web-console/package*.json ./web-console/
+RUN npm ci --production=false
 
-# Install dependencies
-RUN npm ci --frozen-lockfile
+# Copy source code
+COPY . .
 
-# Copy web-console source
-COPY web-console/ ./web-console/
+# Build web-console (frontend)
+WORKDIR /app/web-console
+RUN npm install && npm run build
 
-# Build the web console
-RUN cd web-console && npm ci && npm run build
+# Build TypeScript server bundles
+WORKDIR /app
+RUN npm run build:server
 
-# Production stage
+# -------- Production stage --------
 FROM node:20-alpine AS production
-
-# Create app directory
 WORKDIR /app
 
-# Copy package files and install production dependencies only
+# Install production dependencies only
 COPY package*.json ./
-RUN npm ci --only=production --frozen-lockfile && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
-# Copy built assets and server
+# Copy compiled assets from build stage
 COPY --from=build /app/web-console/dist ./web-console/dist
-COPY server.js .
-COPY setup-db.js .
-COPY setup-ga4-credentials.js .
+COPY --from=build /app/dist ./dist
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
-# Change ownership of the app directory
-RUN chown -R nodejs:nodejs /app
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 USER nodejs
 
-# Expose port
-EXPOSE 10000
+EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:10000/health', (res) => { \
-    process.exit(res.statusCode === 200 ? 0 : 1) \
-  }).on('error', () => process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD node -e "require('http').get('http://localhost:3000/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 # Start the application
-CMD ["node", "server.js"]
+CMD ["node", "dist/index.js"]
