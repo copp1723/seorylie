@@ -25,7 +25,7 @@ interface AgencyBranding {
 
 interface BrandingContextType {
   branding: AgencyBranding | null;
-  isLoading: boolean;
+  isPending: boolean;
   isUpdating: boolean;
   updateBranding: (updates: Partial<AgencyBranding>) => Promise<void>;
   previewBranding: (branding: Partial<AgencyBranding>) => void;
@@ -122,7 +122,7 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
   };
 
   // Fetch branding with caching
-  const { data: branding, isLoading } = useQuery({
+  const { data: branding, isPending } = useQuery({
     queryKey: ['agency-branding', user?.id],
     queryFn: async () => {
       const agencyId = await detectAgencyId();
@@ -233,7 +233,7 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
 
   const value: BrandingContextType = {
     branding: branding || defaultBranding,
-    isLoading,
+    isPending,
     isUpdating: updateMutation.isPending,
     updateBranding: updateMutation.mutateAsync,
     previewBranding: (updates) => {

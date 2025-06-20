@@ -669,6 +669,7 @@ export const tools = pgTable(
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 100 }).notNull(),
     description: text("description"),
+    category: varchar("category", { length: 50 }), // Added missing category field
     type: varchar("type", { length: 50 }).default("EXTERNAL_API").notNull(),
     service: varchar("service", { length: 50 }).notNull(),
     endpoint: varchar("endpoint", { length: 255 }),
