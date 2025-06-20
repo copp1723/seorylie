@@ -28,10 +28,21 @@ try {
   // Step 3: Copy frontend build to correct location
   console.log('📋 Copying frontend build to dist/public...');
   fs.ensureDirSync(path.join(rootDir, 'dist/public'));
-  fs.copySync(
-    path.join(rootDir, 'web-console/dist'),
-    path.join(rootDir, 'dist/public')
-  );
+  
+  // Ensure we copy all files including HTML
+  const webConsoleDist = path.join(rootDir, 'web-console/dist');
+  const distPublic = path.join(rootDir, 'dist/public');
+  
+  // Copy all files from web-console/dist to dist/public
+  fs.copySync(webConsoleDist, distPublic, {
+    overwrite: true,
+    errorOnExist: false
+  });
+  
+  // Verify index.html exists
+  if (!fs.existsSync(path.join(distPublic, 'index.html'))) {
+    throw new Error('index.html not found in web-console build output');
+  }
   
   // Step 4: Build server
   console.log('🖥️  Building server...');
