@@ -25,8 +25,7 @@ services:
       # Standard runtime flags
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
+      # PORT is automatically set by Render, don't override it
 
       # Critical secrets (synchronisation disabled)
       - key: DATABASE_URL
