@@ -40,6 +40,7 @@
     "docxtemplater": "^3.65.0",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.35.0",
+    "drizzle-zod": "^0.5.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.5.0",
     "googleapis": "^150.0.1",

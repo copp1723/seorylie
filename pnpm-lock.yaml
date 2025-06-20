@@ -41,6 +41,9 @@ importers:
       drizzle-orm:
         specifier: ^0.35.0
         version: 0.35.3(@libsql/client-wasm@0.15.9)(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(@types/react@18.3.23)(pg@8.16.1)(postgres@3.4.7)(react@19.1.0)
+      drizzle-zod:
+        specifier: ^0.5.1
+        version: 0.5.1(drizzle-orm@0.35.3(@libsql/client-wasm@0.15.9)(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(@types/react@18.3.23)(pg@8.16.1)(postgres@3.4.7)(react@19.1.0))(zod@3.25.67)
       express:
         specifier: ^4.18.2
         version: 4.21.2
@@ -2368,6 +2371,12 @@ packages:
         optional: true
       sqlite3:
         optional: true
+
+  drizzle-zod@0.5.1:
+    resolution: {integrity: sha512-C/8bvzUH/zSnVfwdSibOgFjLhtDtbKYmkbPbUCq46QZyZCH6kODIMSOgZ8R7rVjoI+tCj3k06MRJMDqsIeoS4A==}
+    peerDependencies:
+      drizzle-orm: '>=0.23.13'
+      zod: '*'
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -6551,6 +6560,11 @@ snapshots:
       pg: 8.16.1
       postgres: 3.4.7
       react: 19.1.0
+
+  drizzle-zod@0.5.1(drizzle-orm@0.35.3(@libsql/client-wasm@0.15.9)(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(@types/react@18.3.23)(pg@8.16.1)(postgres@3.4.7)(react@19.1.0))(zod@3.25.67):
+    dependencies:
+      drizzle-orm: 0.35.3(@libsql/client-wasm@0.15.9)(@opentelemetry/api@1.9.0)(@types/pg@8.15.4)(@types/react@18.3.23)(pg@8.16.1)(postgres@3.4.7)(react@19.1.0)
+      zod: 3.25.67
 
   dunder-proto@1.0.1:
     dependencies:
