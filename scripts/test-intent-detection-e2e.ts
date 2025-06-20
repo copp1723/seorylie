@@ -1926,18 +1926,40 @@ async function runDemoScenarios() {
       log(chalk.green(`✓ Engagement level: high (4 messages in 30 minutes)`));
       log(chalk.green(`✓ Confidence: ${triggerEvent.args[0].confidence}`));
       log(chalk.green(`✓ Processing time: ${latency3}ms`));
-      log(chalk.green(`✓ Handover created for conversation #${mockConversation.id}`));
+      log(chalk.green(`✓ Handover created for conversation #${conversation3.id}`));
     } else {
       log(chalk.red(`✗ No intent detected`));
     }
-
-    // Restore original functions
-    behaviouralMonitor.evaluateEngagement = originalBehaviouralEvaluate;
+    
+    // Restore original emit
     orchestrator.emit = originalEmit;
-
-    return true;
+    behaviouralMonitor.evaluateEngagement = originalBehaviouralEvaluate;
+  
   } catch (error) {
-    logError('Demo scenarios failed', error);
-    return false;
+    log(chalk.red(`❌ Demo scenarios failed: ${error.message}`));
+    throw error;
   }
 }
+
+// Run all tests
+(async () => {
+  try {
+    // Run all test functions
+    await testRuleBasedIntent();
+    await testMLBasedIntent();
+    await testBehaviouralIntent();
+    await testSLAIntent();
+    await testConfigurationManagement();
+    await testDatabaseIntegration();
+    await testErrorHandling();
+    await testPerformanceMetrics();
+    await testPrecisionRecall();
+    await runDemoScenarios();
+    
+    log(chalk.green('\n✅ All E2E tests completed successfully!'));
+    process.exit(0);
+  } catch (error) {
+    log(chalk.red(`\n❌ E2E tests failed: ${error.message}`));
+    process.exit(1);
+  }
+})();
