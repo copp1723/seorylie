@@ -41,6 +41,10 @@ services:
       # SEOWerks API integration
       - key: SEO_WORKS_API_KEY
         sync: false
+      
+      # OpenRouter API for chat functionality
+      - key: OPEN_ROUTER
+        sync: false
 
       # Non-secret, useful defaults (can be overridden in dashboard)
       - key: FRONTEND_URL
