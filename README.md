@@ -254,6 +254,113 @@ npm run dev:ga4        # GA4 service only
 
 ---
 
+## 🧪 **Testing Infrastructure**
+
+This project uses **Vitest** with TypeScript and ESM support, providing comprehensive test coverage with an **80% coverage gate** that fails the pipeline if not met.
+
+### **Test Commands**
+
+```bash
+# Core testing commands
+npm run test                    # Run all tests once
+npm run test:watch              # Run tests in watch mode (development)
+npm run test:ui                 # Interactive test UI
+
+# Test by type
+npm run test:unit               # Unit tests only
+npm run test:integration        # Integration tests only  
+npm run test:e2e                # End-to-end tests only
+
+# Coverage testing
+npm run test:coverage           # Generate coverage report
+npm run test:coverage:threshold # Enforce 80% coverage gate (CI)
+
+# Pre-commit validation
+npm run precommit              # Run lint + test (automatic via Husky)
+```
+
+### **Test Structure**
+
+```
+tests/
+├── setup.ts                    # Global test configuration
+├── utils/
+│   └── dbTestHelpers.ts        # Async database test utilities
+├── unit/                       # Unit tests
+├── integration/                # Integration tests
+│   └── api-database.spec.ts    # API + Database integration
+└── e2e/                        # End-to-end tests
+    └── user-signup-journey.spec.ts
+
+# Co-located tests
+server/
+├── index.spec.ts              # Server health route tests
+database/
+└── connection.spec.ts         # Database connection tests
+routes/
+└── public-signup.spec.ts      # API route validation tests
+```
+
+### **Coverage Requirements (Enforced in CI)**
+
+- **Lines:** 80% minimum ⛔ *Pipeline fails if below*
+- **Functions:** 75% minimum
+- **Branches:** 70% minimum
+- **Statements:** 80% minimum
+
+### **Test Features**
+
+- ✅ **Async/await** first patterns
+- ✅ **Mock database** for environments without PostgreSQL
+- ✅ **Test helpers** for common operations
+- ✅ **Request/response** mocking utilities
+- ✅ **Database cleanup** after each test
+- ✅ **ESM + TypeScript** support
+- ✅ **Coverage gates** enforced in CI/CD
+
+### **Writing Tests**
+
+#### **Unit Tests** (Testing individual functions)
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { testUtils } from '../tests/utils/dbTestHelpers';
+
+describe('Component', () => {
+  it('should handle happy path', () => {
+    const req = testUtils.createMockRequest();
+    const res = testUtils.createMockResponse();
+    // Test implementation
+  });
+});
+```
+
+#### **Integration Tests** (Testing API + Database)
+```typescript
+import { setupTestDatabase } from '../tests/utils/dbTestHelpers';
+
+describe('API Integration', () => {
+  const dbHelper = setupTestDatabase(); // Auto setup/cleanup
+  
+  it('should persist data correctly', async () => {
+    const user = await dbHelper.createTestUser({
+      email: 'test@example.com'
+    });
+    expect(user.email).toBe('test@example.com');
+  });
+});
+```
+
+### **Pre-commit Hooks (Husky)**
+
+Automatically runs before each commit:
+```bash
+npm run lint && npm run test
+```
+
+This ensures code quality and prevents broken commits from entering the repository.
+
+---
+
 ## 📚 **API Documentation**
 
 ### **Base URL**

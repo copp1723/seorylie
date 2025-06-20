@@ -1,5 +1,6 @@
 node_modules
-dist
+# dist directory should be built in container, not copied from host
+dist/
 logs
 *.log
 .git
@@ -16,3 +17,21 @@ coverage
 *.swp
 *.swo
 *~
+
+# npm files (we use pnpm)
+package-lock.json
+npm-debug.log*
+.npm
+
+# Backup files and directories
+.backup-*
+*.backup
+*.bak
+
+# Testing and development
+.vitest
+.nyc_output
+tests/
+
+# CI/CD (not needed in container)
+.github/

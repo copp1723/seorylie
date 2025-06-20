@@ -2,32 +2,54 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Build argument for pnpm version
+ARG PNPM_VERSION=9.1.0
+
+# Enable Corepack and prepare pnpm
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+
+# Copy .npmrc if it exists (for private registries)
+COPY .npmrc* ./
+
 # Install root dependencies
-COPY package*.json ./
-RUN npm ci --production=false
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod=false
 
 # Copy source code
 COPY . .
 
-# Build web-console (frontend)
+# Build web-console (frontend) - dependencies already installed in workspace
 WORKDIR /app/web-console
-RUN NODE_ENV=development npm install && npm run build
+RUN NODE_ENV=development pnpm run build
 
 # Build TypeScript server bundles
 WORKDIR /app
-RUN npm run build:server
+RUN pnpm run build:server
 
 # -------- Production stage --------
 FROM node:20-alpine AS production
 WORKDIR /app
 
+# Build argument for pnpm version
+ARG PNPM_VERSION=9.1.0
+
+# Enable Corepack and prepare pnpm
+RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
+
+# Copy .npmrc if it exists (for private registries)
+COPY .npmrc* ./
+
 # Install production dependencies only
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod
 
 # Copy compiled assets from build stage
 COPY --from=build /app/web-console/dist ./web-console/dist
 COPY --from=build /app/dist ./dist
+
+# Copy only the pnpm store and node_modules for production
+COPY --from=build /app/node_modules/.pnpm ./node_modules/.pnpm
+COPY --from=build /app/node_modules ./node_modules
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001

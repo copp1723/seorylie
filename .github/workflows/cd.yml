@@ -67,6 +67,7 @@ jobs:
           build-args: |
             NODE_ENV=production
             VERSION=${{ steps.version.outputs.version }}
+            PNPM_VERSION=9.1.0
 
       - name: Set image tag output
         id: image

@@ -241,6 +241,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            PNPM_VERSION=9.1.0
 
       - name: Push to GHCR (main branch only)
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -255,6 +257,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            PNPM_VERSION=9.1.0
 
   security-scan:
     name: Security Scan
