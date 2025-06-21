@@ -70,6 +70,56 @@ try {
   console.log('   - Server: dist/index.js');
   console.log('   - Frontend: dist/public/');
   
+  // Enhanced build verification
+  console.log('\n📋 Verifying build output...');
+  
+  const requiredDirs = [
+    'dist',
+    'dist/public',
+    'dist/public/assets',
+  ];
+  
+  const enhancedRequiredFiles = [
+    { path: 'dist/index.js', minSize: 1000 },
+    { path: 'dist/public/index.html', minSize: 100 },
+  ];
+  
+  // Check directories
+  const missingDirs = requiredDirs.filter(dir => !fs.existsSync(path.join(rootDir, dir)));
+  if (missingDirs.length > 0) {
+    throw new Error(`Build verification failed. Missing directories: ${missingDirs.join(', ')}`);
+  }
+  
+  // Check files and sizes
+  for (const fileCheck of enhancedRequiredFiles) {
+    const fullPath = path.join(rootDir, fileCheck.path);
+    if (!fs.existsSync(fullPath)) {
+      throw new Error(`Build verification failed. Missing file: ${fileCheck.path}`);
+    }
+    
+    const stat = fs.statSync(fullPath);
+    if (stat.size < fileCheck.minSize) {
+      throw new Error(`Build verification failed. File too small: ${fileCheck.path} (${stat.size} bytes, expected at least ${fileCheck.minSize})`);
+    }
+  }
+  
+  // Check that assets directory exists and is not empty
+  const assetsDir = path.join(rootDir, 'dist/public/assets');
+  if (fs.existsSync(assetsDir)) {
+    const assets = fs.readdirSync(assetsDir);
+    if (assets.length === 0) {
+      console.warn('⚠️  Warning: assets directory is empty');
+    }
+  }
+  
+  console.log('✅ Build verification passed');
+  console.log('📦 Build output structure:');
+  console.log('   dist/');
+  console.log('   ├── index.js');
+  console.log('   └── public/');
+  console.log('       ├── index.html');
+  console.log('       └── assets/');
+  
 } catch (error) {
   console.error('❌ Build failed:', error.message);
   process.exit(1);

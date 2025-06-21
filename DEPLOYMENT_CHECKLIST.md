@@ -1,55 +1,107 @@
-# Deployment Checklist for Seorylie
+# Deployment Checklist
 
-## Pre-Deployment Checks
+## Pre-Deployment
+- [ ] All tests passing
+- [ ] TypeScript build successful
+- [ ] No hardcoded secrets in code
+- [ ] Environment variables documented
 
-1. **Build Process**
-   - [ ] Run `npm run build:client` locally to ensure build succeeds
-   - [ ] Verify `dist/public` directory contains built files
-   - [ ] Check that all required API endpoints are in `server.js`
+## Render.com Configuration
+- [ ] Set NODE_ENV=production
+- [ ] Set all required environment variables:
+  - [ ] DATABASE_URL (with ?sslmode=require)
+  - [ ] JWT_SECRET (32+ characters)
+  - [ ] SESSION_SECRET (32+ characters)
+  - [ ] ALLOWED_ORIGINS (comma-separated list)
+- [ ] Do NOT set PORT (Render provides this)
 
-2. **Dependencies**
-   - [ ] Ensure all production dependencies are in `dependencies` (not `devDependencies`)
-   - [ ] Verify `package.json` has correct build scripts
-   - [ ] No TypeScript files in JavaScript-only server setup
+## Optional Environment Variables
+- [ ] OPENAI_API_KEY (for AI features)
+- [ ] SENDGRID_API_KEY (for email sending)
+- [ ] REDIS_URL (for caching and sessions)
+- [ ] GA4_CREDENTIALS_JSON (for analytics)
+- [ ] SENTRY_DSN (for error tracking)
+- [ ] DATABASE_CA_CERT (if using custom SSL cert)
 
-3. **Configuration**
-   - [ ] `render.yaml` matches deployment type (Node.js vs Docker)
-   - [ ] Environment variables are properly configured
-   - [ ] Database URL is set in Render dashboard
+## Build Verification
+- [ ] Run `pnpm run build` locally
+- [ ] Verify build output with `pnpm run build:verify`
+- [ ] Check that dist/ contains:
+  - [ ] dist/index.js
+  - [ ] dist/public/index.html
+  - [ ] dist/public/assets/
+
+## Database Preparation
+- [ ] Run migrations on production database:
+  ```bash
+  DATABASE_URL=<production-url> pnpm run migrate
+  ```
+- [ ] Verify Row Level Security (RLS) is enabled
+- [ ] Check that migration tracking table exists
+
+## Security Checklist
+- [ ] JWT_SECRET is unique and strong (32+ chars)
+- [ ] SESSION_SECRET is unique and strong (32+ chars)
+- [ ] Database SSL is enabled (sslmode=require)
+- [ ] CORS is restricted to specific origins
+- [ ] API keys are properly validated
+- [ ] No sensitive data in logs
 
 ## Deployment Commands
-
 ```bash
-# Build client locally to test
-npm run build:client
+# Build and verify locally
+pnpm run build
+pnpm run build:verify
 
-# Test server locally
-PORT=3000 node server.js
+# Test with pre-start checks
+NODE_ENV=production pnpm run start:production
 
-# Test built app
-curl http://localhost:3000/
-curl http://localhost:3000/api/health
+# Test health endpoint
+curl http://localhost:3000/health
 ```
 
-## Common Issues
-
-1. **Build Failures**
-   - Check Node.js version compatibility
-   - Ensure all build dependencies are installed
-   - Verify Vite config points to correct paths
-
-2. **Wrong UI Loading**
-   - Verify `dist/public` contains latest build
-   - Check server.js serves from correct directory
-   - Clear browser cache
-
-3. **TypeScript Errors**
-   - Remove any `.ts` files from JavaScript-only setup
-   - Or add proper TypeScript compilation step
-
 ## Post-Deployment
+- [ ] Run database migrations
+- [ ] Verify /health endpoint returns 200
+- [ ] Test authentication flow
+- [ ] Check error logging
+- [ ] Monitor application logs for errors
+- [ ] Verify all features are working
 
-1. Check deployment logs in Render dashboard
-2. Test live URL endpoints
-3. Verify UI loads correctly
-4. Check database connectivity
+## Common Issues & Solutions
+
+### Build Failures
+- Check Node.js version (18+ required)
+- Ensure all dependencies installed: `pnpm install`
+- Verify TypeScript compilation: `pnpm run build:server`
+- Check frontend build: `pnpm run build:frontend`
+
+### Environment Variable Issues
+- Missing JWT_SECRET: App will refuse to start
+- Missing DATABASE_URL: Connection will fail
+- Wrong ALLOWED_ORIGINS: CORS will block requests
+
+### Database Connection Issues
+- Verify DATABASE_URL includes `?sslmode=require` for production
+- Check database is accessible from deployment
+- Ensure migrations have been run
+
+## Rollback Plan
+- [ ] Keep previous deployment version available
+- [ ] Document rollback procedure:
+  1. Revert to previous deployment in Render
+  2. Run rollback migrations if schema changed
+  3. Clear Redis cache if using
+  4. Notify team of rollback
+
+## Monitoring
+- [ ] Set up uptime monitoring for /health endpoint
+- [ ] Configure error alerts (Sentry or similar)
+- [ ] Set up performance monitoring
+- [ ] Monitor database connection pool
+
+## Documentation
+- [ ] Update API documentation if endpoints changed
+- [ ] Document new environment variables
+- [ ] Update team runbook with any new procedures
+- [ ] Record deployment date and version

@@ -49,7 +49,11 @@ COPY --from=build /app/dist ./dist
 
 # Copy only the pnpm store and node_modules for production
 COPY --from=build /app/node_modules/.pnpm ./node_modules/.pnpm
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/node_modules/.bin ./node_modules/.bin
+COPY --from=build /app/node_modules/.modules.yaml ./node_modules/.modules.yaml
+
+# Remove development files
+RUN rm -rf /app/src /app/tests /app/scripts /app/*.md /app/.git
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
@@ -57,8 +61,9 @@ USER nodejs
 
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD node -e "require('http').get('http://localhost:3000/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+# Health check with proper PORT handling
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 10000) + '/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
 
-# Start the application
-CMD ["node", "dist/index.js"]
+# Start the application with production checks
+CMD ["npm", "run", "start:production"]
