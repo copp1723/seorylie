@@ -25,10 +25,13 @@ export const users = pgTable(
   {
     id: serial("id").primaryKey(),
     username: varchar("username", { length: 100 }).notNull(),
-    email: varchar("email", { length: 100 }).notNull(),
-    password: varchar("password", { length: 100 }).notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    passwordHash: varchar("password_hash", { length: 255 }),
+    name: varchar("name", { length: 255 }),
     role: varchar("role", { length: 50 }).default("user").notNull(),
     dealershipId: integer("dealership_id"),
+    isVerified: boolean("is_verified").default(false).notNull(),
+    lastLogin: timestamp("last_login"),
     // isActive: boolean("is_active").default(true).notNull(), // Temporarily removed - column missing in DB
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
