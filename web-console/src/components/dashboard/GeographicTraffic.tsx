@@ -43,7 +43,7 @@ interface GeographicTrafficProps {
 }
 
 export function GeographicTraffic({ propertyId, dateRange }: GeographicTrafficProps) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isPending, error } = useQuery({
     queryKey: ['geographic-traffic', propertyId, dateRange],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -72,7 +72,7 @@ export function GeographicTraffic({ propertyId, dateRange }: GeographicTrafficPr
     return `${minutes}m ${remainingSeconds}s`;
   };
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <Card>
         <CardHeader>

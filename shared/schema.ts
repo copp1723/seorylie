@@ -29,7 +29,7 @@ export const users = pgTable(
     passwordHash: varchar("password_hash", { length: 255 }),
     name: varchar("name", { length: 255 }),
     role: varchar("role", { length: 50 }).default("user").notNull(),
-    dealershipId: integer("dealership_id"),
+    dealershipId: integer("dealership_id").references(() => dealerships.id, { onDelete: 'set null' }),
     isVerified: boolean("is_verified").default(false).notNull(),
     lastLogin: timestamp("last_login"),
     // isActive: boolean("is_active").default(true).notNull(), // Temporarily removed - column missing in DB
@@ -41,6 +41,8 @@ export const users = pgTable(
       emailIdx: index("email_idx").on(table.email),
       usernameIdx: index("username_idx").on(table.username),
       dealershipIdIdx: index("dealership_id_idx").on(table.dealershipId),
+      isActiveIdx: index("is_active_idx").on(table.isActive),
+      nameIdx: index("name_idx").on(table.name),
     };
   },
 );
@@ -51,7 +53,7 @@ export const dealerships = pgTable(
   {
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 100 }).notNull(),
-    subdomain: varchar("subdomain", { length: 100 }).notNull(),
+    subdomain: varchar("subdomain", { length: 100 }).notNull().unique(),
     contactEmail: varchar("contact_email", { length: 100 }),
     contactPhone: varchar("contact_phone", { length: 20 }),
     address: varchar("address", { length: 255 }),
@@ -69,6 +71,8 @@ export const dealerships = pgTable(
     return {
       subdomainIdx: index("subdomain_idx").on(table.subdomain),
       nameIdx: index("name_idx").on(table.name),
+      isActiveIdx: index("dealership_is_active_idx").on(table.isActive),
+      contactEmailIdx: index("dealership_contact_email_idx").on(table.contactEmail),
     };
   },
 );
@@ -669,6 +673,7 @@ export const tools = pgTable(
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 100 }).notNull(),
     description: text("description"),
+    category: varchar("category", { length: 50 }), // Added missing category field
     type: varchar("type", { length: 50 }).default("EXTERNAL_API").notNull(),
     service: varchar("service", { length: 50 }).notNull(),
     endpoint: varchar("endpoint", { length: 255 }),
@@ -683,6 +688,7 @@ export const tools = pgTable(
       nameIdx: index("tool_name_idx").on(table.name),
       serviceIdx: index("service_idx").on(table.service),
       typeIdx: index("tool_type_idx").on(table.type),
+      categoryIdx: index("tool_category_idx").on(table.category),
       isActiveIdx: index("tool_is_active_idx").on(table.isActive),
     };
   },

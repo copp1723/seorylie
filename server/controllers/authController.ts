@@ -40,10 +40,10 @@ export const loginUser = async (req: Request, res: Response) => {
     req.session.user = {
       id: user.id,
       username: user.username,
-      name: user.username || "", // use username since name property doesn't exist
+      name: user.name || user.username || "",
       email: user.email || "",
       role: user.role || "user",
-      dealership_id: user.dealershipId,
+      dealershipId: user.dealershipId,
     };
 
     logger.info(`User logged in: ${username} (${user.role || "user"})`);
@@ -54,10 +54,10 @@ export const loginUser = async (req: Request, res: Response) => {
       user: {
         id: user.id,
         username: user.username,
-        name: user.username || "",
+        name: user.name || user.username || "",
         email: user.email || "",
         role: user.role || "user",
-        dealership_id: user.dealershipId,
+        dealershipId: user.dealershipId,
       },
     });
   } catch (error) {
@@ -92,7 +92,7 @@ export const registerUser = async (req: Request, res: Response) => {
         username,
         email: email || "",
         password: password, // In production, hash this with bcrypt
-        // name: name || username,  // Remove this line, since User type does not have 'name'
+        name: name || username,
         role: "user",
         dealershipId: null,
       })
@@ -102,10 +102,10 @@ export const registerUser = async (req: Request, res: Response) => {
     req.session.user = {
       id: newUser[0].id,
       username: newUser[0].username,
-      name: newUser[0].username || "", // Use username as name since there is no name property
+      name: newUser[0].name || newUser[0].username || "",
       email: newUser[0].email || "",
       role: newUser[0].role || "user",
-      dealership_id: newUser[0].dealershipId,
+      dealershipId: newUser[0].dealershipId,
     };
 
     logger.info(`User registered: ${username}`);
@@ -115,10 +115,10 @@ export const registerUser = async (req: Request, res: Response) => {
       user: {
         id: newUser[0].id,
         username: newUser[0].username,
-        name: newUser[0].username || "", // Use username as name since there is no name property
+        name: newUser[0].name || newUser[0].username || "",
         email: newUser[0].email || "",
         role: newUser[0].role || "user",
-        dealership_id: newUser[0].dealershipId,
+        dealershipId: newUser[0].dealershipId,
       },
     });
   } catch (error) {

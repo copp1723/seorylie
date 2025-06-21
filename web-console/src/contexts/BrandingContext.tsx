@@ -8,7 +8,7 @@ import { queryKeys } from '../lib/queryClient';
 interface BrandingContextType {
   branding: BrandingSettings;
   updateBranding: (newBranding: Partial<BrandingSettings>) => Promise<void>;
-  isLoading: boolean;
+  isPending: boolean;
   isUpdating: boolean;
 }
 
@@ -37,7 +37,7 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
   const queryClient = useQueryClient();
 
   // Try to fetch branding settings from API
-  const { data: remoteBranding, isLoading } = useBrandingSettings();
+  const { data: remoteBranding, isPending } = useBrandingSettings();
 
   // Create update mutation directly here to avoid circular dependency
   const updateBrandingMutation = useMutation({
@@ -84,7 +84,7 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
   const value = {
     branding,
     updateBranding,
-    isLoading,
+    isPending,
     isUpdating: updateBrandingMutation.isPending
   };
 
