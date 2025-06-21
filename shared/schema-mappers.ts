@@ -242,7 +242,10 @@ export function createInsertSchemaWithMapping<TTable extends PgTable>(
   // Get the base Drizzle schema with omissions
   let baseSchema = createInsertSchema(table);
   if (omit.length > 0) {
-    const omitObj = omit.reduce((acc, key) => ({ ...acc, [key]: true }), {});
+    const omitObj = omit.reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {} as Record<string, boolean>);
     baseSchema = baseSchema.omit(omitObj);
   }
   

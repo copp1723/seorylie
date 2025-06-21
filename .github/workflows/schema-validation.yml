@@ -16,7 +16,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'postgres' }}
           POSTGRES_DB: test_db
         options: >-
           --health-cmd pg_isready
@@ -46,7 +46,7 @@ jobs:
       - name: Run migrations
         run: pnpm run migrate
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DATABASE_URL: postgresql://postgres:${{ secrets.POSTGRES_PASSWORD || 'postgres' }}@localhost:5432/test_db
           
       - name: Run schema comparison
         run: tsx scripts/compare-schema.ts

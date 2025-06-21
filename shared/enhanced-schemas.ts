@@ -268,6 +268,33 @@ export const legacyDealershipWrapper = createDeprecationWrapper(
   'Legacy dealership endpoint with snake_case is deprecated. Use camelCase API endpoints instead.'
 );
 
+/**
+ * Wrapper for legacy conversation endpoints that still use snake_case
+ */
+export const legacyConversationWrapper = createDeprecationWrapper(
+  enhancedConversationSchemas.select,
+  (conversation) => conversation,
+  'Legacy conversation endpoint with snake_case is deprecated. Use camelCase API endpoints instead.'
+);
+
+/**
+ * Wrapper for legacy message endpoints that still use snake_case
+ */
+export const legacyMessageWrapper = createDeprecationWrapper(
+  enhancedMessageSchemas.select,
+  (message) => message,
+  'Legacy message endpoint with snake_case is deprecated. Use camelCase API endpoints instead.'
+);
+
+/**
+ * Wrapper for legacy customer endpoints that still use snake_case
+ */
+export const legacyCustomerWrapper = createDeprecationWrapper(
+  enhancedCustomerSchemas.select,
+  (customer) => customer,
+  'Legacy customer endpoint with snake_case is deprecated. Use camelCase API endpoints instead.'
+);
+
 // ===== TYPE EXPORTS =====
 
 // Enhanced type definitions that are camelCase-friendly
@@ -326,7 +353,7 @@ export function transformForAPI<TDB, TAPI>(
     acc[camelKey] = (dbResult as any)[key];
     return acc;
   }, {} as any);
-  
+
   // Then validate the transformed result
   const result = apiSchema.safeParse(transformed);
 
@@ -340,15 +367,18 @@ export function transformForAPI<TDB, TAPI>(
 
 // ===== MIGRATION UTILITIES =====
 
-/**
- * Utility to check if an object uses deprecated snake_case keys
- */
+// Define known deprecated keys to avoid false positives
 const DEPRECATED_KEYS = new Set([
   'user_name', 'email_address', 'dealership_id', 'is_active',
   'contact_email', 'contact_phone', 'user_id', 'customer_id',
   'assigned_agent_id', 'conversation_id', 'sender_type',
-  'first_name', 'last_name'
+  'first_name', 'last_name', 'created_at', 'updated_at',
+  'last_login_at', 'verification_status', 'display_name'
 ]);
+
+/**
+ * Utility to check if an object uses deprecated snake_case keys
+ */
 
 export function hasDeprecatedKeys(obj: Record<string, any>): boolean {
   return Object.keys(obj).some(key => DEPRECATED_KEYS.has(key));
@@ -378,6 +408,9 @@ export function generateMigrationWarning(
  * 
  * // For legacy endpoints (with deprecation warnings):
  * const legacyUser = legacyUserWrapper.validate(snakeCaseData);
+ * const legacyConversation = legacyConversationWrapper.validate(snakeCaseConversationData);
+ * const legacyMessage = legacyMessageWrapper.validate(snakeCaseMessageData);
+ * const legacyCustomer = legacyCustomerWrapper.validate(snakeCaseCustomerData);
  * 
  * // For new schema-aware operations:
  * const newUser = enhancedUserSchemas.insert.parse(camelCaseData);

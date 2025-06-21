@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -11,12 +12,18 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  if (req.user && req.user.userId && req.user.role) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    req.user = decoded;
     next();
-  } else {
-    // Log authentication failure for security monitoring
-    console.warn('Authentication failed: Invalid or missing user data');
-    res.status(401).json({ error: 'Authentication required' });
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
   }
 }
 
