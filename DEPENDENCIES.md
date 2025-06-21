@@ -100,7 +100,7 @@ pnpm add package-name
 ### Missing Dependencies Error
 
 If you see errors like:
-```
+```text
 Cannot find module 'drizzle-kit' or its corresponding type declarations
 ```
 
@@ -112,7 +112,7 @@ pnpm add -w drizzle-kit
 ### Workspace Root Error
 
 If you see:
-```
+```text
 ERR_PNPM_ADDING_TO_ROOT Running this command will add the dependency to the workspace root
 ```
 
@@ -196,7 +196,7 @@ pnpm audit --audit-level moderate
 ## 🎯 Best Practices
 
 1. **Always use pnpm** instead of npm for this project
-2. **Use `-w` flag** when installing to workspace root
+2. **Use the `-w` flag** when installing to workspace root
 3. **Install @types packages** as devDependencies
 4. **Run `pnpm audit`** regularly for security
 5. **Keep dependencies updated** but test thoroughly

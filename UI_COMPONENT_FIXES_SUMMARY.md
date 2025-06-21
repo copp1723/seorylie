@@ -47,7 +47,7 @@ Successfully completed all UI component TypeScript fixes as part of the coordina
 4. **Parameter Types**: Fixed dynamic types to explicit union types
 
 ### Files Modified
-```
+```text
 web-console/src/contexts/AgencyBrandingContext.tsx
 web-console/src/pages/AuthenticatedApp.tsx
 web-console/src/pages/agency/AnalyticsEnhanced.tsx
