@@ -508,7 +508,7 @@ await db.insert(users).values({ dealershipId: 123 }); // Fails - dealershipId do
 
 // Solution: Use enhanced schema
 const validatedData = enhancedUserSchemas.insert.parse({ dealershipId: 123 });
-await db.insert(users).values(validatedData); // Works - converts to dealership_id
+await db.insert(users).values(validatedData); // Works - converts dealershipId to dealership_id
 ```
 
 This migration approach ensures a smooth transition from mixed naming conventions to a standardized snake_case (DB) → camelCase (API/TS) pattern while maintaining backward compatibility during the deprecation window.
