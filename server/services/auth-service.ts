@@ -61,11 +61,54 @@ export interface SessionData {
   expiresAt: Date;
 }
 
+/**
+ * Raw user record from the database
+ */
+interface DbUserRecord {
+  id: string | number;
+  email: string;
+  name: string | null;
+  role: string;
+  password_hash: string;
+  dealership_id: number | null;
+  is_active: boolean;
+  last_login_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export class AuthService extends BaseService {
   private jwtSecret: string;
   private jwtExpiresIn: string;
   private bcryptRounds: number;
   private magicLinkExpiresIn: number;
+  /**
+   * Ensure database client is available
+   */
+  private ensureDb(): asserts db is NonNullable<typeof db> {
+    if (!db) {
+      throw new CustomError("Database not initialized", 500, {
+        code: "DB_NOT_INITIALIZED",
+      });
+    }
+  }
+
+  /**
+   * Map raw database user record to service User type
+   */
+  private mapDbUser(record: DbUserRecord): User {
+    return {
+      id: record.id.toString(),
+      email: record.email,
+      name: record.name ?? undefined,
+      role: record.role,
+      dealershipId: record.dealership_id ?? undefined,
+      isActive: record.is_active,
+      lastLoginAt: record.last_login_at ?? undefined,
+      createdAt: record.created_at,
+      updatedAt: record.updated_at,
+    };
+  }
 
   constructor(config: ServiceConfig) {
     super({
@@ -106,7 +149,8 @@ export class AuthService extends BaseService {
   ): Promise<ServiceHealth> {
     if (dependency === "database") {
       try {
-        await db.select().from(users).limit(1);
+        this.ensureDb();
+        await db!.select().from(users).limit(1);
         return {
           status: "healthy",
           lastCheck: new Date(),
@@ -139,14 +183,15 @@ export class AuthService extends BaseService {
     credentials: LoginCredentials,
   ): Promise<{ user: User; tokens: AuthTokens; session: SessionData }> {
     return this.executeWithMetrics(async () => {
+      this.ensureDb();
       const { email, password } = credentials;
 
       // Find user by email
-      const userResult = await db
+      const userResult = (await db!
         .select()
         .from(users)
         .where(eq(users.email, email.toLowerCase()))
-        .limit(1);
+        .limit(1)) as DbUserRecord[];
 
       if (!userResult[0]) {
         throw new CustomError("Invalid email or password", 401, {
@@ -187,17 +232,7 @@ export class AuthService extends BaseService {
       const session = await this.createSession(user.id);
 
       // Return user data (without password)
-      const userData: User = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        dealershipId: user.dealership_id,
-        isActive: user.is_active,
-        lastLoginAt: user.last_login_at,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
-      };
+      const userData = this.mapDbUser(user);
 
       logger.info("User logged in successfully", {
         userId: user.id,
@@ -216,14 +251,15 @@ export class AuthService extends BaseService {
     data: RegisterData,
   ): Promise<{ user: User; tokens: AuthTokens; session: SessionData }> {
     return this.executeWithMetrics(async () => {
+      this.ensureDb();
       const { email, password, name, role = "user", dealershipId } = data;
 
       // Check if user already exists
-      const existingUser = await db
+      const existingUser = (await db!
         .select()
         .from(users)
         .where(eq(users.email, email.toLowerCase()))
-        .limit(1);
+        .limit(1)) as DbUserRecord[];
 
       if (existingUser[0]) {
         throw new CustomError("User with this email already exists", 409, {
@@ -283,14 +319,15 @@ export class AuthService extends BaseService {
    */
   async generateMagicLink(data: MagicLinkData): Promise<string> {
     return this.executeWithMetrics(async () => {
+      this.ensureDb();
       const { email, redirectUrl, expiresIn = this.magicLinkExpiresIn } = data;
 
       // Check if user exists
-      const userResult = await db
+      const userResult = (await db!
         .select()
         .from(users)
         .where(eq(users.email, email.toLowerCase()))
-        .limit(1);
+        .limit(1)) as DbUserRecord[];
 
       if (!userResult[0]) {
         throw new CustomError("User not found", 404, {
@@ -332,8 +369,9 @@ export class AuthService extends BaseService {
     token: string,
   ): Promise<{ user: User; tokens: AuthTokens; session: SessionData }> {
     return this.executeWithMetrics(async () => {
+      this.ensureDb();
       // Find magic link
-      const linkResult = await db
+      const linkResult = (await db!
         .select()
         .from(magicLinkInvitations)
         .where(
@@ -343,7 +381,7 @@ export class AuthService extends BaseService {
             gt(magicLinkInvitations.expires_at, new Date()),
           ),
         )
-        .limit(1);
+        .limit(1)) as any[];
 
       if (!linkResult[0]) {
         throw new CustomError("Invalid or expired magic link", 401, {
@@ -360,11 +398,11 @@ export class AuthService extends BaseService {
         .where(eq(magicLinkInvitations.id, link.id));
 
       // Get user
-      const userResult = await db
+      const userResult = (await db!
         .select()
         .from(users)
         .where(eq(users.id, link.user_id))
-        .limit(1);
+        .limit(1)) as DbUserRecord[];
 
       if (!userResult[0] || !userResult[0].is_active) {
         throw new CustomError("User not found or inactive", 401, {
@@ -387,17 +425,7 @@ export class AuthService extends BaseService {
       const session = await this.createSession(user.id);
 
       // Return user data
-      const userData: User = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        dealershipId: user.dealership_id,
-        isActive: user.is_active,
-        lastLoginAt: new Date(),
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
-      };
+      const userData = this.mapDbUser(user);
 
       logger.info("User authenticated with magic link", {
         userId: user.id,
@@ -414,15 +442,16 @@ export class AuthService extends BaseService {
    */
   async verifyToken(token: string): Promise<User> {
     return this.executeWithMetrics(async () => {
+      this.ensureDb();
       try {
         const decoded = jwt.verify(token, this.jwtSecret) as any;
 
         // Get user from database
-        const userResult = await db
+        const userResult = (await db!
           .select()
           .from(users)
           .where(eq(users.id, decoded.userId))
-          .limit(1);
+          .limit(1)) as DbUserRecord[];
 
         if (!userResult[0] || !userResult[0].is_active) {
           throw new CustomError("User not found or inactive", 401, {
@@ -431,18 +460,7 @@ export class AuthService extends BaseService {
         }
 
         const user = userResult[0];
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          dealershipId: user.dealership_id,
-          isActive: user.is_active,
-          lastLoginAt: user.last_login_at,
-          createdAt: user.created_at,
-          updatedAt: user.updated_at,
-        };
+        return this.mapDbUser(user);
       } catch (error) {
         if (error instanceof jwt.JsonWebTokenError) {
           throw new CustomError("Invalid token", 401, {
@@ -459,6 +477,7 @@ export class AuthService extends BaseService {
    */
   async logout(sessionId: string): Promise<void> {
     return this.executeWithMetrics(async () => {
+      this.ensureDb();
       await db
         .update(sessions)
         .set({ is_active: false, ended_at: new Date() })
@@ -499,6 +518,7 @@ export class AuthService extends BaseService {
    * Create user session
    */
   private async createSession(userId: string): Promise<SessionData> {
+    this.ensureDb();
     const sessionId = uuidv4();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 

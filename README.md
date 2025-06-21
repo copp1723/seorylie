@@ -511,6 +511,7 @@ We welcome contributions! Please follow our development workflow:
 ### **Code Standards**
 
 - **TypeScript**: Strict mode enabled
+- **Server Services**: Explicit parameter/return types with runtime DB null checks
 - **Linting**: ESLint + Prettier
 - **Testing**: Jest for unit tests
 - **Documentation**: JSDoc for functions
