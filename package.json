@@ -29,6 +29,9 @@
     "schema:ci": "tsx scripts/ci-schema-check.ts",
     "schema:validate": "pnpm run schema:check && pnpm run circular:check",
     "circular:check": "madge --circular --extensions ts,tsx shared/ server/ web-console/src/",
+    "deps:check": "npx tsc --noEmit --skipLibCheck",
+    "deps:verify": "pnpm list --depth=0 && pnpm audit",
+    "deps:install-missing": "pnpm add -w drizzle-kit inquirer archiver bcrypt cookie-parser csv-parser mailparser redis ajv-formats && pnpm add -w -D @playwright/test @testing-library/react jsdom @types/archiver @types/bcrypt @types/cookie-parser @types/mailparser @types/inquirer",
     "precommit": "pnpm run test && pnpm run schema:validate",
     "prepare": "husky"
   },
