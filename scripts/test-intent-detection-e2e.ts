@@ -1926,4 +1926,18 @@ async function runDemoScenarios() {
       log(chalk.green(`✓ Engagement level: high (4 messages in 30 minutes)`));
       log(chalk.green(`✓ Confidence: ${triggerEvent.args[0].confidence}`));
       log(chalk.green(`✓ Processing time: ${latency3}ms`));
-      log(chalk.green(`✓ Handover created for conversation #
+      log(chalk.green(`✓ Handover created for conversation #${mockConversation.id}`));
+    } else {
+      log(chalk.red(`✗ No intent detected`));
+    }
+
+    // Restore original functions
+    behaviouralMonitor.evaluateEngagement = originalBehaviouralEvaluate;
+    orchestrator.emit = originalEmit;
+
+    return true;
+  } catch (error) {
+    logError('Demo scenarios failed', error);
+    return false;
+  }
+}
