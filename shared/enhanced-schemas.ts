@@ -337,8 +337,15 @@ export function transformForAPI<TDB, TAPI>(
 /**
  * Utility to check if an object uses deprecated snake_case keys
  */
+const DEPRECATED_KEYS = new Set([
+  'user_name', 'email_address', 'dealership_id', 'is_active',
+  'contact_email', 'contact_phone', 'user_id', 'customer_id',
+  'assigned_agent_id', 'conversation_id', 'sender_type',
+  'first_name', 'last_name'
+]);
+
 export function hasDeprecatedKeys(obj: Record<string, any>): boolean {
-  return Object.keys(obj).some(key => key.includes('_'));
+  return Object.keys(obj).some(key => DEPRECATED_KEYS.has(key));
 }
 
 /**
