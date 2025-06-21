@@ -409,7 +409,10 @@ export default {
   // Legacy wrappers
   legacy: {
     user: legacyUserWrapper,
-    dealership: legacyDealershipWrapper
+    dealership: legacyDealershipWrapper,
+    conversation: legacyConversationWrapper,
+    message: legacyMessageWrapper,
+    customer: legacyCustomerWrapper
   },
   
   // Utilities
