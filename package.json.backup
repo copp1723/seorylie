@@ -1,0 +1,14 @@
+{
+  "name": "seorylie-simple",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node server-with-db.js",
+    "start:simple": "node index.js",
+    "setup:db": "node setup-db.js",
+    "setup:ga4": "node setup-ga4-credentials.js",
+    "dev": "DATABASE_URL=postgresql://postgres:password@localhost:5432/seorylie node server-with-db.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}

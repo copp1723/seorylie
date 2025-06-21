@@ -85,13 +85,16 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Username already exists" });
     }
 
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create new user
     const newUser = await db
       .insert(users)
       .values({
         username,
         email: email || "",
-        password: password, // In production, hash this with bcrypt
+        password: hashedPassword,
         name: name || username,
         role: "user",
         dealershipId: null,
