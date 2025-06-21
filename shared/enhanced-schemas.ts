@@ -320,15 +320,21 @@ export function transformForAPI<TDB, TAPI>(
   dbResult: TDB,
   apiSchema: z.ZodSchema<TAPI>
 ): TAPI {
-  // The schema-mappers already handle the transformation
-  // This validates the final API format
-  const result = apiSchema.safeParse(dbResult);
+  // First transform snake_case to camelCase if needed
+  const transformed = Object.keys(dbResult as any).reduce((acc, key) => {
+    const camelKey = key.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
+    acc[camelKey] = (dbResult as any)[key];
+    return acc;
+  }, {} as any);
   
+  // Then validate the transformed result
+  const result = apiSchema.safeParse(transformed);
+
   if (!result.success) {
     console.error('API transformation failed:', result.error);
     throw new Error('Failed to transform database result to API format');
   }
-  
+
   return result.data;
 }
 
