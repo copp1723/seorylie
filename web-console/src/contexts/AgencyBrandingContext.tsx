@@ -177,6 +177,25 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
     },
   });
 
+  // Helper function to ensure color contrast
+  const ensureColorContrast = (color: string): string => {
+    const rgb = color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    if (rgb) {
+      const r = parseInt(rgb[1], 16);
+      const g = parseInt(rgb[2], 16);
+      const b = parseInt(rgb[3], 16);
+      
+      // Calculate perceived brightness
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      
+      // If the color is too light (brightness > 200), return a default professional blue
+      if (brightness > 200) {
+        return '#2563eb'; // Professional blue
+      }
+    }
+    return color;
+  };
+
   // Apply branding to DOM
   useEffect(() => {
     const activeBranding = isPreviewMode && previewBranding && branding
@@ -187,10 +206,10 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
 
     const root = document.documentElement;
 
-    // Apply CSS variables
-    root.style.setProperty('--brand-primary', activeBranding.primary_color);
-    root.style.setProperty('--brand-secondary', activeBranding.secondary_color);
-    root.style.setProperty('--brand-accent', activeBranding.accent_color || '#10b981');
+    // Apply CSS variables with contrast check
+    root.style.setProperty('--brand-primary', ensureColorContrast(activeBranding.primary_color));
+    root.style.setProperty('--brand-secondary', ensureColorContrast(activeBranding.secondary_color));
+    root.style.setProperty('--brand-accent', ensureColorContrast(activeBranding.accent_color || '#10b981'));
     root.style.setProperty('--brand-font', activeBranding.font_family);
 
     // Apply theme

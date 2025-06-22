@@ -12,10 +12,31 @@ interface BrandingContextType {
   isUpdating: boolean;
 }
 
+// Helper function to ensure color contrast
+function ensureColorContrast(color: string): string {
+  // If the color is too light (like pink or light colors), darken it
+  // This is a simple check - you can make it more sophisticated
+  const rgb = color.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (rgb) {
+    const r = parseInt(rgb[1], 16);
+    const g = parseInt(rgb[2], 16);
+    const b = parseInt(rgb[3], 16);
+    
+    // Calculate perceived brightness
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    
+    // If the color is too light (brightness > 200), return a default professional blue
+    if (brightness > 200) {
+      return '#2563eb'; // Professional blue
+    }
+  }
+  return color;
+}
+
 const defaultBranding: BrandingSettings = {
   companyName: 'Rylie SEO',
-  primaryColor: '#2563eb',
-  secondaryColor: '#1e40af',
+  primaryColor: '#2563eb', // Professional blue
+  secondaryColor: '#1e40af', // Darker blue
   theme: 'light'
 };
 
@@ -70,8 +91,13 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
   // Apply CSS custom properties for theming
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty('--brand-primary', branding.primaryColor);
-    root.style.setProperty('--brand-secondary', branding.secondaryColor);
+    
+    // Ensure colors have good contrast
+    const primaryColor = ensureColorContrast(branding.primaryColor || defaultBranding.primaryColor);
+    const secondaryColor = ensureColorContrast(branding.secondaryColor || defaultBranding.secondaryColor);
+    
+    root.style.setProperty('--brand-primary', primaryColor);
+    root.style.setProperty('--brand-secondary', secondaryColor);
     
     // Apply theme class
     if (branding.theme === 'dark') {
