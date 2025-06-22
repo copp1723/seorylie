@@ -4,48 +4,78 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    /* Light mode - Professional color scheme with excellent contrast */
+    --background: 0 0% 100%; /* white */
+    --foreground: 240 10% 3.9%; /* near black */
+    --card: 0 0% 100%; /* white */
+    --card-foreground: 240 10% 3.9%; /* near black */
+    --popover: 0 0% 100%; /* white */
+    --popover-foreground: 240 10% 3.9%; /* near black */
+    
+    /* Professional blue primary color */
+    --primary: 217 91% 60%; /* Professional blue */
+    --primary-foreground: 0 0% 100%; /* white text on blue */
+    
+    /* Subtle gray secondary */
+    --secondary: 240 4.8% 95.9%; /* very light gray */
+    --secondary-foreground: 240 10% 3.9%; /* near black */
+    
+    /* Muted colors for less important elements */
+    --muted: 240 4.8% 95.9%; /* very light gray */
+    --muted-foreground: 240 3.8% 46.1%; /* medium gray */
+    
+    /* Accent colors */
+    --accent: 240 4.8% 95.9%; /* very light gray */
+    --accent-foreground: 240 10% 3.9%; /* near black */
+    
+    /* Error/destructive colors */
+    --destructive: 0 84.2% 60.2%; /* red */
+    --destructive-foreground: 0 0% 100%; /* white */
+    
+    /* UI element colors */
+    --border: 240 5.9% 90%; /* light gray border */
+    --input: 240 5.9% 90%; /* light gray border */
+    --ring: 217 91% 60%; /* Professional blue for focus */
     --radius: 0.5rem;
+    
+    /* Brand colors - default to professional blue if not set */
+    --brand-primary: #3B82F6; /* Professional blue fallback */
+    --brand-secondary: #2563EB; /* Darker blue fallback */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    /* Dark mode - Professional dark theme */
+    --background: 240 10% 3.9%; /* near black */
+    --foreground: 0 0% 98%; /* near white */
+    --card: 240 10% 3.9%; /* near black */
+    --card-foreground: 0 0% 98%; /* near white */
+    --popover: 240 10% 3.9%; /* near black */
+    --popover-foreground: 0 0% 98%; /* near white */
+    
+    /* Adjusted primary for dark mode */
+    --primary: 217 91% 60%; /* Professional blue */
+    --primary-foreground: 0 0% 100%; /* white */
+    
+    /* Dark mode secondary */
+    --secondary: 240 3.7% 15.9%; /* dark gray */
+    --secondary-foreground: 0 0% 98%; /* near white */
+    
+    /* Dark mode muted */
+    --muted: 240 3.7% 15.9%; /* dark gray */
+    --muted-foreground: 240 5% 64.9%; /* light gray */
+    
+    /* Dark mode accent */
+    --accent: 240 3.7% 15.9%; /* dark gray */
+    --accent-foreground: 0 0% 98%; /* near white */
+    
+    /* Dark mode destructive */
+    --destructive: 0 62.8% 30.6%; /* dark red */
+    --destructive-foreground: 0 0% 98%; /* near white */
+    
+    /* Dark mode UI elements */
+    --border: 240 3.7% 15.9%; /* dark gray border */
+    --input: 240 3.7% 15.9%; /* dark gray border */
+    --ring: 217 91% 60%; /* Professional blue */
   }
 }
 
@@ -55,29 +85,48 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Ensure good readability */
+    font-smoothing: antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Ensure all text has proper contrast */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
+  
+  p, span, div {
+    @apply text-foreground;
+  }
+  
+  /* Fix any potential contrast issues with links */
+  a {
+    @apply text-primary hover:text-primary/80;
   }
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - more subtle */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  @apply bg-muted/50;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/20 rounded-full;
+  @apply bg-muted-foreground/30 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/30;
+  @apply bg-muted-foreground/50;
 }
 
-/* Focus styles */
+/* Focus styles with better visibility */
 .focus-visible {
-  @apply outline-none ring-2 ring-ring ring-offset-2;
+  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
 }
 
 /* Animation utilities */
@@ -96,15 +145,37 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Brand color utilities */
+/* Brand color utilities - ensure text contrast */
 .brand-primary {
   color: var(--brand-primary);
 }
 
 .bg-brand-primary {
   background-color: var(--brand-primary);
+  color: white; /* Ensure white text on brand color backgrounds */
 }
 
 .border-brand-primary {
   border-color: var(--brand-primary);
+}
+
+/* Global fixes for better readability */
+@layer utilities {
+  /* Ensure proper text contrast on colored backgrounds */
+  .text-on-primary {
+    @apply text-primary-foreground;
+  }
+  
+  .text-on-secondary {
+    @apply text-secondary-foreground;
+  }
+  
+  /* Professional shadow utilities */
+  .shadow-soft {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .shadow-medium {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  }
 }
