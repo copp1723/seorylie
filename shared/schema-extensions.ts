@@ -241,38 +241,291 @@ export const responseSuggestions = pgTable(
   }),
 );
 
-// Create insert schemas
-export const insertEscalationTriggerSchema = createInsertSchema(
-  escalationTriggers,
-).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertLeadScoreSchema = createInsertSchema(leadScores).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+// ===== ENHANCED SCHEMAS WITH DUAL-CASE SUPPORT =====
+
+// Import enhanced schema mappers
+import {
+  createSelectSchemaWithMapping,
+  createInsertSchemaWithMapping,
+  createMappedSchemas,
+  createTransitionalSchema,
+  createDeprecationWrapper
+} from './schema-mappers';
+
+// Create enhanced schema mappings for all extension tables
+export const enhancedEscalationTriggerSchemas = createMappedSchemas(escalationTriggers, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
 });
-export const insertFollowUpSchema = createInsertSchema(followUps).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+
+export const enhancedLeadScoreSchemas = createMappedSchemas(leadScores, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
 });
-export const insertUserInvitationSchema = createInsertSchema(
-  userInvitations,
-).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertExtensionAuditLogSchema = createInsertSchema(
-  extensionAuditLogs,
-).omit({ id: true, createdAt: true });
-export const insertCustomerProfileSchema = createInsertSchema(
-  customerProfiles,
-).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCustomerInteractionSchema = createInsertSchema(
-  customerInteractions,
-).omit({ id: true, createdAt: true });
-export const insertCustomerInsightSchema = createInsertSchema(
-  customerInsights,
-).omit({ id: true, createdAt: true });
-export const insertResponseSuggestionSchema = createInsertSchema(
-  responseSuggestions,
-).omit({ id: true, createdAt: true });
+
+export const enhancedFollowUpSchemas = createMappedSchemas(followUps, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedUserInvitationSchemas = createMappedSchemas(userInvitations, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedExtensionAuditLogSchemas = createMappedSchemas(extensionAuditLogs, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt']
+});
+
+export const enhancedCustomerProfileSchemas = createMappedSchemas(customerProfiles, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt', 'updatedAt']
+});
+
+export const enhancedCustomerInteractionSchemas = createMappedSchemas(customerInteractions, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt']
+});
+
+export const enhancedCustomerInsightSchemas = createMappedSchemas(customerInsights, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt']
+});
+
+export const enhancedResponseSuggestionSchemas = createMappedSchemas(responseSuggestions, {
+  deprecationWarnings: true,
+  transitionalSupport: true,
+  omitFromInsert: ['id', 'createdAt']
+});
+
+// ===== TRANSITIONAL SCHEMAS FOR API ENDPOINTS =====
+
+// Escalation trigger creation schema with legacy support
+export const createEscalationTriggerRequestSchema = createTransitionalSchema(
+  {
+    dealershipId: z.number(),
+    name: z.string().min(1).max(100),
+    description: z.string().optional(),
+    conditions: z.array(
+      z.object({
+        type: z.enum(['sentiment', 'urgency', 'repeated_questions', 'keyword', 'custom']),
+        value: z.union([z.string(), z.number(), z.array(z.string())]),
+        threshold: z.number().optional()
+      })
+    ).default([]),
+    isActive: z.boolean().default(true)
+  },
+  {
+    // Legacy mappings
+    'dealership_id': 'dealershipId',
+    'is_active': 'isActive'
+  }
+);
+
+// Follow-up creation schema with dual-case support
+export const createFollowUpRequestSchema = createTransitionalSchema(
+  {
+    conversationId: z.number(),
+    dealershipId: z.number(),
+    customerName: z.string().min(1).max(255),
+    customerContact: z.string().max(255).optional(),
+    assignedTo: z.number().optional(),
+    scheduledTime: z.string().datetime(),
+    notes: z.string().optional(),
+    status: z.enum(['scheduled', 'reminded', 'completed', 'cancelled']).default('scheduled')
+  },
+  {
+    // Legacy mappings
+    'conversation_id': 'conversationId',
+    'dealership_id': 'dealershipId',
+    'customer_name': 'customerName',
+    'customer_contact': 'customerContact',
+    'assigned_to': 'assignedTo',
+    'scheduled_time': 'scheduledTime'
+  }
+);
+
+// Customer profile creation schema
+export const createCustomerProfileRequestSchema = createTransitionalSchema(
+  {
+    dealershipId: z.number(),
+    customerId: z.number().optional(),
+    name: z.string().max(255).optional(),
+    email: z.string().email().max(255).optional(),
+    phone: z.string().max(50).optional(),
+    preferences: z.record(z.any()).default({}),
+    buyingTimeline: z.string().max(100).optional(),
+    lastInteraction: z.string().datetime().optional()
+  },
+  {
+    // Legacy mappings
+    'dealership_id': 'dealershipId',
+    'customer_id': 'customerId',
+    'buying_timeline': 'buyingTimeline',
+    'last_interaction': 'lastInteraction'
+  }
+);
+
+// User invitation creation schema
+export const createUserInvitationRequestSchema = createTransitionalSchema(
+  {
+    email: z.string().email().max(255),
+    role: z.string().max(50),
+    dealershipId: z.number().optional(),
+    invitedBy: z.number().optional(),
+    token: z.string().max(255),
+    expiresAt: z.string().datetime()
+  },
+  {
+    // Legacy mappings
+    'dealership_id': 'dealershipId',
+    'invited_by': 'invitedBy',
+    'expires_at': 'expiresAt'
+  }
+);
+
+// Customer insight creation schema
+export const createCustomerInsightRequestSchema = createTransitionalSchema(
+  {
+    conversationId: z.number(),
+    insightType: z.string().max(100),
+    confidence: z.number().min(0).max(100),
+    value: z.string().min(1),
+    context: z.record(z.any()).default({})
+  },
+  {
+    // Legacy mappings
+    'conversation_id': 'conversationId',
+    'insight_type': 'insightType'
+  }
+);
+
+// ===== API RESPONSE SCHEMAS (ALWAYS CAMELCASE) =====
+
+// API response schemas that standardize output to camelCase
+export const apiEscalationTriggerSchema = z.object({
+  id: z.number(),
+  dealershipId: z.number(),
+  name: z.string(),
+  description: z.string().nullable(),
+  conditions: z.array(z.object({
+    type: z.string(),
+    value: z.union([z.string(), z.number(), z.array(z.string())]),
+    threshold: z.number().optional()
+  })),
+  isActive: z.boolean(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime()
+});
+
+export const apiFollowUpSchema = z.object({
+  id: z.number(),
+  conversationId: z.number(),
+  dealershipId: z.number(),
+  customerName: z.string(),
+  customerContact: z.string().nullable(),
+  assignedTo: z.number().nullable(),
+  scheduledTime: z.string().datetime(),
+  notes: z.string().nullable(),
+  status: z.string(),
+  completedAt: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime()
+});
+
+export const apiCustomerProfileSchema = z.object({
+  id: z.number(),
+  dealershipId: z.number(),
+  customerId: z.number().nullable(),
+  name: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  preferences: z.record(z.any()),
+  buyingTimeline: z.string().nullable(),
+  lastInteraction: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime()
+});
+
+export const apiUserInvitationSchema = z.object({
+  id: z.number(),
+  email: z.string(),
+  role: z.string(),
+  dealershipId: z.number().nullable(),
+  invitedBy: z.number().nullable(),
+  token: z.string(),
+  expiresAt: z.string().datetime(),
+  status: z.string(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime()
+});
+
+export const apiCustomerInsightSchema = z.object({
+  id: z.number(),
+  conversationId: z.number(),
+  insightType: z.string(),
+  confidence: z.number(),
+  value: z.string(),
+  context: z.record(z.any()),
+  createdAt: z.string().datetime()
+});
+
+// ===== BACKWARD COMPATIBILITY SCHEMAS (DEPRECATED) =====
+
+// Keep legacy schemas for existing code compatibility but mark as deprecated
+// These will be removed in v2.0.0
+export const insertEscalationTriggerSchema = enhancedEscalationTriggerSchemas.insert;
+export const insertLeadScoreSchema = enhancedLeadScoreSchemas.insert;
+export const insertFollowUpSchema = enhancedFollowUpSchemas.insert;
+export const insertUserInvitationSchema = enhancedUserInvitationSchemas.insert;
+export const insertExtensionAuditLogSchema = enhancedExtensionAuditLogSchemas.insert;
+export const insertCustomerProfileSchema = enhancedCustomerProfileSchemas.insert;
+export const insertCustomerInteractionSchema = enhancedCustomerInteractionSchemas.insert;
+export const insertCustomerInsightSchema = enhancedCustomerInsightSchemas.insert;
+export const insertResponseSuggestionSchema = enhancedResponseSuggestionSchemas.insert;
+
+// ===== VALIDATION HELPERS =====
+
+/**
+ * Helper to validate escalation trigger data for database insertion
+ */
+export function validateEscalationTriggerForDB(data: unknown) {
+  return enhancedEscalationTriggerSchemas.insert.parse(data);
+}
+
+/**
+ * Helper to transform database escalation trigger to API format
+ */
+export function transformEscalationTriggerForAPI(dbResult: any) {
+  return apiEscalationTriggerSchema.parse(
+    enhancedEscalationTriggerSchemas.select.parse(dbResult)
+  );
+}
+
+/**
+ * Helper to validate follow-up data for database insertion
+ */
+export function validateFollowUpForDB(data: unknown) {
+  return enhancedFollowUpSchemas.insert.parse(data);
+}
+
+/**
+ * Helper to transform database follow-up to API format
+ */
+export function transformFollowUpForAPI(dbResult: any) {
+  return apiFollowUpSchema.parse(
+    enhancedFollowUpSchemas.select.parse(dbResult)
+  );
+}
 
 // Types
 export type EscalationTrigger = typeof escalationTriggers.$inferSelect;

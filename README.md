@@ -15,16 +15,20 @@
 # 1. Clone and install dependencies
 git clone <repository-url>
 cd seorylie
-npm install
+pnpm install
 
-# 2. Setup environment
+# 2. Install all required dependencies (if not already installed)
+pnpm add -w drizzle-kit inquirer archiver bcrypt cookie-parser csv-parser mailparser redis ajv-formats
+pnpm add -w -D @playwright/test @testing-library/react jsdom @types/archiver @types/bcrypt @types/cookie-parser @types/mailparser @types/inquirer
+
+# 3. Setup environment
 cp .env.example .env
 # Edit .env with your configuration
 
-# 3. Start development server
-npm run dev
+# 4. Start development server
+pnpm run dev
 
-# 4. Test the API
+# 5. Test the API
 curl http://localhost:3000/health
 ```
 
@@ -32,9 +36,69 @@ curl http://localhost:3000/health
 
 ---
 
+## 📦 **Dependencies**
+
+### **Required Production Dependencies**
+
+The following packages are essential for the application to run:
+
+```bash
+# Core dependencies (automatically installed with pnpm install)
+drizzle-kit          # Database schema management and migrations
+inquirer            # Interactive command-line prompts
+archiver            # File compression and archiving
+bcrypt              # Password hashing and encryption
+cookie-parser       # HTTP cookie parsing middleware
+csv-parser          # CSV file parsing utilities
+mailparser          # Email parsing and processing
+redis               # Redis client for caching
+ajv-formats         # JSON schema validation formats
+```
+
+### **Required Development Dependencies**
+
+```bash
+# Testing and development tools
+@playwright/test           # End-to-end testing framework
+@testing-library/react     # React component testing utilities
+jsdom                      # DOM implementation for testing
+@types/archiver           # TypeScript definitions for archiver
+@types/bcrypt             # TypeScript definitions for bcrypt
+@types/cookie-parser      # TypeScript definitions for cookie-parser
+@types/mailparser         # TypeScript definitions for mailparser
+@types/inquirer           # TypeScript definitions for inquirer
+```
+
+### **Installation Commands**
+
+```bash
+# Install all dependencies at once
+pnpm install
+
+# Or install manually if needed
+pnpm add -w drizzle-kit inquirer archiver bcrypt cookie-parser csv-parser mailparser redis ajv-formats
+pnpm add -w -D @playwright/test @testing-library/react jsdom @types/archiver @types/bcrypt @types/cookie-parser @types/mailparser @types/inquirer
+```
+
+### **Dependency Verification**
+
+```bash
+# Check for missing dependencies
+npx tsc --noEmit --skipLibCheck
+
+# Verify all packages are installed
+pnpm list --depth=0
+
+# Check for security vulnerabilities
+pnpm audit
+```
+
+---
+
 ## 📋 **Table of Contents**
 
 - [Overview](#-overview)
+- [Dependencies](#-dependencies)
 - [Architecture](#-architecture)
 - [Environment Setup](#-environment-setup)
 - [Development Commands](#-development-commands)

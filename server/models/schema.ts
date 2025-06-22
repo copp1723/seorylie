@@ -8,6 +8,7 @@ import {
   uuid,
   jsonb,
   pgEnum,
+  index,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -24,11 +25,16 @@ export const tenants = pgTable('tenants', {
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   brand: jsonb('brand'),          // {logoUrl, primaryColor, ...}
-  parentId: uuid('parent_id').references(() => tenants.id), // agency → null, dealer → agencyId
+  parentId: uuid('parent_id').references(() => tenants.id, { onDelete: 'set null' }), // agency → null, dealer → agencyId
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-  isActive: boolean('is_active').default(true),
-});
+  isActive: boolean('is_active').default(true).notNull(),
+}, (table) => ({
+  slugIdx: index('tenants_slug_idx').on(table.slug),
+  nameIdx: index('tenants_name_idx').on(table.name),
+  parentIdIdx: index('tenants_parent_id_idx').on(table.parentId),
+  isActiveIdx: index('tenants_is_active_idx').on(table.isActive),
+}));
 
 // ---------------------------------------------------------------------------
 // Users
@@ -36,44 +42,62 @@ export const tenants = pgTable('tenants', {
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
-  name: text('name'),
+  name: text('name').notNull(), // Required name field for proper user identification
   role: userRoleEnum('role').default('dealer'),
-  tenantId: uuid('tenant_id').references(() => tenants.id),
+  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-  isActive: boolean('is_active').default(true),
-});
+  isActive: boolean('is_active').default(true).notNull(), // Non-nullable with default
+}, (table) => ({
+  emailIdx: index('users_email_idx').on(table.email),
+  nameIdx: index('users_name_idx').on(table.name),
+  tenantIdIdx: index('users_tenant_id_idx').on(table.tenantId),
+  isActiveIdx: index('users_is_active_idx').on(table.isActive),
+}));
 
 // ---------------------------------------------------------------------------
 // SEO Requests
 // ---------------------------------------------------------------------------
 export const seoRequests = pgTable('seo_requests', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id),
-  tenantId: uuid('tenant_id').references(() => tenants.id),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   description: text('description'),
   status: text('status').default('pending'),
   priority: text('priority').default('medium'),
-  assignedTo: integer('assigned_to').references(() => users.id),
+  assignedTo: integer('assigned_to').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
   completedAt: timestamp('completed_at'),
-});
+}, (table) => ({
+  userIdIdx: index('seo_requests_user_id_idx').on(table.userId),
+  tenantIdIdx: index('seo_requests_tenant_id_idx').on(table.tenantId),
+  statusIdx: index('seo_requests_status_idx').on(table.status),
+  priorityIdx: index('seo_requests_priority_idx').on(table.priority),
+  assignedToIdx: index('seo_requests_assigned_to_idx').on(table.assignedTo),
+  createdAtIdx: index('seo_requests_created_at_idx').on(table.createdAt),
+}));
 
 // ---------------------------------------------------------------------------
 // Reports
 // ---------------------------------------------------------------------------
 export const reports = pgTable('reports', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id),
-  tenantId: uuid('tenant_id').references(() => tenants.id),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }),
   type: text('type').notNull(),
   title: text('title').notNull(),
   data: text('data'),
   generatedAt: timestamp('generated_at').defaultNow(),
   isPublic: boolean('is_public').default(false),
-});
+}, (table) => ({
+  userIdIdx: index('reports_user_id_idx').on(table.userId),
+  tenantIdIdx: index('reports_tenant_id_idx').on(table.tenantId),
+  typeIdx: index('reports_type_idx').on(table.type),
+  generatedAtIdx: index('reports_generated_at_idx').on(table.generatedAt),
+  isPublicIdx: index('reports_is_public_idx').on(table.isPublic),
+}));
 
 // ---------------------------------------------------------------------------
 // Seoworks Tasks (unchanged)
@@ -93,8 +117,8 @@ export const seoworksTasks = pgTable('seoworks_tasks', {
 // ---------------------------------------------------------------------------
 export const auditLogs = pgTable('audit_logs', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id),
-  tenantId: uuid('tenant_id').references(() => tenants.id),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+  tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }),
   action: text('action').notNull(),
   resource: text('resource'),
   resourceId: text('resource_id'),
@@ -102,8 +126,17 @@ export const auditLogs = pgTable('audit_logs', {
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
   traceId: text('trace_id'),
+  category: text('category'), // Added missing category field
+  isActive: boolean('is_active').default(true).notNull(), // Added missing is_active field
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => ({
+  userIdIdx: index('audit_logs_user_id_idx').on(table.userId),
+  tenantIdIdx: index('audit_logs_tenant_id_idx').on(table.tenantId),
+  actionIdx: index('audit_logs_action_idx').on(table.action),
+  categoryIdx: index('audit_logs_category_idx').on(table.category),
+  isActiveIdx: index('audit_logs_is_active_idx').on(table.isActive),
+  createdAtIdx: index('audit_logs_created_at_idx').on(table.createdAt),
+}));
 
 // ---------------------------------------------------------------------------
 // GA4 tables (already uuid tenantId) – unchanged except reference arrow
